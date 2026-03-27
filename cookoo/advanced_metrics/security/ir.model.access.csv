@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_advanced_metrics_inicio,advanced_metrics.inicio,model_advanced_metrics_inicio,base.group_user,1,1,1,1
+access_advanced_metrics_registro,advanced_metrics.registro,model_advanced_metrics_registro,base.group_user,1,1,1,1

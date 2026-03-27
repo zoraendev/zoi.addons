@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="advanced_metrics_inicio_default" model="advanced_metrics.inicio">
+        <field name="name">Inicio</field>
+    </record>
+
+    <record id="view_advanced_metrics_registro_tree" model="ir.ui.view">
+        <field name="name">advanced_metrics.registro.tree</field>
+        <field name="model">advanced_metrics.registro</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="descripcion"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_advanced_metrics_registro_form" model="ir.ui.view">
+        <field name="name">advanced_metrics.registro.form</field>
+        <field name="model">advanced_metrics.registro</field>
+        <field name="arch" type="xml">
+            <form string="Registro">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="descripcion"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_advanced_metrics_registros" model="ir.actions.act_window">
+        <field name="name">Registros</field>
+        <field name="res_model">advanced_metrics.registro</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_advanced_metrics_registro_tree"/>
+        <field name="target">current</field>
+    </record>
+
+    <record id="action_advanced_metrics_nuevo_registro" model="ir.actions.act_window">
+        <field name="name">Nuevo registro</field>
+        <field name="res_model">advanced_metrics.registro</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_advanced_metrics_registro_form"/>
+        <field name="target">current</field>
+        <field name="context">{}</field>
+    </record>
+
+    <record id="view_advanced_metrics_inicio_form" model="ir.ui.view">
+        <field name="name">advanced_metrics.inicio.form</field>
+        <field name="model">advanced_metrics.inicio</field>
+        <field name="arch" type="xml">
+            <form string="Advanced Metrics">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <div class="o_form_label">Panel principal del módulo</div>
+                            <div>
+                                Navegacion sin salir del layout
+                            </div>
+                        </group>
+                    </group>
+
+                    <group col="2">
+                        <button
+                            name="%(action_advanced_metrics_registros)d"
+                            type="action"
+                            string="Ver registros"
+                            class="oe_highlight"
+                        />
+                        <button
+                            name="%(action_advanced_metrics_nuevo_registro)d"
+                            type="action"
+                            string="Nuevo registro"
+                        />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_advanced_metrics_inicio" model="ir.actions.act_window">
+        <field name="name">Advanced Metrics</field>
+        <field name="res_model">advanced_metrics.inicio</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_advanced_metrics_inicio_form"/>
+        <field name="res_id" ref="advanced_metrics_inicio_default"/>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_advanced_metrics_root"
+        name="Advanced Metrics"
+        action="action_advanced_metrics_inicio"
+        sequence="10"
+    />
+
+</odoo>
