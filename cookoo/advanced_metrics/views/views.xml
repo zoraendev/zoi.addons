@@ -2,7 +2,7 @@
 <odoo>
 
     <record id="advanced_metrics_inicio_default" model="advanced_metrics.inicio">
-        <field name="name">Inicio</field>
+        <field name="name"> </field>
     </record>
 
     <record id="view_advanced_metrics_registro_tree" model="ir.ui.view">
@@ -30,59 +30,46 @@
             </form>
         </field>
     </record>
-
-    <record id="action_advanced_metrics_registros" model="ir.actions.act_window">
-        <field name="name">Registros</field>
-        <field name="res_model">advanced_metrics.registro</field>
-        <field name="view_mode">tree,form</field>
-        <field name="view_id" ref="view_advanced_metrics_registro_tree"/>
-        <field name="target">current</field>
-    </record>
-
-    <record id="action_advanced_metrics_nuevo_registro" model="ir.actions.act_window">
-        <field name="name">Nuevo registro</field>
-        <field name="res_model">advanced_metrics.registro</field>
-        <field name="view_mode">form</field>
-        <field name="view_id" ref="view_advanced_metrics_registro_form"/>
-        <field name="target">current</field>
-        <field name="context">{}</field>
+   
+    <record id="action_advanced_metrics_external_instance" model="ir.actions.act_url">
+        <field name="name">Abrir instancia</field>
+        <field name="url">https://www.odoo.com</field>
+        <field name="target">new</field>
     </record>
 
     <record id="view_advanced_metrics_inicio_form" model="ir.ui.view">
         <field name="name">advanced_metrics.inicio.form</field>
         <field name="model">advanced_metrics.inicio</field>
         <field name="arch" type="xml">
-            <form string="Advanced Metrics">
-                <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" readonly="1"/>
-                        </h1>
-                    </div>
+            <form string="Metricas Avanzadas" create="0" edit="0" delete="0" duplicate="0" class="o_advanced_metrics_home_form">
+                    <field name="name" invisible="1"/>
 
-                    <group>
-                        <group>
-                            <div class="o_form_label">Panel principal del módulo</div>
-                            <div>
-                                Navegacion sin salir del layout
+                    <div class="o_advanced_metrics_dashboard">
+                        <div class="o_advanced_metrics_header">
+                            <h1>Metricas Avanzadas</h1>
+                            <button
+                                name="%(action_advanced_metrics_external_instance)d"
+                                type="action"
+                                string="Abrir Instancia"
+                                class="btn btn-primary"
+                            />
+                        </div>
+
+                        <div class="o_advanced_metrics_tile">
+                            <h3>Ordenes de Venta</h3>
+                            <p>
+                                Genera reportes filtrando por fecha de entrega, cliente, orden de venta, producto, cantidad vendida e inventario disponible.
+                            </p>
+                            <div class="o_advanced_metrics_tile_actions">
+                                <button
+                                    name="%(action_advanced_metrics_report_wizard)d"
+                                    type="action"
+                                    string="Abrir"
+                                    class="btn btn-primary"
+                                />
                             </div>
-                        </group>
-                    </group>
-
-                    <group col="2">
-                        <button
-                            name="%(action_advanced_metrics_registros)d"
-                            type="action"
-                            string="Ver registros"
-                            class="oe_highlight"
-                        />
-                        <button
-                            name="%(action_advanced_metrics_nuevo_registro)d"
-                            type="action"
-                            string="Nuevo registro"
-                        />
-                    </group>
-                </sheet>
+                        </div>
+                    </div>
             </form>
         </field>
     </record>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_advanced_metrics_report_wizard_form" model="ir.ui.view">
+        <field name="name">advanced_metrics.report.wizard.form</field>
+        <field name="model">advanced_metrics.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generador de reporte">
+                <sheet>
+                    <group>
+                        <group string="Filtros">
+                            <field name="fecha_entrega_desde"/>
+                            <field name="fecha_entrega_hasta"/>
+                            <field name="cliente"/>
+                            <field name="numero_orden_venta"/>
+                            <field name="producto"/>
+                        </group>
+                        <group string="Rangos">
+                            <field name="cantidad_vendida_min"/>
+                            <field name="cantidad_vendida_max"/>
+                            <field name="inventario_disponible_min"/>
+                            <field name="inventario_disponible_max"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button
+                        name="action_generate_report"
+                        type="object"
+                        string="Generar reporte"
+                        class="oe_highlight"
+                    />
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_advanced_metrics_report_wizard" model="ir.actions.act_window">
+        <field name="name">Reporte de ventas e inventario</field>
+        <field name="res_model">advanced_metrics.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_advanced_metrics_report_wizard_form"/>
+        <field name="target">current</field>
+    </record>
+
+    <record id="view_advanced_metrics_inicio_form_report_link" model="ir.ui.view">
+        <field name="name">advanced_metrics.inicio.form.report.link</field>
+        <field name="model">advanced_metrics.inicio</field>
+        <field name="inherit_id" ref="view_advanced_metrics_inicio_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside"/>
+        </field>
+    </record>
+
+</odoo>
