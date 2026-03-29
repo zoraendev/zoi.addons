@@ -16,9 +16,18 @@ class AdvancedMetricsController(http.Controller):
 			except (ValueError, UnicodeDecodeError):
 				payload = {}
 
+		filters = payload.get('filters') or {}
+		rows = request.env['advanced_metrics.report.wizard'].sudo().get_sales_orders_report_rows(filters)
+		total_rows = len(rows)
+
 		return request.make_json_response({
 			'success': True,
-			'message': 'Solicitud de reporte recibida correctamente.',
-			'payload': payload,
+			'message': (
+				f'Se encontraron {total_rows} resultados.'
+				if total_rows
+				else 'No se encontraron resultados con los filtros seleccionados.'
+			),
+			'rows': rows,
+			'count': total_rows,
 		})
 
