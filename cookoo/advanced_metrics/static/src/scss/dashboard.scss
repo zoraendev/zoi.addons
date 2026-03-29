@@ -1,3 +1,8 @@
+// Hide pager and control panel nav for the dashboard (pager is outside the form element)
+.o_control_panel {
+  display: none !important;
+}
+
 .o_form_view.o_advanced_metrics_home_form {
   .o_form_statusbar {
     display: none;
@@ -11,11 +16,13 @@
     --am-border: var(--o-border-color, #d1d5db);
     --am-brand: var(--o-brand-odoo, #7c6a8b);
 
-    background: var(--am-bg);
     min-height: calc(100vh - 170px);
     padding: 24px;
     margin: 0;
-    border-top: 1px solid var(--am-border);
+
+    @include media-breakpoint-down(md) {
+      padding: 16px;
+    }
   }
 
   .o_advanced_metrics_header {
@@ -46,7 +53,7 @@
 
   .o_advanced_metrics_tile h3 {
     margin: 0 0 10px 0;
-    font-size: 2rem;
+    font-size: 1.5rem;
     line-height: 1.2;
     font-weight: 600;
     color: var(--am-text);
@@ -55,7 +62,7 @@
   .o_advanced_metrics_tile p {
     margin: 0;
     color: var(--am-muted);
-    font-size: 1.1rem;
+    font-size: 1rem;
     line-height: 1.4;
   }
 
