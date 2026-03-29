@@ -41,11 +41,11 @@
         <field name="name">advanced_metrics.inicio.form</field>
         <field name="model">advanced_metrics.inicio</field>
         <field name="arch" type="xml">
-            <form string="Metricas Avanzadas" create="0" edit="0" delete="0" duplicate="0" class="o_advanced_metrics_home_form">
+            <form string="Metricas Avanzadas" create="0" edit="0" delete="0" duplicate="0" class="zrn_advanced_metrics_home_form">
                     <field name="name" invisible="1"/>
 
-                    <div class="o_advanced_metrics_dashboard">
-                        <div class="o_advanced_metrics_header">
+                    <div class="zrn_advanced_metrics_dashboard">
+                        <div class="zrn_advanced_metrics_header">
                             <h1>Metricas Avanzadas</h1>
                             <button
                                 name="%(action_advanced_metrics_external_instance)d"
@@ -55,12 +55,12 @@
                             />
                         </div>
 
-                        <div class="o_advanced_metrics_tile">
+                        <div class="zrn_advanced_metrics_tile">
                             <h3>Ordenes de Venta</h3>
                             <p>
                                 Genera reportes filtrando por fecha de entrega, cliente, orden de venta, producto, cantidad vendida e inventario disponible.
                             </p>
-                            <div class="o_advanced_metrics_tile_actions">
+                            <div class="zrn_advanced_metrics_tile_actions">
                                 <button
                                     name="%(action_advanced_metrics_report_wizard)d"
                                     type="action"

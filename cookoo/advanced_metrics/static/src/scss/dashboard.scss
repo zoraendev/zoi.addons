@@ -1,14 +1,18 @@
-// Hide pager and control panel nav for the dashboard (pager is outside the form element)
-.o_control_panel {
-  display: none !important;
+// Hide only the pager for Advanced Metrics custom forms.
+.o_action:has(.zrn_advanced_metrics_home_form),
+.o_action:has(.zrn_advanced_metrics_sales_orders_form) {
+  .o_cp_pager,
+  .o_pager {
+    display: none !important;
+  }
 }
 
-.o_form_view.o_advanced_metrics_home_form {
+.o_form_view.zrn_advanced_metrics_home_form {
   .o_form_statusbar {
     display: none;
   }
 
-  .o_advanced_metrics_dashboard {
+  .zrn_advanced_metrics_dashboard {
     --am-bg: var(--o-webclient-background-color, #d9d9dc);
     --am-surface: var(--o-view-background-color, #f8f9fa);
     --am-text: var(--o-main-text-color, #1f2937);
@@ -25,7 +29,7 @@
     }
   }
 
-  .o_advanced_metrics_header {
+  .zrn_advanced_metrics_header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -34,7 +38,7 @@
     border-bottom: 1px solid var(--am-border);
   }
 
-  .o_advanced_metrics_header h1 {
+  .zrn_advanced_metrics_header h1 {
     margin: 0;
     font-size: clamp(2rem, 4vw, 3rem);
     line-height: 1.1;
@@ -42,7 +46,7 @@
     color: var(--am-text);
   }
 
-  .o_advanced_metrics_tile {
+  .zrn_advanced_metrics_tile {
     width: 100%;
     max-width: 420px;
     background: var(--am-surface);
@@ -51,7 +55,7 @@
     padding: 16px;
   }
 
-  .o_advanced_metrics_tile h3 {
+  .zrn_advanced_metrics_tile h3 {
     margin: 0 0 10px 0;
     font-size: 1.5rem;
     line-height: 1.2;
@@ -59,26 +63,188 @@
     color: var(--am-text);
   }
 
-  .o_advanced_metrics_tile p {
+  .zrn_advanced_metrics_tile p {
     margin: 0;
     color: var(--am-muted);
     font-size: 1rem;
     line-height: 1.4;
   }
 
-  .o_advanced_metrics_tile_actions {
+  .zrn_advanced_metrics_tile_actions {
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
   }
 
-  .o_advanced_metrics_dashboard .btn.btn-primary {
+  .zrn_advanced_metrics_dashboard .btn.btn-primary {
     background: var(--am-brand);
     border-color: var(--am-brand);
   }
 
-  .o_advanced_metrics_dashboard .btn.btn-primary:hover,
-  .o_advanced_metrics_dashboard .btn.btn-primary:focus {
+  .zrn_advanced_metrics_dashboard .btn.btn-primary:hover,
+  .zrn_advanced_metrics_dashboard .btn.btn-primary:focus {
     filter: brightness(0.92);
+  }
+}
+
+.o_form_view.zrn_advanced_metrics_sales_orders_form {
+  .o_form_statusbar {
+    display: none;
+  }
+
+  .zrn_advanced_metrics_sales_orders {
+    --am-surface: var(--o-view-background-color, #f8f9fa);
+    --am-text: var(--o-main-text-color, #1f2937);
+    --am-muted: var(--o-view-text-muted, #6b7280);
+    --am-border: var(--o-border-color, #d1d5db);
+    --am-brand: var(--o-brand-odoo, #7c6a8b);
+
+    padding: 24px;
+  }
+
+  .zrn_advanced_metrics_sales_orders h2 {
+    margin: 0;
+    font-size: clamp(2rem, 3vw, 2.75rem);
+    font-weight: 500;
+    color: var(--am-text);
+  }
+
+  .zrn_am_separator {
+    border-top: 1px solid var(--am-border);
+    margin: 14px 0 18px 0;
+  }
+
+  .zrn_am_filters {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+
+  .zrn_am_date_card {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 10px;
+    min-width: 280px;
+    border: 1px solid var(--am-border);
+    border-radius: 6px;
+    background: var(--am-surface);
+    padding: 10px;
+  }
+
+  .zrn_am_date_icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--am-brand) 86%, white);
+  }
+
+  .zrn_am_date_meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .zrn_am_date_title {
+    font-size: 1rem;
+    color: var(--am-text);
+  }
+
+  .zrn_am_date_range {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .zrn_am_date_item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .zrn_am_date_item_label {
+    font-size: 0.82rem;
+    color: var(--am-muted);
+  }
+
+  .zrn_am_date_item .o_field_widget {
+    margin: 0;
+  }
+
+  .zrn_am_date_item .o_input {
+    min-height: 34px;
+  }
+
+  .zrn_am_generate_btn {
+    align-self: flex-end;
+  }
+
+  .zrn_am_table_shell {
+    border: 1px solid var(--am-border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--am-surface);
+  }
+
+  .zrn_am_table_header {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1.2fr 1fr 0.9fr 1.6fr;
+    gap: 0;
+    border-bottom: 1px solid var(--am-border);
+    background: color-mix(in srgb, var(--am-surface) 80%, #e5e7eb);
+  }
+
+  .zrn_am_table_header > span {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--am-text);
+    border-right: 1px solid var(--am-border);
+  }
+
+  .zrn_am_table_header > span:last-child {
+    border-right: 0;
+  }
+
+  .zrn_am_empty_state {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .zrn_am_empty_state .o_view_nocontent {
+    margin: 0;
+    max-width: 680px;
+  }
+
+  .zrn_am_empty_state_content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+
+  @include media-breakpoint-down(md) {
+    .zrn_advanced_metrics_sales_orders {
+      padding: 16px;
+    }
+
+    .zrn_am_table_header {
+      grid-template-columns: 1fr;
+    }
+
+    .zrn_am_table_header > span {
+      border-right: 0;
+      border-bottom: 1px solid var(--am-border);
+    }
+
+    .zrn_am_table_header > span:last-child {
+      border-bottom: 0;
+    }
   }
 }

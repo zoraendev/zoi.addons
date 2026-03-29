@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_advanced_metrics_report_wizard_form" model="ir.ui.view">
+        <field name="name">advanced_metrics.sales_orders.form</field>
+        <field name="model">advanced_metrics.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Ordenes de venta" class="zrn_advanced_metrics_sales_orders_form" create="0" edit="0" delete="0" duplicate="0">
+                <div class="zrn_advanced_metrics_sales_orders">
+                    <h2>Ordenes de venta</h2>
+                    <div class="zrn_am_separator"/>
+
+                    <div class="zrn_am_filters">
+                        <div class="zrn_am_date_card">
+                            <div class="zrn_am_date_icon"/>
+                            <div class="zrn_am_date_meta">
+                                <div class="zrn_am_date_title">Fecha de entrega</div>
+                                <div class="zrn_am_date_range">
+                                    <div class="zrn_am_date_item">
+                                        <span class="zrn_am_date_item_label">De</span>
+                                        <field name="fecha_entrega_desde" nolabel="1"/>
+                                    </div>
+                                    <div class="zrn_am_date_item">
+                                        <span class="zrn_am_date_item_label">Hasta</span>
+                                        <field name="fecha_entrega_hasta" nolabel="1"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            name="action_generate_report"
+                            type="object"
+                            string="Generar reporte"
+                            class="btn btn-primary zrn_am_generate_btn"
+                        />
+                    </div>
+
+                    <div class="zrn_am_table_shell">
+                        <div class="zrn_am_table_header">
+                            <span>Fecha de entrega</span>
+                            <span>Cliente</span>
+                            <span>Numero de orden de venta</span>
+                            <span>Producto</span>
+                            <span>Cantidad vendida</span>
+                            <span>Inventario disponible de producto terminado</span>
+                        </div>
+
+                        <div class="zrn_am_empty_state">
+                            <div class="zrn_am_empty_state_content">
+                                <p class="">No hay datos para mostrar en el reporte.</p>
+                                <p>Aplica los filtros de fecha y usa Generar reporte para preparar resultados.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_advanced_metrics_report_wizard" model="ir.actions.act_window">
+        <field name="name">Reporte de ventas e inventario</field>
+        <field name="res_model">advanced_metrics.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_advanced_metrics_report_wizard_form"/>
+        <field name="target">current</field>
+    </record>
+
+    <record id="view_advanced_metrics_inicio_form_report_link" model="ir.ui.view">
+        <field name="name">advanced_metrics.inicio.form.report.link</field>
+        <field name="model">advanced_metrics.inicio</field>
+        <field name="inherit_id" ref="view_advanced_metrics_inicio_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside"/>
+        </field>
+    </record>
+
+</odoo>
