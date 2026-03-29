@@ -7,6 +7,10 @@
   }
 }
 
+.o_control_panel {
+  display: none !important;
+}
+
 .o_form_view.zrn_advanced_metrics_home_form {
   .o_form_statusbar {
     display: none;
@@ -116,28 +120,22 @@
 
   .zrn_am_filters {
     display: flex;
-    align-items: stretch;
+    align-items: flex-end;
     gap: 16px;
     flex-wrap: wrap;
     margin-bottom: 22px;
   }
 
   .zrn_am_date_card {
-    display: grid;
-    grid-template-columns: 48px 1fr;
-    gap: 10px;
-    min-width: 280px;
-    border: 1px solid var(--am-border);
-    border-radius: 6px;
-    background: var(--am-surface);
-    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 320px;
+    padding: 0;
   }
 
   .zrn_am_date_icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 6px;
-    background: color-mix(in srgb, var(--am-brand) 86%, white);
+    display: none;
   }
 
   .zrn_am_date_meta {
@@ -147,8 +145,10 @@
   }
 
   .zrn_am_date_title {
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
     color: var(--am-text);
+    line-height: 1.1;
   }
 
   .zrn_am_date_range {
@@ -165,8 +165,9 @@
   }
 
   .zrn_am_date_item_label {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: var(--am-muted);
+    line-height: 1;
   }
 
   .zrn_am_date_item .o_field_widget {
@@ -174,21 +175,26 @@
   }
 
   .zrn_am_date_item .o_input {
-    min-height: 34px;
+    min-height: 40px;
+    border: 1px solid var(--am-border);
+    border-radius: 4px;
+    background: #fff;
   }
 
   .zrn_am_customer_filter {
-    min-width: 280px;
+    min-width: 260px;
     max-width: 360px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    justify-content: center;
+    justify-content: flex-end;
   }
 
   .zrn_am_customer_filter_label {
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
     color: var(--am-text);
+    line-height: 1.1;
   }
 
   .zrn_am_customer_filter .o_field_widget {
@@ -200,8 +206,14 @@
     min-height: 40px;
   }
 
+  .zrn_am_customer_filter .o_external_button {
+    display: none !important;
+  }
+
   .zrn_am_generate_btn {
+    margin-left: auto;
     align-self: flex-end;
+    white-space: nowrap;
   }
 
   .zrn_am_table_shell {
@@ -255,6 +267,28 @@
   @include media-breakpoint-down(md) {
     .zrn_advanced_metrics_sales_orders {
       padding: 16px;
+    }
+
+    .zrn_am_filters {
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .zrn_am_date_card,
+    .zrn_am_customer_filter {
+      min-width: 100%;
+      max-width: 100%;
+    }
+
+    .zrn_am_date_range {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .zrn_am_generate_btn {
+      margin-left: 0;
+      width: fit-content;
+      align-self: flex-end;
     }
 
     .zrn_am_table_header {

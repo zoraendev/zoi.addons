@@ -29,6 +29,7 @@ Long description of module's purpose
     ],
     'assets': {
         'web.assets_backend': [
+            'advanced_metrics/static/src/js/sales_orders_report.js',
             'advanced_metrics/static/src/scss/dashboard.scss',
         ],
     },

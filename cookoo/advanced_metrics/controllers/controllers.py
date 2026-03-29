@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
-# from odoo import http
+import json
+
+from odoo import http
+from odoo.http import request
 
 
-# class AdvancedMetrics(http.Controller):
-#     @http.route('/advanced_metrics/advanced_metrics', auth='public')
-#     def index(self, **kw):
-#         return "Hello, world"
+class AdvancedMetricsController(http.Controller):
+	@http.route('/advanced_metrics/report/generate', type='http', auth='user', methods=['POST'], csrf=False)
+	def generate_sales_orders_report(self, **kwargs):
+		payload = {}
+		raw_body = request.httprequest.data
+		if raw_body:
+			try:
+				payload = json.loads(raw_body.decode('utf-8'))
+			except (ValueError, UnicodeDecodeError):
+				payload = {}
 
-#     @http.route('/advanced_metrics/advanced_metrics/objects', auth='public')
-#     def list(self, **kw):
-#         return http.request.render('advanced_metrics.listing', {
-#             'root': '/advanced_metrics/advanced_metrics',
-#             'objects': http.request.env['advanced_metrics.advanced_metrics'].search([]),
-#         })
-
-#     @http.route('/advanced_metrics/advanced_metrics/objects/<model("advanced_metrics.advanced_metrics"):obj>', auth='public')
-#     def object(self, obj, **kw):
-#         return http.request.render('advanced_metrics.object', {
-#             'object': obj
-#         })
+		return request.make_json_response({
+			'success': True,
+			'message': 'Solicitud de reporte recibida correctamente.',
+			'payload': payload,
+		})
 

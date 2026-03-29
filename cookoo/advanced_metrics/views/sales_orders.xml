@@ -35,35 +35,28 @@
                                 widget="res_partner_many2one"
                                 context="{'res_partner_search_mode': 'customer', 'show_address': 1, 'show_vat': True}"
                                 nolabel="1"
-                                options="{'no_create': True, 'no_create_edit': True}"
+                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
                                 placeholder="Selecciona un cliente"
                             />
                         </div>
 
-                        <button
-                            name="action_generate_report"
-                            type="object"
-                            string="Generar reporte"
-                            class="btn btn-primary zrn_am_generate_btn"
-                        />
+                        <a href="#" class="btn btn-primary zrn_am_generate_btn" role="button">
+                            Generar reporte
+                        </a>
                     </div>
 
                     <div class="zrn_am_table_shell">
-                        <div class="zrn_am_table_header">
-                            <span>Fecha de entrega</span>
-                            <span>Cliente</span>
-                            <span>Numero de orden de venta</span>
-                            <span>Producto</span>
-                            <span>Cantidad vendida</span>
-                            <span>Inventario disponible de producto terminado</span>
-                        </div>
-
-                        <div class="zrn_am_empty_state">
-                            <div class="zrn_am_empty_state_content">
-                                <p class="">No hay datos para mostrar en el reporte.</p>
-                                <p>Aplica los filtros de fecha y usa Generar reporte para preparar resultados.</p>
-                            </div>
-                        </div>
+                        <field name="report_line_ids" nolabel="1" readonly="1" widget="one2many" options="{'no_create': True, 'no_delete': True, 'no_edit': True}">
+                            <tree create="0" edit="0" delete="0">
+                                <field name="fecha_entrega" string="Fecha de entrega"/>
+                                <field name="cliente_id" string="Cliente"/>
+                                <field name="numero_orden_venta" string="Numero de orden de venta"/>
+                                <field name="producto" string="Producto"/>
+                                <field name="cantidad_vendida" string="Cantidad vendida"/>
+                                <field name="inventario_disponible" string="Inventario disponible de producto terminado"/>
+                                <field name="cantidad_sugerida_producir" string="Cantidad sugerida a producir"/>
+                            </tree>
+                        </field>
                     </div>
                 </div>
             </form>
