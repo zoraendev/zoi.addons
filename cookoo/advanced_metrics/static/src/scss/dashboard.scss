@@ -177,6 +177,29 @@
     min-height: 34px;
   }
 
+  .zrn_am_customer_filter {
+    min-width: 280px;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .zrn_am_customer_filter_label {
+    font-size: 1rem;
+    color: var(--am-text);
+  }
+
+  .zrn_am_customer_filter .o_field_widget {
+    margin: 0;
+  }
+
+  .zrn_am_customer_filter .o_input,
+  .zrn_am_customer_filter .o_input_dropdown {
+    min-height: 40px;
+  }
+
   .zrn_am_generate_btn {
     align-self: flex-end;
   }

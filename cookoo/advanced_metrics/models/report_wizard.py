@@ -7,7 +7,10 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
     fecha_entrega_desde = fields.Date(string='Fecha de entrega desde')
     fecha_entrega_hasta = fields.Date(string='Fecha de entrega hasta')
-    cliente = fields.Char(string='Cliente')
+    cliente_id = fields.Many2one(
+        'res.partner',
+        string='Cliente',
+    )
     numero_orden_venta = fields.Char(string='Numero de orden de venta')
     producto = fields.Char(string='Producto')
     cantidad_vendida_min = fields.Float(string='Cantidad vendida minima')

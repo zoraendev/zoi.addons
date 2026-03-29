@@ -28,6 +28,18 @@
                             </div>
                         </div>
 
+                        <div class="zrn_am_customer_filter">
+                            <div class="zrn_am_customer_filter_label">Cliente</div>
+                            <field
+                                name="cliente_id"
+                                widget="res_partner_many2one"
+                                context="{'res_partner_search_mode': 'customer', 'show_address': 1, 'show_vat': True}"
+                                nolabel="1"
+                                options="{'no_create': True, 'no_create_edit': True}"
+                                placeholder="Selecciona un cliente"
+                            />
+                        </div>
+
                         <button
                             name="action_generate_report"
                             type="object"
