@@ -25,6 +25,7 @@ Long description of module's purpose
         'security/ir.model.access.csv',
         'views/views.xml',
         'views/sales_orders.xml',
+        'views/api_config_views.xml',
         'views/templates.xml',
     ],
     'assets': {

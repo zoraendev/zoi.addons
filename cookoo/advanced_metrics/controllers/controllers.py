@@ -31,3 +31,21 @@ class AdvancedMetricsController(http.Controller):
 			'count': total_rows,
 		})
 
+	@http.route('/api/advanced_metrics/sales_inventory', type='http', auth='public', methods=['GET'], csrf=False)
+	def get_sales_inventory_api(self, token=None, **kwargs):
+		if not token:
+			return request.make_response(json.dumps({'error': 'Unauthorized: Token is missing'}), headers=[('Content-Type', 'application/json')], status=401)
+
+		config = request.env['advanced_metrics.api.config'].sudo().search([('access_token', '=', token)], limit=1)
+		if not config:
+			return request.make_response(json.dumps({'error': 'Unauthorized: Invalid token'}), headers=[('Content-Type', 'application/json')], status=401)
+
+		limit = config.record_limit or 5000
+		try:
+			# Use sudo to run the extraction under system privileges but restricted by the token logic limits
+			rows = request.env['advanced_metrics.report.wizard'].sudo().get_sales_orders_report_rows(filters={}, limit=limit)
+			return request.make_response(json.dumps({'data': rows}), headers=[('Content-Type', 'application/json')])
+		except Exception as e:
+			return request.make_response(json.dumps({'error': f'Internal Error: {str(e)}'}), headers=[('Content-Type', 'application/json')], status=500)
+
+

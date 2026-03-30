@@ -24,7 +24,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     )
 
     @api.model
-    def get_sales_orders_report_rows(self, filters=None):
+    def get_sales_orders_report_rows(self, filters=None, limit=500):
         filters = filters or {}
         sale_line_model = self.env.get('sale.order.line')
         stock_quant_model = self.env.get('stock.quant')
@@ -50,7 +50,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         elif cliente_nombre:
             domain.append(('order_partner_id.name', 'ilike', cliente_nombre))
 
-        order_lines = sale_line_model.search(domain, order='order_id.commitment_date desc, id desc', limit=500)
+        order_lines = sale_line_model.search(domain, order='order_id.commitment_date desc, id desc', limit=limit)
         product_ids = order_lines.mapped('product_id').ids
 
         qty_by_product_id = {}
