@@ -63,18 +63,12 @@
         </field>
     </record>
 
-    <record id="action_advanced_metrics_report_wizard" model="ir.actions.act_window">
-        <field name="name">Reporte de ventas e inventario</field>
-        <field name="res_model">advanced_metrics.report.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="view_id" ref="view_advanced_metrics_report_wizard_form"/>
-        <field name="target">current</field>
-    </record>
+    <!-- Action is now defined in views.xml to resolve circular dependency -->
 
     <record id="view_advanced_metrics_inicio_form_report_link" model="ir.ui.view">
         <field name="name">advanced_metrics.inicio.form.report.link</field>
         <field name="model">advanced_metrics.inicio</field>
-        <field name="inherit_id" ref="view_advanced_metrics_inicio_form"/>
+        <field name="inherit_id" ref="advanced_metrics.view_advanced_metrics_inicio_form"/>
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside"/>
         </field>
