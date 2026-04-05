@@ -50,6 +50,10 @@
         <field name="arch" type="xml">
             <form string="Metricas Avanzadas" create="0" edit="0" delete="0" duplicate="0" class="zrn_advanced_metrics_home_form">
                     <field name="name" invisible="1"/>
+                    <field name="show_dashboard" invisible="1"/>
+                    <field name="client_validation_state" invisible="1"/>
+                    <field name="client_status_code" invisible="1"/>
+                    <field name="support_url" invisible="1"/>
 
                     <div class="zrn_advanced_metrics_dashboard">
                         <div class="zrn_advanced_metrics_header">
@@ -59,21 +63,60 @@
                                 type="action"
                                 string="Abrir Instancia"
                                 class="btn btn-primary"
+                                invisible="not show_dashboard"
                             />
                         </div>
 
-                        <div class="zrn_advanced_metrics_tile">
-                            <h3>Ordenes de Venta</h3>
-                            <p>
-                                Genera reportes filtrando por fecha de entrega, cliente, orden de venta, producto, cantidad vendida e inventario disponible.
-                            </p>
-                            <div class="zrn_advanced_metrics_tile_actions">
-                                <button
-                                    name="%(action_advanced_metrics_report_wizard)d"
-                                    type="action"
-                                    string="Abrir"
-                                    class="btn btn-primary"
-                                />
+                        <div class="zrn_am_blocked_state" invisible="show_dashboard">
+                            <div class="alert zrn_am_blocked_banner" role="alert">
+                                <div class="zrn_am_blocked_banner_content">
+                                    <h3>
+                                        <field name="client_status_title" readonly="1" nolabel="1" class="oe_inline"/>
+                                    </h3>
+                                    <p>
+                                        <field name="client_status_message" readonly="1" nolabel="1" class="oe_inline"/>
+                                    </p>
+                                    <div class="zrn_advanced_metrics_tile_actions zrn_am_center_actions">
+                                        <button
+                                            name="action_request_support"
+                                            type="object"
+                                            string="Contactar soporte"
+                                            class="btn btn-secondary"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zrn_am_dashboard_grid" invisible="not show_dashboard">
+                            <div class="zrn_advanced_metrics_tile">
+                                <h3>Ordenes de Venta</h3>
+                                <p>
+                                    Genera reportes filtrando por fecha de entrega, cliente, orden de venta, producto, cantidad vendida e inventario disponible.
+                                </p>
+                                <div class="zrn_advanced_metrics_tile_actions">
+                                    <button
+                                        name="action_open_sales_report"
+                                        type="object"
+                                        string="Abrir"
+                                        class="btn btn-primary"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="zrn_advanced_metrics_tile">
+                                <h3>Credenciales Power BI</h3>
+                                <p>
+                                    Administra el token y la URL segura para consumir la información desde Power BI.
+                                </p>
+                                <div class="zrn_advanced_metrics_tile_actions">
+                                    <button
+                                        name="action_open_api_config"
+                                        type="object"
+                                        string="Abrir"
+                                        class="btn btn-primary"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

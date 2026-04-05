@@ -54,7 +54,9 @@
         </field>
     </record>
 
-    <!-- Adding to the main menu defined in views.xml -->
-    <menuitem id="menu_advanced_metrics_api_config" name="Credenciales Power BI" parent="advanced_metrics.menu_advanced_metrics_root" action="action_advanced_metrics_api_config" sequence="90"/>
+    <!-- Hidden from the top menu; access is provided only from the validated dashboard -->
+    <record id="menu_advanced_metrics_api_config" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 
 </odoo>
