@@ -1,16 +1,3 @@
-// Hide only the pager for Advanced Metrics custom forms.
-.o_action:has(.zrn_advanced_metrics_home_form),
-.o_action:has(.zrn_advanced_metrics_sales_orders_form) {
-  .o_cp_pager,
-  .o_pager {
-    display: none !important;
-  }
-}
-
-.o_control_panel {
-  display: none !important;
-}
-
 .o_form_view.zrn_advanced_metrics_home_form {
   .o_form_statusbar {
     display: none;
@@ -249,10 +236,24 @@
     display: none !important;
   }
 
-  .zrn_am_generate_btn {
+  .zrn_am_filter_actions {
     margin-left: auto;
     align-self: flex-end;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .zrn_am_generate_btn,
+  .zrn_am_download_btn {
     white-space: nowrap;
+  }
+
+  .zrn_am_download_btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .zrn_am_table_shell {
@@ -324,10 +325,15 @@
       gap: 8px;
     }
 
-    .zrn_am_generate_btn {
+    .zrn_am_filter_actions {
       margin-left: 0;
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    .zrn_am_generate_btn,
+    .zrn_am_download_btn {
       width: fit-content;
-      align-self: flex-end;
     }
 
     .zrn_am_table_header {
