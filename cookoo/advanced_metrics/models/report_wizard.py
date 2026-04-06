@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class AdvancedMetricsReportWizard(models.TransientModel):
@@ -26,10 +27,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     @api.model
     def get_sales_orders_report_rows(self, filters=None):
         filters = filters or {}
-        sale_line_model = self.env.get('sale.order.line')
-        stock_quant_model = self.env.get('stock.quant')
-        if not sale_line_model or not stock_quant_model:
+        if 'sale.order.line' not in self.env or 'stock.quant' not in self.env:
             return []
+
+        sale_line_model = self.env['sale.order.line']
+        stock_quant_model = self.env['stock.quant']
 
         domain = [
             ('order_id.state', 'in', ['sale', 'done']),
@@ -80,6 +82,159 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             })
 
         return rows
+
+    @api.model
+    def _normalize_top_products_filters(self, filters=None):
+        filters = filters or {}
+
+        raw_date_from = (
+            filters.get('dateFrom')
+            or filters.get('date_from')
+            or filters.get('fecha_entrega_desde')
+        )
+        raw_date_to = (
+            filters.get('dateTo')
+            or filters.get('date_to')
+            or filters.get('fecha_entrega_hasta')
+        )
+        raw_limit = filters.get('limit', 10)
+
+        try:
+            limit = int(raw_limit or 10)
+        except (TypeError, ValueError):
+            raise ValidationError('El filtro "limit" debe ser un numero entero.')
+
+        if limit <= 0:
+            raise ValidationError('El filtro "limit" debe ser mayor que cero.')
+
+        normalized_filters = {
+            'dateFrom': None,
+            'dateTo': None,
+            'limit': min(limit, 100),
+        }
+
+        try:
+            if raw_date_from:
+                normalized_filters['dateFrom'] = fields.Date.to_date(raw_date_from).isoformat()
+            if raw_date_to:
+                normalized_filters['dateTo'] = fields.Date.to_date(raw_date_to).isoformat()
+        except (TypeError, ValueError):
+            raise ValidationError('Los filtros de fecha deben usar el formato YYYY-MM-DD.')
+
+        if (
+            normalized_filters['dateFrom']
+            and normalized_filters['dateTo']
+            and normalized_filters['dateFrom'] > normalized_filters['dateTo']
+        ):
+            raise ValidationError('El filtro "dateFrom" no puede ser mayor que "dateTo".')
+
+        return normalized_filters
+
+    @api.model
+    def _get_generated_at_iso(self):
+        generated_at = fields.Datetime.now()
+        if isinstance(generated_at, str):
+            generated_at = fields.Datetime.to_datetime(generated_at)
+        return generated_at.replace(microsecond=0).isoformat() + 'Z'
+
+    @api.model
+    def _get_current_stock_by_product(self, product_ids):
+        if 'stock.quant' not in self.env or not product_ids:
+            return {}
+
+        stock_quant_model = self.env['stock.quant']
+
+        grouped_quants = stock_quant_model.read_group(
+            [('product_id', 'in', product_ids), ('location_id.usage', '=', 'internal')],
+            ['product_id', 'quantity:sum'],
+            ['product_id'],
+        )
+        return {
+            item['product_id'][0]: float(item.get('quantity', 0.0))
+            for item in grouped_quants
+            if item.get('product_id')
+        }
+
+    @api.model
+    def get_top_products_report_data(self, filters=None):
+        normalized_filters = self._normalize_top_products_filters(filters)
+        if 'sale.order.line' not in self.env:
+            raise ValidationError('El modelo de lineas de venta no esta disponible en esta instancia.')
+
+        sale_line_model = self.env['sale.order.line']
+
+        domain = [
+            ('order_id.state', 'in', ['sale', 'done']),
+            ('display_type', '=', False),
+            ('product_id', '!=', False),
+        ]
+
+        if normalized_filters['dateFrom']:
+            domain.append(('order_id.date_order', '>=', f"{normalized_filters['dateFrom']} 00:00:00"))
+        if normalized_filters['dateTo']:
+            domain.append(('order_id.date_order', '<=', f"{normalized_filters['dateTo']} 23:59:59"))
+
+        order_lines = sale_line_model.search(domain, order='id desc')
+        product_ids = order_lines.mapped('product_id').ids
+        stock_by_product = self._get_current_stock_by_product(product_ids)
+
+        aggregated_data = {}
+        for line in order_lines:
+            product = line.product_id
+            if not product:
+                continue
+
+            quantity_sold = float(line.product_uom_qty or 0.0)
+            if quantity_sold <= 0:
+                continue
+
+            sales_amount = float(line.price_subtotal or 0.0)
+            unit_cost = float(
+                getattr(line, 'purchase_price', 0.0)
+                or getattr(product, 'standard_price', 0.0)
+                or 0.0
+            )
+            margin_amount = sales_amount - (quantity_sold * unit_cost)
+
+            item = aggregated_data.setdefault(product.id, {
+                'productId': product.id,
+                'productName': product.display_name or '',
+                'sku': product.default_code or '',
+                'categoryName': product.categ_id.display_name or '',
+                'quantitySold': 0.0,
+                'salesAmount': 0.0,
+                'currentStock': float(stock_by_product.get(product.id, 0.0)),
+                'marginAmount': 0.0,
+            })
+            item['quantitySold'] += quantity_sold
+            item['salesAmount'] += sales_amount
+            item['marginAmount'] += margin_amount
+
+        data = sorted(
+            aggregated_data.values(),
+            key=lambda row: (row['quantitySold'], row['salesAmount']),
+            reverse=True,
+        )[:normalized_filters['limit']]
+
+        for item in data:
+            item['quantitySold'] = round(item['quantitySold'], 2)
+            item['salesAmount'] = round(item['salesAmount'], 2)
+            item['currentStock'] = round(item['currentStock'], 2)
+            item['marginAmount'] = round(item['marginAmount'], 2)
+            item['marginPercent'] = round(
+                (item['marginAmount'] / item['salesAmount']) * 100,
+                2,
+            ) if item['salesAmount'] else 0.0
+            item['inventoryTurnover'] = round(
+                item['quantitySold'] / item['currentStock'],
+                2,
+            ) if item['currentStock'] > 0 else 0.0
+
+        return {
+            'generatedAt': self._get_generated_at_iso(),
+            'filters': normalized_filters,
+            'data': data,
+        }
 
     def action_generate_report(self):
         self.ensure_one()
