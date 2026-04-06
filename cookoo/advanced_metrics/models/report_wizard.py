@@ -27,7 +27,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     )
 
     @api.model
-    def get_sales_orders_report_rows(self, filters=None):
+    def get_sales_orders_report_rows(self, filters=None, limit=500):
         filters = filters or {}
         if 'sale.order.line' not in self.env or 'stock.quant' not in self.env:
             return []

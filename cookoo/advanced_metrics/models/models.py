@@ -5,6 +5,10 @@ class AdvancedMetricsInicio(models.Model):
     _name = 'advanced_metrics.inicio'
     _description = 'Pantalla principal de Advanced Metrics'
 
+    _DEFAULT_CLIENT_VALIDATION_URL = 'https://clients-service.vercel.app/api/production-v1-public/clients/key/SDSAW54D'
+    _DEFAULT_CLIENT_VALIDATION_API_KEY = 'SHKJSDHKA'
+    _DEFAULT_SUPPORT_URL = 'https://www.zoraen.com'
+
     name = fields.Char(string='Nombre', required=True)
     show_dashboard = fields.Boolean(string='Mostrar dashboard', default=True)
     client_validation_state = fields.Selection(

@@ -48,6 +48,21 @@ function getFiltersPayload() {
   return filters;
 }
 
+function buildRequestOptions(extraPayload = {}) {
+  return {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      filters: getFiltersPayload(),
+      ...extraPayload,
+    }),
+  };
+}
+
 function formatNumber(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
     return "0";
@@ -106,42 +121,98 @@ function renderRows(rows) {
   });
 }
 
+async function fetchReportJson() {
+  const response = await fetch(REPORT_ROUTE, buildRequestOptions());
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+    throw new Error(data.message || "No fue posible generar el reporte.");
+  }
+  return data;
+}
+
+function getFilenameFromDisposition(disposition) {
+  if (!disposition) {
+    return "reporte_ordenes_venta.xls";
+  }
+
+  const utfMatch = disposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+  if (utfMatch?.[1]) {
+    return decodeURIComponent(utfMatch[1]);
+  }
+
+  const asciiMatch = disposition.match(/filename="?([^";\n]+)"?/i);
+  return asciiMatch?.[1] || "reporte_ordenes_venta.xls";
+}
+
 async function callGenerateReport(buttonEl) {
   if (buttonEl.dataset.loading === "1") {
     return;
   }
 
-  const originalText = buttonEl.textContent;
+  const originalHtml = buttonEl.innerHTML;
   buttonEl.dataset.loading = "1";
-  buttonEl.disabled = true;
-  buttonEl.textContent = "Generando...";
+  buttonEl.classList.add("disabled");
+  buttonEl.innerHTML = "Generando...";
 
   try {
-    const response = await fetch(REPORT_ROUTE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        filters: getFiltersPayload(),
-      }),
-    });
-
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "No fue posible generar el reporte.");
-    }
-
+    const data = await fetchReportJson();
     renderRows(Array.isArray(data.rows) ? data.rows : []);
   } catch (error) {
     console.error("Error generating report", error);
     renderRows([]);
   } finally {
     buttonEl.dataset.loading = "0";
-    buttonEl.disabled = false;
-    buttonEl.textContent = originalText;
+    buttonEl.classList.remove("disabled");
+    buttonEl.innerHTML = originalHtml;
+  }
+}
+
+async function callDownloadReport(buttonEl) {
+  if (buttonEl.dataset.loading === "1") {
+    return;
+  }
+
+  const originalHtml = buttonEl.innerHTML;
+  buttonEl.dataset.loading = "1";
+  buttonEl.classList.add("disabled");
+  buttonEl.innerHTML =
+    '<span class="fa fa-spinner fa-spin" aria-hidden="true"></span><span>Descargando...</span>';
+
+  try {
+    const response = await fetch(
+      REPORT_ROUTE,
+      buildRequestOptions({ export_xls: true }),
+    );
+
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      throw new Error(
+        data.message || "No fue posible descargar el archivo XLS.",
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error("No fue posible descargar el archivo XLS.");
+    }
+
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = getFilenameFromDisposition(
+      response.headers.get("content-disposition"),
+    );
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error("Error downloading XLS report", error);
+  } finally {
+    buttonEl.dataset.loading = "0";
+    buttonEl.classList.remove("disabled");
+    buttonEl.innerHTML = originalHtml;
   }
 }
 
@@ -151,13 +222,20 @@ function bindGenerateButtonListener() {
   }
 
   document.addEventListener("click", (ev) => {
-    const buttonEl = ev.target.closest(".zrn_am_generate_btn");
-    if (!buttonEl) {
+    const generateButton = ev.target.closest(".zrn_am_generate_btn");
+    if (generateButton) {
+      ev.preventDefault();
+      callGenerateReport(generateButton);
+      return;
+    }
+
+    const downloadButton = ev.target.closest(".zrn_am_download_btn");
+    if (!downloadButton) {
       return;
     }
 
     ev.preventDefault();
-    callGenerateReport(buttonEl);
+    callDownloadReport(downloadButton);
   });
 
   listenersBound = true;

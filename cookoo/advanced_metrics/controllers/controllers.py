@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 import json
+import logging
+from datetime import datetime
+from io import BytesIO
+
+import xlwt
 
 from odoo import http
 from odoo.exceptions import ValidationError
@@ -36,6 +41,16 @@ class AdvancedMetricsController(http.Controller):
         rows = request.env['advanced_metrics.report.wizard'].sudo().get_sales_orders_report_rows(filters)
         total_rows = len(rows)
 
+        return request.make_json_response({
+            'success': True,
+            'message': (
+                f'Se encontraron {total_rows} resultados.'
+                if total_rows
+                else 'No se encontraron resultados con los filtros seleccionados.'
+            ),
+            'rows': rows,
+            'count': total_rows,
+        })
         return request.make_json_response({
             'success': True,
             'message': (

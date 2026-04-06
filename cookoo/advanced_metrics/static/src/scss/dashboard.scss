@@ -1,16 +1,3 @@
-// Hide only the pager for Advanced Metrics custom forms.
-.o_action:has(.zrn_advanced_metrics_home_form),
-.o_action:has(.zrn_advanced_metrics_sales_orders_form) {
-  .o_cp_pager,
-  .o_pager {
-    display: none !important;
-  }
-}
-
-.o_control_panel {
-  display: none !important;
-}
-
 .o_form_view.zrn_advanced_metrics_home_form {
   .o_form_statusbar {
     display: none;
@@ -28,7 +15,7 @@
     padding: 24px;
     margin: 0;
 
-    @include media-breakpoint-down(md) {
+    @media (max-width: 767.98px) {
       padding: 16px;
     }
   }
@@ -50,6 +37,12 @@
     color: var(--am-text);
   }
 
+  .zrn_am_dashboard_grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
   .zrn_advanced_metrics_tile {
     width: 100%;
     max-width: 420px;
@@ -59,7 +52,35 @@
     padding: 16px;
   }
 
-  .zrn_advanced_metrics_tile h3 {
+  .zrn_am_blocked_state {
+    min-height: calc(100vh - 280px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .zrn_am_blocked_banner {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    border-radius: 8px;
+    border: 1px solid #d6c27a;
+    background: #fff8db;
+    color: var(--am-text);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .zrn_am_blocked_banner_content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .zrn_advanced_metrics_tile h3,
+  .zrn_am_blocked_banner h3 {
     margin: 0 0 10px 0;
     font-size: 1.5rem;
     line-height: 1.2;
@@ -67,17 +88,22 @@
     color: var(--am-text);
   }
 
-  .zrn_advanced_metrics_tile p {
+  .zrn_advanced_metrics_tile p,
+  .zrn_am_blocked_banner p {
     margin: 0;
     color: var(--am-muted);
     font-size: 1rem;
-    line-height: 1.4;
+    line-height: 1.5;
   }
 
   .zrn_advanced_metrics_tile_actions {
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
+  }
+
+  .zrn_am_center_actions {
+    justify-content: center;
   }
 
   .zrn_advanced_metrics_dashboard .btn.btn-primary {
@@ -210,10 +236,24 @@
     display: none !important;
   }
 
-  .zrn_am_generate_btn {
+  .zrn_am_filter_actions {
     margin-left: auto;
     align-self: flex-end;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .zrn_am_generate_btn,
+  .zrn_am_download_btn {
     white-space: nowrap;
+  }
+
+  .zrn_am_download_btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .zrn_am_table_shell {
@@ -264,7 +304,7 @@
     text-align: center;
   }
 
-  @include media-breakpoint-down(md) {
+  @media (max-width: 767.98px) {
     .zrn_advanced_metrics_sales_orders {
       padding: 16px;
     }
@@ -285,10 +325,15 @@
       gap: 8px;
     }
 
-    .zrn_am_generate_btn {
+    .zrn_am_filter_actions {
       margin-left: 0;
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    .zrn_am_generate_btn,
+    .zrn_am_download_btn {
       width: fit-content;
-      align-self: flex-end;
     }
 
     .zrn_am_table_header {
