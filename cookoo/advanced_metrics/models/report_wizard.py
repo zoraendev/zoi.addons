@@ -227,6 +227,46 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         }
 
     @api.model
+    def _normalize_high_rotation_filters(self, filters=None):
+        filters = filters or {}
+        raw_limit = filters.get('limit', 10)
+
+        try:
+            limit = int(raw_limit or 10)
+        except (TypeError, ValueError):
+            raise ValidationError('El filtro "limit" debe ser un numero entero.')
+
+        if limit <= 0:
+            raise ValidationError('El filtro "limit" debe ser mayor que cero.')
+
+        normalized_filters = {
+            'dateFrom': None,
+            'dateTo': None,
+            'warehouseId': self._parse_optional_integer(filters.get('warehouseId'), 'warehouseId'),
+            'limit': min(limit, 100),
+        }
+
+        raw_date_from = filters.get('dateFrom') or filters.get('date_from')
+        raw_date_to = filters.get('dateTo') or filters.get('date_to')
+
+        try:
+            if raw_date_from:
+                normalized_filters['dateFrom'] = fields.Date.to_date(raw_date_from).isoformat()
+            if raw_date_to:
+                normalized_filters['dateTo'] = fields.Date.to_date(raw_date_to).isoformat()
+        except (TypeError, ValueError):
+            raise ValidationError('Los filtros de fecha deben usar el formato YYYY-MM-DD.')
+
+        if (
+            normalized_filters['dateFrom']
+            and normalized_filters['dateTo']
+            and normalized_filters['dateFrom'] > normalized_filters['dateTo']
+        ):
+            raise ValidationError('El filtro "dateFrom" no puede ser mayor que "dateTo".')
+
+        return normalized_filters
+
+    @api.model
     def _get_generated_at_iso(self):
         generated_at = fields.Datetime.now()
         if isinstance(generated_at, str):
@@ -673,6 +713,51 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             'generatedAt': self._get_generated_at_iso(),
             'filters': normalized_filters,
             'data': data,
+        }
+
+    @api.model
+    def get_high_rotation_products_report_data(self, filters=None):
+        normalized_filters = self._normalize_high_rotation_filters(filters)
+        products_sales_report = self.get_products_sales_report_data(normalized_filters)
+
+        if normalized_filters['dateFrom'] and normalized_filters['dateTo']:
+            period_days = max(
+                (fields.Date.to_date(normalized_filters['dateTo']) - fields.Date.to_date(normalized_filters['dateFrom'])).days + 1,
+                1,
+            )
+        else:
+            period_days = 30
+
+        data = []
+        for item in products_sales_report.get('data', []):
+            if item.get('movementStatus') != 'high_rotation':
+                continue
+
+            quantity_sold = float(item.get('quantitySold', 0.0) or 0.0)
+            current_stock = float(item.get('currentStock', 0.0) or 0.0)
+            average_stock = float(item.get('averageStock', current_stock) or 0.0)
+            inventory_turnover = float(item.get('inventoryTurnover', 0.0) or 0.0)
+            average_daily_sales = quantity_sold / period_days if period_days > 0 else 0.0
+            days_of_coverage = int(round(current_stock / average_daily_sales)) if average_daily_sales > 0 else 0
+
+            data.append({
+                'productId': item.get('productId'),
+                'productName': item.get('productName', ''),
+                'sku': item.get('sku', ''),
+                'quantitySold': round(quantity_sold, 2),
+                'currentStock': round(current_stock, 2),
+                'averageStock': round(average_stock, 2),
+                'inventoryTurnover': round(inventory_turnover, 2),
+                'daysOfCoverage': max(days_of_coverage, 0),
+                'movementStatus': 'high_rotation',
+            })
+
+        data.sort(key=lambda row: (-row['inventoryTurnover'], -row['quantitySold'], row['productName']))
+
+        return {
+            'generatedAt': self._get_generated_at_iso(),
+            'filters': normalized_filters,
+            'data': data[:normalized_filters['limit']],
         }
 
     def action_generate_report(self):
