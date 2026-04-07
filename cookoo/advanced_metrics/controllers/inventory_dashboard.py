@@ -148,3 +148,37 @@ class InventoryDashboardController(http.Controller):
             return self._make_error_response(error.args[0], filters, status=400)
         except Exception:
             return self._make_error_response('No fue posible obtener los productos con alta rotación.', filters)
+
+    # -------------------------------------------------------------------------
+    # NUEVO ENDPOINT PARA POWER BI: PLANIFICACION DE PRODUCCION SEMANAL (FIFO)
+    # -------------------------------------------------------------------------
+    @http.route('/api/bi/production/weekly-plan', type='http', auth='public', methods=['POST'], csrf=False)
+    def get_weekly_production_plan(self, **kwargs):
+        """
+        Exporta el plan de produccion con logica de inventario rodante a Power BI.
+        Soporta los filtros estandar de la API o los especificos del dashboard.
+        """
+        if not self._authenticate():
+            return self._make_error_response('Acceso no autorizado: Token invalido o ausente.', {}, status=401)
+        
+        filters = self._get_request_filters()
+        
+        # Mapeamos los filtros estandar de la API a los que usa el wizard de ventas
+        if 'dateFrom' in filters:
+            filters['fecha_entrega_desde'] = filters['dateFrom']
+        if 'dateTo' in filters:
+            filters['fecha_entrega_hasta'] = filters['dateTo']
+
+        try:
+            wizard_obj = request.env['advanced_metrics.report.wizard'].sudo()
+            rows = wizard_obj.get_sales_orders_report_rows(filters)
+            
+            # Empaquetamos la respuesta en el formato estandar de la API
+            report_data = {
+                'generatedAt': wizard_obj.sudo()._get_generated_at_iso(),
+                'filters': filters,
+                'data': rows,
+            }
+            return self._make_success_response('Plan de produccion obtenido correctamente.', report_data)
+        except Exception as e:
+            return self._make_error_response(f'Error al obtener el plan de produccion: {str(e)}', filters)
