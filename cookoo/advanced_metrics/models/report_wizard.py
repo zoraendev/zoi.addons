@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from datetime import datetime
 
 
 class AdvancedMetricsReportWizard(models.TransientModel):
@@ -26,15 +27,12 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     @api.model
     def get_sales_orders_report_rows(self, filters=None, limit=500):
         filters = filters or {}
-        sale_line_model = self.env.get('sale.order.line')
-        stock_quant_model = self.env.get('stock.quant')
+        sale_line_model = self.env['sale.order.line']
+        stock_quant_model = self.env['stock.quant']
         if not sale_line_model or not stock_quant_model:
             return []
 
-        domain = [
-            ('order_id.state', 'in', ['sale', 'done']),
-            ('display_type', '=', False),
-        ]
+        domain = []
 
         fecha_desde = filters.get('fecha_entrega_desde')
         fecha_hasta = filters.get('fecha_entrega_hasta')
@@ -42,21 +40,21 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         cliente_nombre = filters.get('cliente_nombre')
 
         if fecha_desde:
-            domain.append(('order_id.commitment_date', '>=', fecha_desde))
+            domain.append(('order_id.date_order', '>=', fecha_desde))
         if fecha_hasta:
-            domain.append(('order_id.commitment_date', '<=', f'{fecha_hasta} 23:59:59'))
+            domain.append(('order_id.date_order', '<=', f'{fecha_hasta} 23:59:59'))
         if cliente_id:
             domain.append(('order_partner_id', '=', int(cliente_id)))
         elif cliente_nombre:
             domain.append(('order_partner_id.name', 'ilike', cliente_nombre))
 
-        order_lines = sale_line_model.search(domain, order='order_id.commitment_date desc, id desc', limit=limit)
+        order_lines = sale_line_model.search(domain, order='id desc', limit=limit)
         product_ids = order_lines.mapped('product_id').ids
 
         qty_by_product_id = {}
         if product_ids:
             grouped_quants = stock_quant_model.read_group(
-                [('product_id', 'in', product_ids), ('location_id.usage', '=', 'internal')],
+                [('product_id', 'in', product_ids)],
                 ['product_id', 'quantity:sum'],
                 ['product_id'],
             )
@@ -68,15 +66,21 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
         rows = []
         for line in order_lines:
+            if not line.product_id:
+                continue
             available_qty = qty_by_product_id.get(line.product_id.id, 0.0)
+            
+            # Use date_order if commitment_date is not set
+            f_entrega = line.order_id.commitment_date or line.order_id.date_order or datetime.now()
+            
             rows.append({
-                'fecha_entrega': line.order_id.commitment_date.date().isoformat() if line.order_id.commitment_date else '',
+                'fecha_entrega': f_entrega.strftime('%Y-%m-%d') if hasattr(f_entrega, 'strftime') else str(f_entrega),
                 'cliente': line.order_partner_id.display_name or '',
                 'numero_orden_venta': line.order_id.name or '',
                 'producto': line.product_id.display_name or '',
                 'cantidad_vendida': line.product_uom_qty,
                 'inventario_disponible': available_qty,
-                'cantidad_sugerida_producir': 0.0,
+                'cantidad_sugerida_producir': max(0, line.product_uom_qty - available_qty),
             })
 
         return rows
