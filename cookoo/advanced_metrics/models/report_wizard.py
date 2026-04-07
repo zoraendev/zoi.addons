@@ -28,13 +28,35 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
     @api.model
     def get_sales_orders_report_rows(self, filters=None, limit=500):
+        """
+        Genera las filas del reporte de planificacion semanal.
+
+        Extrae lineas de orden de venta confirmadas, las cruza con el
+        inventario actual en almacen, y calcula cuanto falta producir
+        para cubrir cada pedido.
+
+        Filtros soportados (dict):
+            - fecha_entrega_desde (str YYYY-MM-DD): Limite inferior de fecha de entrega.
+            - fecha_entrega_hasta (str YYYY-MM-DD): Limite superior de fecha de entrega.
+            - cliente_id (int): ID del partner para filtrar por cliente exacto.
+            - cliente_nombre (str): Nombre parcial para busqueda difusa de cliente.
+
+        Returns:
+            list[dict]: Lista de filas con las 7 columnas del reporte.
+        """
         filters = filters or {}
+
+        # --- Validacion de modelos disponibles ---
+        # Si el modulo de ventas o inventario no estan instalados,
+        # retornamos vacio en vez de lanzar un error.
         if 'sale.order.line' not in self.env or 'stock.quant' not in self.env:
             return []
 
         sale_line_model = self.env['sale.order.line']
         stock_quant_model = self.env['stock.quant']
 
+        # --- Dominio base: solo ordenes confirmadas o completadas ---
+        # display_type=False excluye lineas de seccion/nota que no son productos.
         domain = [
             ('order_id.state', 'in', ['sale', 'done']),
             ('display_type', '=', False),
@@ -45,23 +67,36 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         cliente_id = filters.get('cliente_id')
         cliente_nombre = filters.get('cliente_nombre')
 
+        # --- FILTRO INTELIGENTE EN CASCADA (Mitigacion Riesgo 1) ---
+        # Prioridad: commitment_date (fecha de entrega prometida al cliente).
+        # Problema: commitment_date puede estar vacia si el vendedor no la lleno.
+        # Solucion: Buscamos primero por commitment_date. Para las ordenes que no
+        # la tengan, el campo f_entrega mas abajo usara date_order como respaldo,
+        # pero la busqueda principal filtra por commitment_date para que el
+        # reporte refleje la realidad logistica de entregas.
         if fecha_desde:
-            domain.append(('order_id.date_order', '>=', fecha_desde))
+            domain.append(('order_id.commitment_date', '>=', f'{fecha_desde} 00:00:00'))
         if fecha_hasta:
-            domain.append(('order_id.date_order', '<=', f'{fecha_hasta} 23:59:59'))
+            domain.append(('order_id.commitment_date', '<=', f'{fecha_hasta} 23:59:59'))
+
         if cliente_id:
             domain.append(('order_partner_id', '=', int(cliente_id)))
         elif cliente_nombre:
             domain.append(('order_partner_id.name', 'ilike', cliente_nombre))
 
-        order_lines = sale_line_model.search(domain, order='id desc', limit=limit)
+        # --- MITIGACION RIESGO 4: Limite anti-colapso de memoria ---
+        # Nunca permitimos mas de 10,000 filas para proteger la RAM del servidor.
+        safe_limit = min(limit, 10000)
+        order_lines = sale_line_model.search(domain, order='id desc', limit=safe_limit)
         product_ids = order_lines.mapped('product_id').ids
 
+        # --- Consulta de inventario actual agrupado por producto ---
+        # Usamos read_group para obtener la suma total de stock de cada producto
+        # en todas las ubicaciones internas del almacen.
         qty_by_product_id = {}
-        suggested_qty_by_product_id = {}
         if product_ids:
             grouped_quants = stock_quant_model.read_group(
-                [('product_id', 'in', product_ids)],
+                [('product_id', 'in', product_ids), ('location_id.usage', '=', 'internal')],
                 ['product_id', 'quantity:sum'],
                 ['product_id'],
             )
@@ -70,19 +105,30 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 for item in grouped_quants
                 if item.get('product_id')
             }
-            suggested_qty_by_product_id = self._get_suggested_production_qty_by_product(product_ids)
 
+        # --- Construccion de filas del reporte ---
         rows = []
         for line in order_lines:
             if not line.product_id:
                 continue
+
             available_qty = qty_by_product_id.get(line.product_id.id, 0.0)
-            default_rule_qty = suggested_qty_by_product_id.get(line.product_id.id, 0.0)
             sold_qty = float(line.product_uom_qty or 0.0)
-            suggested_qty = default_rule_qty if default_rule_qty > 0 else sold_qty
-            
-            # Use date_order if commitment_date is not set
+
+            # FORMULA DE BALANCE NETO:
+            # Solo sugerimos producir la diferencia entre lo vendido y lo disponible.
+            # Si tenemos suficiente stock, el resultado es 0 (no producir nada).
+            # Ejemplo: vendido=50, stock=100 -> max(0, 50-100) = 0
+            # Ejemplo: vendido=50, stock=10  -> max(0, 50-10)  = 40
+            net_needed = sold_qty - available_qty
+            suggested_production = max(0, net_needed)
+
+            # FILTRO INTELIGENTE EN CASCADA para la fecha mostrada:
+            # 1) Si la orden tiene fecha de entrega (commitment_date), usamos esa.
+            # 2) Si no, usamos la fecha de creacion de la orden (date_order).
+            # 3) Si tampoco, usamos la fecha actual como ultimo recurso.
             f_entrega = line.order_id.commitment_date or line.order_id.date_order or datetime.now()
+
             rows.append({
                 'fecha_entrega': f_entrega.strftime('%Y-%m-%d') if hasattr(f_entrega, 'strftime') else str(f_entrega),
                 'cliente': line.order_partner_id.display_name or '',
@@ -90,7 +136,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 'producto': line.product_id.display_name or '',
                 'cantidad_vendida': sold_qty,
                 'inventario_disponible': available_qty,
-                'cantidad_sugerida_producir': round(max(suggested_qty, line.product_uom_qty - available_qty), 2),
+                'cantidad_sugerida_producir': round(suggested_production, 2),
             })
 
         return rows
