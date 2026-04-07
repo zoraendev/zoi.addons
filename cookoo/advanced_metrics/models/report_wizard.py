@@ -54,10 +54,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         elif cliente_nombre:
             domain.append(('order_partner_id.name', 'ilike', cliente_nombre))
 
-        order_lines = sale_line_model.search(domain, order='id desc', limit=500)
+        order_lines = sale_line_model.search(domain, order='id desc', limit=limit)
         product_ids = order_lines.mapped('product_id').ids
 
         qty_by_product_id = {}
+        suggested_qty_by_product_id = {}
         if product_ids:
             grouped_quants = stock_quant_model.read_group(
                 [('product_id', 'in', product_ids), ('location_id.usage', '=', 'internal')],
@@ -69,18 +70,23 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 for item in grouped_quants
                 if item.get('product_id')
             }
+            suggested_qty_by_product_id = self._get_suggested_production_qty_by_product(product_ids)
 
         rows = []
         for line in order_lines:
             available_qty = qty_by_product_id.get(line.product_id.id, 0.0)
+            default_rule_qty = suggested_qty_by_product_id.get(line.product_id.id, 0.0)
+            sold_qty = float(line.product_uom_qty or 0.0)
+            suggested_qty = default_rule_qty if default_rule_qty > 0 else sold_qty
+
             rows.append({
                 'fecha_entrega': line.order_id.commitment_date.date().isoformat() if line.order_id.commitment_date else '',
                 'cliente': line.order_partner_id.display_name or '',
                 'numero_orden_venta': line.order_id.name or '',
                 'producto': line.product_id.display_name or '',
-                'cantidad_vendida': line.product_uom_qty,
+                'cantidad_vendida': sold_qty,
                 'inventario_disponible': available_qty,
-                'cantidad_sugerida_producir': 0.0,
+                'cantidad_sugerida_producir': round(suggested_qty, 2),
             })
 
         return rows
@@ -321,6 +327,32 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             for item in grouped_quants
             if item.get('product_id')
         }
+
+    @api.model
+    def _get_suggested_production_qty_by_product(self, product_ids):
+        if 'stock.warehouse.orderpoint' not in self.env or not product_ids:
+            return {}
+
+        orderpoint_model = self.env['stock.warehouse.orderpoint']
+        orderpoints = orderpoint_model.search(
+            [('product_id', 'in', list(product_ids))],
+            order='product_id, qty_to_order desc, product_max_qty desc, id desc',
+        )
+
+        suggested_qty_by_product = {}
+        for orderpoint in orderpoints:
+            product_id = orderpoint.product_id.id
+            if product_id in suggested_qty_by_product:
+                continue
+
+            suggested_qty_by_product[product_id] = float(
+                orderpoint.qty_to_order
+                or orderpoint.product_max_qty
+                or orderpoint.product_min_qty
+                or 0.0
+            )
+
+        return suggested_qty_by_product
 
     @api.model
     def _get_stocked_product_ids(self, warehouse_id=None, category_id=None):
