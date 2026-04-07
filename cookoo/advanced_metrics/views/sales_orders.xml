@@ -28,6 +28,17 @@
                             </div>
                         </div>
 
+                        <!-- MEJORA 1: Boton "Semana Siguiente" -->
+                        <!-- Al hacer clic, el JS calcula el proximo lunes y domingo -->
+                        <!-- y los inyecta automaticamente en los campos de fecha. -->
+                        <div class="zrn_am_quick_filter">
+                            <a href="#" class="btn btn-outline-primary zrn_am_next_week_btn" role="button"
+                               title="Auto-llenar con las fechas del proximo lunes al domingo">
+                                <span class="fa fa-calendar-plus-o" aria-hidden="true"/>
+                                <span>Semana Siguiente</span>
+                            </a>
+                        </div>
+
                         <div class="zrn_am_customer_filter">
                             <div class="zrn_am_customer_filter_label">Cliente</div>
                             <field
@@ -55,6 +66,8 @@
                         <field name="report_line_ids" nolabel="1" readonly="1" widget="one2many" options="{'no_create': True, 'no_delete': True, 'no_edit': True}">
                             <tree create="0" edit="0" delete="0">
                                 <field name="fecha_entrega" string="Fecha de entrega"/>
+                                <!-- MEJORA 2: Columna "Dia" en la vista web -->
+                                <field name="dia_semana" string="Dia" optional="show"/>
                                 <field name="cliente_id" string="Cliente"/>
                                 <field name="numero_orden_venta" string="Numero de orden de venta"/>
                                 <field name="producto" string="Producto"/>

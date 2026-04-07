@@ -42,9 +42,26 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             - cliente_nombre (str): Nombre parcial para busqueda difusa de cliente.
 
         Returns:
-            list[dict]: Lista de filas con las 7 columnas del reporte.
+            list[dict]: Lista de filas con las 8 columnas del reporte:
+                fecha_entrega, dia_semana, cliente, numero_orden_venta,
+                producto, cantidad_vendida, inventario_disponible,
+                cantidad_sugerida_producir.
         """
         filters = filters or {}
+
+        # --- MEJORA 2: Mapa de dias de la semana en espanol ---
+        # Python devuelve weekday() como 0=Lunes, 6=Domingo.
+        # Este diccionario traduce el numero al nombre completo en espanol
+        # para que la gerente de operaciones vea "Lunes" en vez de "2026-04-07".
+        DIAS_SEMANA = {
+            0: 'Lunes',
+            1: 'Martes',
+            2: 'Miercoles',
+            3: 'Jueves',
+            4: 'Viernes',
+            5: 'Sabado',
+            6: 'Domingo',
+        }
 
         # --- Validacion de modelos disponibles ---
         # Si el modulo de ventas o inventario no estan instalados,
@@ -106,38 +123,78 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 if item.get('product_id')
             }
 
+        # --- MEMORIA DE INVENTARIO VIRTUAL (Rolling Deduction / FIFO) ---
+        # MITIGACION RIESGO MATEMATICO: Para evitar la "Doble Contabilidad" de stock, 
+        # creamos una copia del inventario actual. A medida que procesamos cada orden 
+        # cronologicamente, vamos restando lo vendido de esta memoria virtual.
+        running_stock_by_product = qty_by_product_id.copy()
+
+        # --- ORDENAMIENTO CRONOLOGICO (El pilar de la planificacion) ---
+        # Paso critico: El descuento de inventario DEBE ser First-In-First-Out.
+        # Ordenamos las lineas empezando por el Lunes mas temprano hasta el Domingo.
+        def get_sort_date(line):
+            # Usamos commitment_date como fecha primaria de entrega
+            f_entrega = line.order_id.commitment_date or line.order_id.date_order or datetime.now()
+            return f_entrega.date() if hasattr(f_entrega, 'date') else f_entrega
+
+        # Ordenamiento en memoria antes de construir las filas del reporte
+        sorted_lines = sorted(order_lines, key=get_sort_date)
+
         # --- Construccion de filas del reporte ---
         rows = []
-        for line in order_lines:
+        for line in sorted_lines:
             if not line.product_id:
                 continue
 
-            available_qty = qty_by_product_id.get(line.product_id.id, 0.0)
+            product_id = line.product_id.id
             sold_qty = float(line.product_uom_qty or 0.0)
 
-            # FORMULA DE BALANCE NETO:
-            # Solo sugerimos producir la diferencia entre lo vendido y lo disponible.
-            # Si tenemos suficiente stock, el resultado es 0 (no producir nada).
-            # Ejemplo: vendido=50, stock=100 -> max(0, 50-100) = 0
-            # Ejemplo: vendido=50, stock=10  -> max(0, 50-10)  = 40
-            net_needed = sold_qty - available_qty
-            suggested_production = max(0, net_needed)
+            # LOGICA DE ASIGNACION DE STOCK (Cascada):
+            # Leemos cuanto stock queda 'disponible' despues de las ordenes anteriores.
+            available_qty_before = running_stock_by_product.get(product_id, 0.0)
+            
+            if available_qty_before >= sold_qty:
+                # Caso A: Tenemos stock suficiente para cubrir toda esta orden.
+                # Sugerido a producir es 0.
+                suggested_production = 0.0
+                # Descontamos las unidades consumidas de la reserva virtual.
+                running_stock_by_product[product_id] -= sold_qty
+            else:
+                # Caso B: El stock se agoto o no es suficiente.
+                # Solo sugerimos producir el faltante neto.
+                suggested_production = sold_qty - available_qty_before
+                # El inventario para este producto se marca como 0 para las siguientes filas.
+                running_stock_by_product[product_id] = 0.0
 
-            # FILTRO INTELIGENTE EN CASCADA para la fecha mostrada:
-            # 1) Si la orden tiene fecha de entrega (commitment_date), usamos esa.
-            # 2) Si no, usamos la fecha de creacion de la orden (date_order).
-            # 3) Si tampoco, usamos la fecha actual como ultimo recurso.
+            # Fecha final para mostrar en el reporte (con filtro de respaldo)
             f_entrega = line.order_id.commitment_date or line.order_id.date_order or datetime.now()
 
+            # Normalizacion de fecha para calculo de dia de semana
+            if hasattr(f_entrega, 'date'):
+                fecha_date = f_entrega.date()
+            elif hasattr(f_entrega, 'weekday'):
+                fecha_date = f_entrega
+            else:
+                fecha_date = datetime.now().date()
+
             rows.append({
-                'fecha_entrega': f_entrega.strftime('%Y-%m-%d') if hasattr(f_entrega, 'strftime') else str(f_entrega),
+                'fecha_entrega': fecha_date.isoformat(),
+                'dia_semana': DIAS_SEMANA.get(fecha_date.weekday(), ''),
                 'cliente': line.order_partner_id.display_name or '',
                 'numero_orden_venta': line.order_id.name or '',
                 'producto': line.product_id.display_name or '',
                 'cantidad_vendida': sold_qty,
-                'inventario_disponible': available_qty,
+                # Reportamos el stock que habia disponible JUSTO antes de esta venta
+                'inventario_disponible': available_qty_before,
                 'cantidad_sugerida_producir': round(suggested_production, 2),
             })
+
+        # --- MEJORA 5: ORDENAMIENTO INTELIGENTE PARA PLANIFICACION ---
+        # Ordenamos primero por fecha de entrega (lunes primero) y luego
+        # por nombre de cliente dentro de cada dia. Esto permite que la
+        # gerente de operaciones lea el reporte de arriba a abajo como
+        # un plan de produccion diario sin reordenar nada.
+        rows.sort(key=lambda r: (r.get('fecha_entrega', ''), r.get('cliente', '')))
 
         return rows
 
@@ -856,10 +913,38 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         }
 
 
+    @api.model
+    def get_next_week_dates(self):
+        """
+        Calcula el intervalo de la proxima semana (Lunes a Domingo)
+        ajustado a la operacion en Guatemala.
+        
+        Returns:
+            dict: {'desde': 'YYYY-MM-DD', 'hasta': 'YYYY-MM-DD'}
+        """
+        # Obtenemos la fecha actual en la zona horaria del usuario
+        # Si no esta definida, usamos UTC, pero lo ideal en GT es UTC-6
+        today = fields.Date.context_today(self)
+        
+        # weekday() en Python: 0=Lunes, 6=Domingo
+        # Calculamos dias hasta el proximo lunes
+        current_weekday = today.weekday()
+        days_until_monday = (7 - current_weekday) if current_weekday < 7 else 1
+        
+        next_monday = today + timedelta(days=days_until_monday)
+        next_sunday = next_monday + timedelta(days=6)
+        
+        return {
+            'desde': next_monday.isoformat(),
+            'hasta': next_sunday.isoformat(),
+        }
+
 class AdvancedMetricsReportWizardLine(models.TransientModel):
     _name = 'advanced_metrics.report.wizard.line'
     _description = 'Linea del reporte de ventas e inventario'
-    _order = 'fecha_entrega desc, id desc'
+    # MEJORA 5: Ordenamiento ascendente por fecha para planificacion
+    # (lunes primero, domingo al final).
+    _order = 'fecha_entrega asc, id asc'
 
     wizard_id = fields.Many2one(
         'advanced_metrics.report.wizard',
@@ -868,6 +953,8 @@ class AdvancedMetricsReportWizardLine(models.TransientModel):
         ondelete='cascade',
     )
     fecha_entrega = fields.Date(string='Fecha de entrega')
+    # MEJORA 2: Dia de la semana en espanol (Lunes, Martes, etc.)
+    dia_semana = fields.Char(string='Dia')
     cliente_id = fields.Many2one('res.partner', string='Cliente')
     numero_orden_venta = fields.Char(string='Numero de orden de venta')
     producto = fields.Char(string='Producto')
