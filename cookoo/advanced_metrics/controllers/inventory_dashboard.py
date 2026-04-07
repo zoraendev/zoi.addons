@@ -37,6 +37,14 @@ class InventoryDashboardController(http.Controller):
 
         return filters
 
+    def _authenticate(self):
+        token = request.httprequest.headers.get('Access-Token') or request.httprequest.headers.get('Authorization')
+        if token and token.startswith('Bearer '):
+            token = token[7:]
+        if not token:
+            return None
+        return request.env['advanced_metrics.api.config'].sudo().search([('access_token', '=', token)], limit=1)
+
     @staticmethod
     def _make_success_response(message, report_data, extra_keys=None):
         response = {
@@ -65,6 +73,8 @@ class InventoryDashboardController(http.Controller):
 
     @http.route('/api/bi/inventory-intelligent/top-products', type='http', auth='public', methods=['POST'], csrf=False)
     def get_top_products(self, **kwargs):
+        if not self._authenticate():
+            return self._make_error_response('Acceso no autorizado: Token invalido o ausente en las cabeceras.', {}, status=401)
         filters = self._get_request_filters()
 
         try:
@@ -77,6 +87,8 @@ class InventoryDashboardController(http.Controller):
 
     @http.route('/api/bi/inventory-intelligent/products-sales', type='http', auth='public', methods=['POST'], csrf=False)
     def get_products_sales(self, **kwargs):
+        if not self._authenticate():
+            return self._make_error_response('Acceso no autorizado: Token invalido o ausente en las cabeceras.', {}, status=401)
         filters = self._get_request_filters()
 
         try:
@@ -89,6 +101,8 @@ class InventoryDashboardController(http.Controller):
 
     @http.route('/api/bi/inventory-intelligent/sales-trend', type='http', auth='public', methods=['POST'], csrf=False)
     def get_sales_trend(self, **kwargs):
+        if not self._authenticate():
+            return self._make_error_response('Acceso no autorizado: Token invalido o ausente en las cabeceras.', {}, status=401)
         filters = self._get_request_filters()
 
         try:
@@ -109,6 +123,8 @@ class InventoryDashboardController(http.Controller):
 
     @http.route('/api/bi/inventory-intelligent/dead-products', type='http', auth='public', methods=['POST'], csrf=False)
     def get_dead_products(self, **kwargs):
+        if not self._authenticate():
+            return self._make_error_response('Acceso no autorizado: Token invalido o ausente en las cabeceras.', {}, status=401)
         filters = self._get_request_filters()
 
         try:
@@ -121,6 +137,8 @@ class InventoryDashboardController(http.Controller):
 
     @http.route('/api/bi/inventory-intelligent/high-rotation-products', type='http', auth='public', methods=['POST'], csrf=False)
     def get_high_rotation_products(self, **kwargs):
+        if not self._authenticate():
+            return self._make_error_response('Acceso no autorizado: Token invalido o ausente en las cabeceras.', {}, status=401)
         filters = self._get_request_filters()
 
         try:
