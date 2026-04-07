@@ -40,9 +40,15 @@
                             />
                         </div>
 
-                        <a href="#" class="btn btn-primary zrn_am_generate_btn" role="button">
-                            Generar reporte
-                        </a>
+                        <div class="zrn_am_filter_actions">
+                            <a href="#" class="btn btn-primary zrn_am_generate_btn" role="button">
+                                Generar reporte
+                            </a>
+                            <a href="#" class="btn btn-secondary zrn_am_download_btn" role="button">
+                                <span class="fa fa-download" aria-hidden="true"/>
+                                <span>Descargar XLS</span>
+                            </a>
+                        </div>
                     </div>
 
                     <div class="zrn_am_table_shell">
