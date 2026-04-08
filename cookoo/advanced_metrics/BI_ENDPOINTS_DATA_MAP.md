@@ -17,6 +17,7 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ## 1) `POST /api/bi/inventory-intelligent/top-products`
 
 ### Modelos / tablas principales
+
 - `sale.order.line`
 - `sale.order`
 - `product.product`
@@ -26,6 +27,7 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ### Campos consumidos
 
 #### `sale.order.line`
+
 - `product_id`
 - `product_uom_qty`
 - `price_subtotal`
@@ -33,21 +35,25 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 - `order_id`
 
 #### `sale.order`
+
 - `date_order`
 - `state`
 - `warehouse_id`
 
 #### `product.product` / `product.template`
+
 - `id`
 - `display_name`
 - `categ_id`
 
 #### `stock.quant`
+
 - `product_id`
 - `quantity`
 - `location_id`
 
 ### Uso funcional
+
 - ranking de productos más vendidos
 - cantidad vendida
 - ventas netas
@@ -60,6 +66,7 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ## 2) `POST /api/bi/inventory-intelligent/products-sales`
 
 ### Modelos / tablas principales
+
 - `sale.order.line`
 - `sale.order`
 - `product.product`
@@ -69,6 +76,7 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ### Campos consumidos
 
 #### `sale.order.line`
+
 - `product_id`
 - `product_uom_qty`
 - `price_subtotal`
@@ -76,19 +84,23 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 - `order_id`
 
 #### `sale.order`
+
 - `date_order`
 - `state`
 - `warehouse_id`
 
 #### `product.product` / `product.template`
+
 - `display_name`
 - `categ_id`
 
 #### `stock.quant`
+
 - `product_id`
 - `quantity`
 
 ### Uso funcional
+
 - ventas por producto
 - costo
 - margen
@@ -102,22 +114,26 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ## 3) `POST /api/bi/inventory-intelligent/sales-trend`
 
 ### Modelos / tablas principales
+
 - `sale.order.line`
 - `sale.order`
 
 ### Campos consumidos
 
 #### `sale.order.line`
+
 - `product_uom_qty`
 - `price_subtotal`
 - `order_id`
 
 #### `sale.order`
+
 - `date_order`
 - `state`
 - `warehouse_id`
 
 ### Uso funcional
+
 - agrupación de ventas por día / semana / mes
 - cálculo de:
   - `quantitySold`
@@ -132,6 +148,7 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ## 4) `POST /api/bi/inventory-intelligent/dead-products`
 
 ### Modelos / tablas principales
+
 - `product.product`
 - `product.template`
 - `stock.quant`
@@ -141,25 +158,30 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ### Campos consumidos
 
 #### `product.product` / `product.template`
+
 - `id`
 - `display_name`
 - `categ_id`
 
 #### `stock.quant`
+
 - `product_id`
 - `quantity`
 - `location_id`
 
 #### `sale.order.line`
+
 - `product_id`
 - `order_id`
 
 #### `sale.order`
+
 - `date_order`
 - `state`
 - `warehouse_id`
 
 ### Uso funcional
+
 - detectar productos con stock pero sin movimiento reciente
 - obtener:
   - `currentStock`
@@ -172,6 +194,7 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ## 5) `POST /api/bi/inventory-intelligent/high-rotation-products`
 
 ### Modelos / tablas principales
+
 - `sale.order.line`
 - `sale.order`
 - `product.product`
@@ -181,21 +204,25 @@ Este documento resume qué modelos/tablas y qué campos de Odoo consume cada end
 ### Campos consumidos
 
 #### `sale.order.line`
+
 - `product_id`
 - `product_uom_qty`
 - `price_subtotal`
 - `purchase_price`
 
 #### `sale.order`
+
 - `date_order`
 - `state`
 - `warehouse_id`
 
 #### `stock.quant`
+
 - `product_id`
 - `quantity`
 
 ### Uso funcional
+
 - filtrar productos con alta rotación (`movementStatus = high_rotation`)
 - devolver:
   - `quantitySold`
@@ -219,12 +246,12 @@ Estos endpoints suelen aplicar filtros sobre los siguientes campos:
 
 ## Resumen rápido
 
-| Endpoint | Modelos principales |
-|---|---|
-| `top-products` | `sale.order.line`, `sale.order`, `product.product`, `stock.quant` |
-| `products-sales` | `sale.order.line`, `sale.order`, `product.product`, `stock.quant` |
-| `sales-trend` | `sale.order.line`, `sale.order` |
-| `dead-products` | `product.product`, `stock.quant`, `sale.order.line`, `sale.order` |
+| Endpoint                 | Modelos principales                                               |
+| ------------------------ | ----------------------------------------------------------------- |
+| `top-products`           | `sale.order.line`, `sale.order`, `product.product`, `stock.quant` |
+| `products-sales`         | `sale.order.line`, `sale.order`, `product.product`, `stock.quant` |
+| `sales-trend`            | `sale.order.line`, `sale.order`                                   |
+| `dead-products`          | `product.product`, `stock.quant`, `sale.order.line`, `sale.order` |
 | `high-rotation-products` | `sale.order.line`, `sale.order`, `product.product`, `stock.quant` |
 
 ---
