@@ -7,75 +7,75 @@
         <field name="arch" type="xml">
             <form string="Ordenes de venta" class="zrn_advanced_metrics_sales_orders_form" create="0" edit="0" delete="0" duplicate="0">
                 <div class="zrn_advanced_metrics_sales_orders">
-                    <h2>Ordenes de venta</h2>
-                    <div class="zrn_am_separator"/>
+                    <div class="zrn_am_workspace">
+                        <div class="zrn_am_filters_panel">
+                            <div class="zrn_am_filters_title">Filtros</div>
 
-                    <div class="zrn_am_filters">
-                        <div class="zrn_am_date_card">
-                            <div class="zrn_am_date_icon"/>
-                            <div class="zrn_am_date_meta">
-                                <div class="zrn_am_date_title">Fecha de entrega</div>
-                                <div class="zrn_am_date_range">
-                                    <div class="zrn_am_date_item">
-                                        <span class="zrn_am_date_item_label">De</span>
-                                        <field name="fecha_entrega_desde" nolabel="1"/>
+                            <div class="zrn_am_filters">
+                                <div class="zrn_am_date_card">
+                                    <div class="zrn_am_date_meta">
+                                        <div class="zrn_am_date_title">Fecha de entrega</div>
+                                        <div class="zrn_am_date_range">
+                                            <div class="zrn_am_date_item">
+                                                <span class="zrn_am_date_item_label">De</span>
+                                                <field name="fecha_entrega_desde" nolabel="1"/>
+                                            </div>
+                                            <div class="zrn_am_date_item">
+                                                <span class="zrn_am_date_item_label">Hasta</span>
+                                                <field name="fecha_entrega_hasta" nolabel="1"/>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="zrn_am_date_item">
-                                        <span class="zrn_am_date_item_label">Hasta</span>
-                                        <field name="fecha_entrega_hasta" nolabel="1"/>
-                                    </div>
+                                </div>
+
+                                <div class="zrn_am_customer_filter">
+                                    <div class="zrn_am_customer_filter_label">Cliente</div>
+                                    <field
+                                        name="cliente_id"
+                                        widget="res_partner_many2one"
+                                        context="{'res_partner_search_mode': 'customer', 'show_address': 1, 'show_vat': True}"
+                                        nolabel="1"
+                                        options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                        placeholder="Selecciona un cliente"
+                                    />
+                                </div>
+
+                                <div class="zrn_am_quick_filter">
+                                    <a href="#" class="btn btn-outline-primary zrn_am_next_week_btn" role="button"
+                                       title="Auto-llenar con las fechas del proximo lunes al domingo">
+                                        <span class="fa fa-calendar-plus-o" aria-hidden="true"/>
+                                        <span>Semana Siguiente</span>
+                                    </a>
+                                </div>
+
+                                <div class="zrn_am_filter_actions">
+                                    <a href="#" class="btn btn-primary zrn_am_generate_btn" role="button">
+                                        Generar reporte
+                                    </a>
+                                    <a href="#" class="btn btn-secondary zrn_am_download_btn" role="button">
+                                        <span class="fa fa-download" aria-hidden="true"/>
+                                        <span>Descargar XLS</span>
+                                    </a>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- MEJORA 1: Boton "Semana Siguiente" -->
-                        <!-- Al hacer clic, el JS calcula el proximo lunes y domingo -->
-                        <!-- y los inyecta automaticamente en los campos de fecha. -->
-                        <div class="zrn_am_quick_filter">
-                            <a href="#" class="btn btn-outline-primary zrn_am_next_week_btn" role="button"
-                               title="Auto-llenar con las fechas del proximo lunes al domingo">
-                                <span class="fa fa-calendar-plus-o" aria-hidden="true"/>
-                                <span>Semana Siguiente</span>
-                            </a>
+                        <div class="zrn_am_results_panel">
+                            <div class="zrn_am_table_shell">
+                                <field name="report_line_ids" nolabel="1" readonly="1" widget="one2many" options="{'no_create': True, 'no_delete': True, 'no_edit': True}">
+                                    <tree create="0" edit="0" delete="0">
+                                        <field name="fecha_entrega" string="Fecha de entrega"/>
+                                        <field name="dia_semana" string="Dia" optional="show"/>
+                                        <field name="cliente_id" string="Cliente"/>
+                                        <field name="numero_orden_venta" string="Numero de orden de venta"/>
+                                        <field name="producto" string="Producto"/>
+                                        <field name="cantidad_vendida" string="Cantidad vendida"/>
+                                        <field name="inventario_disponible" string="Inventario disponible de producto terminado"/>
+                                        <field name="cantidad_sugerida_producir" string="Cantidad sugerida a producir"/>
+                                    </tree>
+                                </field>
+                            </div>
                         </div>
-
-                        <div class="zrn_am_customer_filter">
-                            <div class="zrn_am_customer_filter_label">Cliente</div>
-                            <field
-                                name="cliente_id"
-                                widget="res_partner_many2one"
-                                context="{'res_partner_search_mode': 'customer', 'show_address': 1, 'show_vat': True}"
-                                nolabel="1"
-                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
-                                placeholder="Selecciona un cliente"
-                            />
-                        </div>
-
-                        <div class="zrn_am_filter_actions">
-                            <a href="#" class="btn btn-primary zrn_am_generate_btn" role="button">
-                                Generar reporte
-                            </a>
-                            <a href="#" class="btn btn-secondary zrn_am_download_btn" role="button">
-                                <span class="fa fa-download" aria-hidden="true"/>
-                                <span>Descargar XLS</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="zrn_am_table_shell">
-                        <field name="report_line_ids" nolabel="1" readonly="1" widget="one2many" options="{'no_create': True, 'no_delete': True, 'no_edit': True}">
-                            <tree create="0" edit="0" delete="0">
-                                <field name="fecha_entrega" string="Fecha de entrega"/>
-                                <!-- MEJORA 2: Columna "Dia" en la vista web -->
-                                <field name="dia_semana" string="Dia" optional="show"/>
-                                <field name="cliente_id" string="Cliente"/>
-                                <field name="numero_orden_venta" string="Numero de orden de venta"/>
-                                <field name="producto" string="Producto"/>
-                                <field name="cantidad_vendida" string="Cantidad vendida"/>
-                                <field name="inventario_disponible" string="Inventario disponible de producto terminado"/>
-                                <field name="cantidad_sugerida_producir" string="Cantidad sugerida a producir"/>
-                            </tree>
-                        </field>
                     </div>
                 </div>
             </form>

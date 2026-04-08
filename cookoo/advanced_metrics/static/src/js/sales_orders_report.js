@@ -362,8 +362,11 @@ async function fillNextWeekDates() {
     const { result } = await response.json();
 
     if (result && result.desde && result.hasta) {
-      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-      
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      ).set;
+
       nativeSetter.call(desdeInput, result.desde);
       desdeInput.dispatchEvent(new Event("input", { bubbles: true }));
       desdeInput.dispatchEvent(new Event("change", { bubbles: true }));
@@ -424,8 +427,12 @@ function bindGenerateButtonListener() {
   listenersBound = true;
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", bindGenerateButtonListener);
-} else {
+function initAdvancedMetricsUi() {
   bindGenerateButtonListener();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initAdvancedMetricsUi);
+} else {
+  initAdvancedMetricsUi();
 }
