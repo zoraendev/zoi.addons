@@ -18,6 +18,21 @@
 const REPORT_ROUTE = "/advanced_metrics/report/generate";
 let listenersBound = false;
 
+function getDownloadButton() {
+  return document.querySelector(".zrn_am_download_btn");
+}
+
+function setDownloadButtonEnabled(enabled) {
+  const downloadButton = getDownloadButton();
+  if (!downloadButton) {
+    return;
+  }
+
+  downloadButton.dataset.enabled = enabled ? "1" : "0";
+  downloadButton.classList.toggle("disabled", !enabled);
+  downloadButton.setAttribute("aria-disabled", enabled ? "false" : "true");
+}
+
 // ================================================================
 // UTILIDADES: Acceso a campos del formulario
 // ================================================================
@@ -150,6 +165,7 @@ function renderRows(rows) {
 
   tableBody.innerHTML = "";
   if (!rows.length) {
+    setDownloadButtonEnabled(false);
     const emptyRow = document.createElement("tr");
     emptyRow.className = "o_data_row";
 
@@ -163,6 +179,8 @@ function renderRows(rows) {
     tableBody.appendChild(emptyRow);
     return;
   }
+
+  setDownloadButtonEnabled(true);
 
   rows.forEach((row) => {
     const tr = document.createElement("tr");
@@ -254,7 +272,8 @@ async function callGenerateReport(buttonEl) {
 
   try {
     const data = await fetchReportJson();
-    renderRows(Array.isArray(data.rows) ? data.rows : []);
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    renderRows(rows);
   } catch (error) {
     console.error("Error generating report", error);
     renderRows([]);
@@ -279,7 +298,7 @@ async function callGenerateReport(buttonEl) {
  * @param {HTMLElement} buttonEl - Boton que disparo la accion.
  */
 async function callDownloadReport(buttonEl) {
-  if (buttonEl.dataset.loading === "1") {
+  if (buttonEl.dataset.loading === "1" || buttonEl.dataset.enabled !== "1") {
     return;
   }
 
@@ -430,6 +449,7 @@ function bindGenerateButtonListener() {
 
 function initAdvancedMetricsUi() {
   bindGenerateButtonListener();
+  setDownloadButtonEnabled(false);
 }
 
 if (document.readyState === "loading") {

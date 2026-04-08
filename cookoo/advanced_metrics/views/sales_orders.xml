@@ -52,7 +52,7 @@
                                     <a href="#" class="btn btn-primary zrn_am_generate_btn" role="button">
                                         Generar reporte
                                     </a>
-                                    <a href="#" class="btn btn-secondary zrn_am_download_btn" role="button">
+                                    <a href="#" class="btn btn-secondary zrn_am_download_btn disabled" role="button" aria-disabled="true">
                                         <span class="fa fa-download" aria-hidden="true"/>
                                         <span>Descargar XLS</span>
                                     </a>
