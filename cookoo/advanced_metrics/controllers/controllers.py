@@ -104,9 +104,9 @@ class AdvancedMetricsController(http.Controller):
     def _write_detail_sheet(self, workbook, styles, rows, filters):
         """Escribe la hoja de detalle con logica de agrupacion por dia."""
         ws = workbook.add_worksheet('Planificacion Detallada')
-        headers = ['Fecha Entrega', 'Dia Semana', 'Nombre Cliente', 'Orden Venta', 'Producto / Combo', 'Cant. Vendida', 'Stock Disponible', 'Sugerido Producir']
+        headers = ['Fecha Entrega', 'Dia Semana', 'Nombre Cliente', 'Orden Venta', 'Producto / Combo', 'Cant. Vendida', 'Stock Disponible', 'Stock Libre', 'Sugerido Producir']
         for i, h in enumerate(headers): ws.write(0, i, h, styles['header'])
-        ws.set_column('A:H', 20)
+        ws.set_column('A:I', 20)
 
         current_row, current_date, current_day = 1, None, ""
         day_totals = {'v': 0.0, 's': 0.0}
@@ -130,7 +130,8 @@ class AdvancedMetricsController(http.Controller):
             ws.write(current_row, 4, r['producto'], fmt)
             ws.write_number(current_row, 5, r['cantidad_vendida'], num_fmt)
             ws.write_number(current_row, 6, r['inventario_disponible'], num_fmt)
-            ws.write_number(current_row, 7, r['cantidad_sugerida_producir'], num_fmt)
+            ws.write_number(current_row, 7, r.get('inventario_libre_usar', 0.0), num_fmt)
+            ws.write_number(current_row, 8, r['cantidad_sugerida_producir'], num_fmt)
             
             day_totals['v'] += r['cantidad_vendida']
             day_totals['s'] += r['cantidad_sugerida_producir']
@@ -147,7 +148,8 @@ class AdvancedMetricsController(http.Controller):
         for i in range(2, 5): ws.write(row, i, "", styles['subtotal_text'])
         ws.write_number(row, 5, totals['v'], styles['subtotal_number'])
         ws.write(row, 6, "---", styles['subtotal_text'])
-        ws.write_number(row, 7, totals['s'], styles['subtotal_number'])
+        ws.write(row, 7, "---", styles['subtotal_text'])
+        ws.write_number(row, 8, totals['s'], styles['subtotal_number'])
 
     def _write_product_summary_sheet(self, workbook, styles, rows):
         """Escribe la hoja resumen consolidada por producto."""
@@ -155,18 +157,25 @@ class AdvancedMetricsController(http.Controller):
         summary = OrderedDict()
         for r in rows:
             p = r['producto']
-            if p not in summary: summary[p] = {'v': 0.0, 's': 0.0, 'i': r['inventario_disponible']}
+            if p not in summary:
+                summary[p] = {
+                    'v': 0.0,
+                    's': 0.0,
+                    'i': r['inventario_disponible'],
+                    'f': r.get('inventario_libre_usar', 0.0),
+                }
             summary[p]['v'] += r['cantidad_vendida']
             summary[p]['s'] += r['cantidad_sugerida_producir']
         
-        headers = ["Producto / Combo", "Vendido Total", "Stock Snapshot", "Total Sugerido a Fabricar"]
+        headers = ["Producto / Combo", "Vendido Total", "Stock Snapshot", "Stock Libre Snapshot", "Total Sugerido a Fabricar"]
         for i, h in enumerate(headers): ws.write(0, i, h, styles['header'])
-        ws.set_column('A:A', 40); ws.set_column('B:D', 18)
+        ws.set_column('A:A', 40); ws.set_column('B:E', 18)
         
         row = 1
         for p, t in summary.items():
             ws.write(row, 0, p, styles['text'])
             ws.write_number(row, 1, t['v'], styles['number'])
             ws.write_number(row, 2, t['i'], styles['number'])
-            ws.write_number(row, 3, t['s'], styles['number'])
+            ws.write_number(row, 3, t['f'], styles['number'])
+            ws.write_number(row, 4, t['s'], styles['number'])
             row += 1

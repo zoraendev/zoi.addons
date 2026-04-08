@@ -292,6 +292,14 @@
     white-space: nowrap;
   }
 
+  .zrn_am_table_shell .o_list_table th.o_list_number,
+  .zrn_am_table_shell .o_list_table td.o_list_number,
+  .zrn_am_table_shell .o_list_table th:nth-child(n + 6),
+  .zrn_am_table_shell .o_list_table td:nth-child(n + 6) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
   @media (max-width: 991.98px) {
     .zrn_advanced_metrics_sales_orders {
       padding: 12px 16px 16px;

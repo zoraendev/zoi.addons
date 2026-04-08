@@ -107,17 +107,23 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         product_ids = order_lines.mapped('product_id').ids
 
         # --- Consulta de inventario actual agrupado por producto ---
-        # Usamos read_group para obtener la suma total de stock de cada producto
-        # en todas las ubicaciones internas del almacen.
+        # quantity representa el stock fisico total en ubicaciones internas.
+        # available_quantity representa el stock libre de usar despues de reservas.
         qty_by_product_id = {}
+        free_qty_by_product_id = {}
         if product_ids:
             grouped_quants = stock_quant_model.read_group(
                 [('product_id', 'in', product_ids), ('location_id.usage', '=', 'internal')],
-                ['product_id', 'quantity:sum'],
+                ['product_id', 'quantity:sum', 'available_quantity:sum'],
                 ['product_id'],
             )
             qty_by_product_id = {
                 item['product_id'][0]: item.get('quantity', 0.0)
+                for item in grouped_quants
+                if item.get('product_id')
+            }
+            free_qty_by_product_id = {
+                item['product_id'][0]: item.get('available_quantity', 0.0)
                 for item in grouped_quants
                 if item.get('product_id')
             }
@@ -127,6 +133,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         # creamos una copia del inventario actual. A medida que procesamos cada orden 
         # cronologicamente, vamos restando lo vendido de esta memoria virtual.
         running_stock_by_product = qty_by_product_id.copy()
+        running_free_stock_by_product = free_qty_by_product_id.copy()
 
         # --- ORDENAMIENTO CRONOLOGICO (El pilar de la planificacion) ---
         # Paso critico: El descuento de inventario DEBE ser First-In-First-Out.
@@ -149,8 +156,10 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             sold_qty = float(line.product_uom_qty or 0.0)
 
             # LOGICA DE ASIGNACION DE STOCK (Cascada):
-            # Leemos cuanto stock queda 'disponible' despues de las ordenes anteriores.
+            # Leemos cuanto stock queda disponible y libre de usar
+            # despues de las ordenes anteriores.
             available_qty_before = running_stock_by_product.get(product_id, 0.0)
+            free_qty_before = running_free_stock_by_product.get(product_id, 0.0)
             
             if available_qty_before >= sold_qty:
                 # Caso A: Tenemos stock suficiente para cubrir toda esta orden.
@@ -158,12 +167,14 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 suggested_production = 0.0
                 # Descontamos las unidades consumidas de la reserva virtual.
                 running_stock_by_product[product_id] -= sold_qty
+                running_free_stock_by_product[product_id] = max(free_qty_before - sold_qty, 0.0)
             else:
                 # Caso B: El stock se agoto o no es suficiente.
                 # Solo sugerimos producir el faltante neto.
                 suggested_production = sold_qty - available_qty_before
                 # El inventario para este producto se marca como 0 para las siguientes filas.
                 running_stock_by_product[product_id] = 0.0
+                running_free_stock_by_product[product_id] = max(free_qty_before - sold_qty, 0.0)
 
             # Fecha final para mostrar en el reporte (con filtro de respaldo)
             f_entrega = line.order_id.commitment_date or line.order_id.date_order or datetime.now()
@@ -184,7 +195,8 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 'producto': line.product_id.display_name or '',
                 'cantidad_vendida': sold_qty,
                 # Reportamos el stock que habia disponible JUSTO antes de esta venta
-                'inventario_disponible': available_qty_before,
+                'inventario_disponible': round(available_qty_before, 2),
+                'inventario_libre_usar': round(free_qty_before, 2),
                 'cantidad_sugerida_producir': round(suggested_production, 2),
             })
 
@@ -258,6 +270,7 @@ class AdvancedMetricsReportWizardLine(models.TransientModel):
     producto = fields.Char(string='Producto')
     cantidad_vendida = fields.Float(string='Cantidad vendida')
     inventario_disponible = fields.Float(string='Inventario disponible de producto terminado')
+    inventario_libre_usar = fields.Float(string='Inventario libre de usar')
     cantidad_sugerida_producir = fields.Float(
         string='Cantidad sugerida a producir',
         default=0.0,

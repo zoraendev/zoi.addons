@@ -69,9 +69,10 @@
                                         <field name="cliente_id" string="Cliente"/>
                                         <field name="numero_orden_venta" string="Numero de orden de venta"/>
                                         <field name="producto" string="Producto"/>
-                                        <field name="cantidad_vendida" string="Cantidad vendida"/>
-                                        <field name="inventario_disponible" string="Inventario disponible de producto terminado"/>
-                                        <field name="cantidad_sugerida_producir" string="Cantidad sugerida a producir"/>
+                                        <field name="cantidad_vendida" string="Cantidad vendida" class="o_list_number"/>
+                                        <field name="inventario_disponible" string="Inventario disponible de producto terminado" class="o_list_number"/>
+                                        <field name="inventario_libre_usar" string="Inventario libre de usar" class="o_list_number"/>
+                                        <field name="cantidad_sugerida_producir" string="Cantidad sugerida a producir" class="o_list_number"/>
                                     </tree>
                                 </field>
                             </div>

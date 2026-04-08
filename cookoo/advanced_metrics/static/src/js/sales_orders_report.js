@@ -155,8 +155,7 @@ function renderRows(rows) {
 
     const emptyCell = document.createElement("td");
     emptyCell.className = "o_data_cell text-muted";
-    // MEJORA 2: La tabla ahora tiene 8 columnas (se agrego "Dia")
-    emptyCell.colSpan = 8;
+    emptyCell.colSpan = 9;
     emptyCell.textContent =
       "No hay datos para mostrar con los filtros seleccionados.";
 
@@ -178,12 +177,14 @@ function renderRows(rows) {
       row.producto || "",
       formatNumber(row.cantidad_vendida),
       formatNumber(row.inventario_disponible),
+      formatNumber(row.inventario_libre_usar),
       formatNumber(row.cantidad_sugerida_producir),
     ];
 
-    cells.forEach((value) => {
+    cells.forEach((value, index) => {
       const td = document.createElement("td");
-      td.className = "o_data_cell";
+      td.className =
+        index >= 5 ? "o_data_cell o_list_number" : "o_data_cell";
       td.textContent = value;
       tr.appendChild(td);
     });
