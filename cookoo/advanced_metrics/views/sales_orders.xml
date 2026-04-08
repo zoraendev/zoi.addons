@@ -5,7 +5,7 @@
         <field name="name">advanced_metrics.sales_orders.form</field>
         <field name="model">advanced_metrics.report.wizard</field>
         <field name="arch" type="xml">
-            <form string="Ordenes de venta" class="zrn_advanced_metrics_sales_orders_form" create="0" edit="0" delete="0" duplicate="0">
+            <form string="Ordenes de venta" js_class="advanced_metrics_sales_orders_form" class="zrn_advanced_metrics_sales_orders_form" create="0" edit="0" delete="0" duplicate="0">
                 <div class="zrn_advanced_metrics_sales_orders">
                     <div class="zrn_am_workspace">
                         <div class="zrn_am_filters_panel">
