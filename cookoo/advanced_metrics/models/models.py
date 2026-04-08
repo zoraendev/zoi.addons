@@ -176,7 +176,9 @@ class AdvancedMetricsInicio(models.Model):
         blocked_action = self._get_blocked_dashboard_action()
         if blocked_action:
             return blocked_action
-        return self.env.ref('advanced_metrics.action_advanced_metrics_report_wizard').read()[0]
+        action = self.env.ref('advanced_metrics.action_advanced_metrics_report_wizard').read()[0]
+        action['_noBreadcrumbs'] = True
+        return action
 
     def action_open_api_config(self):
         self.ensure_one()

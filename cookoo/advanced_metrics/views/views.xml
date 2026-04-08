@@ -48,7 +48,7 @@
         <field name="name">advanced_metrics.inicio.form</field>
         <field name="model">advanced_metrics.inicio</field>
         <field name="arch" type="xml">
-            <form string="Metricas Avanzadas" create="0" edit="0" delete="0" duplicate="0" class="zrn_advanced_metrics_home_form">
+            <form string="Metricas Avanzadas" js_class="advanced_metrics_home_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_advanced_metrics_home_form">
                     <field name="name" invisible="1"/>
                     <field name="show_dashboard" invisible="1"/>
                     <field name="client_validation_state" invisible="1"/>
@@ -56,16 +56,6 @@
                     <field name="support_url" invisible="1"/>
 
                     <div class="zrn_advanced_metrics_dashboard">
-                        <div class="zrn_advanced_metrics_header">
-                            <h1>Metricas Avanzadas</h1>
-                            <button
-                                name="%(action_advanced_metrics_external_instance)d"
-                                type="action"
-                                string="Abrir Instancia"
-                                class="btn btn-primary"
-                                invisible="not show_dashboard"
-                            />
-                        </div>
 
                         <div class="zrn_am_blocked_state" invisible="show_dashboard">
                             <div class="alert zrn_am_blocked_banner" role="alert">
