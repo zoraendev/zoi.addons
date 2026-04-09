@@ -50,6 +50,8 @@ class BaseDashboardController(http.Controller):
 
         for model_name in self._auth_config_models:
             if model_name in request.env:
+                if model_name == 'pbi_connections.api.config':
+                    request.env[model_name].sudo()._sync_legacy_config()
                 config_record = request.env[model_name].sudo().search([('access_token', '=', token)], limit=1)
                 if config_record:
                     return config_record

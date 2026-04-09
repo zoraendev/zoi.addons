@@ -36,7 +36,7 @@ class AdvancedMetricsInicio(models.Model):
     )
     client_status_message = fields.Text(
         string='Mensaje de estado del cliente',
-        default='La instancia esta lista para consultar los reportes y endpoints de BI.',
+        default='La instancia esta lista para consultar los reportes operativos de ventas e inventario.',
     )
 
     @api.model
@@ -76,7 +76,7 @@ class AdvancedMetricsInicio(models.Model):
             'client_status_code': '',
             'support_url': support_url,
             'client_status_title': _('Metricas disponibles'),
-            'client_status_message': _('La instancia esta lista para consultar los reportes y endpoints de BI.'),
+            'client_status_message': _('La instancia esta lista para consultar los reportes operativos de ventas e inventario.'),
         }
 
         if error_message:
@@ -103,7 +103,7 @@ class AdvancedMetricsInicio(models.Model):
                 'client_validation_state': 'payment_due',
                 'client_status_title': _('Cliente insolvente'),
                 'client_status_message': user_message or technical_message or _(
-                    'La instancia presenta un saldo pendiente. Contacta a soporte para reactivar el acceso a Ordenes de Venta y Credenciales Power BI.'
+                    'La instancia presenta un saldo pendiente. Contacta a soporte para reactivar el acceso a los reportes operativos del modulo.'
                 ),
             })
 
@@ -186,10 +186,7 @@ class AdvancedMetricsInicio(models.Model):
         if blocked_action:
             return blocked_action
 
-        action_ref = 'pbi_connections.action_pbi_connections_api_config'
-        if 'pbi_connections.api.config' not in self.env:
-            action_ref = 'advanced_metrics.action_advanced_metrics_api_config'
-        return self.env.ref(action_ref).read()[0]
+        return self.env.ref('pbi_connections.action_pbi_connections_api_config').read()[0]
 
 
 class AdvancedMetricsRegistro(models.Model):

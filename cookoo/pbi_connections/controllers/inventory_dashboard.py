@@ -17,7 +17,10 @@ class InventoryDashboardController(BaseDashboardController):
         'daysWithoutMovement',
     )
 
-    @http.route('/api/bi/inventory-intelligent/top-products', type='http', auth='public', methods=['POST'], csrf=False)
+    @http.route([
+        '/api/bi/inventory-intelligent/top-products',
+        '/api/bi/advanced-metrics/inventory-intelligent/top-products',
+    ], type='http', auth='public', methods=['POST'], csrf=False)
     def get_top_products(self, **kwargs):
         return self._handle_service_request(
             'get_top_products_report_data',
@@ -25,7 +28,10 @@ class InventoryDashboardController(BaseDashboardController):
             'No fue posible obtener el top de productos.',
         )
 
-    @http.route('/api/bi/inventory-intelligent/products-sales', type='http', auth='public', methods=['POST'], csrf=False)
+    @http.route([
+        '/api/bi/inventory-intelligent/products-sales',
+        '/api/bi/advanced-metrics/inventory-intelligent/products-sales',
+    ], type='http', auth='public', methods=['POST'], csrf=False)
     def get_products_sales(self, **kwargs):
         return self._handle_service_request(
             'get_products_sales_report_data',
@@ -33,7 +39,10 @@ class InventoryDashboardController(BaseDashboardController):
             'No fue posible obtener las ventas por producto.',
         )
 
-    @http.route('/api/bi/inventory-intelligent/sales-trend', type='http', auth='public', methods=['POST'], csrf=False)
+    @http.route([
+        '/api/bi/inventory-intelligent/sales-trend',
+        '/api/bi/advanced-metrics/inventory-intelligent/sales-trend',
+    ], type='http', auth='public', methods=['POST'], csrf=False)
     def get_sales_trend(self, **kwargs):
         return self._handle_service_request(
             'get_sales_trend_report_data',
@@ -43,7 +52,10 @@ class InventoryDashboardController(BaseDashboardController):
             extra_payload={'periodSummary': {}},
         )
 
-    @http.route('/api/bi/inventory-intelligent/dead-products', type='http', auth='public', methods=['POST'], csrf=False)
+    @http.route([
+        '/api/bi/inventory-intelligent/dead-products',
+        '/api/bi/advanced-metrics/inventory-intelligent/dead-products',
+    ], type='http', auth='public', methods=['POST'], csrf=False)
     def get_dead_products(self, **kwargs):
         return self._handle_service_request(
             'get_dead_products_report_data',
@@ -51,7 +63,10 @@ class InventoryDashboardController(BaseDashboardController):
             'No fue posible obtener los productos sin movimiento.',
         )
 
-    @http.route('/api/bi/inventory-intelligent/high-rotation-products', type='http', auth='public', methods=['POST'], csrf=False)
+    @http.route([
+        '/api/bi/inventory-intelligent/high-rotation-products',
+        '/api/bi/advanced-metrics/inventory-intelligent/high-rotation-products',
+    ], type='http', auth='public', methods=['POST'], csrf=False)
     def get_high_rotation_products(self, **kwargs):
         return self._handle_service_request(
             'get_high_rotation_products_report_data',
@@ -59,7 +74,10 @@ class InventoryDashboardController(BaseDashboardController):
             'No fue posible obtener los productos con alta rotación.',
         )
 
-    @http.route('/api/bi/production/weekly-plan', type='http', auth='public', methods=['POST'], csrf=False)
+    @http.route([
+        '/api/bi/production/weekly-plan',
+        '/api/bi/advanced-metrics/production/weekly-plan',
+    ], type='http', auth='public', methods=['POST'], csrf=False)
     def get_weekly_production_plan(self, **kwargs):
         return self._handle_service_request(
             'get_weekly_production_plan_report_data',

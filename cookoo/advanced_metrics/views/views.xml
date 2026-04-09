@@ -95,15 +95,15 @@
                             </div>
 
                             <div class="zrn_advanced_metrics_tile">
-                                <h3>Credenciales Power BI</h3>
+                                <h3>Dashboard de inventario</h3>
                                 <p>
-                                    Administra el token y la URL segura para consumir la información desde Power BI.
+                                    Este modulo queda enfocado en sus reportes operativos actuales de ventas e inventario para seguimiento y analisis interno.
                                 </p>
                                 <div class="zrn_advanced_metrics_tile_actions">
                                     <button
-                                        name="action_open_api_config"
+                                        name="action_open_sales_report"
                                         type="object"
-                                        string="Abrir"
+                                        string="Abrir reporte"
                                         class="btn btn-primary"
                                     />
                                 </div>

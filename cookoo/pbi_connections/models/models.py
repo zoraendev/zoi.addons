@@ -18,6 +18,7 @@ class PbiConnectionsInicio(models.Model):
     def action_open_api_config(self):
         self.ensure_one()
         action = self.env.ref('pbi_connections.action_pbi_connections_api_config').read()[0]
+        self.env['pbi_connections.api.config'].sudo()._sync_legacy_config()
         config_record = self.env['pbi_connections.api.config'].sudo().search([], limit=1)
         if config_record:
             action.update({
