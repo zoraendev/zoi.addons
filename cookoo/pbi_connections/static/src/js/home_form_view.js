@@ -19,7 +19,6 @@ export const pbiConnectionsHomeFormView = {
   Controller: PbiConnectionsHomeFormController,
 };
 
-registry.category("views").add(
-  "pbi_connections_home_form",
-  pbiConnectionsHomeFormView,
-);
+registry
+  .category("views")
+  .add("pbi_connections_home_form", pbiConnectionsHomeFormView);

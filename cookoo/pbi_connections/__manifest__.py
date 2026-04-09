@@ -10,7 +10,8 @@ Power BI que hoy viven dentro de Advanced Metrics.
     'website': "https://www.zoraen.com",
     'category': 'Sales',
     'version': '0.1',
-    'depends': ['base'],
+    'license': 'LGPL-3',
+    'depends': ['base', 'sale_stock'],
     'data': [
         'security/ir.model.access.csv',
         'views/views.xml',
