@@ -161,8 +161,44 @@ class AdvancedMetricsInventoryDashboard(models.AbstractModel):
         }
 
     @api.model
+    def _get_sellable_product_domain(self, category_id=None):
+        domain = [
+            ('sale_ok', '=', True),
+            ('active', '=', True),
+        ]
+
+        if 'detailed_type' in self.env['product.product']._fields:
+            domain.append(('detailed_type', 'in', ['product', 'consu']))
+        elif 'type' in self.env['product.product']._fields:
+            domain.append(('type', 'in', ['product', 'consu']))
+
+        if category_id:
+            domain.append(('categ_id', 'child_of', category_id))
+
+        return domain
+
+    @api.model
+    def _get_sellable_product_ids(self, product_ids=None, category_id=None):
+        if 'product.product' not in self.env:
+            return []
+
+        domain = self._get_sellable_product_domain(category_id=category_id)
+        if product_ids:
+            domain.append(('id', 'in', list(product_ids)))
+
+        return self.env['product.product'].search(domain).ids
+
+    @api.model
     def _get_stock_quant_domain(self, product_ids=None, warehouse_id=None, category_id=None):
-        domain = [('location_id.usage', '=', 'internal')]
+        domain = [
+            ('location_id.usage', '=', 'internal'),
+            ('product_id.sale_ok', '=', True),
+        ]
+
+        if 'detailed_type' in self.env['product.product']._fields:
+            domain.append(('product_id.detailed_type', 'in', ['product', 'consu']))
+        elif 'type' in self.env['product.product']._fields:
+            domain.append(('product_id.type', 'in', ['product', 'consu']))
 
         if product_ids:
             domain.append(('product_id', 'in', list(product_ids)))
@@ -257,7 +293,13 @@ class AdvancedMetricsInventoryDashboard(models.AbstractModel):
             ('order_id.state', 'in', ['sale', 'done']),
             ('display_type', '=', False),
             ('product_id', '!=', False),
+            ('product_id.sale_ok', '=', True),
         ]
+
+        if 'detailed_type' in self.env['product.product']._fields:
+            domain.append(('product_id.detailed_type', 'in', ['product', 'consu']))
+        elif 'type' in self.env['product.product']._fields:
+            domain.append(('product_id.type', 'in', ['product', 'consu']))
 
         if date_from:
             domain.append(('order_id.date_order', '>=', f"{date_from} 00:00:00"))
@@ -364,7 +406,10 @@ class AdvancedMetricsInventoryDashboard(models.AbstractModel):
             warehouse_id=normalized_filters['warehouseId'],
             category_id=normalized_filters['categoryId'],
         ))
-        product_ids = list(sale_product_ids | stocked_product_ids)
+        product_ids = self._get_sellable_product_ids(
+            sale_product_ids | stocked_product_ids,
+            category_id=normalized_filters['categoryId'],
+        )
 
         if not product_ids:
             return {
