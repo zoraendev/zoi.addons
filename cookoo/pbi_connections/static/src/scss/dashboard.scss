@@ -1,0 +1,103 @@
+.o_action:has(.zrn_pbi_connections_home_form) .o_control_panel .o_cp_pager {
+  display: none !important;
+}
+
+.o_action:has(.zrn_pbi_connections_home_form)
+  .o_control_panel
+  .zrn_pbi_cp_action_btn {
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.o_form_view.zrn_pbi_connections_home_form,
+.zrn_pbi_connections_home_form {
+  .o_form_statusbar {
+    display: none !important;
+  }
+
+  .o_form_sheet_bg > .o_form_sheet {
+    box-shadow: none;
+    border: 0;
+    background: transparent;
+  }
+
+  .zrn_pbi_dashboard {
+    --pbi-surface: var(--o-view-background-color, #f8f9fa);
+    --pbi-text: var(--o-main-text-color, #1f2937);
+    --pbi-muted: var(--o-view-text-muted, #4b5563);
+    --pbi-border: var(--o-border-color, #d1d5db);
+    --pbi-brand: var(--o-brand-odoo, #7c6a8b);
+
+    min-height: calc(100vh - 140px);
+    padding: 12px 24px 24px;
+    margin: 0;
+
+    @media (max-width: 767.98px) {
+      padding: 12px 16px 16px;
+    }
+  }
+
+  .zrn_pbi_dashboard_header {
+    max-width: 760px;
+    margin-bottom: 16px;
+  }
+
+  .zrn_pbi_dashboard_header h1 {
+    margin: 0 0 8px 0;
+    font-size: 1.75rem;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--pbi-text);
+  }
+
+  .zrn_pbi_dashboard_header p,
+  .zrn_pbi_tile p {
+    margin: 0;
+    color: var(--pbi-muted);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .zrn_pbi_dashboard_grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .zrn_pbi_tile {
+    width: 100%;
+    max-width: 420px;
+    background: var(--pbi-surface);
+    border: 1px solid var(--pbi-border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .zrn_pbi_tile h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--pbi-text);
+  }
+
+  .zrn_pbi_tile_actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .zrn_pbi_dashboard .btn.btn-primary,
+  .o_control_panel .zrn_pbi_cp_action_btn {
+    background: var(--pbi-brand);
+    border-color: var(--pbi-brand);
+  }
+
+  .zrn_pbi_dashboard .btn.btn-primary:hover,
+  .zrn_pbi_dashboard .btn.btn-primary:focus,
+  .o_control_panel .zrn_pbi_cp_action_btn:hover,
+  .o_control_panel .zrn_pbi_cp_action_btn:focus {
+    filter: brightness(0.92);
+  }
+}

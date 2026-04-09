@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="pbi_connections_inicio_default" model="pbi_connections.inicio">
+        <field name="name">PBI Connections</field>
+    </record>
+
+    <record id="view_pbi_connections_endpoint_tree" model="ir.ui.view">
+        <field name="name">pbi_connections.endpoint.tree</field>
+        <field name="model">pbi_connections.endpoint</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="technical_name"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_pbi_connections_endpoint_form" model="ir.ui.view">
+        <field name="name">pbi_connections.endpoint.form</field>
+        <field name="model">pbi_connections.endpoint</field>
+        <field name="arch" type="xml">
+            <form string="Endpoint Power BI">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Ej. Ordenes de venta"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="technical_name" placeholder="Ej. sales_orders"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="description" placeholder="Describe el proposito del endpoint..."/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pbi_connections_endpoint" model="ir.actions.act_window">
+        <field name="name">Endpoints Power BI</field>
+        <field name="res_model">pbi_connections.endpoint</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Crea tu primer endpoint o conexion para Power BI</p>
+            <p>Este espacio sera el nuevo hogar de los endpoints que hoy viven en Advanced Metrics.</p>
+        </field>
+    </record>
+
+    <record id="view_pbi_connections_inicio_form" model="ir.ui.view">
+        <field name="name">pbi_connections.inicio.form</field>
+        <field name="model">pbi_connections.inicio</field>
+        <field name="arch" type="xml">
+            <form string="PBI Connections" js_class="pbi_connections_home_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_pbi_connections_home_form">
+                <field name="name" invisible="1"/>
+                <div class="zrn_pbi_dashboard">
+                    <div class="zrn_pbi_dashboard_header">
+                        <h1>Power BI Connections</h1>
+                        <p>
+                            Centraliza aqui las conexiones, endpoints y configuraciones que vamos a separar de Advanced Metrics.
+                        </p>
+                    </div>
+
+                    <div class="zrn_pbi_dashboard_grid">
+                        <div class="zrn_pbi_tile">
+                            <h3>Endpoints</h3>
+                            <p>
+                                Preparamos el espacio base para mover aqui los endpoints y dejar este modulo como punto de integracion para Power BI.
+                            </p>
+                            <div class="zrn_pbi_tile_actions">
+                                <button
+                                    name="action_open_endpoints"
+                                    type="object"
+                                    string="Abrir"
+                                    class="btn btn-primary"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="zrn_pbi_tile">
+                            <h3>Roadmap de migracion</h3>
+                            <p>
+                                La siguiente fase sera trasladar los endpoints desde Advanced Metrics hacia este modulo, manteniendo una estructura mas limpia.
+                            </p>
+                            <div class="zrn_pbi_tile_actions">
+                                <button
+                                    name="action_show_roadmap"
+                                    type="object"
+                                    string="Ver siguiente paso"
+                                    class="btn btn-secondary"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pbi_connections_home" model="ir.actions.act_window">
+        <field name="name">PBI Connections</field>
+        <field name="res_model">pbi_connections.inicio</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_pbi_connections_inicio_form"/>
+        <field name="res_id" ref="pbi_connections_inicio_default"/>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_pbi_connections_root"
+        name="PBI Connections"
+        action="action_pbi_connections_home"
+        sequence="11"
+    />
+
+    <menuitem
+        id="menu_pbi_connections_endpoints"
+        name="Endpoints"
+        parent="menu_pbi_connections_root"
+        action="action_pbi_connections_endpoint"
+        sequence="10"
+    />
+
+</odoo>
