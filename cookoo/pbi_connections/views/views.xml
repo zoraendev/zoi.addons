@@ -83,15 +83,15 @@
                         </div>
 
                         <div class="zrn_pbi_tile">
-                            <h3>Roadmap de migracion</h3>
+                            <h3>Credenciales Power BI</h3>
                             <p>
-                                La siguiente fase sera trasladar los endpoints desde Advanced Metrics hacia este modulo, manteniendo una estructura mas limpia.
+                                Genera y administra desde aqui el token de acceso que autentica los endpoints usados por Power BI y otras integraciones de BI.
                             </p>
                             <div class="zrn_pbi_tile_actions">
                                 <button
-                                    name="action_show_roadmap"
+                                    name="action_open_api_config"
                                     type="object"
-                                    string="Ver siguiente paso"
+                                    string="Abrir"
                                     class="btn btn-secondary"
                                 />
                             </div>

@@ -185,7 +185,11 @@ class AdvancedMetricsInicio(models.Model):
         blocked_action = self._get_blocked_dashboard_action()
         if blocked_action:
             return blocked_action
-        return self.env.ref('advanced_metrics.action_advanced_metrics_api_config').read()[0]
+
+        action_ref = 'pbi_connections.action_pbi_connections_api_config'
+        if 'pbi_connections.api.config' not in self.env:
+            action_ref = 'advanced_metrics.action_advanced_metrics_api_config'
+        return self.env.ref(action_ref).read()[0]
 
 
 class AdvancedMetricsRegistro(models.Model):

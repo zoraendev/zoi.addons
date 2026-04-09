@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pbi_connections_api_config_default" model="pbi_connections.api.config">
+        <field name="name">Produccion</field>
+        <field name="record_limit">5000</field>
+    </record>
+
+    <record id="view_pbi_connections_api_config_tree" model="ir.ui.view">
+        <field name="name">pbi_connections.api.config.tree</field>
+        <field name="model">pbi_connections.api.config</field>
+        <field name="arch" type="xml">
+            <tree string="Configuraciones API">
+                <field name="name"/>
+                <field name="record_limit"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_pbi_connections_api_config_form" model="ir.ui.view">
+        <field name="name">pbi_connections.api.config.form</field>
+        <field name="model">pbi_connections.api.config</field>
+        <field name="arch" type="xml">
+            <form string="Configuracion API Power BI">
+                <header>
+                    <button
+                        name="action_generate_new_token"
+                        string="Generar Nuevo Token"
+                        type="object"
+                        class="btn-danger"
+                        confirm="Power BI perdera acceso hasta que actualices su conexion actual."
+                    />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Ej. Acceso Power BI Produccion"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group name="left_panel">
+                            <field name="access_token"/>
+                            <field name="record_limit"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Conexion Power BI" name="api_connection">
+                            <group>
+                                <field name="api_url" widget="CopyClipboardChar" readonly="1" string="URL segura de referencia"/>
+                            </group>
+                            <div class="alert alert-info mt-3" role="alert">
+                                <strong>Uso recomendado:</strong><br/>
+                                Utiliza el valor de <em>Token de Acceso</em> en la cabecera <code>Access-Token</code> o <code>Authorization: Bearer ...</code>.
+                            </div>
+                            <div class="alert alert-warning mt-3" role="alert">
+                                <strong>Precaucion:</strong><br/>
+                                Protege este token como si fuera una contrasena. Cualquier persona con este valor podra consumir los endpoints publicados.
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pbi_connections_api_config" model="ir.actions.act_window">
+        <field name="name">Credenciales API Power BI</field>
+        <field name="res_model">pbi_connections.api.config</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Crea tu primera llave maestra de API</p>
+            <p>Administra aqui el token que autentica los endpoints publicados para Power BI.</p>
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_pbi_connections_api_config"
+        name="Credenciales Power BI"
+        parent="menu_pbi_connections_root"
+        action="action_pbi_connections_api_config"
+        sequence="20"
+    />
+</odoo>

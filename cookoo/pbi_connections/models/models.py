@@ -15,6 +15,19 @@ class PbiConnectionsInicio(models.Model):
         action['_noBreadcrumbs'] = True
         return action
 
+    def action_open_api_config(self):
+        self.ensure_one()
+        action = self.env.ref('pbi_connections.action_pbi_connections_api_config').read()[0]
+        config_record = self.env['pbi_connections.api.config'].sudo().search([], limit=1)
+        if config_record:
+            action.update({
+                'view_mode': 'form',
+                'res_id': config_record.id,
+                'views': [(self.env.ref('pbi_connections.view_pbi_connections_api_config_form').id, 'form')],
+            })
+        action['_noBreadcrumbs'] = True
+        return action
+
     def action_show_roadmap(self):
         self.ensure_one()
         return {

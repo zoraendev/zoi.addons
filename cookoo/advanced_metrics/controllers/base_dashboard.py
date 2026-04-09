@@ -9,7 +9,11 @@ from odoo.http import request
 class BaseDashboardController(http.Controller):
     _service_model = None
     _request_filter_keys = ()
-    _auth_error_message = 'Acceso no autorizado: Token invalido o ausente en las cabeceras.'
+    _auth_error_message = 'Acceso no autorizado: Token invalido o ausente en las cabeceras o en la URL.'
+    _auth_config_models = (
+        'pbi_connections.api.config',
+        'advanced_metrics.api.config',
+    )
 
     @staticmethod
     def _get_json_payload():
@@ -34,12 +38,22 @@ class BaseDashboardController(http.Controller):
         return filters
 
     def _authenticate(self):
-        token = request.httprequest.headers.get('Access-Token') or request.httprequest.headers.get('Authorization')
+        token = (
+            request.httprequest.headers.get('Access-Token')
+            or request.httprequest.headers.get('Authorization')
+            or request.httprequest.args.get('token')
+        )
         if token and token.startswith('Bearer '):
             token = token[7:]
         if not token:
             return None
-        return request.env['advanced_metrics.api.config'].sudo().search([('access_token', '=', token)], limit=1)
+
+        for model_name in self._auth_config_models:
+            if model_name in request.env:
+                config_record = request.env[model_name].sudo().search([('access_token', '=', token)], limit=1)
+                if config_record:
+                    return config_record
+        return None
 
     @staticmethod
     def _make_success_response(message, report_data, extra_keys=None):

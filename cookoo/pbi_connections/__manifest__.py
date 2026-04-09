@@ -15,6 +15,7 @@ Power BI que hoy viven dentro de Advanced Metrics.
     'data': [
         'security/ir.model.access.csv',
         'views/views.xml',
+        'views/api_config_views.xml',
         'views/templates.xml',
     ],
     'assets': {

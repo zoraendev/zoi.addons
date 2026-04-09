@@ -9,7 +9,7 @@ from odoo.http import request
 class BaseDashboardController(http.Controller):
     _service_model = None
     _request_filter_keys = ()
-    _auth_error_message = 'Acceso no autorizado: Token invalido o ausente en las cabeceras.'
+    _auth_error_message = 'Acceso no autorizado: Token invalido o ausente en las cabeceras o en la URL.'
     _auth_config_models = (
         'pbi_connections.api.config',
         'advanced_metrics.api.config',
@@ -38,7 +38,11 @@ class BaseDashboardController(http.Controller):
         return filters
 
     def _authenticate(self):
-        token = request.httprequest.headers.get('Access-Token') or request.httprequest.headers.get('Authorization')
+        token = (
+            request.httprequest.headers.get('Access-Token')
+            or request.httprequest.headers.get('Authorization')
+            or request.httprequest.args.get('token')
+        )
         if token and token.startswith('Bearer '):
             token = token[7:]
         if not token:

@@ -1,6 +1,7 @@
 from odoo import models, fields, api
 import uuid
 
+
 class AdvancedMetricsApiConfig(models.Model):
     _name = 'advanced_metrics.api.config'
     _description = 'API Configuration for Power BI'
@@ -14,7 +15,7 @@ class AdvancedMetricsApiConfig(models.Model):
     def _compute_api_url(self):
         base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
         for rec in self:
-            rec.api_url = f"{base_url}/api/advanced_metrics/sales_inventory?token={rec.access_token}"
+            rec.api_url = f"{base_url}/api/bi/customer-dashboard/frequent-customers?token={rec.access_token}"
 
     def action_generate_new_token(self):
         for rec in self:
