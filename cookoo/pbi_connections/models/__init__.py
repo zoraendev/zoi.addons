@@ -2,3 +2,4 @@
 
 from . import models
 from . import inventory_dashboard
+from . import customer_dashboard

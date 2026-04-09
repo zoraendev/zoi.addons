@@ -5,8 +5,8 @@ from odoo import http
 from .base_dashboard import BaseDashboardController
 
 
-class AdvancedMetricsClientsDashboardController(BaseDashboardController):
-    _service_model = 'advanced_metrics.customer.dashboard'
+class ClientsDashboardController(BaseDashboardController):
+    _service_model = 'pbi_connections.customer.dashboard'
     _request_filter_keys = (
         'dateFrom',
         'dateTo',
@@ -16,7 +16,10 @@ class AdvancedMetricsClientsDashboardController(BaseDashboardController):
     )
 
     @http.route(
-        '/api/bi/advanced-metrics/customer-dashboard/frequent-customers',
+        [
+            '/api/bi/customer-dashboard/frequent-customers',
+            '/api/bi/advanced-metrics/customer-dashboard/frequent-customers',
+        ],
         type='http',
         auth='public',
         methods=['GET', 'POST'],
@@ -25,12 +28,15 @@ class AdvancedMetricsClientsDashboardController(BaseDashboardController):
     def get_frequent_customers(self, **kwargs):
         return self._handle_service_request(
             'get_frequent_customers_report_data',
-            'Clientes más frecuentes obtenidos correctamente.',
-            'No fue posible obtener los clientes más frecuentes.',
+            'Clientes mas frecuentes obtenidos correctamente.',
+            'No fue posible obtener los clientes mas frecuentes.',
         )
 
     @http.route(
-        '/api/bi/advanced-metrics/customer-dashboard/inactive-customers',
+        [
+            '/api/bi/customer-dashboard/inactive-customers',
+            '/api/bi/advanced-metrics/customer-dashboard/inactive-customers',
+        ],
         type='http',
         auth='public',
         methods=['GET', 'POST'],
@@ -44,7 +50,10 @@ class AdvancedMetricsClientsDashboardController(BaseDashboardController):
         )
 
     @http.route(
-        '/api/bi/advanced-metrics/customer-dashboard/customer-value',
+        [
+            '/api/bi/customer-dashboard/customer-value',
+            '/api/bi/advanced-metrics/customer-dashboard/customer-value',
+        ],
         type='http',
         auth='public',
         methods=['GET', 'POST'],
