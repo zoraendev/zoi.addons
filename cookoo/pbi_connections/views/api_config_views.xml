@@ -5,17 +5,6 @@
         <field name="record_limit">5000</field>
     </record>
 
-    <record id="view_pbi_connections_api_config_tree" model="ir.ui.view">
-        <field name="name">pbi_connections.api.config.tree</field>
-        <field name="model">pbi_connections.api.config</field>
-        <field name="arch" type="xml">
-            <tree string="Configuraciones API">
-                <field name="name"/>
-                <field name="record_limit"/>
-            </tree>
-        </field>
-    </record>
-
     <record id="view_pbi_connections_api_config_form" model="ir.ui.view">
         <field name="name">pbi_connections.api.config.form</field>
         <field name="model">pbi_connections.api.config</field>
@@ -65,18 +54,35 @@
     <record id="action_pbi_connections_api_config" model="ir.actions.act_window">
         <field name="name">Credenciales API Power BI</field>
         <field name="res_model">pbi_connections.api.config</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_pbi_connections_api_config_form"/>
+        <field name="res_id" ref="pbi_connections_api_config_default"/>
+        <field name="target">current</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Crea tu primera llave maestra de API</p>
-            <p>Administra aqui el token que autentica los endpoints publicados para Power BI.</p>
+            <p class="o_view_nocontent_smiling_face">Administra aqui el token principal de acceso.</p>
+            <p>Esta es la unica vista operativa del modulo para gestionar la conexion de Power BI.</p>
         </field>
     </record>
 
     <menuitem
-        id="menu_pbi_connections_api_config"
-        name="Credenciales Power BI"
-        parent="menu_pbi_connections_root"
+        id="menu_pbi_connections_root"
+        name="PBI Connections"
         action="action_pbi_connections_api_config"
-        sequence="20"
+        sequence="11"
     />
+
+    <record id="menu_pbi_connections_endpoints" model="ir.ui.menu">
+        <field name="name">Endpoints</field>
+        <field name="parent_id" ref="menu_pbi_connections_root"/>
+        <field name="sequence">10</field>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="menu_pbi_connections_api_config" model="ir.ui.menu">
+        <field name="name">Credenciales Power BI</field>
+        <field name="parent_id" ref="menu_pbi_connections_root"/>
+        <field name="action" ref="action_pbi_connections_api_config"/>
+        <field name="sequence">20</field>
+        <field name="active" eval="False"/>
+    </record>
 </odoo>
