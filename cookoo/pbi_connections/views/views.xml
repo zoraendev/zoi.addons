@@ -97,15 +97,15 @@
                     </div>
 
                     <sheet invisible="not show_dashboard">
-                        <div class="oe_title d-flex align-items-center justify-content-between">
+                        <div class="oe_title d-flex align-items-center justify-content-between zrn_pbi_main_head">
                             <h2>
                                 <field name="name" readonly="1"/>
                             </h2>
                             <button
                                 name="action_generate_new_token"
-                                string="Generar Nuevo Token"
+                                string="Generar"
                                 type="object"
-                                class="btn btn-danger"
+                                class="btn btn-primary zrn_pbi_generate_btn"
                                 confirm="Power BI perdera acceso hasta que actualices su conexion actual."
                             />
                         </div>
