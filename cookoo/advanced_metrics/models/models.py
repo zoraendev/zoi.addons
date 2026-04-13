@@ -1,7 +1,8 @@
 import json
 import logging
+from urllib.parse import quote
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import HTTPSHandler, ProxyHandler, Request, build_opener
 
 from odoo import _, api, fields, models
 
@@ -12,9 +13,12 @@ class AdvancedMetricsInicio(models.Model):
     _name = 'advanced_metrics.inicio'
     _description = 'Pantalla principal de Advanced Metrics'
 
-    _DEFAULT_CLIENT_VALIDATION_URL = 'https://clients-service.vercel.app/api/production-v1-public/clients/key/SDSAW54D'
-    _DEFAULT_CLIENT_VALIDATION_API_KEY = 'SHKJSDHKA'
-    _DEFAULT_SUPPORT_URL = 'https://www.zoraen.com'
+    _DEFAULT_CLIENT_VALIDATION_BASE_URL = 'https://api.zoraen.com/api/production-v1-public'
+    _DEFAULT_CLIENT_KEY = ''
+    _DEFAULT_CLIENT_VALIDATION_API_KEY = ''
+    _DEFAULT_INSTANCE_KEY = ''
+    _INSTANCE_BASE_URL = 'https://adm.zoraen.com/instances/i'
+    _SUPPORT_BASE_URL = 'https://adm.zoraen.com/support?instance='
 
     name = fields.Char(string='Nombre', required=True)
     show_dashboard = fields.Boolean(string='Mostrar dashboard', default=True)
@@ -40,19 +44,69 @@ class AdvancedMetricsInicio(models.Model):
     )
 
     @api.model
+    def _normalize_external_key(self, value):
+        return (value or '').strip().strip("'").strip('"')
+
+    @api.model
+    def _normalize_validation_base_url(self, value):
+        base_url = self._normalize_external_key(value).rstrip('/')
+        marker = '/clients/key/'
+        if marker in base_url:
+            base_url = base_url.split(marker, 1)[0]
+        return base_url
+
+    @api.model
     def _get_client_validation_settings(self):
         config = self.env['ir.config_parameter'].sudo()
+        instance_key = config.get_param('advanced_metrics.instance_key', self._DEFAULT_INSTANCE_KEY)
+        if not instance_key:
+            instance_key = config.get_param('advanced_metrics.client_key', self._DEFAULT_CLIENT_KEY)
+        instance_key = self._normalize_external_key(instance_key)
         return {
-            'url': config.get_param('advanced_metrics.client_validation_url', self._DEFAULT_CLIENT_VALIDATION_URL),
-            'api_key': config.get_param('advanced_metrics.client_validation_api_key', self._DEFAULT_CLIENT_VALIDATION_API_KEY),
-            'support_url': config.get_param('advanced_metrics.support_url', self._DEFAULT_SUPPORT_URL),
+            'base_url': self._normalize_validation_base_url(
+                config.get_param('advanced_metrics.client_validation_base_url', self._DEFAULT_CLIENT_VALIDATION_BASE_URL)
+            ),
+            'client_key': self._normalize_external_key(
+                config.get_param('advanced_metrics.client_key', self._DEFAULT_CLIENT_KEY)
+            ),
+            'api_key': self._normalize_external_key(
+                config.get_param('advanced_metrics.client_validation_api_key', self._DEFAULT_CLIENT_VALIDATION_API_KEY)
+            ),
+            'support_url': config.get_param('advanced_metrics.support_url', ''),
+            'instance_key': instance_key,
         }
 
     @api.model
+    def _build_instance_and_support_urls(self, settings=None):
+        settings = settings or self._get_client_validation_settings()
+        safe_key = quote(self._normalize_external_key(settings.get('instance_key')))
+
+        instance_url = f'{self._INSTANCE_BASE_URL}/{safe_key}'
+        support_url = f'{self._SUPPORT_BASE_URL}{safe_key}'
+        return instance_url, support_url
+
+    @api.model
+    def _get_missing_required_settings(self, settings=None):
+        settings = settings or self._get_client_validation_settings()
+        required_values = {
+            'base_url': settings.get('base_url'),
+            'client_key': settings.get('client_key'),
+            'api_key': settings.get('api_key'),
+            'instance_key': settings.get('instance_key'),
+        }
+        return [
+            key
+            for key, value in required_values.items()
+            if not (value or '').strip()
+        ]
+
+    @api.model
     def _fetch_client_validation_payload(self, settings):
-        url = settings.get('url')
-        if not url:
-            raise ValueError(_('No se ha configurado la URL de validacion del cliente.'))
+        base_url = self._normalize_validation_base_url(settings.get('base_url'))
+        client_key = self._normalize_external_key(settings.get('client_key'))
+        if not base_url or not client_key:
+            raise ValueError(_('No se ha configurado la URL base o la clave de cliente.'))
+        url = f'{base_url}/clients/key/{client_key}'
 
         headers = {
             'Accept': 'application/json',
@@ -61,14 +115,18 @@ class AdvancedMetricsInicio(models.Model):
             headers['x-api-key'] = settings['api_key']
 
         request = Request(url, headers=headers, method='GET')
-        with urlopen(request, timeout=10) as response:
+        # Bypass environment proxy settings; curl works here while urllib may fail
+        # if a broken proxy is injected into the Python process environment.
+        opener = build_opener(ProxyHandler({}), HTTPSHandler())
+        with opener.open(request, timeout=10) as response:
             payload = response.read().decode('utf-8') or '{}'
         return json.loads(payload)
 
     @api.model
     def _build_client_status_values(self, payload=None, error_message=None, settings=None):
         settings = settings or self._get_client_validation_settings()
-        support_url = settings.get('support_url') or self._DEFAULT_SUPPORT_URL
+        instance_url, support_url = self._build_instance_and_support_urls(settings)
+        missing_settings = self._get_missing_required_settings(settings)
 
         values = {
             'show_dashboard': True,
@@ -79,8 +137,21 @@ class AdvancedMetricsInicio(models.Model):
             'client_status_message': _('La instancia esta lista para consultar los reportes operativos de ventas e inventario.'),
         }
 
+        if missing_settings:
+            values.update({
+                'show_dashboard': False,
+                'client_validation_state': 'inactive',
+                'client_status_code': 'missing_configuration',
+                'client_status_title': _('Configuracion incompleta'),
+                'client_status_message': _(
+                    'Debes completar la configuracion de integracion (Key de instancia, clave de cliente, API key y URL base) antes de usar el modulo.'
+                ),
+            })
+            return values
+
         if error_message:
             values.update({
+                'show_dashboard': False,
                 'client_validation_state': 'error',
                 'client_status_code': 'validation_error',
                 'client_status_title': _('No se pudo validar el estado del cliente'),
@@ -165,9 +236,19 @@ class AdvancedMetricsInicio(models.Model):
 
     def action_request_support(self):
         self.ensure_one()
+        instance_url, support_url = self._build_instance_and_support_urls()
         return {
             'type': 'ir.actions.act_url',
-            'url': self.support_url or self._DEFAULT_SUPPORT_URL,
+            'url': support_url,
+            'target': 'new',
+        }
+
+    def action_open_external_instance(self):
+        self.ensure_one()
+        instance_url, _ = self._build_instance_and_support_urls()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': instance_url,
             'target': 'new',
         }
 
@@ -187,6 +268,12 @@ class AdvancedMetricsInicio(models.Model):
             return blocked_action
 
         return self.env.ref('pbi_connections.action_pbi_connections_api_config').read()[0]
+
+    def action_open_settings(self):
+        self.ensure_one()
+        action = self.env.ref('advanced_metrics.action_advanced_metrics_settings').read()[0]
+        action['_noBreadcrumbs'] = True
+        return action
 
 
 class AdvancedMetricsRegistro(models.Model):

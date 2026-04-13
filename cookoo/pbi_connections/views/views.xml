@@ -1,3 +1,155 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+    <record id="pbi_connections_inicio_default" model="pbi_connections.inicio">
+        <field name="name">PBI Connections</field>
+    </record>
+
+    <record id="view_pbi_connections_endpoint_tree" model="ir.ui.view">
+        <field name="name">pbi_connections.endpoint.tree</field>
+        <field name="model">pbi_connections.endpoint</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="technical_name"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_pbi_connections_endpoint_form" model="ir.ui.view">
+        <field name="name">pbi_connections.endpoint.form</field>
+        <field name="model">pbi_connections.endpoint</field>
+        <field name="arch" type="xml">
+            <form string="Endpoint">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="technical_name"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="description"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pbi_connections_endpoint" model="ir.actions.act_window">
+        <field name="name">Endpoints</field>
+        <field name="res_model">pbi_connections.endpoint</field>
+        <field name="view_mode">tree,form</field>
+        <field name="views" eval="[(ref('view_pbi_connections_endpoint_tree'), 'tree'), (ref('view_pbi_connections_endpoint_form'), 'form')]"/>
+        <field name="target">current</field>
+    </record>
+
+    <record id="view_pbi_connections_inicio_form" model="ir.ui.view">
+        <field name="name">pbi_connections.inicio.form</field>
+        <field name="model">pbi_connections.inicio</field>
+        <field name="arch" type="xml">
+            <form string="PBI Connections" js_class="pbi_connections_home_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_pbi_connections_home_form">
+                <field name="name" invisible="1"/>
+                <field name="show_dashboard" invisible="1"/>
+                <field name="client_validation_state" invisible="1"/>
+                <field name="client_status_code" invisible="1"/>
+                <field name="support_url" invisible="1"/>
+
+                <div class="zrn_pbi_dashboard">
+                    <div class="zrn_pbi_dashboard_header">
+                        <h1>PBI Connections</h1>
+                        <p>
+                            Centraliza la conexion, credenciales y puntos de acceso que usa Power BI para consumir informacion desde Odoo.
+                        </p>
+                    </div>
+
+                    <div class="zrn_pbi_blocked_state" invisible="show_dashboard">
+                        <div class="alert zrn_pbi_blocked_banner" role="alert">
+                            <div class="zrn_pbi_blocked_banner_content">
+                                <h3>
+                                    <field name="client_status_title" readonly="1" nolabel="1" class="oe_inline"/>
+                                </h3>
+                                <p>
+                                    <field name="client_status_message" readonly="1" nolabel="1" class="oe_inline"/>
+                                </p>
+                                <div class="zrn_pbi_tile_actions zrn_pbi_center_actions">
+                                    <button
+                                        name="action_open_settings"
+                                        type="object"
+                                        string="Abrir ajustes"
+                                        class="btn btn-primary"
+                                    />
+                                    <button
+                                        name="action_request_support"
+                                        type="object"
+                                        string="Contactar soporte"
+                                        class="btn btn-secondary"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="zrn_pbi_dashboard_grid" invisible="not show_dashboard">
+                        <div class="zrn_pbi_tile">
+                            <h3>Credenciales Power BI</h3>
+                            <p>
+                                Administra el token de acceso y la URL segura que usa Power BI para consumir los endpoints publicados.
+                            </p>
+                            <div class="zrn_pbi_tile_actions">
+                                <button
+                                    name="action_open_api_config"
+                                    type="object"
+                                    string="Abrir"
+                                    class="btn btn-primary"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="zrn_pbi_tile">
+                            <h3>Endpoints</h3>
+                            <p>
+                                Revisa el catalogo de endpoints disponibles para las integraciones y manten organizado el acceso tecnico.
+                            </p>
+                            <div class="zrn_pbi_tile_actions">
+                                <button
+                                    name="action_open_endpoints"
+                                    type="object"
+                                    string="Ver endpoints"
+                                    class="btn btn-secondary"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="zrn_pbi_tile">
+                            <h3>Ajustes</h3>
+                            <p>
+                                Configura la key de instancia, la key del cliente, la API key y la URL base de validacion de PBI Connections.
+                            </p>
+                            <div class="zrn_pbi_tile_actions">
+                                <button
+                                    name="action_open_settings"
+                                    type="object"
+                                    string="Abrir ajustes"
+                                    class="btn btn-secondary"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pbi_connections_inicio" model="ir.actions.act_window">
+        <field name="name">PBI Connections</field>
+        <field name="res_model">pbi_connections.inicio</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_pbi_connections_inicio_form"/>
+        <field name="res_id" ref="pbi_connections_inicio_default"/>
+        <field name="target">current</field>
+    </record>
+
 </odoo>

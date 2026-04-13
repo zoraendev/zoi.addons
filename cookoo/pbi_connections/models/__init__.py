@@ -4,3 +4,4 @@ from . import models
 from . import api_config
 from . import inventory_dashboard
 from . import customer_dashboard
+from . import res_config_settings

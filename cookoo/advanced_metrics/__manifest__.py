@@ -18,7 +18,7 @@ Long description of module's purpose
     'version': '0.1',
 
     # any module necessary for this one to work correctly
-    'depends': ['base', 'sale_stock'],
+    'depends': ['base', 'sale_stock', 'base_setup'],
 
     # always loaded
     'data': [
@@ -26,6 +26,7 @@ Long description of module's purpose
         'views/views.xml',
         'views/sales_orders.xml',
         'views/templates.xml',
+        'views/res_config_settings.xml',
     ],
     'assets': {
         'web.assets_backend': [

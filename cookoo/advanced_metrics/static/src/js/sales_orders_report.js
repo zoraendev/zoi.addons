@@ -167,7 +167,7 @@ function renderRows(rows) {
   if (!rows.length) {
     setDownloadButtonEnabled(false);
     const emptyRow = document.createElement("tr");
-    emptyRow.className = "o_data_row";
+    emptyRow.className = "o_data_row zrn_am_empty_row";
 
     const emptyCell = document.createElement("td");
     emptyCell.className = "o_data_cell text-muted";
@@ -201,8 +201,7 @@ function renderRows(rows) {
 
     cells.forEach((value, index) => {
       const td = document.createElement("td");
-      td.className =
-        index >= 5 ? "o_data_cell o_list_number" : "o_data_cell";
+      td.className = index >= 5 ? "o_data_cell o_list_number" : "o_data_cell";
       td.textContent = value;
       tr.appendChild(td);
     });
@@ -447,9 +446,36 @@ function bindGenerateButtonListener() {
   listenersBound = true;
 }
 
+function syncInitialEmptyState(attempt = 0) {
+  const table = document.querySelector(".zrn_am_table_shell .o_list_table");
+  const tableBody = table?.querySelector("tbody");
+
+  if (!tableBody) {
+    if (attempt < 12) {
+      window.setTimeout(() => syncInitialEmptyState(attempt + 1), 100);
+    }
+    return;
+  }
+
+  const hasMeaningfulData = Array.from(tableBody.querySelectorAll("tr")).some(
+    (row) =>
+      Array.from(row.querySelectorAll("td")).some(
+        (cell) => (cell.textContent || "").trim() !== "",
+      ),
+  );
+
+  if (!hasMeaningfulData) {
+    renderRows([]);
+    return;
+  }
+
+  setDownloadButtonEnabled(true);
+}
+
 function initAdvancedMetricsUi() {
   bindGenerateButtonListener();
   setDownloadButtonEnabled(false);
+  syncInitialEmptyState();
 }
 
 if (document.readyState === "loading") {

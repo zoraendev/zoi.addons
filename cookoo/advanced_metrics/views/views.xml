@@ -44,6 +44,14 @@
         <field name="target">current</field>
     </record>
 
+    <record id="action_advanced_metrics_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'advanced_metrics'}</field>
+    </record>
+
     <record id="view_advanced_metrics_inicio_form" model="ir.ui.view">
         <field name="name">advanced_metrics.inicio.form</field>
         <field name="model">advanced_metrics.inicio</field>
@@ -67,6 +75,12 @@
                                         <field name="client_status_message" readonly="1" nolabel="1" class="oe_inline"/>
                                     </p>
                                     <div class="zrn_advanced_metrics_tile_actions zrn_am_center_actions">
+                                        <button
+                                            name="action_open_settings"
+                                            type="object"
+                                            string="Abrir ajustes"
+                                            class="btn btn-primary"
+                                        />
                                         <button
                                             name="action_request_support"
                                             type="object"
@@ -95,16 +109,16 @@
                             </div>
 
                             <div class="zrn_advanced_metrics_tile">
-                                <h3>Dashboard de inventario</h3>
+                                <h3>Settings</h3>
                                 <p>
-                                    Este modulo queda enfocado en sus reportes operativos actuales de ventas e inventario para seguimiento y analisis interno.
+                                    Configura la key de instancia, key de cliente y api key de validacion para evitar valores quemados en codigo.
                                 </p>
                                 <div class="zrn_advanced_metrics_tile_actions">
                                     <button
-                                        name="action_open_sales_report"
+                                        name="action_open_settings"
                                         type="object"
-                                        string="Abrir reporte"
-                                        class="btn btn-primary"
+                                        string="Abrir"
+                                        class="btn btn-secondary"
                                     />
                                 </div>
                             </div>
@@ -128,6 +142,14 @@
         name="Advanced Metrics"
         action="action_advanced_metrics_inicio"
         sequence="10"
+    />
+
+    <menuitem
+        id="menu_advanced_metrics_settings"
+        name="Settings"
+        parent="menu_advanced_metrics_root"
+        action="action_advanced_metrics_settings"
+        sequence="90"
     />
 
 </odoo>

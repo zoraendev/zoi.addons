@@ -11,11 +11,12 @@ Power BI que hoy viven dentro de Advanced Metrics.
     'category': 'Sales',
     'version': '0.1',
     'license': 'LGPL-3',
-    'depends': ['base', 'sale_stock'],
+    'depends': ['base', 'sale_stock', 'base_setup'],
     'data': [
         'security/ir.model.access.csv',
         'views/views.xml',
         'views/api_config_views.xml',
+        'views/res_config_settings.xml',
         'views/templates.xml',
     ],
     'assets': {
