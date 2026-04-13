@@ -17,6 +17,20 @@
 
 const REPORT_ROUTE = "/advanced_metrics/report/generate";
 let listenersBound = false;
+let currentRows = [];
+let currentSort = { key: null, direction: "asc" };
+
+const SORTABLE_COLUMN_MAP = {
+  fecha_entrega: "fecha_entrega",
+  dia_semana: "dia_semana",
+  cliente_id: "cliente",
+  numero_orden_venta: "numero_orden_venta",
+  producto: "producto",
+  cantidad_vendida: "cantidad_vendida",
+  inventario_disponible: "inventario_disponible",
+  inventario_libre_usar: "inventario_libre_usar",
+  cantidad_sugerida_producir: "cantidad_sugerida_producir",
+};
 
 function getDownloadButton() {
   return document.querySelector(".zrn_am_download_btn");
@@ -144,6 +158,96 @@ function formatNumber(value) {
   });
 }
 
+function getSortKeyFromHeader(headerCell) {
+  if (!headerCell) {
+    return null;
+  }
+  const fieldName = headerCell.dataset.name || "";
+  return SORTABLE_COLUMN_MAP[fieldName] || null;
+}
+
+function compareValues(aValue, bValue, key) {
+  const numericKeys = new Set([
+    "cantidad_vendida",
+    "inventario_disponible",
+    "inventario_libre_usar",
+    "cantidad_sugerida_producir",
+  ]);
+
+  if (numericKeys.has(key)) {
+    const aNum = Number(aValue || 0);
+    const bNum = Number(bValue || 0);
+    return aNum - bNum;
+  }
+
+  if (key === "fecha_entrega") {
+    const aDate = (aValue || "").toString();
+    const bDate = (bValue || "").toString();
+    return aDate.localeCompare(bDate);
+  }
+
+  return (aValue || "")
+    .toString()
+    .toLowerCase()
+    .localeCompare((bValue || "").toString().toLowerCase());
+}
+
+function applyCurrentSort(rows) {
+  const sortedRows = [...rows];
+  if (!currentSort.key) {
+    return sortedRows;
+  }
+
+  sortedRows.sort((a, b) => {
+    const result = compareValues(
+      a[currentSort.key],
+      b[currentSort.key],
+      currentSort.key,
+    );
+    return currentSort.direction === "asc" ? result : -result;
+  });
+  return sortedRows;
+}
+
+function updateHeaderSortIndicators() {
+  const headerCells = document.querySelectorAll(
+    ".zrn_am_table_shell .o_list_table thead th[data-name]",
+  );
+
+  headerCells.forEach((headerCell) => {
+    const sortKey = getSortKeyFromHeader(headerCell);
+    if (!sortKey) {
+      headerCell.removeAttribute("aria-sort");
+      return;
+    }
+
+    if (sortKey === currentSort.key) {
+      headerCell.setAttribute(
+        "aria-sort",
+        currentSort.direction === "asc" ? "ascending" : "descending",
+      );
+    } else {
+      headerCell.setAttribute("aria-sort", "none");
+    }
+  });
+}
+
+function toggleSortFromHeader(headerCell) {
+  const sortKey = getSortKeyFromHeader(headerCell);
+  if (!sortKey) {
+    return;
+  }
+
+  if (currentSort.key === sortKey) {
+    currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
+  } else {
+    currentSort.key = sortKey;
+    currentSort.direction = "asc";
+  }
+
+  renderRows(currentRows, { updateState: false });
+}
+
 // ================================================================
 // RENDERIZADO DE TABLA HTML
 // ================================================================
@@ -156,15 +260,21 @@ function formatNumber(value) {
  *
  * @param {Array} rows - Filas del reporte (desde el backend).
  */
-function renderRows(rows) {
+function renderRows(rows, { updateState = true } = {}) {
   const table = document.querySelector(".zrn_am_table_shell .o_list_table");
   const tableBody = table?.querySelector("tbody");
   if (!tableBody) {
     return;
   }
 
+  if (updateState) {
+    currentRows = Array.isArray(rows) ? [...rows] : [];
+  }
+
+  const rowsToRender = applyCurrentSort(currentRows);
+
   tableBody.innerHTML = "";
-  if (!rows.length) {
+  if (!rowsToRender.length) {
     setDownloadButtonEnabled(false);
     const emptyRow = document.createElement("tr");
     emptyRow.className = "o_data_row zrn_am_empty_row";
@@ -177,12 +287,13 @@ function renderRows(rows) {
 
     emptyRow.appendChild(emptyCell);
     tableBody.appendChild(emptyRow);
+    updateHeaderSortIndicators();
     return;
   }
 
   setDownloadButtonEnabled(true);
 
-  rows.forEach((row) => {
+  rowsToRender.forEach((row) => {
     const tr = document.createElement("tr");
     tr.className = "o_data_row";
 
@@ -208,6 +319,8 @@ function renderRows(rows) {
 
     tableBody.appendChild(tr);
   });
+
+  updateHeaderSortIndicators();
 }
 
 // ================================================================
@@ -418,6 +531,15 @@ function bindGenerateButtonListener() {
   }
 
   document.addEventListener("click", (ev) => {
+    const headerCell = ev.target.closest(
+      ".zrn_am_table_shell .o_list_table thead th[data-name]",
+    );
+    if (headerCell) {
+      ev.preventDefault();
+      toggleSortFromHeader(headerCell);
+      return;
+    }
+
     // --- Boton: Generar reporte ---
     const generateButton = ev.target.closest(".zrn_am_generate_btn");
     if (generateButton) {

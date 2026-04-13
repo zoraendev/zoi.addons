@@ -25,10 +25,13 @@
   }
 
   .zrn_advanced_metrics_dashboard {
-    --am-surface: var(--o-view-background-color, #f8f9fa);
-    --am-text: var(--o-main-text-color, #1f2937);
-    --am-muted: var(--o-view-text-muted, #4b5563);
-    --am-border: var(--o-border-color, #d1d5db);
+    --am-surface: var(
+      --o-view-background-color,
+      var(--o-webclient-background-color, #ffffff)
+    );
+    --am-text: var(--o-main-text-color, #212529);
+    --am-muted: var(--o-view-text-muted, #6c757d);
+    --am-border: var(--o-border-color, #dee2e6);
     --am-brand: var(--o-brand-odoo, #7c6a8b);
 
     min-height: calc(100vh - 140px);
@@ -68,10 +71,10 @@
     margin: 0 auto;
     padding: 28px 24px;
     border-radius: 8px;
-    border: 1px solid #d6c27a;
-    background: #fff8db;
+    border: 1px solid var(--am-border);
+    background: var(--am-surface);
     color: var(--am-text);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--am-text) 10%, transparent);
   }
 
   .zrn_am_blocked_banner_content {
@@ -148,10 +151,13 @@
   }
 
   .zrn_advanced_metrics_sales_orders {
-    --am-surface: var(--o-view-background-color, #fff);
-    --am-text: var(--o-main-text-color, #1f2937);
-    --am-muted: var(--o-view-text-muted, #6b7280);
-    --am-border: var(--o-border-color, #d1d5db);
+    --am-surface: var(
+      --o-view-background-color,
+      var(--o-webclient-background-color, #ffffff)
+    );
+    --am-text: var(--o-main-text-color, #212529);
+    --am-muted: var(--o-view-text-muted, #6c757d);
+    --am-border: var(--o-border-color, #dee2e6);
     --am-brand: var(--o-brand-odoo, #7c6a8b);
     --am-shell-height: calc(100vh - 210px);
 

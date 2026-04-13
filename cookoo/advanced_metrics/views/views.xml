@@ -111,21 +111,6 @@
                                     />
                                 </div>
                             </div>
-
-                            <div class="zrn_advanced_metrics_tile">
-                                <h3>Settings</h3>
-                                <p>
-                                    Configura la key de instancia, key de cliente y api key de validacion para evitar valores quemados en codigo.
-                                </p>
-                                <div class="zrn_advanced_metrics_tile_actions">
-                                    <button
-                                        name="action_open_settings"
-                                        type="object"
-                                        string="Abrir"
-                                        class="btn btn-secondary"
-                                    />
-                                </div>
-                            </div>
                         </div>
                     </div>
             </form>
