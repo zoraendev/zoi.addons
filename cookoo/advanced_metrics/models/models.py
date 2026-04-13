@@ -42,6 +42,10 @@ class AdvancedMetricsInicio(models.Model):
         string='Mensaje de estado del cliente',
         default='La instancia esta lista para consultar los reportes operativos de ventas e inventario.',
     )
+    client_validation_debug = fields.Text(
+        string='Detalle tecnico de validacion',
+        readonly=True,
+    )
 
     @api.model
     def _normalize_external_key(self, value):
@@ -50,6 +54,10 @@ class AdvancedMetricsInicio(models.Model):
     @api.model
     def _normalize_validation_base_url(self, value):
         base_url = self._normalize_external_key(value).rstrip('/')
+        if base_url.startswith('ttps://'):
+            base_url = f'https://{base_url[len("ttps://"):]}'
+        elif base_url.startswith('ttp://'):
+            base_url = f'http://{base_url[len("ttp://"):]}'
         marker = '/clients/key/'
         if marker in base_url:
             base_url = base_url.split(marker, 1)[0]
@@ -135,6 +143,7 @@ class AdvancedMetricsInicio(models.Model):
             'support_url': support_url,
             'client_status_title': _('Metricas disponibles'),
             'client_status_message': _('La instancia esta lista para consultar los reportes operativos de ventas e inventario.'),
+            'client_validation_debug': '',
         }
 
         if missing_settings:
@@ -146,6 +155,7 @@ class AdvancedMetricsInicio(models.Model):
                 'client_status_message': _(
                     'Debes completar la configuracion de integracion (Key de instancia, clave de cliente, API key y URL base) antes de usar el modulo.'
                 ),
+                'client_validation_debug': _('Parametros faltantes: %s') % ', '.join(missing_settings),
             })
             return values
 
@@ -158,12 +168,19 @@ class AdvancedMetricsInicio(models.Model):
                 'client_status_message': _(
                     'No fue posible confirmar el estado del servicio en este momento. Intenta nuevamente o contacta a soporte si el problema persiste.'
                 ),
+                'client_validation_debug': error_message,
             })
             return values
 
         data = payload.get('data') or {}
         status_code = data.get('status', payload.get('code', ''))
         values['client_status_code'] = str(status_code or '')
+        values['client_validation_debug'] = json.dumps({
+            'code': payload.get('code'),
+            'status': status_code,
+            'userMessage': payload.get('userMessage'),
+            'technicalMessage': payload.get('technicalMessage'),
+        }, ensure_ascii=False)
 
         user_message = (payload.get('userMessage') or '').strip()
         technical_message = (payload.get('technicalMessage') or '').strip()

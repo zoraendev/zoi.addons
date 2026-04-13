@@ -38,9 +38,25 @@ class PbiConnectionsInicio(models.Model):
         string='Mensaje de estado del cliente',
         compute='_compute_status_fields',
     )
+    client_validation_debug = fields.Text(
+        string='Detalle tecnico de validacion',
+        compute='_compute_status_fields',
+    )
+    access_token = fields.Char(
+        string='Token de Acceso',
+        compute='_compute_status_fields',
+    )
+    record_limit = fields.Integer(
+        string='Limite de Registros',
+        compute='_compute_status_fields',
+        inverse='_inverse_record_limit',
+    )
+    api_url = fields.Char(
+        string='URL segura de referencia',
+        compute='_compute_status_fields',
+    )
 
-    @api.depends('name')
-    def _compute_status_fields(self):
+    def _get_or_create_config_record(self):
         config_model = self.env['pbi_connections.api.config'].sudo()
         config_model._sync_legacy_config()
         config_record = config_model.search([], order='id asc', limit=1)
@@ -48,6 +64,11 @@ class PbiConnectionsInicio(models.Model):
             config_record = config_model.create({
                 'name': 'Produccion',
             })
+        return config_record
+
+    @api.depends('name')
+    def _compute_status_fields(self):
+        config_record = self._get_or_create_config_record()
 
         config_record._refresh_client_validation_status()
 
@@ -58,27 +79,39 @@ class PbiConnectionsInicio(models.Model):
             record.support_url = config_record.support_url
             record.client_status_title = config_record.client_status_title
             record.client_status_message = config_record.client_status_message
+            record.client_validation_debug = config_record.client_validation_debug
+            record.access_token = config_record.access_token
+            record.record_limit = config_record.record_limit
+            record.api_url = config_record.api_url
+
+    def _inverse_record_limit(self):
+        config_record = self._get_or_create_config_record()
+        for record in self:
+            if record.record_limit and config_record.record_limit != record.record_limit:
+                config_record.write({'record_limit': record.record_limit})
+
+    def action_generate_new_token(self):
+        self.ensure_one()
+        config_record = self._get_or_create_config_record()
+        config_record.action_generate_new_token()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('PBI Connections'),
+            'res_model': 'pbi_connections.inicio',
+            'view_mode': 'form',
+            'view_id': self.env.ref('pbi_connections.view_pbi_connections_inicio_form').id,
+            'res_id': self.id,
+            'target': 'current',
+        }
 
     def action_open_external_instance(self):
         self.ensure_one()
-        config_model = self.env['pbi_connections.api.config'].sudo()
-        config_model._sync_legacy_config()
-        config_record = config_model.search([], order='id asc', limit=1)
-        if not config_record:
-            config_record = config_model.create({
-                'name': 'Produccion',
-            })
+        config_record = self._get_or_create_config_record()
         return config_record.action_open_external_instance()
 
     def action_request_support(self):
         self.ensure_one()
-        config_model = self.env['pbi_connections.api.config'].sudo()
-        config_model._sync_legacy_config()
-        config_record = config_model.search([], order='id asc', limit=1)
-        if not config_record:
-            config_record = config_model.create({
-                'name': 'Produccion',
-            })
+        config_record = self._get_or_create_config_record()
         return config_record.action_request_support()
 
     def action_open_endpoints(self):
@@ -90,8 +123,7 @@ class PbiConnectionsInicio(models.Model):
     def action_open_api_config(self):
         self.ensure_one()
         action = self.env.ref('pbi_connections.action_pbi_connections_api_config').read()[0]
-        self.env['pbi_connections.api.config'].sudo()._sync_legacy_config()
-        config_record = self.env['pbi_connections.api.config'].sudo().search([], limit=1)
+        config_record = self._get_or_create_config_record()
         if config_record:
             action.update({
                 'view_mode': 'form',

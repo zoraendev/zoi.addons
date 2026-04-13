@@ -15,6 +15,10 @@ class ResConfigSettings(models.TransientModel):
     @api.model
     def _normalize_validation_base_url(self, value):
         base_url = self._normalize_external_key(value).rstrip('/')
+        if base_url.startswith('ttps://'):
+            base_url = f'https://{base_url[len("ttps://"):]}'
+        elif base_url.startswith('ttp://'):
+            base_url = f'http://{base_url[len("ttp://"):]}'
         marker = '/clients/key/'
         if marker in base_url:
             base_url = base_url.split(marker, 1)[0]

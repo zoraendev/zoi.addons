@@ -20,6 +20,7 @@
                 <field name="client_validation_state" invisible="1"/>
                 <field name="client_status_code" invisible="1"/>
                 <field name="support_url" invisible="1"/>
+                <field name="client_validation_debug" invisible="1"/>
                 <header>
                     <button
                         name="action_open_external_instance"
@@ -55,6 +56,9 @@
                             </h3>
                             <p>
                                 <field name="client_status_message" readonly="1" nolabel="1" class="oe_inline"/>
+                            </p>
+                            <p class="text-muted" invisible="not client_validation_debug">
+                                <field name="client_validation_debug" readonly="1" nolabel="1" class="oe_inline"/>
                             </p>
                             <div class="zrn_pbi_tile_actions zrn_pbi_center_actions">
                                 <button
@@ -133,6 +137,7 @@
         <field name="parent_id" ref="menu_pbi_connections_root"/>
         <field name="action" ref="action_pbi_connections_endpoint"/>
         <field name="sequence">10</field>
+        <field name="active" eval="False"/>
     </record>
 
     <record id="menu_pbi_connections_api_config" model="ir.ui.menu">
@@ -140,6 +145,7 @@
         <field name="parent_id" ref="menu_pbi_connections_root"/>
         <field name="action" ref="action_pbi_connections_api_config"/>
         <field name="sequence">20</field>
+        <field name="active" eval="False"/>
     </record>
 
     <record id="menu_pbi_connections_settings" model="ir.ui.menu">

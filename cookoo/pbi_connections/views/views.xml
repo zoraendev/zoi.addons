@@ -56,6 +56,7 @@
                 <field name="client_validation_state" invisible="1"/>
                 <field name="client_status_code" invisible="1"/>
                 <field name="support_url" invisible="1"/>
+                <field name="client_validation_debug" invisible="1"/>
 
                 <div class="zrn_pbi_dashboard">
                     <div class="zrn_pbi_dashboard_header">
@@ -73,6 +74,9 @@
                                 </h3>
                                 <p>
                                     <field name="client_status_message" readonly="1" nolabel="1" class="oe_inline"/>
+                                </p>
+                                <p class="text-muted" invisible="not client_validation_debug">
+                                    <field name="client_validation_debug" readonly="1" nolabel="1" class="oe_inline"/>
                                 </p>
                                 <div class="zrn_pbi_tile_actions zrn_pbi_center_actions">
                                     <button
@@ -92,52 +96,43 @@
                         </div>
                     </div>
 
-                    <div class="zrn_pbi_dashboard_grid" invisible="not show_dashboard">
-                        <div class="zrn_pbi_tile">
-                            <h3>Credenciales Power BI</h3>
-                            <p>
-                                Administra el token de acceso y la URL segura que usa Power BI para consumir los endpoints publicados.
-                            </p>
-                            <div class="zrn_pbi_tile_actions">
-                                <button
-                                    name="action_open_api_config"
-                                    type="object"
-                                    string="Abrir"
-                                    class="btn btn-primary"
-                                />
-                            </div>
+                    <sheet invisible="not show_dashboard">
+                        <div class="oe_title d-flex align-items-center justify-content-between">
+                            <h2>
+                                <field name="name" readonly="1"/>
+                            </h2>
+                            <button
+                                name="action_generate_new_token"
+                                string="Generar Nuevo Token"
+                                type="object"
+                                class="btn btn-danger"
+                                confirm="Power BI perdera acceso hasta que actualices su conexion actual."
+                            />
                         </div>
 
-                        <div class="zrn_pbi_tile">
-                            <h3>Endpoints</h3>
-                            <p>
-                                Revisa el catalogo de endpoints disponibles para las integraciones y manten organizado el acceso tecnico.
-                            </p>
-                            <div class="zrn_pbi_tile_actions">
-                                <button
-                                    name="action_open_endpoints"
-                                    type="object"
-                                    string="Ver endpoints"
-                                    class="btn btn-secondary"
-                                />
-                            </div>
-                        </div>
+                        <group>
+                            <group name="left_panel">
+                                <field name="access_token" readonly="1"/>
+                                <field name="record_limit"/>
+                            </group>
+                        </group>
 
-                        <div class="zrn_pbi_tile">
-                            <h3>Ajustes</h3>
-                            <p>
-                                Configura la key de instancia, la key del cliente, la API key y la URL base de validacion de PBI Connections.
-                            </p>
-                            <div class="zrn_pbi_tile_actions">
-                                <button
-                                    name="action_open_settings"
-                                    type="object"
-                                    string="Abrir ajustes"
-                                    class="btn btn-secondary"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                        <notebook>
+                            <page string="Conexion Power BI" name="api_connection">
+                                <group>
+                                    <field name="api_url" widget="CopyClipboardChar" readonly="1" string="URL segura de referencia"/>
+                                </group>
+                                <div class="alert mt-3 zrn_pbi_help_callout zrn_pbi_help_callout_info" role="alert">
+                                    <strong>Uso recomendado:</strong><br/>
+                                    Utiliza el valor de <em>Token de Acceso</em> en la cabecera <code>Access-Token</code> o <code>Authorization: Bearer ...</code>.
+                                </div>
+                                <div class="alert mt-3 zrn_pbi_help_callout zrn_pbi_help_callout_warning" role="alert">
+                                    <strong>Precaucion:</strong><br/>
+                                    Protege este token como si fuera una contrasena. Cualquier persona con este valor podra consumir los endpoints publicados.
+                                </div>
+                            </page>
+                        </notebook>
+                    </sheet>
                 </div>
             </form>
         </field>
