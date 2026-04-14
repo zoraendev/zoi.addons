@@ -36,6 +36,9 @@ Long description of module's purpose
             'advanced_metrics/static/src/xml/home_form_view.xml',
             'advanced_metrics/static/src/scss/dashboard.scss',
         ],
+        'web.assets_web_dark': [
+            'advanced_metrics/static/src/scss/dashboard.dark.scss',
+        ],
     },
     # only loaded in demonstration mode
     'demo': [

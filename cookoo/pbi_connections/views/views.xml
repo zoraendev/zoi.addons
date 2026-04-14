@@ -100,15 +100,18 @@
                             />
                         </div>
 
-                        <group>
-                            <group name="left_panel">
-                                <field name="access_token" readonly="1"/>
-                                <field name="record_limit"/>
-                            </group>
-                        </group>
+                        <div class="zrn_pbi_panel">
+                            <div class="zrn_pbi_panel_section zrn_pbi_panel_section_summary">
+                                <group>
+                                    <group name="left_panel">
+                                        <field name="access_token" readonly="1"/>
+                                        <field name="record_limit"/>
+                                    </group>
+                                </group>
+                            </div>
 
-                        <notebook>
-                            <page string="Conexion Power BI" name="api_connection">
+                            <div class="zrn_pbi_panel_section zrn_pbi_panel_section_connection">
+                                <div class="zrn_pbi_section_label">Conexion Power BI</div>
                                 <group>
                                     <field name="api_url" widget="CopyClipboardChar" readonly="1" string="URL segura de referencia"/>
                                 </group>
@@ -120,8 +123,8 @@
                                     <strong>Precaucion:</strong><br/>
                                     Protege este token como si fuera una contrasena. Cualquier persona con este valor podra consumir los endpoints publicados.
                                 </div>
-                            </page>
-                        </notebook>
+                            </div>
+                        </div>
                     </sheet>
                 </div>
             </form>

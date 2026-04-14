@@ -78,14 +78,17 @@
                             <field name="name" placeholder="Ej. Acceso Power BI Produccion"/>
                         </h1>
                     </div>
-                    <group>
-                        <group name="left_panel">
-                            <field name="access_token"/>
-                            <field name="record_limit"/>
-                        </group>
-                    </group>
-                    <notebook>
-                        <page string="Conexion Power BI" name="api_connection">
+                    <div class="zrn_pbi_panel zrn_pbi_config_panel">
+                        <div class="zrn_pbi_panel_section zrn_pbi_panel_section_summary">
+                            <group>
+                                <group name="left_panel">
+                                    <field name="access_token"/>
+                                    <field name="record_limit"/>
+                                </group>
+                            </group>
+                        </div>
+                        <div class="zrn_pbi_panel_section zrn_pbi_panel_section_connection">
+                            <div class="zrn_pbi_section_label">Conexion Power BI</div>
                             <group>
                                 <field name="api_url" widget="CopyClipboardChar" readonly="1" string="URL segura de referencia"/>
                             </group>
@@ -97,8 +100,8 @@
                                 <strong>Precaucion:</strong><br/>
                                 Protege este token como si fuera una contrasena. Cualquier persona con este valor podra consumir los endpoints publicados.
                             </div>
-                        </page>
-                    </notebook>
+                        </div>
+                    </div>
                 </sheet>
             </form>
         </field>

@@ -100,7 +100,7 @@
                             <div class="zrn_advanced_metrics_tile">
                                 <h3>Ordenes de Venta</h3>
                                 <p>
-                                    Genera reportes filtrando por fecha de entrega, cliente, orden de venta, producto, cantidad vendida e inventario disponible.
+                                    Prueba Genera reportes filtrando por fecha de entrega, cliente, orden de venta, producto, cantidad vendida e inventario disponible.
                                 </p>
                                 <div class="zrn_advanced_metrics_tile_actions">
                                     <button

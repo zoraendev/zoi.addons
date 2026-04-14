@@ -27,16 +27,20 @@
   .zrn_advanced_metrics_dashboard {
     --am-surface: var(
       --o-webclient-background-color,
-      var(--o-view-background-color, #ffffff)
+      var(--o-view-background-color, #22252e)
     );
     --am-surface-raised: color-mix(
       in srgb,
-      var(--o-webclient-background-color, #ffffff) 94%,
-      var(--o-main-text-color, #212529) 8%
+      var(--o-webclient-background-color, #22252e) 88%,
+      var(--o-main-text-color, #f3f4f6) 12%
     );
-    --am-text: var(--o-main-text-color, #212529);
-    --am-muted: var(--o-view-text-muted, #6c757d);
-    --am-border: var(--o-border-color, #dee2e6);
+    --am-text: var(--o-main-text-color, #f3f4f6);
+    --am-muted: color-mix(in srgb, var(--am-text) 62%, transparent);
+    --am-border: color-mix(
+      in srgb,
+      var(--o-main-text-color, #f3f4f6) 14%,
+      var(--o-webclient-background-color, #22252e)
+    );
     --am-brand: var(--o-brand-odoo, #7c6a8b);
 
     min-height: calc(100vh - 140px);
@@ -164,28 +168,32 @@
   .zrn_advanced_metrics_sales_orders {
     --am-surface: var(
       --o-webclient-background-color,
-      var(--o-view-background-color, #ffffff)
+      var(--o-view-background-color, #22252e)
     );
     --am-surface-raised: color-mix(
       in srgb,
-      var(--o-webclient-background-color, #ffffff) 97%,
-      var(--o-main-text-color, #212529) 3%
+      var(--o-webclient-background-color, #22252e) 86%,
+      var(--o-main-text-color, #f3f4f6) 14%
     );
     --am-input-surface: color-mix(
       in srgb,
-      var(--o-webclient-background-color, #ffffff) 96%,
-      var(--o-main-text-color, #212529) 4%
+      var(--o-webclient-background-color, #22252e) 82%,
+      var(--o-main-text-color, #f3f4f6) 18%
     );
     --am-surface-alt: color-mix(
       in srgb,
-      var(--o-webclient-background-color, #ffffff) 92%,
-      var(--o-main-text-color, #212529) 6%
+      var(--o-webclient-background-color, #22252e) 78%,
+      var(--o-main-text-color, #f3f4f6) 22%
     );
-    --am-text: var(--o-main-text-color, #212529);
-    --am-muted: var(--o-view-text-muted, #6c757d);
-    --am-border: var(--o-border-color, #dee2e6);
+    --am-text: var(--o-main-text-color, #f3f4f6);
+    --am-muted: color-mix(in srgb, var(--am-text) 62%, transparent);
+    --am-border: color-mix(
+      in srgb,
+      var(--o-main-text-color, #f3f4f6) 14%,
+      var(--o-webclient-background-color, #22252e)
+    );
     --am-brand: var(--o-brand-odoo, #7c6a8b);
-    --am-shadow: 0 16px 34px color-mix(in srgb, var(--am-text) 9%, transparent);
+    --am-shadow: 0 18px 40px color-mix(in srgb, #000000 35%, transparent);
     --am-shell-height: calc(100vh - 210px);
 
     height: calc(100vh - 140px);
@@ -470,7 +478,7 @@
     tr:not(:last-child)
     td {
     border-bottom: 1px solid
-      color-mix(in srgb, var(--am-border) 82%, transparent) !important;
+      color-mix(in srgb, var(--am-border) 86%, transparent) !important;
   }
 
   .zrn_am_table_shell .o_list_renderer .o_data_row.zrn_am_empty_row td {
