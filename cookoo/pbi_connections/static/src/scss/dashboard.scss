@@ -1,37 +1,3 @@
-// Colores claros para pbi_connections
-.zrn_pbi_dashboard,
-.zrn_pbi_tile,
-.zrn_pbi_panel,
-.zrn_pbi_panel_section,
-.zrn_pbi_panel .o_group,
-.zrn_pbi_panel .o_field_widget,
-.zrn_pbi_panel .o_input,
-.zrn_pbi_panel .o-autocomplete--input,
-.zrn_pbi_panel .o_input_dropdown,
-.zrn_pbi_panel .o_field_CopyClipboardChar input {
-  background: #fff !important;
-  color: #222 !important;
-}
-
-.zrn_pbi_panel .o_input,
-.zrn_pbi_panel .o-autocomplete--input,
-.zrn_pbi_panel .o_input_dropdown,
-.zrn_pbi_panel .o_field_CopyClipboardChar input {
-  background: #f8f9fa !important;
-  color: #222 !important;
-  border-color: #dee2e6 !important;
-}
-
-.zrn_pbi_panel input,
-.zrn_pbi_panel .o_input::placeholder,
-.zrn_pbi_panel input::placeholder {
-  color: #6c757d !important;
-}
-
-.zrn_pbi_dashboard .btn.btn-primary,
-.o_control_panel .zrn_pbi_cp_action_btn {
-  color: #222 !important;
-}
 .o_action:has(.zrn_pbi_connections_home_form) .o_control_panel .o_cp_pager {
   display: none !important;
 }

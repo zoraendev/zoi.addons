@@ -25,7 +25,7 @@ Power BI que hoy viven dentro de Advanced Metrics.
             'pbi_connections/static/src/xml/home_form_view.xml',
             'pbi_connections/static/src/scss/dashboard.scss',
         ],
-        'web.dark_mode_assets_backend': [
+        'web.assets_web_dark': [
             'pbi_connections/static/src/scss/dashboard.dark.scss',
         ],
     },
@@ -33,4 +33,3 @@ Power BI que hoy viven dentro de Advanced Metrics.
         'demo/demo.xml',
     ],
 }
-

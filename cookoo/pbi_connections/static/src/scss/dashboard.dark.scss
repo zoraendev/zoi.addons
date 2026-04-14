@@ -1,37 +1,3 @@
-// Colores claros para pbi_connections
-.zrn_pbi_dashboard,
-.zrn_pbi_tile,
-.zrn_pbi_panel,
-.zrn_pbi_panel_section,
-.zrn_pbi_panel .o_group,
-.zrn_pbi_panel .o_field_widget,
-.zrn_pbi_panel .o_input,
-.zrn_pbi_panel .o-autocomplete--input,
-.zrn_pbi_panel .o_input_dropdown,
-.zrn_pbi_panel .o_field_CopyClipboardChar input {
-  background: #212122 !important;
-  color: #f8f9fa !important;
-}
-
-.zrn_pbi_panel .o_input,
-.zrn_pbi_panel .o-autocomplete--input,
-.zrn_pbi_panel .o_input_dropdown,
-.zrn_pbi_panel .o_field_CopyClipboardChar input {
-  background: #212122 !important;
-  color: #f8f9fa !important;
-  border-color: #dee2e6 !important;
-}
-
-.zrn_pbi_panel input,
-.zrn_pbi_panel .o_input::placeholder,
-.zrn_pbi_panel input::placeholder {
-  color: #6c757d !important;
-}
-
-.zrn_pbi_dashboard .btn.btn-primary,
-.o_control_panel .zrn_pbi_cp_action_btn {
-  color: #222 !important;
-}
 .o_action:has(.zrn_pbi_connections_home_form) .o_control_panel .o_cp_pager {
   display: none !important;
 }
@@ -58,27 +24,37 @@
   .zrn_pbi_dashboard {
     --pbi-surface: var(
       --o-webclient-background-color,
-      var(--o-view-background-color, #ffffff)
+      var(--o-view-background-color, #22252e)
     );
     --pbi-surface-raised: color-mix(
       in srgb,
-      var(--o-webclient-background-color, #ffffff) 94%,
-      var(--o-main-text-color, #212529) 8%
+      var(--o-webclient-background-color, #22252e) 86%,
+      var(--o-main-text-color, #f3f4f6) 14%
     );
-    --pbi-text: var(--o-main-text-color, #212529);
+    --pbi-text: var(--o-main-text-color, #f3f4f6);
     --pbi-surface-alt: var(
       --o-webclient-background-color,
-      var(--o-view-background-color, #f8f9fa)
+      color-mix(
+        in srgb,
+        var(--o-webclient-background-color, #22252e) 78%,
+        var(--o-main-text-color, #f3f4f6) 22%
+      )
     );
-    --pbi-muted: var(--o-view-text-muted, #6c757d);
-    --pbi-border: var(--o-border-color, #dee2e6);
+    --pbi-muted: color-mix(in srgb, var(--pbi-text) 62%, transparent);
+    --pbi-border: color-mix(
+      in srgb,
+      var(--o-main-text-color, #f3f4f6) 14%,
+      var(--o-webclient-background-color, #22252e)
+    );
     --pbi-input-bg: var(
       --o-input-background-color,
-      var(--o-view-background-color, #ffffff)
+      color-mix(
+        in srgb,
+        var(--o-webclient-background-color, #22252e) 82%,
+        var(--o-main-text-color, #f3f4f6) 18%
+      )
     );
-    --pbi-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    --pbi-shadow: 0 10px 30px
-      color-mix(in srgb, var(--pbi-text) 8%, transparent);
+    --pbi-shadow: 0 18px 40px color-mix(in srgb, #000000 35%, transparent);
 
     min-height: calc(100vh - 140px);
     padding: 12px 24px 24px;
@@ -297,6 +273,7 @@
 
   .zrn_pbi_dashboard .btn.btn-primary,
   .o_control_panel .zrn_pbi_cp_action_btn {
+    color: var(--pbi-text) !important;
     box-shadow: none;
   }
 
@@ -351,10 +328,10 @@
     );
     --pbi-callout-bg: color-mix(
       in srgb,
-      var(--o-webclient-background-color, #ffffff) 82%,
-      var(--o-main-text-color, #212529) 3%
+      var(--o-webclient-background-color, #22252e) 82%,
+      var(--o-main-text-color, #f3f4f6) 8%
     );
-    --pbi-callout-text: var(--o-main-text-color);
+    --pbi-callout-text: var(--o-main-text-color, #f3f4f6);
 
     margin-top: 0.9rem;
     padding: 0.9rem 1rem 0.9rem 1.05rem;

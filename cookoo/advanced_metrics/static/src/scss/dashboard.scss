@@ -196,17 +196,21 @@
   .zrn_am_workspace {
     display: grid;
     grid-template-columns: 280px minmax(0, 1fr);
-    gap: 0;
+    gap: 16px;
     align-items: stretch;
     height: 100%;
     min-height: 0;
   }
 
   .zrn_am_filters_panel {
-    padding: 16px;
+    padding: 0;
     position: static;
     align-self: start;
     overflow: visible;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .zrn_am_filters_title {
@@ -379,18 +383,19 @@
     min-height: 0;
     display: flex;
     height: 100%;
+    max-height: var(--am-shell-height);
     overflow: hidden;
   }
 
   .zrn_am_table_shell {
     border: 1px solid var(--am-border);
-    border-radius: 12px;
+    border-radius: 6px;
     background: var(--am-surface-raised);
     box-shadow: var(--am-shadow);
     width: 100%;
     height: 100%;
     min-height: var(--am-shell-height);
-    max-height: 100%;
+    max-height: var(--am-shell-height);
     max-width: 100%;
     overflow-x: auto;
     overflow-y: auto;
@@ -411,10 +416,13 @@
     flex-direction: column;
     border: 0;
     background: transparent;
+    min-height: 0;
+    overflow: visible;
   }
 
   .zrn_am_table_shell .table-responsive {
     height: 100%;
+    overflow: visible;
   }
 
   .zrn_am_table_shell .table-responsive,
@@ -430,7 +438,7 @@
   .zrn_am_table_shell .o_list_renderer .o_list_table thead th {
     position: sticky;
     top: 0;
-    z-index: 3;
+    z-index: 8;
     background: var(--am-surface-raised) !important;
     color: var(--am-text) !important;
     border-bottom: 1px solid var(--am-border) !important;
@@ -516,12 +524,12 @@
       grid-template-columns: 1fr;
       grid-template-rows: auto minmax(0, 1fr);
       min-height: 100%;
-      gap: 10px;
+      gap: 12px;
     }
 
     .zrn_am_filters_panel {
       position: static;
-      padding: 16px;
+      padding: 0;
     }
 
     .zrn_am_results_panel {
@@ -557,8 +565,7 @@
     }
 
     .zrn_am_filters_panel {
-      padding: 14px;
-      border-radius: 10px;
+      padding: 0;
     }
 
     .zrn_advanced_metrics_tile {
@@ -577,7 +584,7 @@
     .zrn_am_table_shell {
       min-height: calc(100dvh - 430px);
       max-height: calc(100dvh - 430px);
-      border-radius: 10px;
+      border-radius: 6px;
     }
 
     .zrn_am_table_shell .o_list_renderer .o_list_table thead th,

@@ -187,18 +187,42 @@ class PbiConnectionsApiConfig(models.Model):
             })
             return values
 
-        data = payload.get('data') or {}
-        status_code = data.get('status', payload.get('code', ''))
+        payload = payload if isinstance(payload, dict) else {}
+        payload_code = str(payload.get('code') or '')
+        raw_data = payload.get('data')
+        data = {}
+        if isinstance(raw_data, list) and raw_data:
+            first_item = raw_data[0]
+            if isinstance(first_item, dict):
+                data = first_item
+        elif isinstance(raw_data, dict):
+            data = raw_data
+
+        has_status = 'status' in data and data.get('status') not in (None, '')
+        status_code = data.get('status') if has_status else ''
         values['client_status_code'] = str(status_code or '')
         values['client_validation_debug'] = json.dumps({
             'code': payload.get('code'),
             'status': status_code,
             'userMessage': payload.get('userMessage'),
             'technicalMessage': payload.get('technicalMessage'),
+            'data': raw_data,
         }, ensure_ascii=False)
 
         user_message = (payload.get('userMessage') or '').strip()
         technical_message = (payload.get('technicalMessage') or '').strip()
+
+        if payload_code != '200' or not has_status:
+            values.update({
+                'show_dashboard': False,
+                'client_validation_state': 'error',
+                'client_status_code': payload_code or 'invalid_response',
+                'client_status_title': _('Cliente no valido'),
+                'client_status_message': user_message or technical_message or _(
+                    'La respuesta del servicio no confirma un cliente valido. Verifica la clave del cliente, la API key y la URL configurada.'
+                ),
+            })
+            return values
 
         if str(status_code) == '5':
             values.update({
@@ -207,6 +231,17 @@ class PbiConnectionsApiConfig(models.Model):
                 'client_status_title': _('Cliente insolvente'),
                 'client_status_message': user_message or technical_message or _(
                     'La instancia presenta un saldo pendiente. Contacta a soporte para reactivar el acceso al servicio.'
+                ),
+            })
+            return values
+
+        if str(status_code) != '1':
+            values.update({
+                'show_dashboard': False,
+                'client_validation_state': 'error',
+                'client_status_title': _('Cliente sin acceso'),
+                'client_status_message': user_message or technical_message or _(
+                    'El estado del cliente no permite acceder al servicio en este momento.'
                 ),
             })
 
