@@ -16,6 +16,16 @@ class InventoryDashboardController(BaseDashboardController):
         'groupBy',
         'daysWithoutMovement',
     )
+    _inventory_service_model = 'pbi_connections.inventory.dashboard'
+    _inventory_request_filter_keys = (
+        'dateFrom',
+        'dateTo',
+        'warehouseId',
+        'categoryId',
+        'limit',
+        'groupBy',
+        'daysWithoutMovement',
+    )
 
     @http.route([
         '/api/bi/inventory-intelligent/top-products',
@@ -26,6 +36,8 @@ class InventoryDashboardController(BaseDashboardController):
             'get_top_products_report_data',
             'Top productos obtenido correctamente.',
             'No fue posible obtener el top de productos.',
+            service_model=self._inventory_service_model,
+            request_filter_keys=self._inventory_request_filter_keys,
         )
 
     @http.route([
@@ -37,6 +49,8 @@ class InventoryDashboardController(BaseDashboardController):
             'get_products_sales_report_data',
             'Ventas por producto obtenidas correctamente.',
             'No fue posible obtener las ventas por producto.',
+            service_model=self._inventory_service_model,
+            request_filter_keys=self._inventory_request_filter_keys,
         )
 
     @http.route([
@@ -50,6 +64,8 @@ class InventoryDashboardController(BaseDashboardController):
             'No fue posible obtener la tendencia de ventas.',
             extra_keys=['periodSummary'],
             extra_payload={'periodSummary': {}},
+            service_model=self._inventory_service_model,
+            request_filter_keys=self._inventory_request_filter_keys,
         )
 
     @http.route([
@@ -61,6 +77,8 @@ class InventoryDashboardController(BaseDashboardController):
             'get_dead_products_report_data',
             'Productos sin movimiento obtenidos correctamente.',
             'No fue posible obtener los productos sin movimiento.',
+            service_model=self._inventory_service_model,
+            request_filter_keys=self._inventory_request_filter_keys,
         )
 
     @http.route([
@@ -72,6 +90,8 @@ class InventoryDashboardController(BaseDashboardController):
             'get_high_rotation_products_report_data',
             'Productos con alta rotación obtenidos correctamente.',
             'No fue posible obtener los productos con alta rotación.',
+            service_model=self._inventory_service_model,
+            request_filter_keys=self._inventory_request_filter_keys,
         )
 
     @http.route([
@@ -83,4 +103,6 @@ class InventoryDashboardController(BaseDashboardController):
             'get_weekly_production_plan_report_data',
             'Plan de produccion obtenido correctamente.',
             'No fue posible obtener el plan de produccion.',
+            service_model=self._inventory_service_model,
+            request_filter_keys=self._inventory_request_filter_keys,
         )

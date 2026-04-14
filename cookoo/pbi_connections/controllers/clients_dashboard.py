@@ -14,6 +14,14 @@ class ClientsDashboardController(BaseDashboardController):
         'sortBy',
         'inactiveDays',
     )
+    _customer_service_model = 'pbi_connections.customer.dashboard'
+    _customer_request_filter_keys = (
+        'dateFrom',
+        'dateTo',
+        'top',
+        'sortBy',
+        'inactiveDays',
+    )
 
     @http.route(
         [
@@ -30,6 +38,8 @@ class ClientsDashboardController(BaseDashboardController):
             'get_frequent_customers_report_data',
             'Clientes mas frecuentes obtenidos correctamente.',
             'No fue posible obtener los clientes mas frecuentes.',
+            service_model=self._customer_service_model,
+            request_filter_keys=self._customer_request_filter_keys,
         )
 
     @http.route(
@@ -47,6 +57,8 @@ class ClientsDashboardController(BaseDashboardController):
             'get_inactive_customers_report_data',
             'Clientes inactivos obtenidos correctamente.',
             'No fue posible obtener los clientes inactivos.',
+            service_model=self._customer_service_model,
+            request_filter_keys=self._customer_request_filter_keys,
         )
 
     @http.route(
@@ -64,4 +76,6 @@ class ClientsDashboardController(BaseDashboardController):
             'get_customer_value_report_data',
             'Valor por cliente obtenido correctamente.',
             'No fue posible obtener el valor por cliente.',
+            service_model=self._customer_service_model,
+            request_filter_keys=self._customer_request_filter_keys,
         )
