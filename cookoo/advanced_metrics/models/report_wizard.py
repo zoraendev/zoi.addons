@@ -12,9 +12,21 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     _description = 'Asistente de reporte de ventas e inventario'
     _rec_name = 'name'
 
+    SALE_ORDER_STATE_SELECTION = [
+        ('draft', 'Presupuesto'),
+        ('sent', 'Presupuesto enviado'),
+        ('sale', 'Pedido de venta'),
+        ('done', 'Bloqueado'),
+        ('cancel', 'Cancelado'),
+    ]
+
     name = fields.Char(string='Titulo', default='Ordenes de venta')
     fecha_entrega_desde = fields.Date(string='Fecha de entrega desde')
     fecha_entrega_hasta = fields.Date(string='Fecha de entrega hasta')
+    sale_order_state = fields.Selection(
+        selection=SALE_ORDER_STATE_SELECTION,
+        string='Estado de OV',
+    )
     cliente_ids = fields.Many2many(
         'res.partner',
         string='Clientes',
@@ -121,6 +133,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         return {
             'fecha_entrega_desde': fields.Date.to_string(self.fecha_entrega_desde) if self.fecha_entrega_desde else False,
             'fecha_entrega_hasta': fields.Date.to_string(self.fecha_entrega_hasta) if self.fecha_entrega_hasta else False,
+            'sale_order_state': self.sale_order_state or False,
             'cliente_ids': self.cliente_ids.ids,
             'product_ids': self.product_ids.ids,
         }
@@ -137,6 +150,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         product_ids = filters.get('product_ids') or []
         cliente_id = filters.get('cliente_id')
         cliente_nombre = (filters.get('cliente_nombre') or '').strip()
+        sale_order_state = (filters.get('sale_order_state') or '').strip()
 
         normalized_cliente_ids = []
         for partner_id in cliente_ids:
@@ -157,6 +171,9 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             ('display_type', '=', False),
             ('product_id', '!=', False),
         ]
+
+        if sale_order_state:
+            domain[0] = ('order_id.state', '=', sale_order_state)
 
         if normalized_cliente_ids:
             domain.append(('order_partner_id.commercial_partner_id', 'in', normalized_cliente_ids))
@@ -250,12 +267,13 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             if product_values:
                 ProductLine.create(product_values)
 
-    @api.depends('fecha_entrega_desde', 'fecha_entrega_hasta', 'cliente_ids', 'product_ids')
+    @api.depends('fecha_entrega_desde', 'fecha_entrega_hasta', 'sale_order_state', 'cliente_ids', 'product_ids')
     def _compute_review_data(self):
         for wizard in self:
             base_filters = {
                 'fecha_entrega_desde': fields.Date.to_string(wizard.fecha_entrega_desde) if wizard.fecha_entrega_desde else False,
                 'fecha_entrega_hasta': fields.Date.to_string(wizard.fecha_entrega_hasta) if wizard.fecha_entrega_hasta else False,
+                'sale_order_state': wizard.sale_order_state or False,
             }
             available_lines = wizard._search_sale_lines_from_filters(base_filters)
             candidate_lines = wizard._get_candidate_sale_lines()
@@ -283,7 +301,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             wizard.preview_cliente_count = len(preview_client_ids)
             wizard.preview_product_count = len(preview_product_ids)
 
-    @api.onchange('fecha_entrega_desde', 'fecha_entrega_hasta', 'cliente_ids', 'product_ids')
+    @api.onchange('fecha_entrega_desde', 'fecha_entrega_hasta', 'sale_order_state', 'cliente_ids', 'product_ids')
     def _onchange_filters_refresh_review_data(self):
         self._reset_report_payload()
         self._compute_review_data()
@@ -304,6 +322,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         self.write({
             'fecha_entrega_desde': False,
             'fecha_entrega_hasta': False,
+            'sale_order_state': False,
             'cliente_ids': [(5, 0, 0)],
             'product_ids': [(5, 0, 0)],
         })

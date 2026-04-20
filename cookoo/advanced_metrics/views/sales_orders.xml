@@ -21,6 +21,7 @@
                         <group>
                             <field name="fecha_entrega_desde"/>
                             <field name="fecha_entrega_hasta"/>
+                            <field name="sale_order_state" placeholder="Todos los estados"/>
                         </group>
                         <group>
                             <field
