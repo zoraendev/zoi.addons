@@ -170,6 +170,23 @@
     background: #342c39;
   }
 
+  .zrn_am_report_matrix_wrap {
+    scrollbar-color: #705781 #2b2330;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-track {
+    background: #2b2330;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb {
+    background: #705781;
+    border-color: #2b2330;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb:hover {
+    background: #8a6d9f;
+  }
+
   .zrn_am_report_matrix .zrn_am_change_cell {
     background: #312937;
   }
@@ -189,6 +206,7 @@
   .zrn_am_report_table_title {
     color: var(--o-main-text-color, #f3f4f6);
   }
+
 }
 
 .o_form_view.zrn_advanced_metrics_sales_orders_form {

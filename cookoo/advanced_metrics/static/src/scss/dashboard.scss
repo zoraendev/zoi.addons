@@ -123,12 +123,13 @@
   width: 100%;
 
   .o_form_sheet_bg.position-relative {
-    width: 100vw;
-    max-width: none;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
     padding-left: 16px;
     padding-right: 16px;
+    overflow-x: hidden;
   }
 
   .o_form_statusbar {
@@ -149,6 +150,14 @@
   .o_form_sheet_bg {
     overflow: hidden;
     width: 100%;
+  }
+
+  .o_form_renderer {
+    overflow-x: hidden;
+  }
+
+  .o_group {
+    overflow-x: hidden;
   }
 
   .o_content,
@@ -590,11 +599,10 @@
   }
 
   .zrn_am_report_table_panel {
-    flex: 1 1 auto;
-    min-height: 0;
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
-    gap: 10px;
+    min-height: 0;
     width: 100%;
     max-width: 100%;
     overflow: hidden;
@@ -610,12 +618,25 @@
   }
 
   .zrn_am_report_table_panel .o_field_widget[name="report_html"] {
-    flex: 1 1 auto;
-    min-height: 0;
     display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
     width: 100%;
     max-width: 100%;
     overflow: hidden;
+  }
+
+  .zrn_am_report_table_panel .o_field_widget[name="report_html"].o_readonly_modifier.o_field_html,
+  .zrn_am_report_table_panel .o_field_widget[name="report_html"].o_field_html {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
   }
 
   .zrn_am_report_table_panel .o_field_widget[name="report_html"] > .o_readonly_modifier,
@@ -628,7 +649,20 @@
     min-height: 0;
     display: flex;
     flex: 1 1 auto;
+    flex-direction: column;
     overflow: hidden;
+  }
+
+  .zrn_am_report_table_panel .o_field_widget[name="report_html"].o_readonly_modifier.o_field_html > div,
+  .zrn_am_report_table_panel .o_field_widget[name="report_html"].o_field_html > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
   }
 
   .zrn_am_report_table_panel .o_field_widget[name="report_html"] .o_field_html > div,
@@ -639,42 +673,64 @@
     min-height: 0;
     display: flex;
     flex: 1 1 auto;
+    flex-direction: column;
     overflow: hidden;
   }
 
   .zrn_am_report_view {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-    min-width: 0;
-    min-height: 0;
     flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    min-width: 100%;
   }
 
   .zrn_am_report_matrix_wrap {
+    display: block;
     flex: 1 1 auto;
-    min-height: 420px;
+    min-height: 0;
+    height: 100%;
     max-height: 100%;
     width: 100%;
     max-width: 100%;
-    overflow-x: auto;
-    overflow-y: auto;
+    overflow-x: scroll;
+    overflow-y: scroll;
     border: 1px solid var(--am-border);
     border-radius: 10px;
     background: #fbfbfd;
     box-shadow: var(--am-shadow);
-    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable both-edges;
+    scrollbar-width: auto;
+    scrollbar-color: #8a7897 #ece7f1;
   }
 
   .zrn_am_report_matrix {
     width: max-content;
-    min-width: 1600px;
-    max-width: none;
+    min-width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    table-layout: fixed;
+    table-layout: auto;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-track {
+    background: #ece7f1;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb {
+    background: #8a7897;
+    border-radius: 999px;
+    border: 2px solid #ece7f1;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb:hover {
+    background: #7c6a8b;
   }
 
   .zrn_am_report_matrix thead th,
@@ -686,9 +742,6 @@
   }
 
   .zrn_am_report_matrix thead th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
     text-align: center;
     font-size: 0.78rem;
     font-weight: 700;
@@ -1026,7 +1079,8 @@
 
   @media (max-width: 767.98px) {
     .o_content {
-      overflow: auto;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     .zrn_advanced_metrics_dashboard {
@@ -1082,15 +1136,14 @@
     .zrn_am_report_screen {
       height: auto;
       min-height: calc(100dvh - 220px);
-      overflow: hidden;
     }
 
     .zrn_am_report_table_panel {
-      min-height: calc(100dvh - 360px);
+      min-height: 0;
     }
 
     .zrn_am_report_matrix_wrap {
-      min-height: calc(100dvh - 400px);
+      min-height: 0;
     }
   }
 
