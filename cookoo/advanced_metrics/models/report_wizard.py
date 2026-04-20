@@ -1,4 +1,8 @@
+from calendar import monthrange
+from collections import OrderedDict
 from datetime import datetime, timedelta
+
+from markupsafe import escape
 
 from odoo import api, fields, models
 
@@ -6,24 +10,454 @@ from odoo import api, fields, models
 class AdvancedMetricsReportWizard(models.TransientModel):
     _name = 'advanced_metrics.report.wizard'
     _description = 'Asistente de reporte de ventas e inventario'
+    _rec_name = 'name'
 
+    name = fields.Char(string='Titulo', default='Ordenes de venta')
     fecha_entrega_desde = fields.Date(string='Fecha de entrega desde')
     fecha_entrega_hasta = fields.Date(string='Fecha de entrega hasta')
-    cliente_id = fields.Many2one(
+    cliente_ids = fields.Many2many(
         'res.partner',
-        string='Cliente',
+        string='Clientes',
     )
-    numero_orden_venta = fields.Char(string='Numero de orden de venta')
-    producto = fields.Char(string='Producto')
-    cantidad_vendida_min = fields.Float(string='Cantidad vendida minima')
-    cantidad_vendida_max = fields.Float(string='Cantidad vendida maxima')
-    inventario_disponible_min = fields.Float(string='Inventario disponible minimo')
-    inventario_disponible_max = fields.Float(string='Inventario disponible maximo')
+    product_ids = fields.Many2many(
+        'product.product',
+        string='Productos',
+    )
+    available_cliente_ids = fields.Many2many(
+        'res.partner',
+        string='Clientes disponibles',
+        compute='_compute_review_data',
+        readonly=True,
+    )
+    available_product_ids = fields.Many2many(
+        'product.product',
+        string='Productos disponibles',
+        compute='_compute_review_data',
+        readonly=True,
+    )
+    preview_cliente_ids = fields.Many2many(
+        'res.partner',
+        string='Clientes a revisar',
+        compute='_compute_review_data',
+        readonly=True,
+    )
+    preview_product_ids = fields.Many2many(
+        'product.product',
+        string='Productos a revisar',
+        compute='_compute_review_data',
+        readonly=True,
+    )
+    preview_cliente_count = fields.Integer(
+        string='Cantidad de clientes',
+        compute='_compute_review_data',
+        readonly=True,
+    )
+    preview_product_count = fields.Integer(
+        string='Cantidad de productos',
+        compute='_compute_review_data',
+        readonly=True,
+    )
+    selected_cliente_line_ids = fields.One2many(
+        'advanced_metrics.report.wizard.client.line',
+        'wizard_id',
+        string='Clientes seleccionados',
+    )
+    selected_product_line_ids = fields.One2many(
+        'advanced_metrics.report.wizard.product.line',
+        'wizard_id',
+        string='Productos seleccionados',
+    )
     report_line_ids = fields.One2many(
         'advanced_metrics.report.wizard.line',
         'wizard_id',
         string='Lineas de reporte',
     )
+    report_html = fields.Html(
+        string='Detalle del reporte',
+        sanitize=False,
+        readonly=True,
+    )
+    report_ready = fields.Boolean(string='Reporte listo', default=False)
+    report_row_count = fields.Integer(string='Lineas del reporte', readonly=True)
+    report_order_count = fields.Integer(string='Ordenes consideradas', readonly=True)
+    report_customer_count = fields.Integer(string='Clientes en reporte', readonly=True)
+    report_product_count = fields.Integer(string='Productos en reporte', readonly=True)
+
+    @api.model
+    def _coerce_to_date(self, value):
+        if not value:
+            return False
+        if isinstance(value, str):
+            return fields.Date.from_string(value)
+        if hasattr(value, 'date'):
+            return value.date()
+        return value
+
+    def _get_effective_line_date(self, line):
+        effective_date = line.order_id.commitment_date or line.order_id.date_order
+        return self._coerce_to_date(effective_date)
+
+    @api.model
+    def _line_matches_filter_dates(self, line, fecha_desde=False, fecha_hasta=False):
+        effective_date = self._get_effective_line_date(line)
+        if not effective_date:
+            return False
+        if fecha_desde and effective_date < fecha_desde:
+            return False
+        if fecha_hasta and effective_date > fecha_hasta:
+            return False
+        return True
+
+    def _line_matches_date_range(self, line):
+        self.ensure_one()
+        return self._line_matches_filter_dates(
+            line,
+            fecha_desde=self.fecha_entrega_desde,
+            fecha_hasta=self.fecha_entrega_hasta,
+        )
+
+    def _get_report_filters(self):
+        self.ensure_one()
+        return {
+            'fecha_entrega_desde': fields.Date.to_string(self.fecha_entrega_desde) if self.fecha_entrega_desde else False,
+            'fecha_entrega_hasta': fields.Date.to_string(self.fecha_entrega_hasta) if self.fecha_entrega_hasta else False,
+            'cliente_ids': self.cliente_ids.ids,
+            'product_ids': self.product_ids.ids,
+        }
+
+    @api.model
+    def _search_sale_lines_from_filters(self, filters=None, limit=None):
+        filters = filters or {}
+        if 'sale.order.line' not in self.env:
+            return self.env['sale.order.line']
+
+        fecha_desde = self._coerce_to_date(filters.get('fecha_entrega_desde'))
+        fecha_hasta = self._coerce_to_date(filters.get('fecha_entrega_hasta'))
+        cliente_ids = filters.get('cliente_ids') or []
+        product_ids = filters.get('product_ids') or []
+        cliente_id = filters.get('cliente_id')
+        cliente_nombre = (filters.get('cliente_nombre') or '').strip()
+
+        normalized_cliente_ids = []
+        for partner_id in cliente_ids:
+            try:
+                normalized_cliente_ids.append(int(partner_id))
+            except (TypeError, ValueError):
+                continue
+
+        normalized_product_ids = []
+        for product_id in product_ids:
+            try:
+                normalized_product_ids.append(int(product_id))
+            except (TypeError, ValueError):
+                continue
+
+        domain = [
+            ('order_id.state', 'in', ['draft', 'sent', 'sale', 'done']),
+            ('display_type', '=', False),
+            ('product_id', '!=', False),
+        ]
+
+        if normalized_cliente_ids:
+            domain.append(('order_partner_id.commercial_partner_id', 'in', normalized_cliente_ids))
+        elif cliente_id:
+            domain.append(('order_partner_id.commercial_partner_id', '=', int(cliente_id)))
+        elif cliente_nombre:
+            domain.append(('order_partner_id.commercial_partner_id.name', 'ilike', cliente_nombre))
+
+        if normalized_product_ids:
+            domain.append(('product_id', 'in', normalized_product_ids))
+
+        sale_lines = self.env['sale.order.line'].search(domain, order='id asc')
+
+        if fecha_desde or fecha_hasta:
+            sale_lines = sale_lines.filtered(
+                lambda line: self._line_matches_filter_dates(
+                    line,
+                    fecha_desde=fecha_desde,
+                    fecha_hasta=fecha_hasta,
+                )
+            )
+
+        safe_limit = min(limit or 10000, 10000)
+        return sale_lines[:safe_limit]
+
+    def _get_candidate_sale_lines(self):
+        self.ensure_one()
+        return self._search_sale_lines_from_filters(self._get_report_filters())
+
+    def _sync_selected_review_lines(self, candidate_lines=None):
+        ClientLine = self.env['advanced_metrics.report.wizard.client.line']
+        ProductLine = self.env['advanced_metrics.report.wizard.product.line']
+        StockQuant = self.env['stock.quant'] if 'stock.quant' in self.env else False
+
+        for wizard in self:
+            lines = candidate_lines if candidate_lines is not None else wizard._get_candidate_sale_lines()
+            wizard.selected_cliente_line_ids.unlink()
+            wizard.selected_product_line_ids.unlink()
+
+            client_values = []
+            for partner in wizard.cliente_ids:
+                partner_lines = lines.filtered(
+                    lambda line: line.order_partner_id.commercial_partner_id == partner
+                )
+                order_count = len(partner_lines.mapped('order_id'))
+                total_units = sum(partner_lines.mapped('product_uom_qty'))
+                client_values.append({
+                    'wizard_id': wizard.id,
+                    'partner_id': partner.id,
+                    'city': partner.city or '',
+                    'email': partner.email or '',
+                    'order_count': order_count,
+                    'total_units': total_units,
+                })
+            if client_values:
+                ClientLine.create(client_values)
+
+            product_values = []
+            product_ids = wizard.product_ids.ids
+            stock_data = {}
+            if product_ids and StockQuant:
+                grouped_quants = StockQuant.read_group(
+                    [('product_id', 'in', product_ids), ('location_id.usage', '=', 'internal')],
+                    ['product_id', 'available_quantity:sum', 'quantity:sum'],
+                    ['product_id'],
+                )
+                stock_data = {
+                    item['product_id'][0]: {
+                        'stock_real': item.get('quantity', 0.0),
+                        'stock_libre': item.get('available_quantity', 0.0),
+                    }
+                    for item in grouped_quants
+                    if item.get('product_id')
+                }
+
+            for product in wizard.product_ids:
+                product_lines = lines.filtered(lambda line: line.product_id == product)
+                order_count = len(product_lines.mapped('order_id'))
+                demanded_qty = sum(product_lines.mapped('product_uom_qty'))
+                stock_info = stock_data.get(product.id, {})
+                product_values.append({
+                    'wizard_id': wizard.id,
+                    'product_id': product.id,
+                    'default_code': product.default_code or '',
+                    'categ_name': product.categ_id.display_name or '',
+                    'order_count': order_count,
+                    'demanded_qty': demanded_qty,
+                    'stock_real': stock_info.get('stock_real', 0.0),
+                    'stock_libre': stock_info.get('stock_libre', 0.0),
+                })
+            if product_values:
+                ProductLine.create(product_values)
+
+    @api.depends('fecha_entrega_desde', 'fecha_entrega_hasta', 'cliente_ids', 'product_ids')
+    def _compute_review_data(self):
+        for wizard in self:
+            base_filters = {
+                'fecha_entrega_desde': fields.Date.to_string(wizard.fecha_entrega_desde) if wizard.fecha_entrega_desde else False,
+                'fecha_entrega_hasta': fields.Date.to_string(wizard.fecha_entrega_hasta) if wizard.fecha_entrega_hasta else False,
+            }
+            available_lines = wizard._search_sale_lines_from_filters(base_filters)
+            candidate_lines = wizard._get_candidate_sale_lines()
+
+            available_client_ids = available_lines.mapped('order_partner_id.commercial_partner_id').ids
+            available_product_ids = available_lines.mapped('product_id').ids
+
+            preview_lines = candidate_lines
+            if wizard.cliente_ids:
+                preview_lines = preview_lines.filtered(
+                    lambda line: line.order_partner_id.commercial_partner_id in wizard.cliente_ids
+                )
+            if wizard.product_ids:
+                preview_lines = preview_lines.filtered(
+                    lambda line: line.product_id in wizard.product_ids
+                )
+
+            preview_client_ids = preview_lines.mapped('order_partner_id.commercial_partner_id').ids
+            preview_product_ids = preview_lines.mapped('product_id').ids
+
+            wizard.available_cliente_ids = [(6, 0, available_client_ids)]
+            wizard.available_product_ids = [(6, 0, available_product_ids)]
+            wizard.preview_cliente_ids = [(6, 0, preview_client_ids)]
+            wizard.preview_product_ids = [(6, 0, preview_product_ids)]
+            wizard.preview_cliente_count = len(preview_client_ids)
+            wizard.preview_product_count = len(preview_product_ids)
+
+    @api.onchange('fecha_entrega_desde', 'fecha_entrega_hasta', 'cliente_ids', 'product_ids')
+    def _onchange_filters_refresh_review_data(self):
+        self._reset_report_payload()
+        self._compute_review_data()
+
+    def _reset_report_payload(self):
+        for wizard in self:
+            if wizard.id:
+                wizard.report_line_ids.unlink()
+            wizard.report_html = False
+            wizard.report_ready = False
+            wizard.report_row_count = 0
+            wizard.report_order_count = 0
+            wizard.report_customer_count = 0
+            wizard.report_product_count = 0
+
+    def action_clear_filters(self):
+        self.ensure_one()
+        self.write({
+            'fecha_entrega_desde': False,
+            'fecha_entrega_hasta': False,
+            'cliente_ids': [(5, 0, 0)],
+            'product_ids': [(5, 0, 0)],
+        })
+        self._reset_report_payload()
+        self._compute_review_data()
+        filter_view = self.env.ref('advanced_metrics.view_advanced_metrics_report_wizard_form')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Ordenes de venta',
+            'res_model': 'advanced_metrics.report.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'view_id': filter_view.id,
+            'views': [(filter_view.id, 'form')],
+            'target': 'current',
+            '_noBreadcrumbs': True,
+        }
+
+    def _format_report_number(self, value):
+        value = float(value or 0.0)
+        if value.is_integer():
+            return f'{int(value):,}'
+        return f'{value:,.2f}'
+
+    def _build_report_html(self, rows):
+        if not rows:
+            return '<div class="zrn_am_report_empty">No hay ordenes de venta para mostrar con la seleccion actual.</div>'
+
+        products = OrderedDict()
+        order_names = set()
+        customer_ids = set()
+
+        for row in rows:
+            product_key = row.get('product_id') or 0
+            client_key = row.get('cliente_id') or 0
+            order_name = row.get('numero_orden_venta') or ''
+            order_names.add(order_name)
+            if client_key:
+                customer_ids.add(client_key)
+
+            product_bucket = products.setdefault(product_key, {
+                'name': row.get('producto') or 'Producto sin nombre',
+                'stock_real': row.get('stock_real_total', 0.0),
+                'stock_libre': row.get('stock_libre_total', 0.0),
+                'demanded_qty': 0.0,
+                'suggested_qty': 0.0,
+                'clients': OrderedDict(),
+            })
+            product_bucket['demanded_qty'] += float(row.get('cantidad_vendida') or 0.0)
+            product_bucket['suggested_qty'] += float(row.get('cantidad_sugerida_producir') or 0.0)
+
+            client_bucket = product_bucket['clients'].setdefault(client_key, {
+                'name': row.get('cliente') or 'Cliente sin nombre',
+                'demanded_qty': 0.0,
+                'suggested_qty': 0.0,
+                'orders': [],
+            })
+            client_bucket['demanded_qty'] += float(row.get('cantidad_vendida') or 0.0)
+            client_bucket['suggested_qty'] += float(row.get('cantidad_sugerida_producir') or 0.0)
+            client_bucket['orders'].append(row)
+
+        parts = [
+            '<div class="zrn_am_report_view">',
+            '<div class="zrn_am_report_summary_strip">',
+            f'<div class="zrn_am_report_summary_item"><span>Clientes</span><strong>{len(customer_ids)}</strong></div>',
+            f'<div class="zrn_am_report_summary_item"><span>Productos</span><strong>{len(products)}</strong></div>',
+            f'<div class="zrn_am_report_summary_item"><span>OVs</span><strong>{len(order_names)}</strong></div>',
+            f'<div class="zrn_am_report_summary_item"><span>Lineas</span><strong>{len(rows)}</strong></div>',
+            '</div>',
+        ]
+
+        for product_data in products.values():
+            parts.extend([
+                '<section class="zrn_am_report_product_group">',
+                '<div class="zrn_am_report_product_header">',
+                f'<div class="zrn_am_report_product_title">{escape(product_data["name"])}</div>',
+                '<div class="zrn_am_report_metrics">',
+                f'<span class="zrn_am_report_metric"><label>Demanda</label><strong>{self._format_report_number(product_data["demanded_qty"])}</strong></span>',
+                f'<span class="zrn_am_report_metric"><label>Sugerido</label><strong>{self._format_report_number(product_data["suggested_qty"])}</strong></span>',
+                f'<span class="zrn_am_report_metric"><label>Stock libre</label><strong>{self._format_report_number(product_data["stock_libre"])} </strong></span>',
+                f'<span class="zrn_am_report_metric"><label>Stock real</label><strong>{self._format_report_number(product_data["stock_real"])} </strong></span>',
+                '</div>',
+                '</div>',
+            ])
+
+            for client_data in product_data['clients'].values():
+                parts.extend([
+                    '<div class="zrn_am_report_client_group">',
+                    '<div class="zrn_am_report_client_header">',
+                    f'<h4>{escape(client_data["name"])}</h4>',
+                    '<div class="zrn_am_report_client_totals">',
+                    f'<span>OVs: <strong>{len({row.get("numero_orden_venta") for row in client_data["orders"] if row.get("numero_orden_venta")})}</strong></span>',
+                    f'<span>Demanda: <strong>{self._format_report_number(client_data["demanded_qty"])}</strong></span>',
+                    f'<span>Producir: <strong>{self._format_report_number(client_data["suggested_qty"])}</strong></span>',
+                    '</div>',
+                    '</div>',
+                    '<div class="zrn_am_report_order_table">',
+                    '<div class="zrn_am_report_order_table_head">',
+                    '<span>Fecha</span><span>Dia</span><span>OV</span><span>Cantidad</span><span>Stock disp.</span><span>Stock libre</span><span>Sugerido</span>',
+                    '</div>',
+                ])
+
+                for row in client_data['orders']:
+                    parts.extend([
+                        '<div class="zrn_am_report_order_row">',
+                        f'<span>{escape(row.get("fecha_entrega") or "")}</span>',
+                        f'<span>{escape(row.get("dia_semana") or "")}</span>',
+                        f'<span>{escape(row.get("numero_orden_venta") or "")}</span>',
+                        f'<span>{self._format_report_number(row.get("cantidad_vendida"))}</span>',
+                        f'<span>{self._format_report_number(row.get("inventario_disponible"))}</span>',
+                        f'<span>{self._format_report_number(row.get("inventario_libre_usar"))}</span>',
+                        f'<span>{self._format_report_number(row.get("cantidad_sugerida_producir"))}</span>',
+                        '</div>',
+                    ])
+
+                parts.extend(['</div>', '</div>'])
+
+            parts.append('</section>')
+
+        parts.append('</div>')
+        return ''.join(parts)
+
+    def _load_report_payload(self, rows):
+        Line = self.env['advanced_metrics.report.wizard.line']
+        for wizard in self:
+            wizard.report_line_ids.unlink()
+            line_values = []
+            for row in rows:
+                line_values.append({
+                    'wizard_id': wizard.id,
+                    'fecha_entrega': row.get('fecha_entrega'),
+                    'dia_semana': row.get('dia_semana'),
+                    'partner_id': row.get('cliente_id') or False,
+                    'cliente_id': row.get('cliente_id') or False,
+                    'order_id': row.get('order_id') or False,
+                    'numero_orden_venta': row.get('numero_orden_venta'),
+                    'product_id': row.get('product_id') or False,
+                    'producto': row.get('producto'),
+                    'cantidad_vendida': row.get('cantidad_vendida', 0.0),
+                    'inventario_disponible': row.get('inventario_disponible', 0.0),
+                    'inventario_libre_usar': row.get('inventario_libre_usar', 0.0),
+                    'cantidad_sugerida_producir': row.get('cantidad_sugerida_producir', 0.0),
+                })
+            if line_values:
+                Line.create(line_values)
+
+            wizard.write({
+                'report_html': wizard._build_report_html(rows),
+                'report_ready': True,
+                'report_row_count': len(rows),
+                'report_order_count': len({row.get('numero_orden_venta') for row in rows if row.get('numero_orden_venta')}),
+                'report_customer_count': len({row.get('cliente_id') for row in rows if row.get('cliente_id')}),
+                'report_product_count': len({row.get('product_id') for row in rows if row.get('product_id')}),
+            })
 
     @api.model
     def get_sales_orders_report_rows(self, filters=None, limit=500):
@@ -37,7 +471,9 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         Filtros soportados (dict):
             - fecha_entrega_desde (str YYYY-MM-DD): Limite inferior de fecha de entrega.
             - fecha_entrega_hasta (str YYYY-MM-DD): Limite superior de fecha de entrega.
-            - cliente_id (int): ID del partner para filtrar por cliente exacto.
+            - cliente_ids (list[int]): IDs de partners para filtrar por clientes.
+            - product_ids (list[int]): IDs de productos para filtrar por producto.
+            - cliente_id (int): ID del partner para compatibilidad hacia atras.
             - cliente_nombre (str): Nombre parcial para busqueda difusa de cliente.
 
         Returns:
@@ -68,42 +504,8 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         if 'sale.order.line' not in self.env or 'stock.quant' not in self.env:
             return []
 
-        sale_line_model = self.env['sale.order.line']
         stock_quant_model = self.env['stock.quant']
-
-        # --- Dominio base: solo ordenes confirmadas o completadas ---
-        # display_type=False excluye lineas de seccion/nota que no son productos.
-        domain = [
-            ('order_id.state', 'in', ['sale', 'done']),
-            ('display_type', '=', False),
-        ]
-
-        fecha_desde = filters.get('fecha_entrega_desde')
-        fecha_hasta = filters.get('fecha_entrega_hasta')
-        cliente_id = filters.get('cliente_id')
-        cliente_nombre = filters.get('cliente_nombre')
-
-        # --- FILTRO INTELIGENTE EN CASCADA (Mitigacion Riesgo 1) ---
-        # Prioridad: commitment_date (fecha de entrega prometida al cliente).
-        # Problema: commitment_date puede estar vacia si el vendedor no la lleno.
-        # Solucion: Buscamos primero por commitment_date. Para las ordenes que no
-        # la tengan, el campo f_entrega mas abajo usara date_order como respaldo,
-        # pero la busqueda principal filtra por commitment_date para que el
-        # reporte refleje la realidad logistica de entregas.
-        if fecha_desde:
-            domain.append(('order_id.commitment_date', '>=', f'{fecha_desde} 00:00:00'))
-        if fecha_hasta:
-            domain.append(('order_id.commitment_date', '<=', f'{fecha_hasta} 23:59:59'))
-
-        if cliente_id:
-            domain.append(('order_partner_id', '=', int(cliente_id)))
-        elif cliente_nombre:
-            domain.append(('order_partner_id.name', 'ilike', cliente_nombre))
-
-        # --- MITIGACION RIESGO 4: Limite anti-colapso de memoria ---
-        # Nunca permitimos mas de 10,000 filas para proteger la RAM del servidor.
-        safe_limit = min(limit, 10000)
-        order_lines = sale_line_model.search(domain, order='id desc', limit=safe_limit)
+        order_lines = self._search_sale_lines_from_filters(filters, limit=limit)
         product_ids = order_lines.mapped('product_id').ids
 
         # --- Consulta de inventario actual agrupado por producto ---
@@ -188,15 +590,20 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 fecha_date = datetime.now().date()
 
             rows.append({
+                'order_id': line.order_id.id,
+                'cliente_id': line.order_partner_id.commercial_partner_id.id,
+                'product_id': product_id,
                 'fecha_entrega': fecha_date.isoformat(),
                 'dia_semana': DIAS_SEMANA.get(fecha_date.weekday(), ''),
-                'cliente': line.order_partner_id.display_name or '',
+                'cliente': line.order_partner_id.commercial_partner_id.display_name or '',
                 'numero_orden_venta': line.order_id.name or '',
                 'producto': line.product_id.display_name or '',
                 'cantidad_vendida': sold_qty,
                 # Reportamos el stock que habia disponible JUSTO antes de esta venta
                 'inventario_disponible': round(available_qty_before, 2),
                 'inventario_libre_usar': round(free_qty_before, 2),
+                'stock_real_total': round(qty_by_product_id.get(product_id, 0.0), 2),
+                'stock_libre_total': round(free_qty_by_product_id.get(product_id, 0.0), 2),
                 'cantidad_sugerida_producir': round(suggested_production, 2),
             })
 
@@ -211,16 +618,98 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
     def action_generate_report(self):
         self.ensure_one()
+        self._sync_selected_review_lines()
+        rows = self.get_sales_orders_report_rows(self._get_report_filters())
+        self._load_report_payload(rows)
+        report_view = self.env.ref('advanced_metrics.view_advanced_metrics_report_wizard_report_form')
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Advanced Metrics',
-                'message': 'La logica de generacion del reporte se implementara despues.',
-                'type': 'warning',
-                'sticky': False,
-            },
+            'type': 'ir.actions.act_window',
+            'name': 'Detalle del reporte',
+            'res_model': 'advanced_metrics.report.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'view_id': report_view.id,
+            'views': [(report_view.id, 'form')],
+            'target': 'current',
+            '_noBreadcrumbs': True,
         }
+
+    def action_back_to_filters(self):
+        self.ensure_one()
+        filter_view = self.env.ref('advanced_metrics.view_advanced_metrics_report_wizard_form')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Reporte de ventas e inventario',
+            'res_model': 'advanced_metrics.report.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'view_id': filter_view.id,
+            'views': [(filter_view.id, 'form')],
+            'target': 'current',
+            '_noBreadcrumbs': True,
+        }
+
+    def get_selected_review_cards(self):
+        self.ensure_one()
+        return {
+            'clients': [
+                {
+                    'line_id': line.id,
+                    'title': line.partner_id.display_name or '',
+                    'subtitle': line.city or '',
+                    'meta': line.email or '',
+                    'stats': [
+                        {'label': 'OVs', 'value': line.order_count},
+                        {'label': 'Unidades', 'value': line.total_units},
+                    ],
+                }
+                for line in self.selected_cliente_line_ids
+            ],
+            'products': [
+                {
+                    'line_id': line.id,
+                    'title': line.product_id.display_name or '',
+                    'subtitle': line.default_code or '',
+                    'meta': line.categ_name or '',
+                    'stats': [
+                        {'label': 'OVs', 'value': line.order_count},
+                        {'label': 'Demanda', 'value': line.demanded_qty},
+                        {'label': 'Stock libre', 'value': line.stock_libre},
+                        {'label': 'Stock real', 'value': line.stock_real},
+                    ],
+                }
+                for line in self.selected_product_line_ids
+            ],
+        }
+
+    @api.model
+    def _get_period_dates(self, period_type='week'):
+        today = fields.Date.context_today(self)
+
+        if period_type == 'month':
+            first_day = today.replace(day=1)
+            last_day = today.replace(day=monthrange(today.year, today.month)[1])
+            return {
+                'desde': first_day.isoformat(),
+                'hasta': last_day.isoformat(),
+            }
+
+        if period_type == 'custom':
+            return {
+                'desde': False,
+                'hasta': False,
+            }
+
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        return {
+            'desde': week_start.isoformat(),
+            'hasta': week_end.isoformat(),
+        }
+
+    @api.model
+    def get_period_dates(self, period_type='week'):
+        return self._get_period_dates(period_type)
 
 
     @api.model
@@ -265,7 +754,10 @@ class AdvancedMetricsReportWizardLine(models.TransientModel):
     fecha_entrega = fields.Date(string='Fecha de entrega')
     # MEJORA 2: Dia de la semana en espanol (Lunes, Martes, etc.)
     dia_semana = fields.Char(string='Dia')
+    partner_id = fields.Many2one('res.partner', string='Cliente comercial')
     cliente_id = fields.Many2one('res.partner', string='Cliente')
+    order_id = fields.Many2one('sale.order', string='Orden de venta')
+    product_id = fields.Many2one('product.product', string='Producto')
     numero_orden_venta = fields.Char(string='Numero de orden de venta')
     producto = fields.Char(string='Producto')
     cantidad_vendida = fields.Float(string='Cantidad vendida')
@@ -275,3 +767,55 @@ class AdvancedMetricsReportWizardLine(models.TransientModel):
         string='Cantidad sugerida a producir',
         default=0.0,
     )
+
+
+class AdvancedMetricsReportWizardClientLine(models.TransientModel):
+    _name = 'advanced_metrics.report.wizard.client.line'
+    _description = 'Cliente seleccionado para el reporte'
+    _order = 'partner_id'
+
+    wizard_id = fields.Many2one(
+        'advanced_metrics.report.wizard',
+        string='Wizard',
+        required=True,
+        ondelete='cascade',
+    )
+    partner_id = fields.Many2one('res.partner', string='Cliente', required=True)
+    city = fields.Char(string='Ciudad')
+    email = fields.Char(string='Correo')
+    order_count = fields.Integer(string='OVs')
+    total_units = fields.Float(string='Unidades')
+
+    def action_remove(self):
+        self.ensure_one()
+        wizard = self.wizard_id
+        wizard.cliente_ids = [(3, self.partner_id.id)]
+        wizard._compute_review_data()
+        return False
+
+
+class AdvancedMetricsReportWizardProductLine(models.TransientModel):
+    _name = 'advanced_metrics.report.wizard.product.line'
+    _description = 'Producto seleccionado para el reporte'
+    _order = 'product_id'
+
+    wizard_id = fields.Many2one(
+        'advanced_metrics.report.wizard',
+        string='Wizard',
+        required=True,
+        ondelete='cascade',
+    )
+    product_id = fields.Many2one('product.product', string='Producto', required=True)
+    default_code = fields.Char(string='Referencia')
+    categ_name = fields.Char(string='Categoria')
+    order_count = fields.Integer(string='OVs')
+    demanded_qty = fields.Float(string='Demanda')
+    stock_real = fields.Float(string='Stock real')
+    stock_libre = fields.Float(string='Stock libre')
+
+    def action_remove(self):
+        self.ensure_one()
+        wizard = self.wizard_id
+        wizard.product_ids = [(3, self.product_id.id)]
+        wizard._compute_review_data()
+        return False

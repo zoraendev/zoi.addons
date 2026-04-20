@@ -39,6 +39,14 @@ class AdvancedMetricsController(http.Controller):
         """
         return request.env['advanced_metrics.report.wizard'].sudo().get_next_week_dates()
 
+    @http.route('/advanced_metrics/report/period-dates', type='json', auth='user', methods=['POST'], csrf=False)
+    def get_period_dates(self, **kwargs):
+        """Retorna el rango de fechas para semana o mes actual."""
+        payload = self._get_json_payload()
+        params = payload.get('params') or {}
+        period_type = params.get('period_type') or kwargs.get('period_type') or 'week'
+        return request.env['advanced_metrics.report.wizard'].sudo().get_period_dates(period_type)
+
     @http.route('/advanced_metrics/report/generate', type='http', auth='user', methods=['POST'], csrf=False)
     def generate_sales_orders_report(self, **kwargs):
         """

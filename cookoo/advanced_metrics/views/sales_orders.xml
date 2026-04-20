@@ -5,80 +5,137 @@
         <field name="name">advanced_metrics.sales_orders.form</field>
         <field name="model">advanced_metrics.report.wizard</field>
         <field name="arch" type="xml">
-            <form string="Ordenes de venta" js_class="advanced_metrics_sales_orders_form" class="zrn_advanced_metrics_sales_orders_form" create="0" edit="0" delete="0" duplicate="0">
-                <div class="zrn_advanced_metrics_sales_orders">
-                    <div class="zrn_am_workspace">
-                        <div class="zrn_am_filters_panel">
-                            <div class="zrn_am_filters_title">Filtros</div>
+            <form string="Ordenes de venta" create="0" delete="0" duplicate="0">
+                <header>
+                    <button name="action_generate_report" type="object" string="Generar reporte" class="btn btn-primary"/>
+                    <button name="action_clear_filters" type="object" string="Limpiar" class="btn btn-secondary"/>
+                </header>
+                <sheet>
+                    <group invisible="1">
+                        <field name="name"/>
+                        <field name="available_cliente_ids"/>
+                        <field name="available_product_ids"/>
+                    </group>
 
-                            <div class="zrn_am_filters">
-                                <div class="zrn_am_date_card">
-                                    <div class="zrn_am_date_meta">
-                                        <div class="zrn_am_date_title">Fecha de entrega</div>
-                                        <div class="zrn_am_date_range">
-                                            <div class="zrn_am_date_item">
-                                                <span class="zrn_am_date_item_label">De</span>
-                                                <field name="fecha_entrega_desde" nolabel="1"/>
-                                            </div>
-                                            <div class="zrn_am_date_item">
-                                                <span class="zrn_am_date_item_label">Hasta</span>
-                                                <field name="fecha_entrega_hasta" nolabel="1"/>
-                                            </div>
-                                        </div>
-                                    </div>
+                    <group string="Filtros del reporte">
+                        <group>
+                            <field name="fecha_entrega_desde"/>
+                            <field name="fecha_entrega_hasta"/>
+                        </group>
+                        <group>
+                            <field
+                                name="cliente_ids"
+                                widget="many2many_tags"
+                                domain="[('id', 'in', available_cliente_ids)]"
+                                context="{'show_address': 1, 'show_vat': True}"
+                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                placeholder="Selecciona uno o varios clientes"
+                            />
+                            <field
+                                name="product_ids"
+                                widget="many2many_tags"
+                                domain="[('id', 'in', available_product_ids)]"
+                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                placeholder="Selecciona uno o varios productos"
+                            />
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_generate_report" type="object" string="Continuar" class="btn btn-primary"/>
+                    <button name="action_clear_filters" type="object" string="Limpiar" class="btn btn-secondary"/>
+                    <button string="Cancelar" special="cancel" class="btn btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_advanced_metrics_report_wizard_report_form" model="ir.ui.view">
+        <field name="name">advanced_metrics.sales_orders.report.form</field>
+        <field name="model">advanced_metrics.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Detalle del reporte" create="0" edit="0" delete="0" duplicate="0" class="zrn_advanced_metrics_sales_orders_form">
+                <sheet>
+                    <div class="zrn_am_report_screen">
+                        <div class="zrn_am_report_screen_header">
+                            <div>
+                                <h2>Detalle operativo</h2>
+                                <p>
+                                    Vista agrupada por producto, cliente y orden de venta usando la seleccion definida en la pantalla anterior.
+                                </p>
+                            </div>
+                            <div class="zrn_am_report_screen_stats">
+                                <div class="zrn_am_report_stat_box">
+                                    <span>Clientes</span>
+                                    <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
                                 </div>
-
-                                <div class="zrn_am_customer_filter">
-                                    <div class="zrn_am_customer_filter_label">Cliente</div>
-                                    <field
-                                        name="cliente_id"
-                                        widget="res_partner_many2one"
-                                        context="{'res_partner_search_mode': 'customer', 'show_address': 1, 'show_vat': True}"
-                                        nolabel="1"
-                                        options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
-                                        placeholder="Selecciona un cliente"
-                                    />
+                                <div class="zrn_am_report_stat_box">
+                                    <span>Productos</span>
+                                    <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
                                 </div>
-
-                                <div class="zrn_am_quick_filter">
-                                    <a href="#" class="btn btn-outline-primary zrn_am_next_week_btn" role="button"
-                                       title="Auto-llenar con las fechas del proximo lunes al domingo">
-                                        <span class="fa fa-calendar-plus-o" aria-hidden="true"/>
-                                        <span>Semana Siguiente</span>
-                                    </a>
+                                <div class="zrn_am_report_stat_box">
+                                    <span>OVs</span>
+                                    <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
                                 </div>
-
-                                <div class="zrn_am_filter_actions">
-                                    <a href="#" class="btn btn-primary zrn_am_generate_btn" role="button">
-                                        Generar reporte
-                                    </a>
-                                    <a href="#" class="btn btn-secondary zrn_am_download_btn disabled" role="button" aria-disabled="true">
-                                        <span class="fa fa-download" aria-hidden="true"/>
-                                        <span>Descargar XLS</span>
-                                    </a>
+                                <div class="zrn_am_report_stat_box">
+                                    <span>Lineas</span>
+                                    <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="zrn_am_results_panel">
-                            <div class="zrn_am_table_shell">
-                                <field name="report_line_ids" nolabel="1" readonly="1" widget="one2many" options="{'no_create': True, 'no_delete': True, 'no_edit': True}">
-                                    <tree create="0" edit="0" delete="0">
-                                        <field name="fecha_entrega" string="Fecha de entrega"/>
-                                        <field name="dia_semana" string="Dia"/>
-                                        <field name="cliente_id" string="Cliente"/>
-                                        <field name="numero_orden_venta" string="Numero de orden de venta"/>
-                                        <field name="producto" string="Producto"/>
-                                        <field name="cantidad_vendida" string="Cantidad vendida" class="o_list_number"/>
-                                        <field name="inventario_disponible" string="Inventario disponible de producto terminado" class="o_list_number"/>
-                                        <field name="inventario_libre_usar" string="Inventario libre de usar" class="o_list_number"/>
-                                        <field name="cantidad_sugerida_producir" string="Cantidad sugerida a producir" class="o_list_number"/>
+                        <group string="Seleccion confirmada">
+                            <group string="Clientes">
+                                <field name="selected_cliente_line_ids" nolabel="1" readonly="1">
+                                    <tree create="0" delete="0" edit="0">
+                                        <field name="partner_id"/>
+                                        <field name="city" optional="show"/>
+                                        <field name="email" optional="show"/>
+                                        <field name="order_count"/>
+                                        <field name="total_units"/>
                                     </tree>
                                 </field>
-                            </div>
-                        </div>
+                            </group>
+                            <group string="Productos">
+                                <field name="selected_product_line_ids" nolabel="1" readonly="1">
+                                    <tree create="0" delete="0" edit="0">
+                                        <field name="product_id"/>
+                                        <field name="default_code" optional="show"/>
+                                        <field name="categ_name" optional="show"/>
+                                        <field name="order_count"/>
+                                        <field name="demanded_qty"/>
+                                        <field name="stock_libre"/>
+                                        <field name="stock_real"/>
+                                    </tree>
+                                </field>
+                            </group>
+                        </group>
+
+                        <group string="Resumen agrupado">
+                            <field name="report_html" widget="html" nolabel="1" readonly="1"/>
+                        </group>
+
+                        <group string="Detalle tabular">
+                            <field name="report_line_ids" nolabel="1" readonly="1">
+                                <tree create="0" delete="0" edit="0" default_order="product_id,partner_id,fecha_entrega,order_id">
+                                    <field name="fecha_entrega"/>
+                                    <field name="dia_semana"/>
+                                    <field name="product_id"/>
+                                    <field name="cliente_id"/>
+                                    <field name="order_id"/>
+                                    <field name="cantidad_vendida"/>
+                                    <field name="inventario_disponible"/>
+                                    <field name="inventario_libre_usar"/>
+                                    <field name="cantidad_sugerida_producir"/>
+                                </tree>
+                            </field>
+                        </group>
                     </div>
-                </div>
+                </sheet>
+                <footer>
+                    <button name="action_back_to_filters" type="object" string="Volver a filtros" class="btn btn-secondary"/>
+                    <button string="Cerrar" special="cancel" class="btn btn-primary"/>
+                </footer>
             </form>
         </field>
     </record>

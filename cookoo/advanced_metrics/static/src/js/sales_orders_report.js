@@ -8,14 +8,15 @@
  *
  * 1. Boton "Generar reporte": Llama al backend y pinta la tabla HTML.
  * 2. Boton "Descargar XLS": Genera y descarga un archivo Excel real.
- * 3. Boton "Semana Siguiente" (MEJORA 1): Auto-llena las fechas con
- *    el proximo lunes y domingo para facilitar la planificacion.
+ * 3. Selector de periodo: Auto-llena las fechas para semana o mes,
+ *    y habilita edicion manual cuando el usuario elige personalizado.
  *
  * Autor: Equipo de Ingenieria - Zoraen
- * Ultima modificacion: 2026-04-06
+ * Ultima modificacion: 2026-04-20
  */
 
 const REPORT_ROUTE = "/advanced_metrics/report/generate";
+const PERIOD_DATES_ROUTE = "/advanced_metrics/report/period-dates";
 let listenersBound = false;
 let currentRows = [];
 let currentSort = { key: null, direction: "asc" };
@@ -64,26 +65,71 @@ function getFieldInput(fieldName) {
   );
 }
 
-/**
- * Extrae los datos del filtro de cliente (ID y nombre).
- *
- * @returns {Object} Objeto con cliente_id y cliente_nombre.
- */
-function getCustomerFilterData() {
-  const customerInput = getFieldInput("cliente_id");
-  if (!customerInput) {
-    return { cliente_id: null, cliente_nombre: "" };
+function getPeriodTypeValue() {
+  const checkedRadio = document.querySelector(
+    '.o_form_view.zrn_advanced_metrics_sales_orders_form .o_field_widget[name="period_type"] input:checked',
+  );
+  if (checkedRadio?.value) {
+    return checkedRadio.value;
   }
 
-  const customerId =
-    customerInput.dataset.resId ||
-    customerInput.dataset.id ||
-    customerInput.getAttribute("data-res-id") ||
-    null;
+  const selectInput = document.querySelector(
+    '.o_form_view.zrn_advanced_metrics_sales_orders_form .o_field_widget[name="period_type"] select',
+  );
+  return selectInput?.value || "week";
+}
 
+function setFieldValue(inputEl, value) {
+  if (!inputEl) {
+    return;
+  }
+
+  const nativeSetter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    "value",
+  )?.set;
+
+  if (nativeSetter) {
+    nativeSetter.call(inputEl, value || "");
+  } else {
+    inputEl.value = value || "";
+  }
+
+  inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+  inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function getFormState() {
+  return window.__advancedMetricsSalesOrdersGetState?.() || {};
+}
+
+function normalizeMany2manyIds(fieldValue) {
+  if (!fieldValue) {
+    return [];
+  }
+
+  if (Array.isArray(fieldValue)) {
+    return fieldValue
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value > 0);
+  }
+
+  const candidateIds = fieldValue.currentIds || fieldValue.resIds || [];
+  return candidateIds
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
+}
+
+/**
+ * Extrae los datos del filtro de clientes desde el estado vivo del formulario.
+ *
+ * @returns {Object} Objeto con todos_los_clientes y cliente_ids.
+ */
+function getCustomerFilterData() {
+  const formState = getFormState();
   return {
-    cliente_id: customerId,
-    cliente_nombre: (customerInput.value || "").trim(),
+    todos_los_clientes: Boolean(formState.todos_los_clientes),
+    cliente_ids: normalizeMany2manyIds(formState.cliente_ids),
   };
 }
 
@@ -107,11 +153,10 @@ function getFiltersPayload() {
   if (fechaHasta) {
     filters.fecha_entrega_hasta = fechaHasta;
   }
-  if (customerData.cliente_id) {
-    filters.cliente_id = customerData.cliente_id;
-  }
-  if (customerData.cliente_nombre) {
-    filters.cliente_nombre = customerData.cliente_nombre;
+  if (customerData.todos_los_clientes) {
+    filters.todos_los_clientes = true;
+  } else if (customerData.cliente_ids.length) {
+    filters.cliente_ids = customerData.cliente_ids;
   }
   return filters;
 }
@@ -342,6 +387,28 @@ async function fetchReportJson() {
   return data;
 }
 
+async function fetchPeriodDates(periodType) {
+  const response = await fetch(PERIOD_DATES_ROUTE, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      params: {
+        period_type: periodType,
+      },
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error("No fue posible calcular el rango de fechas.");
+  }
+  return data.result || data;
+}
+
 /**
  * Extrae el nombre del archivo desde la cabecera Content-Disposition.
  *
@@ -460,52 +527,30 @@ async function callDownloadReport(buttonEl) {
 }
 
 // ================================================================
-// MEJORA 1: BOTON "SEMANA SIGUIENTE"
+// ACCION: SINCRONIZAR RANGO SEGUN TIPO DE PERIODO
 // ================================================================
 
 /**
- * Calcula el proximo lunes y domingo, y los inyecta en los campos
- * de fecha del formulario.
- *
- * Logica:
- * - Si hoy es domingo, "semana siguiente" empieza manana (lunes).
- * - Si hoy es lunes, "semana siguiente" empieza el proximo lunes.
- * - Para cualquier otro dia, avanzamos al proximo lunes.
- *
- * Esto evita que la gerente tenga que calcular manualmente que
- * dia cae el proximo lunes y el proximo domingo.
+ * Completa los campos de fecha con el rango de la semana o del mes
+ * actual, calculado del lado del servidor con la zona horaria de Odoo.
  */
-/**
- * MEJORA 1: BOTON "SEMANA SIGUIENTE" (Seguro)
- * Llama al servidor para obtener las fechas oficiales (GT).
- */
-async function fillNextWeekDates() {
+async function syncPeriodDates(periodType, { force = false } = {}) {
   const desdeInput = getFieldInput("fecha_entrega_desde");
   const hastaInput = getFieldInput("fecha_entrega_hasta");
 
-  if (!desdeInput || !hastaInput) return;
+  if (!desdeInput || !hastaInput || periodType === "custom") {
+    return;
+  }
 
   try {
-    const response = await fetch("/advanced_metrics/report/next-week-dates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ params: {} }),
-    });
-    const { result } = await response.json();
+    if (!force && desdeInput.value && hastaInput.value) {
+      return;
+    }
 
-    if (result && result.desde && result.hasta) {
-      const nativeSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value",
-      ).set;
-
-      nativeSetter.call(desdeInput, result.desde);
-      desdeInput.dispatchEvent(new Event("input", { bubbles: true }));
-      desdeInput.dispatchEvent(new Event("change", { bubbles: true }));
-
-      nativeSetter.call(hastaInput, result.hasta);
-      hastaInput.dispatchEvent(new Event("input", { bubbles: true }));
-      hastaInput.dispatchEvent(new Event("change", { bubbles: true }));
+    const result = await fetchPeriodDates(periodType);
+    if (result?.desde && result?.hasta) {
+      setFieldValue(desdeInput, result.desde);
+      setFieldValue(hastaInput, result.hasta);
     }
   } catch (err) {
     console.error("Error al obtener fechas del servidor", err);
@@ -555,14 +600,18 @@ function bindGenerateButtonListener() {
       callDownloadReport(downloadButton);
       return;
     }
+  });
 
-    // --- MEJORA 1: Boton: Semana Siguiente ---
-    const nextWeekButton = ev.target.closest(".zrn_am_next_week_btn");
-    if (nextWeekButton) {
-      ev.preventDefault();
-      fillNextWeekDates();
+  document.addEventListener("change", (ev) => {
+    const periodField = ev.target.closest(
+      '.o_form_view.zrn_advanced_metrics_sales_orders_form .o_field_widget[name="period_type"]',
+    );
+    if (!periodField) {
       return;
     }
+
+    const periodType = getPeriodTypeValue();
+    syncPeriodDates(periodType, { force: true });
   });
 
   listenersBound = true;
@@ -597,6 +646,7 @@ function syncInitialEmptyState(attempt = 0) {
 function initAdvancedMetricsUi() {
   bindGenerateButtonListener();
   setDownloadButtonEnabled(false);
+  syncPeriodDates(getPeriodTypeValue(), { force: true });
   syncInitialEmptyState();
 }
 

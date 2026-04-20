@@ -310,6 +310,11 @@ class AdvancedMetricsInicio(models.Model):
         if blocked_action:
             return blocked_action
         action = self.env.ref('advanced_metrics.action_advanced_metrics_report_wizard').read()[0]
+        wizard = self.env['advanced_metrics.report.wizard'].create({})
+        form_view = self.env.ref('advanced_metrics.view_advanced_metrics_report_wizard_form')
+        action['res_id'] = wizard.id
+        action['view_id'] = form_view.id
+        action['views'] = [(form_view.id, 'form')]
         action['_noBreadcrumbs'] = True
         return action
 
