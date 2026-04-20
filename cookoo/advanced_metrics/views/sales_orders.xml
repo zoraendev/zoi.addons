@@ -84,52 +84,9 @@
                             </div>
                         </div>
 
-                        <group string="Seleccion confirmada">
-                            <group string="Clientes">
-                                <field name="selected_cliente_line_ids" nolabel="1" readonly="1">
-                                    <tree create="0" delete="0" edit="0">
-                                        <field name="partner_id"/>
-                                        <field name="city" optional="show"/>
-                                        <field name="email" optional="show"/>
-                                        <field name="order_count"/>
-                                        <field name="total_units"/>
-                                    </tree>
-                                </field>
-                            </group>
-                            <group string="Productos">
-                                <field name="selected_product_line_ids" nolabel="1" readonly="1">
-                                    <tree create="0" delete="0" edit="0">
-                                        <field name="product_id"/>
-                                        <field name="default_code" optional="show"/>
-                                        <field name="categ_name" optional="show"/>
-                                        <field name="order_count"/>
-                                        <field name="demanded_qty"/>
-                                        <field name="stock_libre"/>
-                                        <field name="stock_real"/>
-                                    </tree>
-                                </field>
-                            </group>
-                        </group>
-
-                        <group string="Resumen agrupado">
+                        <div class="zrn_am_report_table_panel">
                             <field name="report_html" widget="html" nolabel="1" readonly="1"/>
-                        </group>
-
-                        <group string="Detalle tabular">
-                            <field name="report_line_ids" nolabel="1" readonly="1">
-                                <tree create="0" delete="0" edit="0" default_order="product_id,partner_id,fecha_entrega,order_id">
-                                    <field name="fecha_entrega"/>
-                                    <field name="dia_semana"/>
-                                    <field name="product_id"/>
-                                    <field name="cliente_id"/>
-                                    <field name="order_id"/>
-                                    <field name="cantidad_vendida"/>
-                                    <field name="inventario_disponible"/>
-                                    <field name="inventario_libre_usar"/>
-                                    <field name="cantidad_sugerida_producir"/>
-                                </tree>
-                            </field>
-                        </group>
+                        </div>
                     </div>
                 </sheet>
                 <footer>

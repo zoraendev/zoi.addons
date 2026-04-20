@@ -328,102 +328,118 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             return f'{int(value):,}'
         return f'{value:,.2f}'
 
+    def _get_report_day_sort_key(self, day_name):
+        order_map = {
+            'Lunes': 0,
+            'Martes': 1,
+            'Miercoles': 2,
+            'Jueves': 3,
+            'Viernes': 4,
+            'Sabado': 5,
+            'Domingo': 6,
+        }
+        return order_map.get(day_name or '', 99)
+
     def _build_report_html(self, rows):
         if not rows:
             return '<div class="zrn_am_report_empty">No hay ordenes de venta para mostrar con la seleccion actual.</div>'
 
-        products = OrderedDict()
-        order_names = set()
-        customer_ids = set()
+        day_client_order = OrderedDict()
+        product_buckets = OrderedDict()
 
         for row in rows:
+            day_name = row.get('dia_semana') or row.get('fecha_entrega') or ''
+            client_name = row.get('cliente') or 'Cliente sin nombre'
+            day_clients = day_client_order.setdefault(day_name, [])
+            if client_name not in day_clients:
+                day_clients.append(client_name)
+
             product_key = row.get('product_id') or 0
-            client_key = row.get('cliente_id') or 0
-            order_name = row.get('numero_orden_venta') or ''
-            order_names.add(order_name)
-            if client_key:
-                customer_ids.add(client_key)
-
-            product_bucket = products.setdefault(product_key, {
+            product_bucket = product_buckets.setdefault(product_key, {
+                'barcode': row.get('barcode') or '',
+                'item_vm': row.get('item_vm') or '',
                 'name': row.get('producto') or 'Producto sin nombre',
-                'stock_real': row.get('stock_real_total', 0.0),
-                'stock_libre': row.get('stock_libre_total', 0.0),
-                'demanded_qty': 0.0,
-                'suggested_qty': 0.0,
-                'clients': OrderedDict(),
+                'initial_inventory': float(row.get('stock_real_total') or 0.0),
+                'week_total': 0.0,
+                'by_day': {},
             })
-            product_bucket['demanded_qty'] += float(row.get('cantidad_vendida') or 0.0)
-            product_bucket['suggested_qty'] += float(row.get('cantidad_sugerida_producir') or 0.0)
+            product_bucket['week_total'] += float(row.get('cantidad_vendida') or 0.0)
 
-            client_bucket = product_bucket['clients'].setdefault(client_key, {
-                'name': row.get('cliente') or 'Cliente sin nombre',
-                'demanded_qty': 0.0,
-                'suggested_qty': 0.0,
-                'orders': [],
-            })
-            client_bucket['demanded_qty'] += float(row.get('cantidad_vendida') or 0.0)
-            client_bucket['suggested_qty'] += float(row.get('cantidad_sugerida_producir') or 0.0)
-            client_bucket['orders'].append(row)
+            day_bucket = product_bucket['by_day'].setdefault(day_name, {})
+            client_bucket = day_bucket.setdefault(client_name, {'oc': 0.0, 'cambios': 0.0})
+            client_bucket['oc'] += float(row.get('cantidad_vendida') or 0.0)
+            client_bucket['cambios'] += float(row.get('cambios') or 0.0)
+
+        sorted_days = sorted(day_client_order.keys(), key=self._get_report_day_sort_key)
 
         parts = [
-            '<div class="zrn_am_report_view">',
-            '<div class="zrn_am_report_summary_strip">',
-            f'<div class="zrn_am_report_summary_item"><span>Clientes</span><strong>{len(customer_ids)}</strong></div>',
-            f'<div class="zrn_am_report_summary_item"><span>Productos</span><strong>{len(products)}</strong></div>',
-            f'<div class="zrn_am_report_summary_item"><span>OVs</span><strong>{len(order_names)}</strong></div>',
-            f'<div class="zrn_am_report_summary_item"><span>Lineas</span><strong>{len(rows)}</strong></div>',
-            '</div>',
+            '<div class="zrn_am_report_matrix_wrap">',
+            '<table class="zrn_am_report_matrix">',
+            '<thead>',
+            '<tr>',
+            '<th class="zrn_am_sticky_col" rowspan="3">Cod. barra</th>',
+            '<th class="zrn_am_sticky_col zrn_am_sticky_col_2" rowspan="3">Item MV</th>',
+            '<th class="zrn_am_sticky_col zrn_am_sticky_col_3" rowspan="3">Producto</th>',
+            '<th colspan="3">Inventario</th>',
         ]
 
-        for product_data in products.values():
+        for day_name in sorted_days:
+            parts.append(
+                f'<th colspan="{(len(day_client_order.get(day_name, [])) * 2) + 2}">{escape(day_name)}</th>'
+            )
+
+        parts.extend([
+            '</tr>',
+            '<tr>',
+            '<th rowspan="2">Inicial</th>',
+            '<th rowspan="2">Total semana</th>',
+            '<th rowspan="2">Final</th>',
+        ])
+
+        for day_name in sorted_days:
+            for client_name in day_client_order.get(day_name, []):
+                parts.append(f'<th colspan="2">{escape(client_name)}</th>')
+            parts.append('<th colspan="2">Total dia</th>')
+
+        parts.extend(['</tr>', '<tr>'])
+
+        for day_name in sorted_days:
+            for _client_name in day_client_order.get(day_name, []):
+                parts.append('<th>OC</th><th>Cambios</th>')
+            parts.append('<th>OC</th><th>Cambios</th>')
+
+        parts.extend(['</tr>', '</thead>', '<tbody>'])
+
+        for product_data in product_buckets.values():
+            final_inventory = product_data['initial_inventory'] - product_data['week_total']
             parts.extend([
-                '<section class="zrn_am_report_product_group">',
-                '<div class="zrn_am_report_product_header">',
-                f'<div class="zrn_am_report_product_title">{escape(product_data["name"])}</div>',
-                '<div class="zrn_am_report_metrics">',
-                f'<span class="zrn_am_report_metric"><label>Demanda</label><strong>{self._format_report_number(product_data["demanded_qty"])}</strong></span>',
-                f'<span class="zrn_am_report_metric"><label>Sugerido</label><strong>{self._format_report_number(product_data["suggested_qty"])}</strong></span>',
-                f'<span class="zrn_am_report_metric"><label>Stock libre</label><strong>{self._format_report_number(product_data["stock_libre"])} </strong></span>',
-                f'<span class="zrn_am_report_metric"><label>Stock real</label><strong>{self._format_report_number(product_data["stock_real"])} </strong></span>',
-                '</div>',
-                '</div>',
+                '<tr>',
+                f'<td class="zrn_am_sticky_col">{escape(product_data["barcode"])}</td>',
+                f'<td class="zrn_am_sticky_col zrn_am_sticky_col_2">{escape(product_data["item_vm"])}</td>',
+                f'<td class="zrn_am_sticky_col zrn_am_sticky_col_3 zrn_am_product_name">{escape(product_data["name"])}</td>',
+                f'<td class="zrn_am_num">{self._format_report_number(product_data["initial_inventory"])}</td>',
+                f'<td class="zrn_am_num">{self._format_report_number(product_data["week_total"])}</td>',
+                f'<td class="zrn_am_num">{self._format_report_number(final_inventory)}</td>',
             ])
 
-            for client_data in product_data['clients'].values():
-                parts.extend([
-                    '<div class="zrn_am_report_client_group">',
-                    '<div class="zrn_am_report_client_header">',
-                    f'<h4>{escape(client_data["name"])}</h4>',
-                    '<div class="zrn_am_report_client_totals">',
-                    f'<span>OVs: <strong>{len({row.get("numero_orden_venta") for row in client_data["orders"] if row.get("numero_orden_venta")})}</strong></span>',
-                    f'<span>Demanda: <strong>{self._format_report_number(client_data["demanded_qty"])}</strong></span>',
-                    f'<span>Producir: <strong>{self._format_report_number(client_data["suggested_qty"])}</strong></span>',
-                    '</div>',
-                    '</div>',
-                    '<div class="zrn_am_report_order_table">',
-                    '<div class="zrn_am_report_order_table_head">',
-                    '<span>Fecha</span><span>Dia</span><span>OV</span><span>Cantidad</span><span>Stock disp.</span><span>Stock libre</span><span>Sugerido</span>',
-                    '</div>',
-                ])
+            for day_name in sorted_days:
+                day_total_oc = 0.0
+                day_total_changes = 0.0
+                day_values = product_data['by_day'].get(day_name, {})
 
-                for row in client_data['orders']:
-                    parts.extend([
-                        '<div class="zrn_am_report_order_row">',
-                        f'<span>{escape(row.get("fecha_entrega") or "")}</span>',
-                        f'<span>{escape(row.get("dia_semana") or "")}</span>',
-                        f'<span>{escape(row.get("numero_orden_venta") or "")}</span>',
-                        f'<span>{self._format_report_number(row.get("cantidad_vendida"))}</span>',
-                        f'<span>{self._format_report_number(row.get("inventario_disponible"))}</span>',
-                        f'<span>{self._format_report_number(row.get("inventario_libre_usar"))}</span>',
-                        f'<span>{self._format_report_number(row.get("cantidad_sugerida_producir"))}</span>',
-                        '</div>',
-                    ])
+                for client_name in day_client_order.get(day_name, []):
+                    movement = day_values.get(client_name, {'oc': 0.0, 'cambios': 0.0})
+                    day_total_oc += movement['oc']
+                    day_total_changes += movement['cambios']
+                    parts.append(f'<td class="zrn_am_num">{self._format_report_number(movement["oc"])}</td>')
+                    parts.append(f'<td class="zrn_am_num zrn_am_change_cell">{self._format_report_number(movement["cambios"])}</td>')
 
-                parts.extend(['</div>', '</div>'])
+                parts.append(f'<td class="zrn_am_num zrn_am_day_total">{self._format_report_number(day_total_oc)}</td>')
+                parts.append(f'<td class="zrn_am_num zrn_am_day_total zrn_am_change_cell">{self._format_report_number(day_total_changes)}</td>')
 
-            parts.append('</section>')
+            parts.append('</tr>')
 
-        parts.append('</div>')
+        parts.extend(['</tbody>', '</table>', '</div>'])
         return ''.join(parts)
 
     def _load_report_payload(self, rows):
@@ -598,7 +614,10 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 'cliente': line.order_partner_id.commercial_partner_id.display_name or '',
                 'numero_orden_venta': line.order_id.name or '',
                 'producto': line.product_id.display_name or '',
+                'barcode': line.product_id.barcode or '',
+                'item_vm': line.product_id.default_code or '',
                 'cantidad_vendida': sold_qty,
+                'cambios': 0.0,
                 # Reportamos el stock que habia disponible JUSTO antes de esta venta
                 'inventario_disponible': round(available_qty_before, 2),
                 'inventario_libre_usar': round(free_qty_before, 2),

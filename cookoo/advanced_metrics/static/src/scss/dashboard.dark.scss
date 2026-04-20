@@ -120,6 +120,78 @@
 }
 
 .o_form_view.zrn_advanced_metrics_sales_orders_form {
+  .zrn_am_report_screen_header,
+  .zrn_am_report_stat_box,
+  .zrn_am_report_matrix_wrap {
+    background: var(--o-gray-900, #1f2430);
+    border-color: var(--o-border-color, #3b4354);
+  }
+
+  .zrn_am_report_matrix thead th,
+  .zrn_am_report_matrix tbody td {
+    border-right-color: var(--o-border-color, #3b4354);
+    border-bottom-color: var(--o-border-color, #3b4354);
+  }
+
+  .zrn_am_report_matrix thead tr:nth-child(1) th {
+    background: #5f496e;
+    color: var(--o-main-text-color, #f3f4f6);
+  }
+
+  .zrn_am_report_matrix thead tr:nth-child(2) th {
+    background: #705781;
+    color: var(--o-main-text-color, #f3f4f6);
+  }
+
+  .zrn_am_report_matrix thead tr:nth-child(3) th {
+    background: #3a3140;
+    color: #d7cbe0;
+  }
+
+  .zrn_am_report_matrix tbody td,
+  .zrn_am_report_matrix tbody .zrn_am_sticky_col,
+  .zrn_am_report_matrix tbody .zrn_am_sticky_col_2,
+  .zrn_am_report_matrix tbody .zrn_am_sticky_col_3 {
+    background: var(--o-gray-900, #1f2430);
+    color: var(--o-main-text-color, #f3f4f6);
+    box-shadow:
+      1px 0 0 0 var(--o-border-color, #3b4354),
+      12px 0 14px -14px rgba(0, 0, 0, 0.45);
+  }
+
+  .zrn_am_report_matrix tbody tr:nth-child(even) td {
+    background: var(--o-gray-800, #2a3140);
+  }
+
+  .zrn_am_report_matrix tbody tr:hover td,
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col,
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col_2,
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col_3 {
+    background: #342c39;
+  }
+
+  .zrn_am_report_matrix .zrn_am_change_cell {
+    background: #312937;
+  }
+
+  .zrn_am_report_matrix .zrn_am_day_total {
+    background: #413548;
+  }
+
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_change_cell {
+    background: #3a3041;
+  }
+
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_day_total {
+    background: #4a3b53;
+  }
+
+  .zrn_am_report_table_title {
+    color: var(--o-main-text-color, #f3f4f6);
+  }
+}
+
+.o_form_view.zrn_advanced_metrics_sales_orders_form {
   .o_form_statusbar {
     display: none;
   }
