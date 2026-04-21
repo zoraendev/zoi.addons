@@ -89,6 +89,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         sanitize=False,
         readonly=True,
     )
+    production_html = fields.Html(
+        string='Resumen para fabricar',
+        sanitize=False,
+        readonly=True,
+    )
     report_ready = fields.Boolean(string='Reporte listo', default=False)
     report_row_count = fields.Integer(string='Lineas del reporte', readonly=True)
     report_order_count = fields.Integer(string='Ordenes consideradas', readonly=True)
@@ -312,6 +317,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             if wizard.id:
                 wizard.report_line_ids.unlink()
             wizard.report_html = False
+            wizard.production_html = False
             wizard.report_ready = False
             wizard.report_row_count = 0
             wizard.report_order_count = 0
@@ -645,6 +651,69 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         parts.extend(['</tbody>', '</table>', '</div>'])
         return ''.join(parts)
 
+    def _build_production_html(self, rows):
+        if not rows:
+            return '<div class="zrn_am_report_empty">No hay productos para calcular fabricacion con la seleccion actual.</div>'
+
+        product_buckets = OrderedDict()
+
+        for row in rows:
+            product_key = row.get('product_id') or 0
+            bucket = product_buckets.setdefault(product_key, {
+                'barcode': row.get('barcode') or '',
+                'item_vm': row.get('item_vm') or '',
+                'product_name': row.get('producto') or 'Producto sin nombre',
+                'order_ids': set(),
+                'total_vendido': 0.0,
+                'stock_inicial': float(row.get('stock_real_total') or 0.0),
+                'stock_libre': float(row.get('stock_libre_total') or 0.0),
+                'sugerido_fabricar': 0.0,
+            })
+            if row.get('order_id'):
+                bucket['order_ids'].add(row.get('order_id'))
+            bucket['total_vendido'] += float(row.get('cantidad_vendida') or 0.0)
+            bucket['sugerido_fabricar'] += float(row.get('cantidad_sugerida_producir') or 0.0)
+
+        sorted_products = sorted(
+            product_buckets.values(),
+            key=lambda item: (-item['sugerido_fabricar'], -item['total_vendido'], item['product_name']),
+        )
+
+        parts = [
+            '<div class="zrn_am_production_table_wrap">',
+            '<table class="table table-sm table-hover o_list_table zrn_am_production_table">',
+            '<thead>',
+            '<tr>',
+            '<th>Cod. barra</th>',
+            '<th>Item MV</th>',
+            '<th>Producto</th>',
+            '<th class="o_list_number">Total OVs</th>',
+            '<th class="o_list_number">Vendido total</th>',
+            '<th class="o_list_number">Stock inicial</th>',
+            '<th class="o_list_number">Stock libre</th>',
+            '<th class="o_list_number">Sugerido a fabricar</th>',
+            '</tr>',
+            '</thead>',
+            '<tbody>',
+        ]
+
+        for product_data in sorted_products:
+            parts.extend([
+                '<tr>',
+                f'<td>{escape(product_data["barcode"])}</td>',
+                f'<td>{escape(product_data["item_vm"])}</td>',
+                f'<td class="zrn_am_product_name">{escape(product_data["product_name"])}</td>',
+                f'<td class="o_list_number">{self._format_report_number(len(product_data["order_ids"]))}</td>',
+                f'<td class="o_list_number">{self._format_report_number(product_data["total_vendido"])}</td>',
+                f'<td class="o_list_number">{self._format_report_number(product_data["stock_inicial"])}</td>',
+                f'<td class="o_list_number">{self._format_report_number(product_data["stock_libre"])}</td>',
+                f'<td class="o_list_number zrn_am_to_produce">{self._format_report_number(product_data["sugerido_fabricar"])}</td>',
+                '</tr>',
+            ])
+
+        parts.extend(['</tbody>', '</table>', '</div>'])
+        return ''.join(parts)
+
     def _load_report_payload(self, rows):
         Line = self.env['advanced_metrics.report.wizard.line']
         for wizard in self:
@@ -671,6 +740,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
             wizard.write({
                 'report_html': wizard._build_report_html(rows),
+                'production_html': wizard._build_production_html(rows),
                 'report_ready': True,
                 'report_row_count': len(rows),
                 'report_order_count': len({row.get('numero_orden_venta') for row in rows if row.get('numero_orden_venta')}),
@@ -844,6 +914,36 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         self._sync_selected_review_lines()
         rows = self.get_sales_orders_report_rows(self._get_report_filters())
         self._load_report_payload(rows)
+        report_view = self.env.ref('advanced_metrics.view_advanced_metrics_report_wizard_report_form')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Detalle del reporte',
+            'res_model': 'advanced_metrics.report.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'view_id': report_view.id,
+            'views': [(report_view.id, 'form')],
+            'target': 'current',
+            '_noBreadcrumbs': True,
+        }
+
+    def action_open_production_summary(self):
+        self.ensure_one()
+        production_view = self.env.ref('advanced_metrics.view_advanced_metrics_report_wizard_production_form')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Resumen para fabricar',
+            'res_model': 'advanced_metrics.report.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'view_id': production_view.id,
+            'views': [(production_view.id, 'form')],
+            'target': 'current',
+            '_noBreadcrumbs': True,
+        }
+
+    def action_back_to_report(self):
+        self.ensure_one()
         report_view = self.env.ref('advanced_metrics.view_advanced_metrics_report_wizard_report_form')
         return {
             'type': 'ir.actions.act_window',

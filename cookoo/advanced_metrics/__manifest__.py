@@ -31,7 +31,11 @@ Long description of module's purpose
     'assets': {
         'web.assets_backend': [
             'advanced_metrics/static/src/js/home_form_view.js',
+            'advanced_metrics/static/src/js/production_form_view.js',
+            'advanced_metrics/static/src/js/report_form_view.js',
             'advanced_metrics/static/src/xml/home_form_view.xml',
+            'advanced_metrics/static/src/xml/production_form_view.xml',
+            'advanced_metrics/static/src/xml/report_form_view.xml',
             'advanced_metrics/static/src/scss/dashboard.scss',
         ],
         'web.assets_web_dark': [
