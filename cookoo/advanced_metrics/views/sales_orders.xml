@@ -144,6 +144,7 @@
                     </div>
                 </sheet>
                 <footer>
+                    <button name="action_back_to_report" type="object" string="Volver al reporte" class="btn btn-secondary"/>
                     <button name="action_back_to_filters" type="object" string="Volver a filtros" class="btn btn-secondary"/>
                     <button string="Cerrar" special="cancel" class="btn btn-primary"/>
                 </footer>

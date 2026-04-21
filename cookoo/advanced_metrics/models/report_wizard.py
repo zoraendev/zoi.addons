@@ -660,6 +660,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         for row in rows:
             product_key = row.get('product_id') or 0
             bucket = product_buckets.setdefault(product_key, {
+                'product_id': product_key,
                 'barcode': row.get('barcode') or '',
                 'item_vm': row.get('item_vm') or '',
                 'product_name': row.get('producto') or 'Producto sin nombre',
@@ -692,12 +693,24 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             '<th class="o_list_number">Stock inicial</th>',
             '<th class="o_list_number">Stock libre</th>',
             '<th class="o_list_number">Sugerido a fabricar</th>',
+            '<th>Accion</th>',
             '</tr>',
             '</thead>',
             '<tbody>',
         ]
 
         for product_data in sorted_products:
+            suggested_qty = float(product_data['sugerido_fabricar'] or 0.0)
+            action_button = (
+                '<button '
+                'type="button" '
+                'class="btn btn-primary btn-sm zrn_am_create_mo_btn" '
+                f'data-product-id="{int(product_data["product_id"] or 0)}" '
+                f'data-product-qty="{suggested_qty}"'
+                '>'
+                'Crear OF'
+                '</button>'
+            ) if product_data['product_id'] else ''
             parts.extend([
                 '<tr>',
                 f'<td>{escape(product_data["barcode"])}</td>',
@@ -708,6 +721,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 f'<td class="o_list_number">{self._format_report_number(product_data["stock_inicial"])}</td>',
                 f'<td class="o_list_number">{self._format_report_number(product_data["stock_libre"])}</td>',
                 f'<td class="o_list_number zrn_am_to_produce">{self._format_report_number(product_data["sugerido_fabricar"])}</td>',
+                f'<td>{action_button}</td>',
                 '</tr>',
             ])
 
@@ -971,6 +985,35 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             'target': 'current',
             '_noBreadcrumbs': True,
         }
+
+    def action_open_mrp_production_create(self, product_id, suggested_qty=0.0):
+        self.ensure_one()
+
+        product = self.env['product.product'].browse(int(product_id or 0)).exists()
+        if not product:
+            return False
+
+        action = self.env['ir.actions.actions']._for_xml_id('mrp.action_mrp_production_form')
+        action_context = dict(self.env.context)
+        action_context.update({
+            'default_product_id': product.id,
+            'default_product_uom_id': product.uom_id.id,
+            'default_company_id': self.env.company.id,
+            'allowed_company_ids': self.env.companies.ids,
+        })
+
+        quantity = float(suggested_qty or 0.0)
+        if quantity > 0:
+            action_context['default_product_qty'] = quantity
+
+        action.update({
+            'name': 'Nueva orden de fabricacion',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+            'context': action_context,
+        })
+        return action
 
     def get_selected_review_cards(self):
         self.ensure_one()

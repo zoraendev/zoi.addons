@@ -972,7 +972,6 @@
     max-height: 100%;
     width: 100%;
     overflow: auto;
-    border: 1px solid rgba(124, 106, 139, 0.16);
     border-radius: 18px;
     background:
       radial-gradient(circle at top right, rgba(124, 106, 139, 0.08), transparent 28%),
@@ -981,32 +980,35 @@
       0 20px 44px rgba(33, 37, 41, 0.08),
       inset 0 1px 0 rgba(255, 255, 255, 0.8);
     -webkit-overflow-scrolling: touch;
-    padding: 18px;
+    padding: 0;
   }
 
   .zrn_am_production_table {
     min-width: 980px;
     margin-bottom: 0;
     background: #fff;
-    border-radius: 14px;
+    border-radius: 12px;
     overflow: hidden;
     border-collapse: separate;
     border-spacing: 0;
-    box-shadow: 0 12px 28px rgba(71, 53, 84, 0.08);
+    border: 1px solid #e3e7ee;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
   }
 
   .zrn_am_production_table thead th {
     position: sticky;
     top: 0;
     z-index: 2;
-    background: linear-gradient(180deg, #88749a 0%, #79668a 100%) !important;
-    color: #fff !important;
-    border-bottom: 0 !important;
+    background: #f8fafc !important;
+    color: #5f6b7a !important;
+    border-bottom: 1px solid #e3e7ee !important;
     white-space: nowrap;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
     padding-top: 14px !important;
     padding-bottom: 14px !important;
   }
@@ -1014,38 +1016,100 @@
   .zrn_am_production_table tbody td {
     white-space: nowrap;
     color: var(--am-text) !important;
-    border-bottom: 1px solid #ece5f2;
+    border-bottom: 1px solid #edf1f5;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
     padding-top: 14px !important;
     padding-bottom: 14px !important;
-    background: transparent;
+    background: #fff;
   }
 
   .zrn_am_production_table tbody tr:nth-child(even) td {
-    background: #fcfbfd;
+    background: #fbfcfe;
   }
 
   .zrn_am_production_table tbody tr:hover td {
-    background: #f4eef8;
+    background: #f4f7fb;
   }
 
   .zrn_am_production_table .zrn_am_product_name {
     font-weight: 600;
-    color: #332740 !important;
+    color: #253040 !important;
   }
 
   .zrn_am_production_table .zrn_am_to_produce {
-    background: linear-gradient(180deg, #fff1ce 0%, #f8e4ae 100%);
+    background: #fff7e0;
     font-weight: 700;
-    color: #6f5723 !important;
-    box-shadow: inset 4px 0 0 #d6b25a;
+    color: #7a5a17 !important;
+    box-shadow: inset 3px 0 0 #e4c46a;
   }
 
   .zrn_am_production_table tbody tr:hover .zrn_am_to_produce {
-    background: linear-gradient(180deg, #fbe8bb 0%, #f3db9c 100%);
+    background: #fff1c8;
   }
 
   .zrn_am_production_screen .zrn_am_report_table_panel {
     padding: 8px 20px 22px;
+  }
+
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"] {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"].o_readonly_modifier.o_field_html,
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"].o_field_html {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"] > .o_readonly_modifier,
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"] .note-editable,
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"] .note-editor,
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"] .o_field_html {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"].o_readonly_modifier.o_field_html > div,
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"].o_field_html > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+  }
+
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"] .o_field_html > div,
+  .zrn_am_production_screen .zrn_am_report_table_panel .o_field_widget[name="production_html"] > .o_readonly_modifier > div {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .zrn_am_production_screen .zrn_am_report_screen_header {
@@ -1062,6 +1126,26 @@
 
   .zrn_am_production_screen .zrn_am_report_screen_header p {
     max-width: 760px;
+  }
+
+  .zrn_am_production_table .zrn_am_create_mo_btn {
+    border-radius: 6px;
+    font-weight: 600;
+    padding: 4px 10px;
+    box-shadow: none;
+  }
+
+  .zrn_am_production_actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .zrn_am_production_actions .btn {
+    border-radius: 999px;
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
   .zrn_am_report_summary_strip {
@@ -1363,6 +1447,10 @@
     .zrn_am_production_screen .zrn_am_report_table_panel {
       padding: 6px 12px 16px;
     }
+
+    .zrn_am_production_actions {
+      margin-top: 12px;
+    }
   }
 
   @media (max-width: 767.98px) {
@@ -1524,6 +1612,15 @@
 
     .zrn_am_production_screen .zrn_am_report_table_panel {
       padding: 4px 6px 10px;
+    }
+
+    .zrn_am_production_actions {
+      width: 100%;
+    }
+
+    .zrn_am_production_actions .btn {
+      width: 100%;
+      justify-content: center;
     }
   }
 
