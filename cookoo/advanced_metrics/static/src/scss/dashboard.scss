@@ -791,6 +791,13 @@
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 
+  .zrn_am_report_matrix thead .zrn_am_month_total_head {
+    background: #7a5f2f !important;
+    color: #fff !important;
+    border-left: 4px solid #f2e0b3;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
   .zrn_am_report_matrix thead tr:nth-child(3) .zrn_am_day_total_head {
     background: #ddcfeb !important;
     color: #513f60 !important;
@@ -802,6 +809,13 @@
     background: #d6ead9 !important;
     color: #35523b !important;
     border-left-color: #8eb497;
+    font-weight: 700;
+  }
+
+  .zrn_am_report_matrix thead tr:nth-child(3) .zrn_am_month_total_head {
+    background: #f2e0b3 !important;
+    color: #6f5723 !important;
+    border-left-color: #c7a85d;
     font-weight: 700;
   }
 
@@ -908,6 +922,13 @@
     box-shadow: inset 0 0 0 1px rgba(79, 106, 84, 0.12);
   }
 
+  .zrn_am_report_matrix .zrn_am_month_total {
+    font-weight: 700;
+    background: #f8e9c7;
+    border-left: 4px solid #c7a85d;
+    box-shadow: inset 0 0 0 1px rgba(122, 95, 47, 0.12);
+  }
+
   .zrn_am_report_matrix tbody tr:hover .zrn_am_change_cell {
     background: #eee4f5;
   }
@@ -918,6 +939,10 @@
 
   .zrn_am_report_matrix tbody tr:hover .zrn_am_week_total {
     background: #cfe4d4;
+  }
+
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_month_total {
+    background: #f2ddb0;
   }
 
   .zrn_am_report_summary_strip {

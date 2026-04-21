@@ -357,7 +357,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
         return (
             f'<span class="zrn_am_day_heading">{escape(day_name or "")}</span>'
-            f'<span class="zrn_am_day_heading_date">{escape(fecha_value.strftime("%d/%m"))}</span>'
+            f'<span class="zrn_am_day_heading_date">{escape(fecha_value.strftime("%d/%m/%Y"))}</span>'
         )
 
     def _get_report_week_group_key(self, fecha_entrega=False):
@@ -372,7 +372,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         if not week_key:
             return 'Semana'
 
-        _year, month, week_of_month = week_key
+        year, month, week_of_month = week_key
         month_names = {
             1: 'Enero',
             2: 'Febrero',
@@ -387,7 +387,34 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             11: 'Noviembre',
             12: 'Diciembre',
         }
-        return f'Semana {week_of_month} {month_names.get(month, "")}'.strip()
+        return f'Semana {week_of_month} {month_names.get(month, "")} {year}'.strip()
+
+    def _get_report_month_group_key(self, fecha_entrega=False):
+        fecha_value = self._coerce_to_date(fecha_entrega)
+        if not fecha_value:
+            return False
+        return (fecha_value.year, fecha_value.month)
+
+    def _format_report_month_label(self, month_key):
+        if not month_key:
+            return 'Total mes'
+
+        year, month = month_key
+        month_names = {
+            1: 'Enero',
+            2: 'Febrero',
+            3: 'Marzo',
+            4: 'Abril',
+            5: 'Mayo',
+            6: 'Junio',
+            7: 'Julio',
+            8: 'Agosto',
+            9: 'Septiembre',
+            10: 'Octubre',
+            11: 'Noviembre',
+            12: 'Diciembre',
+        }
+        return f'Total {month_names.get(month, "")} {year}'.strip()
 
     def _get_report_group_sort_key(self, group_key, group_meta=None):
         fecha_value = self._coerce_to_date((group_meta or {}).get('fecha_entrega') or group_key)
@@ -453,6 +480,30 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             week_key = self._get_report_week_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
             week_day_order.setdefault(week_key, []).append(day_key)
 
+        month_week_order = OrderedDict()
+        for week_key, week_days in week_day_order.items():
+            month_key = False
+            for day_key in week_days:
+                month_key = self._get_report_month_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
+                if month_key:
+                    break
+            month_week_order.setdefault(month_key, []).append(week_key)
+
+        week_display_meta = {
+            week_key: {
+                'days': week_days,
+                'show_total': len(week_days) > 1,
+            }
+            for week_key, week_days in week_day_order.items()
+        }
+        month_display_meta = {
+            month_key: {
+                'weeks': month_weeks,
+                'show_total': len(month_weeks) > 1,
+            }
+            for month_key, month_weeks in month_week_order.items()
+        }
+
         parts = [
             '<div class="zrn_am_report_matrix_wrap">',
             '<table class="zrn_am_report_matrix">',
@@ -464,37 +515,52 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             '<th colspan="3">Inventario</th>',
         ]
 
-        for week_key, week_days in week_day_order.items():
-            for day_key in week_days:
-                day_meta = day_meta_map.get(day_key, {})
-                parts.append(
-                    f'<th colspan="{(len(day_client_order.get(day_key, [])) * 2) + 2}">{self._format_report_day_label(day_meta.get("day_name") or day_key, day_meta.get("fecha_entrega"))}</th>'
-                )
-            parts.append(f'<th colspan="2" class="zrn_am_week_total_head">{escape(self._format_report_week_label(week_key))}</th>')
+        for month_key, month_weeks in month_week_order.items():
+            for week_key in month_weeks:
+                week_days = week_day_order.get(week_key, [])
+                for day_key in week_days:
+                    day_meta = day_meta_map.get(day_key, {})
+                    parts.append(
+                        f'<th colspan="{(len(day_client_order.get(day_key, [])) * 2) + 2}">{self._format_report_day_label(day_meta.get("day_name") or day_key, day_meta.get("fecha_entrega"))}</th>'
+                    )
+                if week_display_meta.get(week_key, {}).get('show_total'):
+                    parts.append(f'<th colspan="2" class="zrn_am_week_total_head">{escape(self._format_report_week_label(week_key))}</th>')
+            if month_display_meta.get(month_key, {}).get('show_total'):
+                parts.append(f'<th colspan="2" class="zrn_am_month_total_head">{escape(self._format_report_month_label(month_key))}</th>')
 
         parts.extend([
             '</tr>',
             '<tr>',
-            '<th rowspan="2">Inicial</th>',
-            '<th rowspan="2">Total semana</th>',
-            '<th rowspan="2">Final</th>',
+            '<th rowspan="2">Stock inicial</th>',
+            '<th rowspan="2">Total rango</th>',
+            '<th rowspan="2">Stock final</th>',
         ])
 
-        for week_days in week_day_order.values():
-            for day_key in week_days:
-                for client_name in day_client_order.get(day_key, []):
-                    parts.append(f'<th colspan="2">{escape(client_name)}</th>')
-                parts.append('<th colspan="2" class="zrn_am_day_total_head">Total dia</th>')
-            parts.append('<th colspan="2" class="zrn_am_week_total_head zrn_am_week_total_title">Total semana</th>')
+        for month_key, month_weeks in month_week_order.items():
+            for week_key in month_weeks:
+                week_days = week_day_order.get(week_key, [])
+                for day_key in week_days:
+                    for client_name in day_client_order.get(day_key, []):
+                        parts.append(f'<th colspan="2">{escape(client_name)}</th>')
+                    parts.append('<th colspan="2" class="zrn_am_day_total_head">Total dia</th>')
+                if week_display_meta.get(week_key, {}).get('show_total'):
+                    parts.append('<th colspan="2" class="zrn_am_week_total_head zrn_am_week_total_title">Total semana</th>')
+            if month_display_meta.get(month_key, {}).get('show_total'):
+                parts.append('<th colspan="2" class="zrn_am_month_total_head zrn_am_month_total_title">Total mes</th>')
 
         parts.extend(['</tr>', '<tr>'])
 
-        for week_days in week_day_order.values():
-            for day_key in week_days:
-                for _client_name in day_client_order.get(day_key, []):
-                    parts.append('<th>OC</th><th>Cambios</th>')
-                parts.append('<th class="zrn_am_day_total_head zrn_am_day_total_subhead">OC</th><th class="zrn_am_day_total_head zrn_am_day_total_subhead">Cambios</th>')
-            parts.append('<th class="zrn_am_week_total_head zrn_am_week_total_subhead">OC</th><th class="zrn_am_week_total_head zrn_am_week_total_subhead">Cambios</th>')
+        for month_key, month_weeks in month_week_order.items():
+            for week_key in month_weeks:
+                week_days = week_day_order.get(week_key, [])
+                for day_key in week_days:
+                    for _client_name in day_client_order.get(day_key, []):
+                        parts.append('<th>OC</th><th>Cambios</th>')
+                    parts.append('<th class="zrn_am_day_total_head zrn_am_day_total_subhead">OC</th><th class="zrn_am_day_total_head zrn_am_day_total_subhead">Cambios</th>')
+                if week_display_meta.get(week_key, {}).get('show_total'):
+                    parts.append('<th class="zrn_am_week_total_head zrn_am_week_total_subhead">OC</th><th class="zrn_am_week_total_head zrn_am_week_total_subhead">Cambios</th>')
+            if month_display_meta.get(month_key, {}).get('show_total'):
+                parts.append('<th class="zrn_am_month_total_head zrn_am_month_total_subhead">OC</th><th class="zrn_am_month_total_head zrn_am_month_total_subhead">Cambios</th>')
 
         parts.extend(['</tr>', '</thead>', '<tbody>'])
 
@@ -510,29 +576,41 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 f'<td class="zrn_am_num">{self._format_report_number(final_inventory)}</td>',
             ])
 
-            for week_days in week_day_order.values():
-                week_total_oc = 0.0
-                week_total_changes = 0.0
+            for month_key, month_weeks in month_week_order.items():
+                month_total_oc = 0.0
+                month_total_changes = 0.0
 
-                for day_key in week_days:
-                    day_total_oc = 0.0
-                    day_total_changes = 0.0
-                    day_values = product_data['by_day'].get(day_key, {})
+                for week_key in month_weeks:
+                    week_days = week_day_order.get(week_key, [])
+                    week_total_oc = 0.0
+                    week_total_changes = 0.0
 
-                    for client_name in day_client_order.get(day_key, []):
-                        movement = day_values.get(client_name, {'oc': 0.0, 'cambios': 0.0})
-                        day_total_oc += movement['oc']
-                        day_total_changes += movement['cambios']
-                        parts.append(f'<td class="zrn_am_num">{self._format_report_number(movement["oc"])}</td>')
-                        parts.append(f'<td class="zrn_am_num zrn_am_change_cell">{self._format_report_number(movement["cambios"])}</td>')
+                    for day_key in week_days:
+                        day_total_oc = 0.0
+                        day_total_changes = 0.0
+                        day_values = product_data['by_day'].get(day_key, {})
 
-                    week_total_oc += day_total_oc
-                    week_total_changes += day_total_changes
-                    parts.append(f'<td class="zrn_am_num zrn_am_day_total">{self._format_report_number(day_total_oc)}</td>')
-                    parts.append(f'<td class="zrn_am_num zrn_am_day_total zrn_am_change_cell">{self._format_report_number(day_total_changes)}</td>')
+                        for client_name in day_client_order.get(day_key, []):
+                            movement = day_values.get(client_name, {'oc': 0.0, 'cambios': 0.0})
+                            day_total_oc += movement['oc']
+                            day_total_changes += movement['cambios']
+                            parts.append(f'<td class="zrn_am_num">{self._format_report_number(movement["oc"])}</td>')
+                            parts.append(f'<td class="zrn_am_num zrn_am_change_cell">{self._format_report_number(movement["cambios"])}</td>')
 
-                parts.append(f'<td class="zrn_am_num zrn_am_week_total">{self._format_report_number(week_total_oc)}</td>')
-                parts.append(f'<td class="zrn_am_num zrn_am_week_total zrn_am_change_cell">{self._format_report_number(week_total_changes)}</td>')
+                        week_total_oc += day_total_oc
+                        week_total_changes += day_total_changes
+                        parts.append(f'<td class="zrn_am_num zrn_am_day_total">{self._format_report_number(day_total_oc)}</td>')
+                        parts.append(f'<td class="zrn_am_num zrn_am_day_total zrn_am_change_cell">{self._format_report_number(day_total_changes)}</td>')
+
+                    month_total_oc += week_total_oc
+                    month_total_changes += week_total_changes
+                    if week_display_meta.get(week_key, {}).get('show_total'):
+                        parts.append(f'<td class="zrn_am_num zrn_am_week_total">{self._format_report_number(week_total_oc)}</td>')
+                        parts.append(f'<td class="zrn_am_num zrn_am_week_total zrn_am_change_cell">{self._format_report_number(week_total_changes)}</td>')
+
+                if month_display_meta.get(month_key, {}).get('show_total'):
+                    parts.append(f'<td class="zrn_am_num zrn_am_month_total">{self._format_report_number(month_total_oc)}</td>')
+                    parts.append(f'<td class="zrn_am_num zrn_am_month_total zrn_am_change_cell">{self._format_report_number(month_total_changes)}</td>')
 
             parts.append('</tr>')
 
