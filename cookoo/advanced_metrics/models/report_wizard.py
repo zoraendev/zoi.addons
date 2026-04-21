@@ -710,7 +710,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 '>'
                 'Crear OF'
                 '</button>'
-            ) if product_data['product_id'] else ''
+            ) if product_data['product_id'] and suggested_qty > 0 else ''
             parts.extend([
                 '<tr>',
                 f'<td>{escape(product_data["barcode"])}</td>',
