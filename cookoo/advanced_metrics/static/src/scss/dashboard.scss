@@ -567,6 +567,20 @@
     max-width: 720px;
   }
 
+  .zrn_am_report_screen_header .zrn_am_report_range {
+    margin-top: 8px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--am-text);
+  }
+
+  .zrn_am_report_screen_header .zrn_am_report_range .o_field_widget,
+  .zrn_am_report_screen_header .zrn_am_report_range .o_field_char,
+  .zrn_am_report_screen_header .zrn_am_report_range span {
+    color: inherit !important;
+    font-weight: inherit;
+  }
+
   .zrn_am_report_screen_stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(110px, 1fr));
@@ -1142,9 +1156,40 @@
       min-height: calc(100vh - 250px);
     }
 
+    .zrn_am_report_screen_header {
+      gap: 12px;
+      padding: 14px 16px;
+    }
+
+    .zrn_am_report_screen_header h2 {
+      font-size: 1.15rem;
+    }
+
+    .zrn_am_report_screen_header p {
+      max-width: none;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .zrn_am_report_screen_header .zrn_am_report_range {
+      font-size: 0.84rem;
+    }
+
     .zrn_am_report_screen_stats,
     .zrn_am_report_summary_strip {
       grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+
+    .zrn_am_report_stat_box {
+      padding: 10px 12px;
+    }
+
+    .zrn_am_report_stat_box span {
+      font-size: 0.72rem;
+    }
+
+    .zrn_am_report_stat_box strong {
+      font-size: 1rem;
     }
 
     .zrn_am_report_order_table {
@@ -1154,6 +1199,52 @@
     .zrn_am_report_order_table_head,
     .zrn_am_report_order_row {
       min-width: 820px;
+    }
+
+    .zrn_am_report_matrix thead th,
+    .zrn_am_report_matrix tbody td {
+      padding: 8px 9px;
+    }
+
+    .zrn_am_report_matrix thead th {
+      font-size: 0.7rem;
+    }
+
+    .zrn_am_report_matrix thead tr:nth-child(1) th .zrn_am_day_heading_date {
+      font-size: 0.64rem;
+    }
+
+    .zrn_am_report_matrix tbody td {
+      font-size: 0.82rem;
+    }
+
+    .zrn_am_report_matrix_wrap::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    .zrn_am_report_matrix .zrn_am_sticky_col,
+    .zrn_am_report_matrix .zrn_am_sticky_col_2,
+    .zrn_am_report_matrix .zrn_am_sticky_col_3 {
+      position: static;
+      left: auto;
+      z-index: auto;
+      width: auto;
+      max-width: none;
+      box-shadow: none;
+      background: inherit;
+    }
+
+    .zrn_am_report_matrix .zrn_am_sticky_col {
+      min-width: 120px;
+    }
+
+    .zrn_am_report_matrix .zrn_am_sticky_col_2 {
+      min-width: 110px;
+    }
+
+    .zrn_am_report_matrix .zrn_am_sticky_col_3 {
+      min-width: 220px;
     }
   }
 
@@ -1218,12 +1309,85 @@
       min-height: calc(100dvh - 220px);
     }
 
+    .zrn_am_report_screen_header {
+      gap: 10px;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .zrn_am_report_screen_header h2 {
+      font-size: 1.05rem;
+    }
+
+    .zrn_am_report_screen_header p {
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .zrn_am_report_screen_header .zrn_am_report_range {
+      font-size: 0.8rem;
+    }
+
     .zrn_am_report_table_panel {
       min-height: 0;
     }
 
     .zrn_am_report_matrix_wrap {
       min-height: 0;
+      border-radius: 6px;
+    }
+
+    .zrn_am_report_stat_box {
+      gap: 4px;
+      padding: 9px 10px;
+      border-radius: 6px;
+    }
+
+    .zrn_am_report_matrix thead th,
+    .zrn_am_report_matrix tbody td {
+      padding: 7px 8px;
+    }
+
+    .zrn_am_report_matrix thead th {
+      font-size: 0.66rem;
+    }
+
+    .zrn_am_report_matrix thead tr:nth-child(1) th .zrn_am_day_heading,
+    .zrn_am_report_matrix thead tr:nth-child(1) th .zrn_am_day_heading_date {
+      line-height: 1.05;
+    }
+
+    .zrn_am_report_matrix thead tr:nth-child(1) th .zrn_am_day_heading_date {
+      margin-top: 3px;
+      font-size: 0.6rem;
+    }
+
+    .zrn_am_report_matrix tbody td {
+      font-size: 0.78rem;
+    }
+
+    .zrn_am_report_matrix .zrn_am_sticky_col,
+    .zrn_am_report_matrix .zrn_am_sticky_col_2,
+    .zrn_am_report_matrix .zrn_am_sticky_col_3 {
+      position: static;
+      left: auto;
+      z-index: auto;
+      width: auto;
+      max-width: none;
+      box-shadow: none;
+      background: inherit;
+    }
+
+    .zrn_am_report_matrix .zrn_am_sticky_col {
+      min-width: 100px;
+    }
+
+    .zrn_am_report_matrix .zrn_am_sticky_col_2 {
+      min-width: 96px;
+    }
+
+    .zrn_am_report_matrix .zrn_am_sticky_col_3 {
+      min-width: 180px;
     }
   }
 

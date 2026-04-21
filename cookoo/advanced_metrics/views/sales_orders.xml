@@ -64,6 +64,9 @@
                                 <p>
                                     Vista agrupada por producto, cliente y orden de venta usando la seleccion definida en la pantalla anterior.
                                 </p>
+                                <p class="zrn_am_report_range">
+                                    <field name="report_date_range_label" readonly="1" nolabel="1"/>
+                                </p>
                             </div>
                             <div class="zrn_am_report_screen_stats">
                                 <div class="zrn_am_report_stat_box">

@@ -94,6 +94,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     report_order_count = fields.Integer(string='Ordenes consideradas', readonly=True)
     report_customer_count = fields.Integer(string='Clientes en reporte', readonly=True)
     report_product_count = fields.Integer(string='Productos en reporte', readonly=True)
+    report_date_range_label = fields.Char(string='Rango consultado', readonly=True)
 
     @api.model
     def _coerce_to_date(self, value):
@@ -316,6 +317,33 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             wizard.report_order_count = 0
             wizard.report_customer_count = 0
             wizard.report_product_count = 0
+            wizard.report_date_range_label = False
+
+    def _get_effective_report_date_range(self, rows):
+        self.ensure_one()
+
+        row_dates = []
+        for row in rows or []:
+            fecha_value = self._coerce_to_date(row.get('fecha_entrega'))
+            if fecha_value:
+                row_dates.append(fecha_value)
+
+        if row_dates:
+            return min(row_dates), max(row_dates)
+
+        return self.fecha_entrega_desde, self.fecha_entrega_hasta
+
+    def _format_report_date_range_label(self, rows):
+        self.ensure_one()
+        date_from, date_to = self._get_effective_report_date_range(rows)
+
+        if date_from and date_to:
+            return f'Rango consultado: {date_from.strftime("%d/%m/%Y")} al {date_to.strftime("%d/%m/%Y")}'
+        if date_from:
+            return f'Rango consultado: desde {date_from.strftime("%d/%m/%Y")}'
+        if date_to:
+            return f'Rango consultado: hasta {date_to.strftime("%d/%m/%Y")}'
+        return 'Rango consultado: todas las fechas disponibles'
 
     def action_clear_filters(self):
         self.ensure_one()
@@ -542,11 +570,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 for day_key in week_days:
                     for client_name in day_client_order.get(day_key, []):
                         parts.append(f'<th colspan="2">{escape(client_name)}</th>')
-                    parts.append('<th colspan="2" class="zrn_am_day_total_head">Total dia</th>')
+                    parts.append('<th colspan="2" class="zrn_am_day_total_head">Ventas dia</th>')
                 if week_display_meta.get(week_key, {}).get('show_total'):
-                    parts.append('<th colspan="2" class="zrn_am_week_total_head zrn_am_week_total_title">Total semana</th>')
+                    parts.append('<th colspan="2" class="zrn_am_week_total_head zrn_am_week_total_title">Ventas semana</th>')
             if month_display_meta.get(month_key, {}).get('show_total'):
-                parts.append('<th colspan="2" class="zrn_am_month_total_head zrn_am_month_total_title">Total mes</th>')
+                parts.append('<th colspan="2" class="zrn_am_month_total_head zrn_am_month_total_title">Ventas mes</th>')
 
         parts.extend(['</tr>', '<tr>'])
 
@@ -648,6 +676,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 'report_order_count': len({row.get('numero_orden_venta') for row in rows if row.get('numero_orden_venta')}),
                 'report_customer_count': len({row.get('cliente_id') for row in rows if row.get('cliente_id')}),
                 'report_product_count': len({row.get('product_id') for row in rows if row.get('product_id')}),
+                'report_date_range_label': wizard._format_report_date_range_label(rows),
             })
 
     @api.model
