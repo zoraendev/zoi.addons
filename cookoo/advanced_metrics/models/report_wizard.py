@@ -347,7 +347,53 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             return f'{int(value):,}'
         return f'{value:,.2f}'
 
-    def _get_report_day_sort_key(self, day_name):
+    def _format_report_day_label(self, day_name, fecha_entrega=False):
+        if not fecha_entrega:
+            return escape(day_name or '')
+
+        fecha_value = self._coerce_to_date(fecha_entrega)
+        if not fecha_value:
+            return escape(day_name or '')
+
+        return (
+            f'<span class="zrn_am_day_heading">{escape(day_name or "")}</span>'
+            f'<span class="zrn_am_day_heading_date">{escape(fecha_value.strftime("%d/%m"))}</span>'
+        )
+
+    def _get_report_week_group_key(self, fecha_entrega=False):
+        fecha_value = self._coerce_to_date(fecha_entrega)
+        if not fecha_value:
+            return False
+
+        week_of_month = ((fecha_value.day - 1) // 7) + 1
+        return (fecha_value.year, fecha_value.month, week_of_month)
+
+    def _format_report_week_label(self, week_key):
+        if not week_key:
+            return 'Semana'
+
+        _year, month, week_of_month = week_key
+        month_names = {
+            1: 'Enero',
+            2: 'Febrero',
+            3: 'Marzo',
+            4: 'Abril',
+            5: 'Mayo',
+            6: 'Junio',
+            7: 'Julio',
+            8: 'Agosto',
+            9: 'Septiembre',
+            10: 'Octubre',
+            11: 'Noviembre',
+            12: 'Diciembre',
+        }
+        return f'Semana {week_of_month} {month_names.get(month, "")}'.strip()
+
+    def _get_report_group_sort_key(self, group_key, group_meta=None):
+        fecha_value = self._coerce_to_date((group_meta or {}).get('fecha_entrega') or group_key)
+        if fecha_value:
+            return (0, fecha_value)
+
         order_map = {
             'Lunes': 0,
             'Martes': 1,
@@ -357,21 +403,30 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             'Sabado': 5,
             'Domingo': 6,
         }
-        return order_map.get(day_name or '', 99)
+        day_name = (group_meta or {}).get('day_name') or group_key
+        return (1, order_map.get(day_name or '', 99), day_name or '')
 
     def _build_report_html(self, rows):
         if not rows:
             return '<div class="zrn_am_report_empty">No hay ordenes de venta para mostrar con la seleccion actual.</div>'
 
         day_client_order = OrderedDict()
+        day_meta_map = {}
         product_buckets = OrderedDict()
 
         for row in rows:
+            day_date = row.get('fecha_entrega')
             day_name = row.get('dia_semana') or row.get('fecha_entrega') or ''
+            day_key = day_date or day_name or ''
             client_name = row.get('cliente') or 'Cliente sin nombre'
-            day_clients = day_client_order.setdefault(day_name, [])
+            day_clients = day_client_order.setdefault(day_key, [])
             if client_name not in day_clients:
                 day_clients.append(client_name)
+            if day_key and day_key not in day_meta_map:
+                day_meta_map[day_key] = {
+                    'day_name': day_name,
+                    'fecha_entrega': day_date,
+                }
 
             product_key = row.get('product_id') or 0
             product_bucket = product_buckets.setdefault(product_key, {
@@ -384,12 +439,19 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             })
             product_bucket['week_total'] += float(row.get('cantidad_vendida') or 0.0)
 
-            day_bucket = product_bucket['by_day'].setdefault(day_name, {})
+            day_bucket = product_bucket['by_day'].setdefault(day_key, {})
             client_bucket = day_bucket.setdefault(client_name, {'oc': 0.0, 'cambios': 0.0})
             client_bucket['oc'] += float(row.get('cantidad_vendida') or 0.0)
             client_bucket['cambios'] += float(row.get('cambios') or 0.0)
 
-        sorted_days = sorted(day_client_order.keys(), key=self._get_report_day_sort_key)
+        sorted_days = sorted(
+            day_client_order.keys(),
+            key=lambda group_key: self._get_report_group_sort_key(group_key, day_meta_map.get(group_key)),
+        )
+        week_day_order = OrderedDict()
+        for day_key in sorted_days:
+            week_key = self._get_report_week_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
+            week_day_order.setdefault(week_key, []).append(day_key)
 
         parts = [
             '<div class="zrn_am_report_matrix_wrap">',
@@ -402,10 +464,13 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             '<th colspan="3">Inventario</th>',
         ]
 
-        for day_name in sorted_days:
-            parts.append(
-                f'<th colspan="{(len(day_client_order.get(day_name, [])) * 2) + 2}">{escape(day_name)}</th>'
-            )
+        for week_key, week_days in week_day_order.items():
+            for day_key in week_days:
+                day_meta = day_meta_map.get(day_key, {})
+                parts.append(
+                    f'<th colspan="{(len(day_client_order.get(day_key, [])) * 2) + 2}">{self._format_report_day_label(day_meta.get("day_name") or day_key, day_meta.get("fecha_entrega"))}</th>'
+                )
+            parts.append(f'<th colspan="2" class="zrn_am_week_total_head">{escape(self._format_report_week_label(week_key))}</th>')
 
         parts.extend([
             '</tr>',
@@ -415,17 +480,21 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             '<th rowspan="2">Final</th>',
         ])
 
-        for day_name in sorted_days:
-            for client_name in day_client_order.get(day_name, []):
-                parts.append(f'<th colspan="2">{escape(client_name)}</th>')
-            parts.append('<th colspan="2">Total dia</th>')
+        for week_days in week_day_order.values():
+            for day_key in week_days:
+                for client_name in day_client_order.get(day_key, []):
+                    parts.append(f'<th colspan="2">{escape(client_name)}</th>')
+                parts.append('<th colspan="2" class="zrn_am_day_total_head">Total dia</th>')
+            parts.append('<th colspan="2" class="zrn_am_week_total_head zrn_am_week_total_title">Total semana</th>')
 
         parts.extend(['</tr>', '<tr>'])
 
-        for day_name in sorted_days:
-            for _client_name in day_client_order.get(day_name, []):
-                parts.append('<th>OC</th><th>Cambios</th>')
-            parts.append('<th>OC</th><th>Cambios</th>')
+        for week_days in week_day_order.values():
+            for day_key in week_days:
+                for _client_name in day_client_order.get(day_key, []):
+                    parts.append('<th>OC</th><th>Cambios</th>')
+                parts.append('<th class="zrn_am_day_total_head zrn_am_day_total_subhead">OC</th><th class="zrn_am_day_total_head zrn_am_day_total_subhead">Cambios</th>')
+            parts.append('<th class="zrn_am_week_total_head zrn_am_week_total_subhead">OC</th><th class="zrn_am_week_total_head zrn_am_week_total_subhead">Cambios</th>')
 
         parts.extend(['</tr>', '</thead>', '<tbody>'])
 
@@ -441,20 +510,29 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 f'<td class="zrn_am_num">{self._format_report_number(final_inventory)}</td>',
             ])
 
-            for day_name in sorted_days:
-                day_total_oc = 0.0
-                day_total_changes = 0.0
-                day_values = product_data['by_day'].get(day_name, {})
+            for week_days in week_day_order.values():
+                week_total_oc = 0.0
+                week_total_changes = 0.0
 
-                for client_name in day_client_order.get(day_name, []):
-                    movement = day_values.get(client_name, {'oc': 0.0, 'cambios': 0.0})
-                    day_total_oc += movement['oc']
-                    day_total_changes += movement['cambios']
-                    parts.append(f'<td class="zrn_am_num">{self._format_report_number(movement["oc"])}</td>')
-                    parts.append(f'<td class="zrn_am_num zrn_am_change_cell">{self._format_report_number(movement["cambios"])}</td>')
+                for day_key in week_days:
+                    day_total_oc = 0.0
+                    day_total_changes = 0.0
+                    day_values = product_data['by_day'].get(day_key, {})
 
-                parts.append(f'<td class="zrn_am_num zrn_am_day_total">{self._format_report_number(day_total_oc)}</td>')
-                parts.append(f'<td class="zrn_am_num zrn_am_day_total zrn_am_change_cell">{self._format_report_number(day_total_changes)}</td>')
+                    for client_name in day_client_order.get(day_key, []):
+                        movement = day_values.get(client_name, {'oc': 0.0, 'cambios': 0.0})
+                        day_total_oc += movement['oc']
+                        day_total_changes += movement['cambios']
+                        parts.append(f'<td class="zrn_am_num">{self._format_report_number(movement["oc"])}</td>')
+                        parts.append(f'<td class="zrn_am_num zrn_am_change_cell">{self._format_report_number(movement["cambios"])}</td>')
+
+                    week_total_oc += day_total_oc
+                    week_total_changes += day_total_changes
+                    parts.append(f'<td class="zrn_am_num zrn_am_day_total">{self._format_report_number(day_total_oc)}</td>')
+                    parts.append(f'<td class="zrn_am_num zrn_am_day_total zrn_am_change_cell">{self._format_report_number(day_total_changes)}</td>')
+
+                parts.append(f'<td class="zrn_am_num zrn_am_week_total">{self._format_report_number(week_total_oc)}</td>')
+                parts.append(f'<td class="zrn_am_num zrn_am_week_total zrn_am_change_cell">{self._format_report_number(week_total_changes)}</td>')
 
             parts.append('</tr>')
 
