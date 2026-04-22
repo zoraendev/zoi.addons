@@ -64,6 +64,7 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
         normalized_filters.update({
             'top': self._parse_positive_integer(filters.get('top') or filters.get('limit'), 'top', 10, max_value=100),
             'sortBy': (filters.get('sortBy') or 'totalOrders').strip(),
+            'groupBy': self._normalize_customer_group_by(filters),
         })
 
         allowed_sort_fields = {
@@ -95,6 +96,7 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
                 allow_zero=True,
             ),
             'top': self._parse_positive_integer(filters.get('top') or filters.get('limit'), 'top', 50, max_value=100),
+            'groupBy': self._normalize_customer_group_by(filters),
         }
 
     @api.model
@@ -104,6 +106,7 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
         normalized_filters.update({
             'top': self._parse_positive_integer(filters.get('top') or filters.get('limit'), 'top', 20, max_value=100),
             'sortBy': (filters.get('sortBy') or 'totalAmount').strip(),
+            'groupBy': self._normalize_customer_group_by(filters),
         })
 
         allowed_sort_fields = {
@@ -123,6 +126,36 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
             )
 
         return normalized_filters
+
+    @api.model
+    def _normalize_customer_group_by(self, filters=None):
+        filters = filters or {}
+        raw_group_by = (
+            filters.get('groupBy')
+            or filters.get('group_by')
+            or 'commercialCustomer'
+        )
+        normalized_group_by = str(raw_group_by).strip()
+
+        alias_map = {
+            'customer': 'commercialCustomer',
+            'commercial': 'commercialCustomer',
+            'commercialCustomer': 'commercialCustomer',
+            'commercial_partner': 'commercialCustomer',
+            'customerPointOfSale': 'pointOfSale',
+            'pointOfSale': 'pointOfSale',
+            'point_of_sale': 'pointOfSale',
+            'store': 'pointOfSale',
+            'branch': 'pointOfSale',
+            'sucursal': 'pointOfSale',
+        }
+        resolved_group_by = alias_map.get(normalized_group_by)
+        if not resolved_group_by:
+            raise ValidationError(
+                'El filtro "groupBy" debe ser "commercialCustomer" o "pointOfSale".'
+            )
+
+        return resolved_group_by
 
     @api.model
     def _get_generated_at_iso(self):
@@ -173,11 +206,23 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
         return self.env['sale.order'].search(domain, order='date_order asc, id asc')
 
     @api.model
-    def _aggregate_orders_by_customer(self, orders):
+    def _get_grouping_partner(self, order, group_by='commercialCustomer'):
+        order_partner = order.partner_id
+        commercial_partner = order_partner.commercial_partner_id
+
+        if group_by == 'pointOfSale':
+            return order_partner or commercial_partner
+        return commercial_partner or order_partner
+
+    @api.model
+    def _aggregate_orders_by_customer(self, orders, group_by='commercialCustomer'):
         aggregated_data = {}
 
         for order in orders:
-            partner = order.partner_id.commercial_partner_id
+            order_partner = order.partner_id
+            partner = self._get_grouping_partner(order, group_by=group_by)
+            commercial_partner = order_partner.commercial_partner_id if order_partner else False
+
             if not partner:
                 continue
 
@@ -186,6 +231,13 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
                 'customerId': partner.id,
                 'customerName': partner.display_name or '',
                 'customerCode': partner.ref or '',
+                'commercialCustomerId': commercial_partner.id if commercial_partner else partner.id,
+                'commercialCustomerName': commercial_partner.display_name if commercial_partner else partner.display_name or '',
+                'commercialCustomerCode': commercial_partner.ref if commercial_partner else partner.ref or '',
+                'pointOfSaleId': order_partner.id if order_partner else partner.id,
+                'pointOfSaleName': order_partner.display_name if order_partner else partner.display_name or '',
+                'pointOfSaleCode': order_partner.ref if order_partner else partner.ref or '',
+                'groupBy': group_by,
                 'totalOrders': 0,
                 'totalAmount': 0.0,
                 '_first_order_datetime': None,
@@ -225,6 +277,13 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
             'customerId': aggregated_item.get('customerId'),
             'customerName': aggregated_item.get('customerName', ''),
             'customerCode': aggregated_item.get('customerCode', ''),
+            'commercialCustomerId': aggregated_item.get('commercialCustomerId'),
+            'commercialCustomerName': aggregated_item.get('commercialCustomerName', ''),
+            'commercialCustomerCode': aggregated_item.get('commercialCustomerCode', ''),
+            'pointOfSaleId': aggregated_item.get('pointOfSaleId'),
+            'pointOfSaleName': aggregated_item.get('pointOfSaleName', ''),
+            'pointOfSaleCode': aggregated_item.get('pointOfSaleCode', ''),
+            'groupBy': aggregated_item.get('groupBy', 'commercialCustomer'),
             'totalOrders': total_orders,
             'totalAmount': total_amount,
             'averageOrderValue': average_order_value,
@@ -249,12 +308,22 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
         )
 
         data = []
-        for item in self._aggregate_orders_by_customer(orders).values():
+        for item in self._aggregate_orders_by_customer(
+            orders,
+            group_by=normalized_filters['groupBy'],
+        ).values():
             metrics = self._build_customer_metrics(item, anchor_date=anchor_date)
             data.append({
                 'customerId': metrics['customerId'],
                 'customerName': metrics['customerName'],
                 'customerCode': metrics['customerCode'],
+                'commercialCustomerId': metrics['commercialCustomerId'],
+                'commercialCustomerName': metrics['commercialCustomerName'],
+                'commercialCustomerCode': metrics['commercialCustomerCode'],
+                'pointOfSaleId': metrics['pointOfSaleId'],
+                'pointOfSaleName': metrics['pointOfSaleName'],
+                'pointOfSaleCode': metrics['pointOfSaleCode'],
+                'groupBy': metrics['groupBy'],
                 'totalOrders': metrics['totalOrders'],
                 'totalAmount': metrics['totalAmount'],
                 'averageOrderValue': metrics['averageOrderValue'],
@@ -303,7 +372,10 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
         anchor_date = fields.Date.to_date(fields.Date.context_today(self))
 
         data = []
-        for item in self._aggregate_orders_by_customer(orders).values():
+        for item in self._aggregate_orders_by_customer(
+            orders,
+            group_by=normalized_filters['groupBy'],
+        ).values():
             metrics = self._build_customer_metrics(item, anchor_date=anchor_date)
             if metrics['daysWithoutPurchase'] < normalized_filters['inactiveDays']:
                 continue
@@ -312,6 +384,13 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
                 'customerId': metrics['customerId'],
                 'customerName': metrics['customerName'],
                 'customerCode': metrics['customerCode'],
+                'commercialCustomerId': metrics['commercialCustomerId'],
+                'commercialCustomerName': metrics['commercialCustomerName'],
+                'commercialCustomerCode': metrics['commercialCustomerCode'],
+                'pointOfSaleId': metrics['pointOfSaleId'],
+                'pointOfSaleName': metrics['pointOfSaleName'],
+                'pointOfSaleCode': metrics['pointOfSaleCode'],
+                'groupBy': metrics['groupBy'],
                 'lastOrderDate': metrics['lastOrderDate'],
                 'daysWithoutPurchase': metrics['daysWithoutPurchase'],
                 'totalOrdersHistorical': metrics['totalOrders'],
@@ -345,12 +424,22 @@ class PbiConnectionsCustomerDashboard(models.AbstractModel):
         )
 
         data = []
-        for item in self._aggregate_orders_by_customer(orders).values():
+        for item in self._aggregate_orders_by_customer(
+            orders,
+            group_by=normalized_filters['groupBy'],
+        ).values():
             metrics = self._build_customer_metrics(item)
             data.append({
                 'customerId': metrics['customerId'],
                 'customerName': metrics['customerName'],
                 'customerCode': metrics['customerCode'],
+                'commercialCustomerId': metrics['commercialCustomerId'],
+                'commercialCustomerName': metrics['commercialCustomerName'],
+                'commercialCustomerCode': metrics['commercialCustomerCode'],
+                'pointOfSaleId': metrics['pointOfSaleId'],
+                'pointOfSaleName': metrics['pointOfSaleName'],
+                'pointOfSaleCode': metrics['pointOfSaleCode'],
+                'groupBy': metrics['groupBy'],
                 'totalOrders': metrics['totalOrders'],
                 'totalAmount': metrics['totalAmount'],
                 'averageOrderValue': metrics['averageOrderValue'],

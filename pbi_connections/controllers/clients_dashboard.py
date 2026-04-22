@@ -13,6 +13,7 @@ class ClientsDashboardController(BaseDashboardController):
         'top',
         'sortBy',
         'inactiveDays',
+        'groupBy',
     )
     _customer_service_model = 'pbi_connections.customer.dashboard'
     _customer_request_filter_keys = (
@@ -21,6 +22,7 @@ class ClientsDashboardController(BaseDashboardController):
         'top',
         'sortBy',
         'inactiveDays',
+        'groupBy',
     )
 
     @http.route(

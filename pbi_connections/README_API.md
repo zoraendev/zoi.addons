@@ -76,6 +76,7 @@ $body = @{
     dateFrom = "2024-01-01"
     dateTo   = "2024-12-31"
     top      = 10
+    groupBy  = "pointOfSale"
   }
 } | ConvertTo-Json -Depth 5
 
@@ -93,6 +94,7 @@ $body = @{
   filters = @{
     inactiveDays = 60
     top          = 20
+    groupBy      = "pointOfSale"
   }
 } | ConvertTo-Json -Depth 5
 
@@ -112,6 +114,7 @@ $body = @{
     dateFrom = "2024-01-01"
     dateTo   = "2024-12-31"
     top      = 20
+    groupBy  = "pointOfSale"
   }
 } | ConvertTo-Json -Depth 5
 
