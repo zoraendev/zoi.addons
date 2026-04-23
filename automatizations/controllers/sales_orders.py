@@ -1,16 +1,49 @@
 # -*- coding: utf-8 -*-
 
-import json
-
 from odoo import http
 from odoo.exceptions import ValidationError
 from odoo.http import request
 
+from .base_controller import AutomatizationsBaseController
+from ..application.sales_orders.queries import SalesOrderQueryService
 from ..application.sales_orders.transactions import SalesOrderTransactionService
 
 
-class AutomatizationsSalesOrdersController(http.Controller):
-    """Endpoints para armado y confirmacion de pedidos automatizados."""
+class AutomatizationsSalesOrdersController(AutomatizationsBaseController):
+    """Endpoints para armado, confirmacion y consulta de pedidos automatizados."""
+
+    @http.route(
+        ['/api/automatizations/sales-orders/query'],
+        type='http',
+        auth='public',
+        methods=['POST'],
+        csrf=False,
+    )
+    def query_sales_orders(self, **kwargs):
+        if not self._authenticate():
+            return self._make_auth_error_response()
+
+        payload = self._get_json_payload()
+        criteria = payload.get('criteria') or payload.get('filters') or payload
+
+        try:
+            result = SalesOrderQueryService(request.env).query_orders(criteria)
+        except ValidationError as error:
+            return request.make_json_response({
+                'success': False,
+                'message': error.args[0],
+                'count': 0,
+                'orders': [],
+            }, status=400)
+
+        return request.make_json_response({
+            'success': True,
+            'message': 'Consulta de ordenes procesada correctamente.',
+            'criteria': result['criteria'],
+            'matched_fields': result['matched_fields'],
+            'count': result['count'],
+            'orders': result['orders'],
+        })
 
     @http.route(
         ['/api/automatizations/sales-orders/create'],
@@ -20,6 +53,9 @@ class AutomatizationsSalesOrdersController(http.Controller):
         csrf=False,
     )
     def create_sales_orders(self, **kwargs):
+        if not self._authenticate():
+            return self._make_auth_error_response()
+
         payload = self._get_json_payload()
         orders = payload.get('orders') or payload.get('sales_orders') or []
         orders = orders if isinstance(orders, list) else []
@@ -52,13 +88,3 @@ class AutomatizationsSalesOrdersController(http.Controller):
             'results': result['results'],
         })
 
-    @staticmethod
-    def _get_json_payload():
-        raw_body = request.httprequest.data
-        if not raw_body:
-            return {}
-        try:
-            payload = json.loads(raw_body.decode('utf-8'))
-        except (ValueError, UnicodeDecodeError):
-            return {}
-        return payload if isinstance(payload, dict) else {}

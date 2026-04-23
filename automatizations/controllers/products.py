@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import json
-
 from odoo import http
 from odoo.http import request
 
+from .base_controller import AutomatizationsBaseController
 from ..application.products.queries import ProductCatalogQueryService
 from ..domain.products.query_fields import PRODUCT_QUERY_FIELDS
 
 
-class AutomatizationsProductsController(http.Controller):
+class AutomatizationsProductsController(AutomatizationsBaseController):
     """Endpoints de catalogo y consultas comerciales de productos."""
 
     @http.route(
@@ -20,6 +19,9 @@ class AutomatizationsProductsController(http.Controller):
         csrf=False,
     )
     def query_products(self, **kwargs):
+        if not self._authenticate():
+            return self._make_auth_error_response()
+
         criteria = self._extract_criteria()
         result = ProductCatalogQueryService(request.env).query_products(criteria)
         return request.make_json_response({
@@ -39,14 +41,3 @@ class AutomatizationsProductsController(http.Controller):
             field_name: candidate.get(field_name)
             for field_name in PRODUCT_QUERY_FIELDS
         }
-
-    @staticmethod
-    def _get_json_payload():
-        raw_body = request.httprequest.data
-        if not raw_body:
-            return {}
-        try:
-            payload = json.loads(raw_body.decode('utf-8'))
-        except (ValueError, UnicodeDecodeError):
-            return {}
-        return payload if isinstance(payload, dict) else {}

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Vista de configuracion API para el modulo Automatizations.
+        Reutiliza el mismo modelo pbi_connections.api.config para
+        mantener un unico token centralizado entre Power BI y el Bot.
+    -->
+
+    <record id="view_automatizations_api_config_form" model="ir.ui.view">
+        <field name="name">automatizations.api.config.form</field>
+        <field name="model">pbi_connections.api.config</field>
+        <field name="arch" type="xml">
+            <form string="Configuracion API - Bot de Ventas">
+                <header>
+                    <button
+                        name="action_generate_new_token"
+                        string="Generar Nuevo Token"
+                        type="object"
+                        class="btn-danger"
+                        confirm="El bot y Power BI perderan acceso hasta que actualices sus conexiones con el nuevo token."
+                    />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Token de Acceso para el Bot</h1>
+                    </div>
+                    <group>
+                        <group name="token_panel">
+                            <field name="access_token" widget="CopyClipboardChar" readonly="1" string="Token de Acceso"/>
+                            <field name="record_limit" string="Limite de Registros por consulta"/>
+                        </group>
+                    </group>
+                    <separator string="Endpoints Disponibles"/>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Endpoints del Bot de Ventas:</strong><br/>
+                        <code>POST /api/automatizations/customers/query</code> — Buscar cliente por telefono, email, nombre o NIT.<br/>
+                        <code>POST /api/automatizations/products/query</code> — Consultar catalogo de productos con filtros.<br/>
+                        <code>POST /api/automatizations/sales-orders/create</code> — Crear ordenes de venta automatizadas.
+                    </div>
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Autenticacion:</strong><br/>
+                        Envia el token en la cabecera <code>Access-Token</code> o <code>Authorization: Bearer &lt;token&gt;</code> en cada peticion.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_automatizations_api_config" model="ir.actions.act_window">
+        <field name="name">Credenciales API Bot</field>
+        <field name="res_model">pbi_connections.api.config</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_automatizations_api_config_form"/>
+        <field name="res_id" ref="pbi_connections.pbi_connections_api_config_default"/>
+        <field name="target">current</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Administra aqui el token de acceso para el Bot de Ventas.</p>
+            <p>Este token es compartido con Power BI. Si lo regeneras, ambos sistemas perderan acceso.</p>
+        </field>
+    </record>
+
+    <!-- Menu principal del modulo Automatizations -->
+    <menuitem
+        id="menu_automatizations_root"
+        name="Automatizaciones"
+        sequence="12"
+    />
+
+    <menuitem
+        id="menu_automatizations_api_config"
+        name="Credenciales API Bot"
+        parent="menu_automatizations_root"
+        action="action_automatizations_api_config"
+        sequence="10"
+    />
+</odoo>

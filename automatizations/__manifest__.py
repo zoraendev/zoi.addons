@@ -13,8 +13,10 @@ para products y sales_orders.
     'category': 'Sales',
     'version': '1.0.0',
     'license': 'LGPL-3',
-    'depends': ['base', 'product', 'sale'],
-    'data': [],
+    'depends': ['base', 'product', 'sale', 'pbi_connections'],
+    'data': [
+        'views/api_config_views.xml',
+    ],
     'demo': [],
     'installable': True,
     'application': False,

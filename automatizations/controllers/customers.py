@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import json
-
 from odoo import http
 from odoo.exceptions import ValidationError
 from odoo.http import request
 
+from .base_controller import AutomatizationsBaseController
 from ..application.customers.queries import CustomerQueryService
 from ..domain.customers.query_fields import CUSTOMER_QUERY_FIELDS
 
 
-class AutomatizationsCustomersController(http.Controller):
+class AutomatizationsCustomersController(AutomatizationsBaseController):
     @http.route(
         ['/api/automatizations/customers/query'],
         type='http',
@@ -19,6 +18,9 @@ class AutomatizationsCustomersController(http.Controller):
         csrf=False,
     )
     def query_customer(self, **kwargs):
+        if not self._authenticate():
+            return self._make_auth_error_response()
+
         criteria = self._extract_criteria()
 
         try:
@@ -47,14 +49,3 @@ class AutomatizationsCustomersController(http.Controller):
             field_name: candidate.get(field_name)
             for field_name in CUSTOMER_QUERY_FIELDS
         }
-
-    @staticmethod
-    def _get_json_payload():
-        raw_body = request.httprequest.data
-        if not raw_body:
-            return {}
-        try:
-            payload = json.loads(raw_body.decode('utf-8'))
-        except (ValueError, UnicodeDecodeError):
-            return {}
-        return payload if isinstance(payload, dict) else {}
