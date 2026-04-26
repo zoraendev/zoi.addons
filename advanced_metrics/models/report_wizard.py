@@ -381,6 +381,23 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             return f'{int(value):,}'
         return f'{value:,.2f}'
 
+    def _get_inventory_snapshot_label(self):
+        snapshot_date = fields.Date.context_today(self)
+        if not snapshot_date:
+            return False
+        return snapshot_date.strftime('%d/%m/%Y')
+
+    def _get_planning_range_label(self, rows=None):
+        self.ensure_one()
+        date_from, date_to = self._get_effective_report_date_range(rows or [])
+        if date_from and date_to:
+            return f'{date_from.strftime("%d/%m/%Y")} al {date_to.strftime("%d/%m/%Y")}'
+        if date_from:
+            return f'desde {date_from.strftime("%d/%m/%Y")}'
+        if date_to:
+            return f'hasta {date_to.strftime("%d/%m/%Y")}'
+        return 'todas las fechas'
+
     def _format_report_day_label(self, day_name, fecha_entrega=False):
         if not fecha_entrega:
             return escape(day_name or '')
@@ -391,7 +408,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
         return (
             f'<span class="zrn_am_day_heading">{escape(day_name or "")}</span>'
-            f'<span class="zrn_am_day_heading_date">{escape(fecha_value.strftime("%d/%m/%Y"))}</span>'
+            f'<span class="zrn_am_day_heading_date">Fecha de entrega: {escape(fecha_value.strftime("%d/%m/%Y"))}</span>'
         )
 
     def _get_report_week_group_key(self, fecha_entrega=False):
@@ -501,9 +518,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             product_bucket['week_total'] += float(row.get('cantidad_vendida') or 0.0)
 
             day_bucket = product_bucket['by_day'].setdefault(day_key, {})
-            client_bucket = day_bucket.setdefault(client_name, {'oc': 0.0, 'cambios': 0.0})
-            client_bucket['oc'] += float(row.get('cantidad_vendida') or 0.0)
-            client_bucket['cambios'] += float(row.get('cambios') or 0.0)
+            day_bucket[client_name] = day_bucket.get(client_name, 0.0) + float(row.get('cantidad_vendida') or 0.0)
 
         sorted_days = sorted(
             day_client_order.keys(),
@@ -546,7 +561,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             '<th class="zrn_am_sticky_col" rowspan="3">Cod. barra</th>',
             '<th class="zrn_am_sticky_col zrn_am_sticky_col_2" rowspan="3">Item MV</th>',
             '<th class="zrn_am_sticky_col zrn_am_sticky_col_3" rowspan="3">Producto</th>',
-            '<th colspan="3">Inventario</th>',
+            f'<th colspan="3">Inventario al {escape(self._get_inventory_snapshot_label() or "")}</th>',
         ]
 
         for month_key, month_weeks in month_week_order.items():
@@ -555,19 +570,19 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 for day_key in week_days:
                     day_meta = day_meta_map.get(day_key, {})
                     parts.append(
-                        f'<th colspan="{(len(day_client_order.get(day_key, [])) * 2) + 2}">{self._format_report_day_label(day_meta.get("day_name") or day_key, day_meta.get("fecha_entrega"))}</th>'
+                        f'<th colspan="{len(day_client_order.get(day_key, [])) + 1}">{self._format_report_day_label(day_meta.get("day_name") or day_key, day_meta.get("fecha_entrega"))}</th>'
                     )
                 if week_display_meta.get(week_key, {}).get('show_total'):
-                    parts.append(f'<th colspan="2" class="zrn_am_week_total_head">{escape(self._format_report_week_label(week_key))}</th>')
+                    parts.append(f'<th class="zrn_am_week_total_head">{escape(self._format_report_week_label(week_key))}</th>')
             if month_display_meta.get(month_key, {}).get('show_total'):
-                parts.append(f'<th colspan="2" class="zrn_am_month_total_head">{escape(self._format_report_month_label(month_key))}</th>')
+                parts.append(f'<th class="zrn_am_month_total_head">{escape(self._format_report_month_label(month_key))}</th>')
 
         parts.extend([
             '</tr>',
             '<tr>',
-            '<th rowspan="2">Stock inicial</th>',
-            '<th rowspan="2">Total rango</th>',
-            '<th rowspan="2">Stock final</th>',
+            f'<th rowspan="2">Stock inicial al {escape(self._get_inventory_snapshot_label() or "")}</th>',
+            f'<th rowspan="2">Total rango {escape(self._get_planning_range_label(rows))}</th>',
+            f'<th rowspan="2">Stock final proyectado del rango</th>',
         ])
 
         for month_key, month_weeks in month_week_order.items():
@@ -575,12 +590,12 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 week_days = week_day_order.get(week_key, [])
                 for day_key in week_days:
                     for client_name in day_client_order.get(day_key, []):
-                        parts.append(f'<th colspan="2">{escape(client_name)}</th>')
-                    parts.append('<th colspan="2" class="zrn_am_day_total_head">Ventas dia</th>')
+                        parts.append(f'<th>{escape(client_name)}</th>')
+                    parts.append('<th class="zrn_am_day_total_head">Ventas dia</th>')
                 if week_display_meta.get(week_key, {}).get('show_total'):
-                    parts.append('<th colspan="2" class="zrn_am_week_total_head zrn_am_week_total_title">Ventas semana</th>')
+                    parts.append('<th class="zrn_am_week_total_head zrn_am_week_total_title">Ventas semana</th>')
             if month_display_meta.get(month_key, {}).get('show_total'):
-                parts.append('<th colspan="2" class="zrn_am_month_total_head zrn_am_month_total_title">Ventas mes</th>')
+                parts.append('<th class="zrn_am_month_total_head zrn_am_month_total_title">Ventas mes</th>')
 
         parts.extend(['</tr>', '<tr>'])
 
@@ -589,12 +604,12 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 week_days = week_day_order.get(week_key, [])
                 for day_key in week_days:
                     for _client_name in day_client_order.get(day_key, []):
-                        parts.append('<th>OC</th><th>Cambios</th>')
-                    parts.append('<th class="zrn_am_day_total_head zrn_am_day_total_subhead">OC</th><th class="zrn_am_day_total_head zrn_am_day_total_subhead">Cambios</th>')
+                        parts.append('<th>OC</th>')
+                    parts.append('<th class="zrn_am_day_total_head zrn_am_day_total_subhead">OC</th>')
                 if week_display_meta.get(week_key, {}).get('show_total'):
-                    parts.append('<th class="zrn_am_week_total_head zrn_am_week_total_subhead">OC</th><th class="zrn_am_week_total_head zrn_am_week_total_subhead">Cambios</th>')
+                    parts.append('<th class="zrn_am_week_total_head zrn_am_week_total_subhead">OC</th>')
             if month_display_meta.get(month_key, {}).get('show_total'):
-                parts.append('<th class="zrn_am_month_total_head zrn_am_month_total_subhead">OC</th><th class="zrn_am_month_total_head zrn_am_month_total_subhead">Cambios</th>')
+                parts.append('<th class="zrn_am_month_total_head zrn_am_month_total_subhead">OC</th>')
 
         parts.extend(['</tr>', '</thead>', '<tbody>'])
 
@@ -612,39 +627,29 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
             for month_key, month_weeks in month_week_order.items():
                 month_total_oc = 0.0
-                month_total_changes = 0.0
 
                 for week_key in month_weeks:
                     week_days = week_day_order.get(week_key, [])
                     week_total_oc = 0.0
-                    week_total_changes = 0.0
 
                     for day_key in week_days:
                         day_total_oc = 0.0
-                        day_total_changes = 0.0
                         day_values = product_data['by_day'].get(day_key, {})
 
                         for client_name in day_client_order.get(day_key, []):
-                            movement = day_values.get(client_name, {'oc': 0.0, 'cambios': 0.0})
-                            day_total_oc += movement['oc']
-                            day_total_changes += movement['cambios']
-                            parts.append(f'<td class="zrn_am_num">{self._format_report_number(movement["oc"])}</td>')
-                            parts.append(f'<td class="zrn_am_num zrn_am_change_cell">{self._format_report_number(movement["cambios"])}</td>')
+                            sale_qty = float(day_values.get(client_name, 0.0))
+                            day_total_oc += sale_qty
+                            parts.append(f'<td class="zrn_am_num">{self._format_report_number(sale_qty)}</td>')
 
                         week_total_oc += day_total_oc
-                        week_total_changes += day_total_changes
                         parts.append(f'<td class="zrn_am_num zrn_am_day_total">{self._format_report_number(day_total_oc)}</td>')
-                        parts.append(f'<td class="zrn_am_num zrn_am_day_total zrn_am_change_cell">{self._format_report_number(day_total_changes)}</td>')
 
                     month_total_oc += week_total_oc
-                    month_total_changes += week_total_changes
                     if week_display_meta.get(week_key, {}).get('show_total'):
                         parts.append(f'<td class="zrn_am_num zrn_am_week_total">{self._format_report_number(week_total_oc)}</td>')
-                        parts.append(f'<td class="zrn_am_num zrn_am_week_total zrn_am_change_cell">{self._format_report_number(week_total_changes)}</td>')
 
                 if month_display_meta.get(month_key, {}).get('show_total'):
                     parts.append(f'<td class="zrn_am_num zrn_am_month_total">{self._format_report_number(month_total_oc)}</td>')
-                    parts.append(f'<td class="zrn_am_num zrn_am_month_total zrn_am_change_cell">{self._format_report_number(month_total_changes)}</td>')
 
             parts.append('</tr>')
 
@@ -690,8 +695,8 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             '<th>Producto</th>',
             '<th class="o_list_number">Total OVs</th>',
             '<th class="o_list_number">Vendido total</th>',
-            '<th class="o_list_number">Stock inicial</th>',
-            '<th class="o_list_number">Stock libre</th>',
+            f'<th class="o_list_number">Stock al {escape(self._get_inventory_snapshot_label() or "")}</th>',
+            f'<th class="o_list_number">Stock libre al {escape(self._get_inventory_snapshot_label() or "")}</th>',
             '<th class="o_list_number">Sugerido a fabricar</th>',
             '<th>Accion</th>',
             '</tr>',
