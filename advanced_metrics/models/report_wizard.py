@@ -29,7 +29,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     )
     cliente_ids = fields.Many2many(
         'res.partner',
-        string='Clientes',
+        string='Puntos de venta',
     )
     product_ids = fields.Many2many(
         'product.product',
@@ -37,7 +37,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     )
     available_cliente_ids = fields.Many2many(
         'res.partner',
-        string='Clientes disponibles',
+        string='Puntos de venta disponibles',
         compute='_compute_review_data',
         readonly=True,
     )
@@ -49,7 +49,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     )
     preview_cliente_ids = fields.Many2many(
         'res.partner',
-        string='Clientes a revisar',
+        string='Puntos de venta a revisar',
         compute='_compute_review_data',
         readonly=True,
     )
@@ -60,7 +60,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         readonly=True,
     )
     preview_cliente_count = fields.Integer(
-        string='Cantidad de clientes',
+        string='Cantidad de puntos de venta',
         compute='_compute_review_data',
         readonly=True,
     )
@@ -72,7 +72,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     selected_cliente_line_ids = fields.One2many(
         'advanced_metrics.report.wizard.client.line',
         'wizard_id',
-        string='Clientes seleccionados',
+        string='Puntos de venta seleccionados',
     )
     selected_product_line_ids = fields.One2many(
         'advanced_metrics.report.wizard.product.line',
@@ -182,11 +182,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             domain[0] = ('order_id.state', '=', sale_order_state)
 
         if normalized_cliente_ids:
-            domain.append(('order_partner_id.commercial_partner_id', 'in', normalized_cliente_ids))
+            domain.append(('order_id.partner_shipping_id', 'in', normalized_cliente_ids))
         elif cliente_id:
-            domain.append(('order_partner_id.commercial_partner_id', '=', int(cliente_id)))
+            domain.append(('order_id.partner_shipping_id', '=', int(cliente_id)))
         elif cliente_nombre:
-            domain.append(('order_partner_id.commercial_partner_id.name', 'ilike', cliente_nombre))
+            domain.append(('order_id.partner_shipping_id.name', 'ilike', cliente_nombre))
 
         if normalized_product_ids:
             domain.append(('product_id', 'in', normalized_product_ids))
@@ -222,7 +222,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             client_values = []
             for partner in wizard.cliente_ids:
                 partner_lines = lines.filtered(
-                    lambda line: line.order_partner_id.commercial_partner_id == partner
+                    lambda line: line.order_id.partner_shipping_id == partner
                 )
                 order_count = len(partner_lines.mapped('order_id'))
                 total_units = sum(partner_lines.mapped('product_uom_qty'))
@@ -284,20 +284,20 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             available_lines = wizard._search_sale_lines_from_filters(base_filters)
             candidate_lines = wizard._get_candidate_sale_lines()
 
-            available_client_ids = available_lines.mapped('order_partner_id.commercial_partner_id').ids
+            available_client_ids = available_lines.mapped('order_id.partner_shipping_id').ids
             available_product_ids = available_lines.mapped('product_id').ids
 
             preview_lines = candidate_lines
             if wizard.cliente_ids:
                 preview_lines = preview_lines.filtered(
-                    lambda line: line.order_partner_id.commercial_partner_id in wizard.cliente_ids
+                    lambda line: line.order_id.partner_shipping_id in wizard.cliente_ids
                 )
             if wizard.product_ids:
                 preview_lines = preview_lines.filtered(
                     lambda line: line.product_id in wizard.product_ids
                 )
 
-            preview_client_ids = preview_lines.mapped('order_partner_id.commercial_partner_id').ids
+            preview_client_ids = preview_lines.mapped('order_id.partner_shipping_id').ids
             preview_product_ids = preview_lines.mapped('product_id').ids
 
             wizard.available_cliente_ids = [(6, 0, available_client_ids)]
@@ -496,7 +496,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             day_date = row.get('fecha_entrega')
             day_name = row.get('dia_semana') or row.get('fecha_entrega') or ''
             day_key = day_date or day_name or ''
-            client_name = row.get('cliente') or 'Cliente sin nombre'
+            client_name = row.get('cliente') or 'Punto de venta sin nombre'
             day_clients = day_client_order.setdefault(day_key, [])
             if client_name not in day_clients:
                 day_clients.append(client_name)
@@ -780,10 +780,10 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         Filtros soportados (dict):
             - fecha_entrega_desde (str YYYY-MM-DD): Limite inferior de fecha de entrega.
             - fecha_entrega_hasta (str YYYY-MM-DD): Limite superior de fecha de entrega.
-            - cliente_ids (list[int]): IDs de partners para filtrar por clientes.
+            - cliente_ids (list[int]): IDs de partners para filtrar por puntos de venta.
             - product_ids (list[int]): IDs de productos para filtrar por producto.
             - cliente_id (int): ID del partner para compatibilidad hacia atras.
-            - cliente_nombre (str): Nombre parcial para busqueda difusa de cliente.
+            - cliente_nombre (str): Nombre parcial para busqueda difusa de punto de venta.
 
         Returns:
             list[dict]: Lista de filas con las 8 columnas del reporte:
@@ -900,11 +900,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
             rows.append({
                 'order_id': line.order_id.id,
-                'cliente_id': line.order_partner_id.commercial_partner_id.id,
+                'cliente_id': line.order_id.partner_shipping_id.id or line.order_partner_id.id,
                 'product_id': product_id,
                 'fecha_entrega': fecha_date.isoformat(),
                 'dia_semana': DIAS_SEMANA.get(fecha_date.weekday(), ''),
-                'cliente': line.order_partner_id.commercial_partner_id.display_name or '',
+                'cliente': line.order_id.partner_shipping_id.display_name or line.order_partner_id.display_name or '',
                 'numero_orden_venta': line.order_id.name or '',
                 'producto': line.product_id.display_name or '',
                 'barcode': line.product_id.barcode or '',
@@ -921,7 +921,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
         # --- MEJORA 5: ORDENAMIENTO INTELIGENTE PARA PLANIFICACION ---
         # Ordenamos primero por fecha de entrega (lunes primero) y luego
-        # por nombre de cliente dentro de cada dia. Esto permite que la
+        # por nombre de punto de venta dentro de cada dia. Esto permite que la
         # gerente de operaciones lea el reporte de arriba a abajo como
         # un plan de produccion diario sin reordenar nada.
         rows.sort(key=lambda r: (r.get('fecha_entrega', ''), r.get('cliente', '')))
@@ -1142,7 +1142,7 @@ class AdvancedMetricsReportWizardLine(models.TransientModel):
 
 class AdvancedMetricsReportWizardClientLine(models.TransientModel):
     _name = 'advanced_metrics.report.wizard.client.line'
-    _description = 'Cliente seleccionado para el reporte'
+    _description = 'Punto de venta seleccionado para el reporte'
     _order = 'partner_id'
 
     wizard_id = fields.Many2one(
@@ -1151,7 +1151,7 @@ class AdvancedMetricsReportWizardClientLine(models.TransientModel):
         required=True,
         ondelete='cascade',
     )
-    partner_id = fields.Many2one('res.partner', string='Cliente', required=True)
+    partner_id = fields.Many2one('res.partner', string='Punto de venta', required=True)
     city = fields.Char(string='Ciudad')
     email = fields.Char(string='Correo')
     order_count = fields.Integer(string='OVs')

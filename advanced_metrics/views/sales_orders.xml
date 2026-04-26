@@ -30,7 +30,8 @@
                                 domain="[('id', 'in', available_cliente_ids)]"
                                 context="{'show_address': 1, 'show_vat': True}"
                                 options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
-                                placeholder="Selecciona uno o varios clientes"
+                                string="Puntos de venta"
+                                placeholder="Selecciona uno o varios puntos de venta"
                             />
                             <field
                                 name="product_ids"
