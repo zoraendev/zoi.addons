@@ -2,7 +2,18 @@ from calendar import monthrange
 from collections import OrderedDict
 from datetime import datetime, timedelta
 
-from markupsafe import escape
+
+def escape(s):
+    """Escape básico de HTML para evitar dependencias externas."""
+    if not isinstance(s, str):
+        s = str(s)
+    return (
+        s.replace('&', '&amp;')
+         .replace('<', '&lt;')
+         .replace('>', '&gt;')
+         .replace('"', '&quot;')
+         .replace("'", '&#39;')
+    )
 
 from odoo import api, fields, models
 
@@ -78,6 +89,21 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         'advanced_metrics.report.wizard.product.line',
         'wizard_id',
         string='Productos seleccionados',
+    )
+    report_customer_line_ids = fields.One2many(
+        'advanced_metrics.report.wizard.report.customer.line',
+        'wizard_id',
+        string='Resumen de clientes del reporte',
+    )
+    report_product_line_ids = fields.One2many(
+        'advanced_metrics.report.wizard.report.product.line',
+        'wizard_id',
+        string='Resumen de productos del reporte',
+    )
+    report_order_line_ids = fields.One2many(
+        'advanced_metrics.report.wizard.report.order.line',
+        'wizard_id',
+        string='Resumen de OVs del reporte',
     )
     report_line_ids = fields.One2many(
         'advanced_metrics.report.wizard.line',
@@ -314,6 +340,12 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
     def _reset_report_payload(self):
         for wizard in self:
+            if wizard.report_customer_line_ids:
+                wizard.report_customer_line_ids.unlink()
+            if wizard.report_product_line_ids:
+                wizard.report_product_line_ids.unlink()
+            if wizard.report_order_line_ids:
+                wizard.report_order_line_ids.unlink()
             if wizard.id:
                 wizard.report_line_ids.unlink()
             wizard.report_html = False
@@ -736,6 +768,9 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     def _load_report_payload(self, rows):
         Line = self.env['advanced_metrics.report.wizard.line']
         for wizard in self:
+            wizard.report_customer_line_ids.unlink()
+            wizard.report_product_line_ids.unlink()
+            wizard.report_order_line_ids.unlink()
             wizard.report_line_ids.unlink()
             line_values = []
             for row in rows:
@@ -756,6 +791,9 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 })
             if line_values:
                 Line.create(line_values)
+            wizard._sync_report_customer_lines()
+            wizard._sync_report_product_lines()
+            wizard._sync_report_order_lines()
 
             wizard.write({
                 'report_html': wizard._build_report_html(rows),
@@ -767,6 +805,135 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 'report_product_count': len({row.get('product_id') for row in rows if row.get('product_id')}),
                 'report_date_range_label': wizard._format_report_date_range_label(rows),
             })
+
+    def _sync_report_customer_lines(self):
+        SummaryLine = self.env['advanced_metrics.report.wizard.report.customer.line']
+        for wizard in self:
+            wizard.report_customer_line_ids.unlink()
+            summary_values = []
+            grouped_lines = {}
+            for line in wizard.report_line_ids.sorted(
+                key=lambda item: (
+                    item.cliente_id.display_name or '',
+                    item.fecha_entrega or fields.Date.today(),
+                    item.id,
+                )
+            ):
+                if not line.cliente_id:
+                    continue
+                grouped_lines.setdefault(line.cliente_id.id, self.env['advanced_metrics.report.wizard.line'])
+                grouped_lines[line.cliente_id.id] |= line
+
+            for partner_id, lines in grouped_lines.items():
+                partner = lines[0].cliente_id
+                order_ids = lines.mapped('order_id')
+                product_ids = lines.mapped('product_id')
+                delivery_dates = [item for item in lines.mapped('fecha_entrega') if item]
+                summary_values.append({
+                    'wizard_id': wizard.id,
+                    'partner_id': partner.id,
+                    'customer_id': (partner.parent_id or partner.commercial_partner_id).id,
+                    'city': partner.city or '',
+                    'phone': partner.phone or partner.mobile or '',
+                    'email': partner.email or '',
+                    'order_count': len(order_ids),
+                    'line_count': len(lines),
+                    'product_count': len(product_ids),
+                    'total_units': sum(lines.mapped('cantidad_vendida')),
+                    'first_delivery_date': min(delivery_dates) if delivery_dates else False,
+                    'last_delivery_date': max(delivery_dates) if delivery_dates else False,
+                })
+
+            if summary_values:
+                SummaryLine.create(summary_values)
+
+    def _sync_report_product_lines(self):
+        SummaryLine = self.env['advanced_metrics.report.wizard.report.product.line']
+        for wizard in self:
+            wizard.report_product_line_ids.unlink()
+            summary_values = []
+            grouped_lines = {}
+            for line in wizard.report_line_ids.sorted(
+                key=lambda item: (
+                    item.product_id.display_name or '',
+                    item.fecha_entrega or fields.Date.today(),
+                    item.id,
+                )
+            ):
+                if not line.product_id:
+                    continue
+                grouped_lines.setdefault(line.product_id.id, self.env['advanced_metrics.report.wizard.line'])
+                grouped_lines[line.product_id.id] |= line
+
+            for product_id, lines in grouped_lines.items():
+                product = lines[0].product_id
+                order_ids = lines.mapped('order_id')
+                customer_ids = lines.mapped('cliente_id')
+                delivery_dates = [item for item in lines.mapped('fecha_entrega') if item]
+                initial_stock = max(lines.mapped('inventario_disponible') or [0.0])
+                free_stock = max(lines.mapped('inventario_libre_usar') or [0.0])
+                suggested_production = sum(lines.mapped('cantidad_sugerida_producir'))
+                total_units = sum(lines.mapped('cantidad_vendida'))
+                projected_balance = initial_stock - total_units
+                summary_values.append({
+                    'wizard_id': wizard.id,
+                    'product_id': product.id,
+                    'default_code': product.default_code or '',
+                    'categ_name': product.categ_id.display_name or '',
+                    'order_count': len(order_ids),
+                    'line_count': len(lines),
+                    'customer_count': len(customer_ids),
+                    'total_units': total_units,
+                    'stock_initial': initial_stock,
+                    'stock_free': free_stock,
+                    'suggested_production': suggested_production,
+                    'projected_balance': projected_balance,
+                    'first_delivery_date': min(delivery_dates) if delivery_dates else False,
+                    'last_delivery_date': max(delivery_dates) if delivery_dates else False,
+                })
+
+            if summary_values:
+                SummaryLine.create(summary_values)
+
+    def _sync_report_order_lines(self):
+        SummaryLine = self.env['advanced_metrics.report.wizard.report.order.line']
+        order_state_labels = dict(self.SALE_ORDER_STATE_SELECTION)
+        for wizard in self:
+            wizard.report_order_line_ids.unlink()
+            summary_values = []
+            grouped_lines = {}
+            for line in wizard.report_line_ids.sorted(
+                key=lambda item: (
+                    item.order_id.name or '',
+                    item.fecha_entrega or fields.Date.today(),
+                    item.id,
+                )
+            ):
+                if not line.order_id:
+                    continue
+                grouped_lines.setdefault(line.order_id.id, self.env['advanced_metrics.report.wizard.line'])
+                grouped_lines[line.order_id.id] |= line
+
+            for order_id, lines in grouped_lines.items():
+                order = lines[0].order_id
+                customer = order.partner_shipping_id or lines[0].cliente_id
+                product_ids = lines.mapped('product_id')
+                delivery_dates = [item for item in lines.mapped('fecha_entrega') if item]
+                summary_values.append({
+                    'wizard_id': wizard.id,
+                    'order_id': order.id,
+                    'customer_id': customer.id if customer else False,
+                    'state': order.state or '',
+                    'state_label': order_state_labels.get(order.state or '', order.state or ''),
+                    'product_count': len(product_ids),
+                    'line_count': len(lines),
+                    'total_units': sum(lines.mapped('cantidad_vendida')),
+                    'first_delivery_date': min(delivery_dates) if delivery_dates else False,
+                    'last_delivery_date': max(delivery_dates) if delivery_dates else False,
+                })
+
+            if summary_values:
+                SummaryLine.create(summary_values)
 
     @api.model
     def get_sales_orders_report_rows(self, filters=None, limit=500):
@@ -991,6 +1158,58 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             '_noBreadcrumbs': True,
         }
 
+    def action_open_report_customers(self):
+        self.ensure_one()
+        if self.report_line_ids and not self.report_customer_line_ids:
+            self._sync_report_customer_lines()
+        action = self.env.ref(
+            'advanced_metrics.action_advanced_metrics_report_customers'
+        ).read()[0]
+        action['domain'] = [('wizard_id', '=', self.id)]
+        action['context'] = {
+            'active_id': self.id,
+            'default_wizard_id': self.id,
+        }
+        action['_noBreadcrumbs'] = True
+        return action
+
+    def action_open_report_products(self):
+        self.ensure_one()
+        if self.report_line_ids and not self.report_product_line_ids:
+            self._sync_report_product_lines()
+        action = self.env.ref(
+            'advanced_metrics.action_advanced_metrics_report_products'
+        ).read()[0]
+        action['domain'] = [('wizard_id', '=', self.id)]
+        action['context'] = {
+            'active_id': self.id,
+            'default_wizard_id': self.id,
+        }
+        action['_noBreadcrumbs'] = True
+        return action
+
+    def action_open_report_orders(self):
+        self.ensure_one()
+        if self.report_line_ids and not self.report_order_line_ids:
+            self._sync_report_order_lines()
+        action = self.env.ref(
+            'advanced_metrics.action_advanced_metrics_report_orders'
+        ).read()[0]
+        action['domain'] = [('wizard_id', '=', self.id)]
+        action['context'] = {
+            'active_id': self.id,
+            'default_wizard_id': self.id,
+        }
+        action['_noBreadcrumbs'] = True
+        return action
+
+    @api.model
+    def action_back_to_report_from_context(self, wizard_id=False):
+        wizard = self.browse(int(wizard_id or 0)).exists()
+        if not wizard:
+            return {'type': 'ir.actions.act_window_close'}
+        return wizard.action_back_to_report()
+
     def action_open_mrp_production_create(self, product_id, suggested_qty=0.0):
         self.ensure_one()
 
@@ -1163,6 +1382,138 @@ class AdvancedMetricsReportWizardClientLine(models.TransientModel):
         wizard.cliente_ids = [(3, self.partner_id.id)]
         wizard._compute_review_data()
         return False
+
+
+class AdvancedMetricsReportWizardReportCustomerLine(models.TransientModel):
+    _name = 'advanced_metrics.report.wizard.report.customer.line'
+    _description = 'Resumen de punto de venta incluido en el reporte'
+    _order = 'first_delivery_date asc, partner_id'
+
+    wizard_id = fields.Many2one(
+        'advanced_metrics.report.wizard',
+        string='Wizard',
+        required=True,
+        ondelete='cascade',
+    )
+    partner_id = fields.Many2one('res.partner', string='Punto de venta', required=True)
+    customer_id = fields.Many2one('res.partner', string='Cliente')
+    city = fields.Char(string='Ciudad')
+    phone = fields.Char(string='Telefono')
+    email = fields.Char(string='Correo')
+    order_count = fields.Integer(string='OVs')
+    line_count = fields.Integer(string='Lineas')
+    product_count = fields.Integer(string='Productos')
+    total_units = fields.Float(string='Unidades')
+    first_delivery_date = fields.Date(string='Primera entrega')
+    last_delivery_date = fields.Date(string='Ultima entrega')
+    report_detail_line_ids = fields.Many2many(
+        'advanced_metrics.report.wizard.line',
+        string='Detalle del reporte',
+        compute='_compute_report_detail_line_ids',
+        readonly=True,
+    )
+
+    @api.depends('wizard_id', 'partner_id')
+    def _compute_report_detail_line_ids(self):
+        for line in self:
+            detail_lines = self.env['advanced_metrics.report.wizard.line']
+            if line.wizard_id and line.partner_id:
+                detail_lines = line.wizard_id.report_line_ids.filtered(
+                    lambda report_line: report_line.cliente_id == line.partner_id
+                )
+            line.report_detail_line_ids = [(6, 0, detail_lines.ids)]
+
+    def action_return_to_report(self):
+        self.ensure_one()
+        return self.wizard_id.action_back_to_report()
+
+
+class AdvancedMetricsReportWizardReportProductLine(models.TransientModel):
+    _name = 'advanced_metrics.report.wizard.report.product.line'
+    _description = 'Resumen de producto incluido en el reporte'
+    _order = 'first_delivery_date asc, product_id'
+
+    wizard_id = fields.Many2one(
+        'advanced_metrics.report.wizard',
+        string='Wizard',
+        required=True,
+        ondelete='cascade',
+    )
+    product_id = fields.Many2one('product.product', string='Producto', required=True)
+    default_code = fields.Char(string='Referencia')
+    categ_name = fields.Char(string='Categoria')
+    order_count = fields.Integer(string='OVs')
+    line_count = fields.Integer(string='Lineas')
+    customer_count = fields.Integer(string='Clientes')
+    total_units = fields.Float(string='Demanda total')
+    stock_initial = fields.Float(string='Stock inicial')
+    stock_free = fields.Float(string='Stock libre')
+    suggested_production = fields.Float(string='Sugerido fabricar')
+    projected_balance = fields.Float(string='Saldo proyectado')
+    first_delivery_date = fields.Date(string='Primera entrega')
+    last_delivery_date = fields.Date(string='Ultima entrega')
+    report_detail_line_ids = fields.Many2many(
+        'advanced_metrics.report.wizard.line',
+        string='Detalle del reporte',
+        compute='_compute_report_detail_line_ids',
+        readonly=True,
+    )
+
+    @api.depends('wizard_id', 'product_id')
+    def _compute_report_detail_line_ids(self):
+        for line in self:
+            detail_lines = self.env['advanced_metrics.report.wizard.line']
+            if line.wizard_id and line.product_id:
+                detail_lines = line.wizard_id.report_line_ids.filtered(
+                    lambda report_line: report_line.product_id == line.product_id
+                )
+            line.report_detail_line_ids = [(6, 0, detail_lines.ids)]
+
+    def action_return_to_report(self):
+        self.ensure_one()
+        return self.wizard_id.action_back_to_report()
+
+
+class AdvancedMetricsReportWizardReportOrderLine(models.TransientModel):
+    _name = 'advanced_metrics.report.wizard.report.order.line'
+    _description = 'Resumen de orden de venta incluida en el reporte'
+    _order = 'first_delivery_date asc, order_id'
+
+    wizard_id = fields.Many2one(
+        'advanced_metrics.report.wizard',
+        string='Wizard',
+        required=True,
+        ondelete='cascade',
+    )
+    order_id = fields.Many2one('sale.order', string='Orden de venta', required=True)
+    customer_id = fields.Many2one('res.partner', string='Punto de venta')
+    state = fields.Char(string='Estado tecnico')
+    state_label = fields.Char(string='Estado')
+    product_count = fields.Integer(string='Productos')
+    line_count = fields.Integer(string='Lineas')
+    total_units = fields.Float(string='Unidades')
+    first_delivery_date = fields.Date(string='Primera entrega')
+    last_delivery_date = fields.Date(string='Ultima entrega')
+    report_detail_line_ids = fields.Many2many(
+        'advanced_metrics.report.wizard.line',
+        string='Detalle del reporte',
+        compute='_compute_report_detail_line_ids',
+        readonly=True,
+    )
+
+    @api.depends('wizard_id', 'order_id')
+    def _compute_report_detail_line_ids(self):
+        for line in self:
+            detail_lines = self.env['advanced_metrics.report.wizard.line']
+            if line.wizard_id and line.order_id:
+                detail_lines = line.wizard_id.report_line_ids.filtered(
+                    lambda report_line: report_line.order_id == line.order_id
+                )
+            line.report_detail_line_ids = [(6, 0, detail_lines.ids)]
+
+    def action_return_to_report(self):
+        self.ensure_one()
+        return self.wizard_id.action_back_to_report()
 
 
 class AdvancedMetricsReportWizardProductLine(models.TransientModel):

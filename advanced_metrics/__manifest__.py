@@ -27,15 +27,18 @@ Long description of module's purpose
         'views/sales_orders.xml',
         'views/templates.xml',
         'views/res_config_settings.xml',
+        'views/report_customers.xml',
     ],
     'assets': {
         'web.assets_backend': [
             'advanced_metrics/static/src/js/home_form_view.js',
             'advanced_metrics/static/src/js/production_form_view.js',
             'advanced_metrics/static/src/js/report_form_view.js',
+            'advanced_metrics/static/src/js/report_summary_list_view.js',
             'advanced_metrics/static/src/xml/home_form_view.xml',
             'advanced_metrics/static/src/xml/production_form_view.xml',
             'advanced_metrics/static/src/xml/report_form_view.xml',
+            'advanced_metrics/static/src/xml/report_summary_list_view.xml',
             'advanced_metrics/static/src/scss/dashboard.scss',
         ],
         'web.assets_web_dark': [

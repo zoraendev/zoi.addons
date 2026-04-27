@@ -72,18 +72,36 @@
                             <div class="zrn_am_report_screen_stats">
                                 <div class="zrn_am_report_stat_box">
                                     <span>Clientes</span>
-                                    <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
+                                    <strong>
+                                        <button name="action_open_report_customers"
+                                                type="object"
+                                                class="oe_link zrn_am_stat_link">
+                                            <field name="report_customer_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
                                 </div>
                                 <div class="zrn_am_report_stat_box">
                                     <span>Productos</span>
-                                    <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                                    <strong>
+                                        <button name="action_open_report_products"
+                                                type="object"
+                                                class="oe_link zrn_am_stat_link">
+                                            <field name="report_product_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
                                 </div>
                                 <div class="zrn_am_report_stat_box">
                                     <span>OVs</span>
-                                    <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
+                                    <strong>
+                                        <button name="action_open_report_orders"
+                                                type="object"
+                                                class="oe_link zrn_am_stat_link">
+                                            <field name="report_order_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
                                 </div>
                                 <div class="zrn_am_report_stat_box">
-                                    <span>Lineas</span>
+                                    <span title="Lineas del reporte: cada fila corresponde a una combinacion de orden de venta, producto y punto de venta incluida en la tabla.">Lineas</span>
                                     <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
                                 </div>
                             </div>
@@ -126,14 +144,26 @@
                                 </div>
                                 <div class="zrn_am_report_stat_box">
                                     <span>Productos</span>
-                                    <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                                    <strong>
+                                        <button name="action_open_report_products"
+                                                type="object"
+                                                class="oe_link zrn_am_stat_link">
+                                            <field name="report_product_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
                                 </div>
                                 <div class="zrn_am_report_stat_box">
                                     <span>OVs</span>
-                                    <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
+                                    <strong>
+                                        <button name="action_open_report_orders"
+                                                type="object"
+                                                class="oe_link zrn_am_stat_link">
+                                            <field name="report_order_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
                                 </div>
                                 <div class="zrn_am_report_stat_box">
-                                    <span>Lineas</span>
+                                    <span title="Lineas del reporte: cada fila corresponde a una combinacion de orden de venta, producto y punto de venta incluida en la tabla.">Lineas</span>
                                     <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
                                 </div>
                             </div>
