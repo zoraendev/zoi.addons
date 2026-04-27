@@ -1075,3 +1075,19 @@
     }
   }
 }
+
+.o_form_view.zrn_am_summary_detail_form {
+  .o_form_sheet_bg > .o_form_sheet {
+    background: transparent;
+  }
+
+  .zrn_am_summary_lines_group .o_list_renderer {
+    scrollbar-color: var(--o-border-color, #3b4354)
+      var(--o-webclient-background-color, #111827);
+  }
+
+  .zrn_am_summary_lines_group .o_list_table th,
+  .zrn_am_summary_lines_group .o_list_table td {
+    border-color: var(--o-border-color, #3b4354);
+  }
+}
