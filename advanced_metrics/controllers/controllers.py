@@ -3,6 +3,7 @@ import io
 import json
 from collections import OrderedDict
 from datetime import datetime
+from html import escape as html_escape
 from odoo import http
 from odoo.http import request
 
@@ -70,10 +71,126 @@ class AdvancedMetricsController(http.Controller):
             'count': len(rows),
         })
 
+    @http.route('/advanced_metrics/report/export_excel/<int:wizard_id>', type='http', auth='user')
+    def export_current_report_excel(self, wizard_id, **kwargs):
+        wizard = request.env['advanced_metrics.report.wizard'].sudo().browse(wizard_id).exists()
+        if not wizard:
+            return request.not_found()
+
+        document = self._build_excel_html_document(wizard)
+        filename = f"planificacion_zoraen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xls"
+        return request.make_response(document.encode('utf-8'), headers=[
+            ('Content-Type', 'application/vnd.ms-excel; charset=utf-8'),
+            ('Content-Disposition', f'attachment; filename="{filename}"'),
+        ])
+
+    def _build_excel_html_document(self, wizard):
+        range_label = html_escape(wizard.report_date_range_label or '')
+        report_html = wizard.report_html or '<div>No hay datos para exportar.</div>'
+        return f"""<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:x="urn:schemas-microsoft-com:office:excel"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="ProgId" content="Excel.Sheet" />
+    <meta name="Generator" content="Odoo Advanced Metrics" />
+    <style>
+        body {{
+            font-family: Calibri, Arial, sans-serif;
+            color: #1f2937;
+            margin: 24px;
+        }}
+        .zrn_am_export_title {{
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }}
+        .zrn_am_export_subtitle {{
+            font-size: 13px;
+            margin-bottom: 18px;
+        }}
+        .zrn_am_report_matrix_wrap {{
+            overflow: visible !important;
+        }}
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+        }}
+        th, td {{
+            border: 1px solid #d7d8ea;
+            padding: 8px 10px;
+            vertical-align: middle;
+        }}
+        thead th {{
+            background: #857194;
+            color: #ffffff;
+            text-align: center;
+            font-weight: 700;
+        }}
+        .zrn_am_sticky_col,
+        .zrn_am_sticky_col_2,
+        .zrn_am_sticky_col_3 {{
+            background: #857194;
+            color: #ffffff;
+            font-weight: 700;
+        }}
+        .zrn_am_num {{
+            text-align: right;
+            mso-number-format: "0.00";
+        }}
+        .zrn_am_day_total,
+        .zrn_am_day_total_head,
+        .zrn_am_day_total_subhead {{
+            background: #d9cdea;
+            font-weight: 700;
+        }}
+        .zrn_am_week_total,
+        .zrn_am_week_total_head,
+        .zrn_am_week_total_title,
+        .zrn_am_week_total_subhead {{
+            background: #d8e8d6;
+            font-weight: 700;
+        }}
+        .zrn_am_month_total,
+        .zrn_am_month_total_head,
+        .zrn_am_month_total_title,
+        .zrn_am_month_total_subhead {{
+            background: #c7dbf5;
+            font-weight: 700;
+        }}
+        .zrn_am_product_name {{
+            min-width: 220px;
+        }}
+        .zrn_am_day_heading {{
+            display: block;
+            font-weight: 700;
+        }}
+        .zrn_am_day_heading_date {{
+            display: block;
+            font-size: 12px;
+            margin-top: 4px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="zrn_am_export_title">Detalle operativo</div>
+    <div class="zrn_am_export_subtitle">{range_label}</div>
+    {report_html}
+</body>
+</html>"""
+
     def _generate_xlsx_response(self, rows, filters):
         """Orquestador de la generacion de archivos Excel (.xlsx)."""
         if not XLSXWRITER_AVAILABLE:
-            return request.make_json_response({'success': False, 'message': 'xlsxwriter no instalado'}, status=500)
+            wizard = request.env['advanced_metrics.report.wizard'].sudo().create({})
+            wizard._load_report_payload(rows)
+            document = self._build_excel_html_document(wizard)
+            filename = f"planificacion_zoraen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xls"
+            return request.make_response(document.encode('utf-8'), headers=[
+                ('Content-Type', 'application/vnd.ms-excel; charset=utf-8'),
+                ('Content-Disposition', f'attachment; filename="{filename}"'),
+            ])
 
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})

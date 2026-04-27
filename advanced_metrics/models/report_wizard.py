@@ -519,71 +519,14 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     def _build_report_html(self, rows):
         if not rows:
             return '<div class="zrn_am_report_empty">No hay ordenes de venta para mostrar con la seleccion actual.</div>'
-
-        day_client_order = OrderedDict()
-        day_meta_map = {}
-        product_buckets = OrderedDict()
-
-        for row in rows:
-            day_date = row.get('fecha_entrega')
-            day_name = row.get('dia_semana') or row.get('fecha_entrega') or ''
-            day_key = day_date or day_name or ''
-            client_name = row.get('cliente') or 'Punto de venta sin nombre'
-            day_clients = day_client_order.setdefault(day_key, [])
-            if client_name not in day_clients:
-                day_clients.append(client_name)
-            if day_key and day_key not in day_meta_map:
-                day_meta_map[day_key] = {
-                    'day_name': day_name,
-                    'fecha_entrega': day_date,
-                }
-
-            product_key = row.get('product_id') or 0
-            product_bucket = product_buckets.setdefault(product_key, {
-                'barcode': row.get('barcode') or '',
-                'item_vm': row.get('item_vm') or '',
-                'name': row.get('producto') or 'Producto sin nombre',
-                'initial_inventory': float(row.get('stock_real_total') or 0.0),
-                'week_total': 0.0,
-                'by_day': {},
-            })
-            product_bucket['week_total'] += float(row.get('cantidad_vendida') or 0.0)
-
-            day_bucket = product_bucket['by_day'].setdefault(day_key, {})
-            day_bucket[client_name] = day_bucket.get(client_name, 0.0) + float(row.get('cantidad_vendida') or 0.0)
-
-        sorted_days = sorted(
-            day_client_order.keys(),
-            key=lambda group_key: self._get_report_group_sort_key(group_key, day_meta_map.get(group_key)),
-        )
-        week_day_order = OrderedDict()
-        for day_key in sorted_days:
-            week_key = self._get_report_week_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
-            week_day_order.setdefault(week_key, []).append(day_key)
-
-        month_week_order = OrderedDict()
-        for week_key, week_days in week_day_order.items():
-            month_key = False
-            for day_key in week_days:
-                month_key = self._get_report_month_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
-                if month_key:
-                    break
-            month_week_order.setdefault(month_key, []).append(week_key)
-
-        week_display_meta = {
-            week_key: {
-                'days': week_days,
-                'show_total': len(week_days) > 1,
-            }
-            for week_key, week_days in week_day_order.items()
-        }
-        month_display_meta = {
-            month_key: {
-                'weeks': month_weeks,
-                'show_total': len(month_weeks) > 1,
-            }
-            for month_key, month_weeks in month_week_order.items()
-        }
+        matrix = self._build_report_matrix_payload(rows)
+        day_client_order = matrix['day_client_order']
+        day_meta_map = matrix['day_meta_map']
+        product_buckets = matrix['product_buckets']
+        week_day_order = matrix['week_day_order']
+        month_week_order = matrix['month_week_order']
+        week_display_meta = matrix['week_display_meta']
+        month_display_meta = matrix['month_display_meta']
 
         parts = [
             '<div class="zrn_am_report_matrix_wrap">',
@@ -1162,6 +1105,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         self.ensure_one()
         if self.report_line_ids and not self.report_customer_line_ids:
             self._sync_report_customer_lines()
+        origin_view = self.env.context.get('advanced_metrics_origin_view') or 'report'
         action = self.env.ref(
             'advanced_metrics.action_advanced_metrics_report_customers'
         ).read()[0]
@@ -1169,6 +1113,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         action['context'] = {
             'active_id': self.id,
             'default_wizard_id': self.id,
+            'advanced_metrics_origin_view': origin_view,
         }
         action['_noBreadcrumbs'] = True
         return action
@@ -1177,6 +1122,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         self.ensure_one()
         if self.report_line_ids and not self.report_product_line_ids:
             self._sync_report_product_lines()
+        origin_view = self.env.context.get('advanced_metrics_origin_view') or 'report'
         action = self.env.ref(
             'advanced_metrics.action_advanced_metrics_report_products'
         ).read()[0]
@@ -1184,6 +1130,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         action['context'] = {
             'active_id': self.id,
             'default_wizard_id': self.id,
+            'advanced_metrics_origin_view': origin_view,
         }
         action['_noBreadcrumbs'] = True
         return action
@@ -1192,6 +1139,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         self.ensure_one()
         if self.report_line_ids and not self.report_order_line_ids:
             self._sync_report_order_lines()
+        origin_view = self.env.context.get('advanced_metrics_origin_view') or 'report'
         action = self.env.ref(
             'advanced_metrics.action_advanced_metrics_report_orders'
         ).read()[0]
@@ -1199,6 +1147,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         action['context'] = {
             'active_id': self.id,
             'default_wizard_id': self.id,
+            'advanced_metrics_origin_view': origin_view,
         }
         action['_noBreadcrumbs'] = True
         return action
@@ -1209,6 +1158,153 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         if not wizard:
             return {'type': 'ir.actions.act_window_close'}
         return wizard.action_back_to_report()
+
+    @api.model
+    def action_back_to_origin_from_context(self, wizard_id=False, origin_view=False):
+        wizard = self.browse(int(wizard_id or 0)).exists()
+        if not wizard:
+            return {'type': 'ir.actions.act_window_close'}
+        if origin_view == 'production':
+            return wizard.action_open_production_summary()
+        return wizard.action_back_to_report()
+
+    def action_download_report_excel(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/advanced_metrics/report/export_excel/{self.id}',
+            'target': 'self',
+        }
+
+    def _get_report_rows_from_report_lines(self):
+        self.ensure_one()
+        report_lines = self.report_line_ids.sorted(
+            key=lambda line: (
+                line.fecha_entrega or fields.Date.today(),
+                line.cliente_id.display_name or '',
+                line.id,
+            )
+        )
+        if not report_lines:
+            return []
+
+        product_snapshots = {}
+        for line in report_lines:
+            product = line.product_id
+            if not product:
+                continue
+            snapshot = product_snapshots.setdefault(product.id, {
+                'stock_real_total': 0.0,
+                'stock_libre_total': 0.0,
+            })
+            snapshot['stock_real_total'] = max(
+                snapshot['stock_real_total'],
+                float(line.inventario_disponible or 0.0),
+            )
+            snapshot['stock_libre_total'] = max(
+                snapshot['stock_libre_total'],
+                float(line.inventario_libre_usar or 0.0),
+            )
+
+        rows = []
+        for line in report_lines:
+            product = line.product_id
+            snapshot = product_snapshots.get(product.id if product else 0, {})
+            rows.append({
+                'order_id': line.order_id.id if line.order_id else False,
+                'cliente_id': line.cliente_id.id if line.cliente_id else False,
+                'product_id': product.id if product else False,
+                'fecha_entrega': fields.Date.to_string(line.fecha_entrega) if line.fecha_entrega else False,
+                'dia_semana': line.dia_semana or '',
+                'cliente': line.cliente_id.display_name or '',
+                'numero_orden_venta': line.numero_orden_venta or (line.order_id.name if line.order_id else ''),
+                'producto': line.producto or (product.display_name if product else ''),
+                'barcode': product.barcode if product else '',
+                'item_vm': product.default_code if product else '',
+                'cantidad_vendida': float(line.cantidad_vendida or 0.0),
+                'inventario_disponible': float(line.inventario_disponible or 0.0),
+                'inventario_libre_usar': float(line.inventario_libre_usar or 0.0),
+                'stock_real_total': float(snapshot.get('stock_real_total', 0.0)),
+                'stock_libre_total': float(snapshot.get('stock_libre_total', 0.0)),
+                'cantidad_sugerida_producir': float(line.cantidad_sugerida_producir or 0.0),
+            })
+        return rows
+
+    def _build_report_matrix_payload(self, rows):
+        day_client_order = OrderedDict()
+        day_meta_map = {}
+        product_buckets = OrderedDict()
+
+        for row in rows:
+            day_date = row.get('fecha_entrega')
+            day_name = row.get('dia_semana') or row.get('fecha_entrega') or ''
+            day_key = day_date or day_name or ''
+            client_name = row.get('cliente') or 'Punto de venta sin nombre'
+            day_clients = day_client_order.setdefault(day_key, [])
+            if client_name not in day_clients:
+                day_clients.append(client_name)
+            if day_key and day_key not in day_meta_map:
+                day_meta_map[day_key] = {
+                    'day_name': day_name,
+                    'fecha_entrega': day_date,
+                }
+
+            product_key = row.get('product_id') or 0
+            product_bucket = product_buckets.setdefault(product_key, {
+                'barcode': row.get('barcode') or '',
+                'item_vm': row.get('item_vm') or '',
+                'name': row.get('producto') or 'Producto sin nombre',
+                'initial_inventory': float(row.get('stock_real_total') or 0.0),
+                'week_total': 0.0,
+                'by_day': {},
+            })
+            product_bucket['week_total'] += float(row.get('cantidad_vendida') or 0.0)
+
+            day_bucket = product_bucket['by_day'].setdefault(day_key, {})
+            day_bucket[client_name] = day_bucket.get(client_name, 0.0) + float(row.get('cantidad_vendida') or 0.0)
+
+        sorted_days = sorted(
+            day_client_order.keys(),
+            key=lambda group_key: self._get_report_group_sort_key(group_key, day_meta_map.get(group_key)),
+        )
+        week_day_order = OrderedDict()
+        for day_key in sorted_days:
+            week_key = self._get_report_week_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
+            week_day_order.setdefault(week_key, []).append(day_key)
+
+        month_week_order = OrderedDict()
+        for week_key, week_days in week_day_order.items():
+            month_key = False
+            for day_key in week_days:
+                month_key = self._get_report_month_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
+                if month_key:
+                    break
+            month_week_order.setdefault(month_key, []).append(week_key)
+
+        week_display_meta = {
+            week_key: {
+                'days': week_days,
+                'show_total': len(week_days) > 1,
+            }
+            for week_key, week_days in week_day_order.items()
+        }
+        month_display_meta = {
+            month_key: {
+                'weeks': month_weeks,
+                'show_total': len(month_weeks) > 1,
+            }
+            for month_key, month_weeks in month_week_order.items()
+        }
+
+        return {
+            'day_client_order': day_client_order,
+            'day_meta_map': day_meta_map,
+            'product_buckets': product_buckets,
+            'week_day_order': week_day_order,
+            'month_week_order': month_week_order,
+            'week_display_meta': week_display_meta,
+            'month_display_meta': month_display_meta,
+        }
 
     def action_open_mrp_production_create(self, product_id, suggested_qty=0.0):
         self.ensure_one()
@@ -1425,7 +1521,8 @@ class AdvancedMetricsReportWizardReportCustomerLine(models.TransientModel):
 
     def action_return_to_report(self):
         self.ensure_one()
-        return self.wizard_id.action_back_to_report()
+        origin_view = self.env.context.get('advanced_metrics_origin_view') or 'report'
+        return self.wizard_id.action_back_to_origin_from_context(self.wizard_id.id, origin_view)
 
 
 class AdvancedMetricsReportWizardReportProductLine(models.TransientModel):
@@ -1471,7 +1568,8 @@ class AdvancedMetricsReportWizardReportProductLine(models.TransientModel):
 
     def action_return_to_report(self):
         self.ensure_one()
-        return self.wizard_id.action_back_to_report()
+        origin_view = self.env.context.get('advanced_metrics_origin_view') or 'report'
+        return self.wizard_id.action_back_to_origin_from_context(self.wizard_id.id, origin_view)
 
 
 class AdvancedMetricsReportWizardReportOrderLine(models.TransientModel):
@@ -1513,7 +1611,8 @@ class AdvancedMetricsReportWizardReportOrderLine(models.TransientModel):
 
     def action_return_to_report(self):
         self.ensure_one()
-        return self.wizard_id.action_back_to_report()
+        origin_view = self.env.context.get('advanced_metrics_origin_view') or 'report'
+        return self.wizard_id.action_back_to_origin_from_context(self.wizard_id.id, origin_view)
 
 
 class AdvancedMetricsReportWizardProductLine(models.TransientModel):

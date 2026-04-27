@@ -140,13 +140,21 @@
                             <div class="zrn_am_report_screen_stats">
                                 <div class="zrn_am_report_stat_box">
                                     <span>Clientes</span>
-                                    <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
+                                    <strong>
+                                        <button name="action_open_report_customers"
+                                                type="object"
+                                                context="{'advanced_metrics_origin_view': 'production'}"
+                                                class="oe_link zrn_am_stat_link">
+                                            <field name="report_customer_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
                                 </div>
                                 <div class="zrn_am_report_stat_box">
                                     <span>Productos</span>
                                     <strong>
                                         <button name="action_open_report_products"
                                                 type="object"
+                                                context="{'advanced_metrics_origin_view': 'production'}"
                                                 class="oe_link zrn_am_stat_link">
                                             <field name="report_product_count" readonly="1" nolabel="1"/>
                                         </button>
@@ -157,6 +165,7 @@
                                     <strong>
                                         <button name="action_open_report_orders"
                                                 type="object"
+                                                context="{'advanced_metrics_origin_view': 'production'}"
                                                 class="oe_link zrn_am_stat_link">
                                             <field name="report_order_count" readonly="1" nolabel="1"/>
                                         </button>

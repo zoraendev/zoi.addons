@@ -22,6 +22,18 @@ class AdvancedMetricsReportFormController extends FormController {
     );
     await this.actionService.doAction(action);
   }
+
+  async downloadReportExcel() {
+    if (!this.model.root.resId) {
+      return;
+    }
+    const action = await this.orm.call(
+      this.props.resModel,
+      "action_download_report_excel",
+      [[this.model.root.resId]],
+    );
+    await this.actionService.doAction(action);
+  }
 }
 
 AdvancedMetricsReportFormController.template = "advanced_metrics.ReportFormView";
