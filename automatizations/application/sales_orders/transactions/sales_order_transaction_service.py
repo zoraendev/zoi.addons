@@ -119,12 +119,8 @@ class SalesOrderTransactionService:
                 'Debes enviar un identificador de cliente para crear la orden: customer_id, customer_phone, customer_email, customer_ref o automation_customer_uid.'
             )
 
-        partners = self.partner_model.search(domain, limit=2)
-        if not partners:
-            raise ValidationError('No se encontro un cliente valido para la orden.')
-        if len(partners) > 1:
-            raise ValidationError('La busqueda del cliente devolvio multiples resultados. Usa un identificador mas especifico.')
-        return partners[0]
+        partners = self.partner_model.search(domain, limit=25)
+        return self._resolve_unique_partner(partners)
 
     def _build_order_line_values(self, line):
         product = self._resolve_product(line)
@@ -221,6 +217,18 @@ class SalesOrderTransactionService:
 
     def _has_order_field(self, field_name):
         return field_name in self.sale_order_model._fields
+
+    def _resolve_unique_partner(self, partners):
+        if not partners:
+            raise ValidationError('No se encontro un cliente valido para la orden.')
+        if len(partners) == 1:
+            return partners[0].commercial_partner_id
+
+        commercial_partners = partners.mapped('commercial_partner_id')
+        if len(commercial_partners) == 1:
+            return commercial_partners[0]
+
+        raise ValidationError('La busqueda del cliente devolvio multiples resultados. Usa un identificador mas especifico.')
 
     @staticmethod
     def _normalize_phone(value):

@@ -30,22 +30,17 @@ class CustomerQueryService:
 
         partners = self.partner_model.search(
             self._build_domain(provided_fields),
-            limit=2,
+            limit=25,
         )
+        partner = self._resolve_unique_partner(partners)
 
-        if not partners:
+        if not partner:
             return {
                 'criteria': normalized_criteria,
                 'matched_fields': list(provided_fields.keys()),
                 'customer': None,
             }
 
-        if len(partners) > 1:
-            raise ValidationError(
-                'La consulta devolvio multiples clientes. Envia un criterio mas especifico, de preferencia el numero de telefono.'
-            )
-
-        partner = partners[0]
         return {
             'criteria': normalized_criteria,
             'matched_fields': list(provided_fields.keys()),
@@ -134,6 +129,20 @@ class CustomerQueryService:
             'automation_email_normalized': partner.automation_email_normalized,
             'profile': profile,
         }
+
+    def _resolve_unique_partner(self, partners):
+        if not partners:
+            return None
+        if len(partners) == 1:
+            return partners[0].commercial_partner_id
+
+        commercial_partners = partners.mapped('commercial_partner_id')
+        if len(commercial_partners) == 1:
+            return commercial_partners[0]
+
+        raise ValidationError(
+            'La consulta devolvio multiples clientes. Envia un criterio mas especifico, de preferencia el numero de telefono.'
+        )
 
     @staticmethod
     def _normalize_phone(value):
