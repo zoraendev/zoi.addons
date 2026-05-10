@@ -66,10 +66,10 @@
                                         Vista agrupada por producto, cliente y orden de venta usando la seleccion definida en la pantalla anterior.
                                     </p>
                                     <div class="zrn_pp_header_actions mt-3">
-                                        <button type="button" class="btn btn-secondary btn-sm zrn_am_save_filters_btn" title="Guardar filtros">
+                                        <button type="button" name="btn_save_filters" class="btn btn-secondary btn-sm zrn_am_save_filters_btn" title="Guardar filtros">
                                             <i class="fa fa-save"></i> Guardar Filtros
                                         </button>
-                                        <button type="button" class="btn btn-secondary btn-sm zrn_pp_toggle_view_btn ms-2" title="Cambiar vista">
+                                        <button type="button" name="btn_toggle_view" class="btn btn-secondary btn-sm zrn_pp_toggle_view_btn ms-2" title="Cambiar vista">
                                             <i class="fa fa-th"></i> Cambiar Vista
                                         </button>
                                     </div>
