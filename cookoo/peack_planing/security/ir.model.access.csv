@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_peack_planing_inicio,peack_planing.inicio,model_peack_planing_inicio,base.group_user,1,1,1,1
+access_peack_planing_report_wizard,peack_planing.report.wizard,model_peack_planing_report_wizard,base.group_user,1,1,1,1
+access_peack_planing_report_wizard_line,peack_planing.report.wizard.line,model_peack_planing_report_wizard_line,base.group_user,1,1,1,1
+access_peack_planing_report_wizard_client_line,peack_planing.report.wizard.client.line,model_peack_planing_report_wizard_client_line,base.group_user,1,1,1,1
+access_peack_planing_report_wizard_product_line,peack_planing.report.wizard.product.line,model_peack_planing_report_wizard_product_line,base.group_user,1,1,1,1

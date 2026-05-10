@@ -12,7 +12,7 @@ class BaseDashboardController(http.Controller):
     _auth_error_message = 'Acceso no autorizado: Token invalido o ausente en las cabeceras o en la URL.'
     _auth_config_models = (
         'pbi_connections.api.config',
-        'advanced_metrics.api.config',
+        'peack_planing.api.config',
     )
 
     @staticmethod

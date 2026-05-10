@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="peack_planing.ReportFormView" t-inherit="web.FormView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="inside">
+            <t t-set-slot="control-panel-navigation-additional">
+                <button
+                    type="button"
+                    class="btn btn-primary zrn_am_cp_fabricar_btn"
+                    t-on-click="openProductionSummary"
+                >
+                    <i class="fa fa-industry me-1"/>
+                    Fabricar
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-secondary zrn_am_download_btn ms-2"
+                >
+                    <i class="fa fa-download me-1"/>
+                    Descargar XLS
+                </button>
+            </t>
+        </xpath>
+    </t>
+</templates>

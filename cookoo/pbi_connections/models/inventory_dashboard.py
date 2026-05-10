@@ -676,8 +676,8 @@ class PbiConnectionsInventoryDashboard(models.AbstractModel):
     def _get_weekly_plan_wizard_model(self):
         if 'pbi_connections.report.wizard' in self.env:
             return self.env['pbi_connections.report.wizard']
-        if 'advanced_metrics.report.wizard' in self.env:
-            return self.env['advanced_metrics.report.wizard']
+        if 'peack_planing.report.wizard' in self.env:
+            return self.env['peack_planing.report.wizard']
         raise ValidationError('El asistente de plan de produccion semanal aun no esta disponible en esta instancia.')
 
     @api.model

@@ -8,7 +8,7 @@
 - Mostrar una home del modulo con accesos a credenciales, endpoints y ajustes.
 - Validar el estado del cliente contra un servicio externo antes de habilitar la operacion.
 - Construir enlaces de instancia y soporte a partir de la key de instancia.
-- Reutilizar o migrar configuracion legacy proveniente de `advanced_metrics`.
+- Reutilizar o migrar configuracion legacy proveniente de `peack_planing`.
 
 ## Flujo funcional
 1. El usuario entra al menu `PBI Connections`.
@@ -59,7 +59,7 @@ Responsabilidades:
 - limitar cantidad maxima de registros;
 - validar cliente contra servicio externo;
 - construir URLs de soporte e instancia;
-- migrar configuracion legacy desde tabla `advanced_metrics_api_config`.
+- migrar configuracion legacy desde tabla `peack_planing_api_config`.
 
 Campos clave:
 - `access_token`
@@ -176,12 +176,12 @@ Comportamiento actual:
 La llamada externa usa un `opener` sin proxies para evitar fallos de `urllib` cuando Python hereda proxies defectuosos del entorno.
 
 ## Migracion y compatibilidad
-`_sync_legacy_config()` intenta leer desde la tabla `advanced_metrics_api_config` para no perder:
+`_sync_legacy_config()` intenta leer desde la tabla `peack_planing_api_config` para no perder:
 - `name`
 - `access_token`
 - `record_limit`
 
-Ademas, el controlador base permite autenticar contra configuraciones tanto de `pbi_connections` como de `advanced_metrics`, facilitando compatibilidad durante la transicion.
+Ademas, el controlador base permite autenticar contra configuraciones tanto de `pbi_connections` como de `peack_planing`, facilitando compatibilidad durante la transicion.
 
 ## Dependencias
 - `base`

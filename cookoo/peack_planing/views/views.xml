@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="peack_planing_inicio_default" model="peack_planing.inicio">
+        <field name="name"> </field>
+    </record>
+
+    <record id="view_peack_planing_registro_tree" model="ir.ui.view">
+        <field name="name">peack_planing.registro.tree</field>
+        <field name="model">peack_planing.registro</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="descripcion"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_peack_planing_registro_form" model="ir.ui.view">
+        <field name="name">peack_planing.registro.form</field>
+        <field name="model">peack_planing.registro</field>
+        <field name="arch" type="xml">
+            <form string="Registro">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="descripcion"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+   
+    <record id="action_peack_planing_external_instance" model="ir.actions.act_url">
+        <field name="name">Abrir instancia</field>
+        <field name="url">https://www.odoo.com</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_peack_planing_report_wizard" model="ir.actions.act_window">
+        <field name="name">Reporte de ventas e inventario</field>
+        <field name="res_model" >peack_planing.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="action_peack_planing_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'peack_planing'}</field>
+    </record>
+
+    <record id="view_peack_planing_inicio_form" model="ir.ui.view">
+        <field name="name">peack_planing.inicio.form</field>
+        <field name="model">peack_planing.inicio</field>
+        <field name="arch" type="xml">
+            <form string="Metricas Avanzadas" js_class="peack_planing_home_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_peack_planing_home_form">
+                    <field name="name" invisible="1"/>
+                    <field name="show_dashboard" invisible="1"/>
+                    <field name="client_validation_state" invisible="1"/>
+                    <field name="client_status_code" invisible="1"/>
+                    <field name="support_url" invisible="1"/>
+                    <field name="client_validation_debug" invisible="1"/>
+
+                    <div class="zrn_peack_planing_dashboard">
+
+                        <div class="zrn_am_blocked_state" invisible="show_dashboard">
+                            <div class="alert zrn_am_blocked_banner" role="alert">
+                                <div class="zrn_am_blocked_banner_content">
+                                    <h3>
+                                        <field name="client_status_title" readonly="1" nolabel="1" class="oe_inline"/>
+                                    </h3>
+                                    <p>
+                                        <field name="client_status_message" readonly="1" nolabel="1" class="oe_inline"/>
+                                    </p>
+                                    <p class="text-muted" invisible="not client_validation_debug">
+                                        <field name="client_validation_debug" readonly="1" nolabel="1" class="oe_inline"/>
+                                    </p>
+                                    <div class="zrn_peack_planing_tile_actions zrn_am_center_actions">
+                                        <button
+                                            name="action_open_settings"
+                                            type="object"
+                                            string="Abrir ajustes"
+                                            class="btn btn-primary"
+                                        />
+                                        <button
+                                            name="action_request_support"
+                                            type="object"
+                                            string="Contactar soporte"
+                                            class="btn btn-secondary"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zrn_am_dashboard_grid" invisible="not show_dashboard">
+                            <div class="zrn_peack_planing_tile">
+                                <h3>Planeación de Fabricación</h3>
+                                <p>
+                                    Prueba Genera reportes filtrando por fecha de entrega, cliente, orden de venta, producto, cantidad vendida e inventario disponible.
+                                </p>
+                                <div class="zrn_peack_planing_tile_actions">
+                                    <button
+                                        name="action_open_sales_report"
+                                        type="object"
+                                        string="Abrir"
+                                        class="btn btn-primary"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_peack_planing_inicio" model="ir.actions.act_window">
+        <field name="name">PeackPlaning</field>
+        <field name="res_model">peack_planing.inicio</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_peack_planing_inicio_form"/>
+        <field name="res_id" ref="peack_planing_inicio_default"/>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_peack_planing_root"
+        name="PeackPlaning"
+        action="action_peack_planing_inicio"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_peack_planing_settings"
+        name="Settings"
+        parent="menu_peack_planing_root"
+        action="action_peack_planing_settings"
+        sequence="90"
+    />
+
+</odoo>

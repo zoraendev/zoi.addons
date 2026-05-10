@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-
 import json
 import logging
-import uuid
-from urllib.error import HTTPError, URLError
 from urllib.parse import quote
+from urllib.error import HTTPError, URLError
 from urllib.request import HTTPSHandler, ProxyHandler, Request, build_opener
 
 from odoo import _, api, fields, models
@@ -12,17 +9,18 @@ from odoo import _, api, fields, models
 _logger = logging.getLogger(__name__)
 
 
-class PbiConnectionsApiConfig(models.Model):
-    _name = 'pbi_connections.api.config'
-    _description = 'Configuracion API para Power BI en PBI Connections'
+class PeackPlaningInicio(models.Model):
+    _name = 'peack_planing.inicio'
+    _description = 'Pantalla principal de Advanced Metrics'
 
     _DEFAULT_CLIENT_VALIDATION_BASE_URL = 'https://api.zoraen.com/api/production-v1-public'
     _DEFAULT_CLIENT_KEY = ''
     _DEFAULT_CLIENT_VALIDATION_API_KEY = ''
+    _DEFAULT_INSTANCE_KEY = ''
     _INSTANCE_BASE_URL = 'https://adm.zoraen.com/instances/i'
     _SUPPORT_BASE_URL = 'https://adm.zoraen.com/support?instance='
 
-    name = fields.Char(string='Configuracion', required=True, default='Produccion')
+    name = fields.Char(string='Nombre', required=True)
     show_dashboard = fields.Boolean(string='Mostrar dashboard', default=True)
     client_validation_state = fields.Selection(
         [
@@ -35,32 +33,19 @@ class PbiConnectionsApiConfig(models.Model):
         default='ok',
     )
     client_status_code = fields.Char(string='Codigo de estado del cliente')
-    support_url = fields.Char(string='URL de soporte')
+    support_url = fields.Char(string='URL de soporte', default='https://www.zoraen.com')
     client_status_title = fields.Char(
         string='Titulo de estado del cliente',
-        default='Conexion disponible',
+        default='Metricas disponibles',
     )
     client_status_message = fields.Text(
         string='Mensaje de estado del cliente',
-        default='La instancia esta lista para gestionar la conexion y consumir endpoints desde Power BI.',
+        default='La instancia esta lista para consultar los reportes operativos de ventas e inventario.',
     )
     client_validation_debug = fields.Text(
         string='Detalle tecnico de validacion',
         readonly=True,
     )
-    access_token = fields.Char(
-        string='Token de Acceso',
-        copy=False,
-        default=lambda self: str(uuid.uuid4()),
-        readonly=True,
-    )
-    record_limit = fields.Integer(
-        string='Limite de Registros',
-        default=5000,
-        required=True,
-        help='Previene ataques de denegacion de servicio limitando la extraccion maxima.',
-    )
-    api_url = fields.Char(string='URL segura de referencia', compute='_compute_api_url')
 
     @api.model
     def _normalize_external_key(self, value):
@@ -79,38 +64,38 @@ class PbiConnectionsApiConfig(models.Model):
         return base_url
 
     @api.model
-    def _get_navigation_settings(self):
+    def _get_client_validation_settings(self):
         config = self.env['ir.config_parameter'].sudo()
-        instance_key = config.get_param('pbi_connections.instance_key', '')
+        instance_key = config.get_param('peack_planing.instance_key', self._DEFAULT_INSTANCE_KEY)
         if not instance_key:
-            instance_key = config.get_param('pbi_connections.client_key', self._DEFAULT_CLIENT_KEY)
+            instance_key = config.get_param('peack_planing.client_key', self._DEFAULT_CLIENT_KEY)
         instance_key = self._normalize_external_key(instance_key)
         return {
             'base_url': self._normalize_validation_base_url(
-                config.get_param('pbi_connections.client_validation_base_url', self._DEFAULT_CLIENT_VALIDATION_BASE_URL)
+                config.get_param('peack_planing.client_validation_base_url', self._DEFAULT_CLIENT_VALIDATION_BASE_URL)
             ),
             'client_key': self._normalize_external_key(
-                config.get_param('pbi_connections.client_key', self._DEFAULT_CLIENT_KEY)
+                config.get_param('peack_planing.client_key', self._DEFAULT_CLIENT_KEY)
             ),
             'api_key': self._normalize_external_key(
-                config.get_param('pbi_connections.client_validation_api_key', self._DEFAULT_CLIENT_VALIDATION_API_KEY)
+                config.get_param('peack_planing.client_validation_api_key', self._DEFAULT_CLIENT_VALIDATION_API_KEY)
             ),
+            'support_url': config.get_param('peack_planing.support_url', ''),
             'instance_key': instance_key,
-            'support_url': config.get_param('pbi_connections.support_url', ''),
         }
 
     @api.model
     def _build_instance_and_support_urls(self, settings=None):
-        settings = settings or self._get_navigation_settings()
-        key = quote(self._normalize_external_key(settings.get('instance_key')))
-        return (
-            f'{self._INSTANCE_BASE_URL}/{key}',
-            f'{self._SUPPORT_BASE_URL}{key}',
-        )
+        settings = settings or self._get_client_validation_settings()
+        safe_key = quote(self._normalize_external_key(settings.get('instance_key')))
+
+        instance_url = f'{self._INSTANCE_BASE_URL}/{safe_key}'
+        support_url = f'{self._SUPPORT_BASE_URL}{safe_key}'
+        return instance_url, support_url
 
     @api.model
     def _get_missing_required_settings(self, settings=None):
-        settings = settings or self._get_navigation_settings()
+        settings = settings or self._get_client_validation_settings()
         required_values = {
             'base_url': settings.get('base_url'),
             'client_key': settings.get('client_key'),
@@ -147,7 +132,7 @@ class PbiConnectionsApiConfig(models.Model):
 
     @api.model
     def _build_client_status_values(self, payload=None, error_message=None, settings=None):
-        settings = settings or self._get_navigation_settings()
+        settings = settings or self._get_client_validation_settings()
         instance_url, support_url = self._build_instance_and_support_urls(settings)
         missing_settings = self._get_missing_required_settings(settings)
 
@@ -156,8 +141,8 @@ class PbiConnectionsApiConfig(models.Model):
             'client_validation_state': 'ok',
             'client_status_code': '',
             'support_url': support_url,
-            'client_status_title': _('Conexion disponible'),
-            'client_status_message': _('La instancia esta lista para gestionar la conexion y consumir endpoints desde Power BI.'),
+            'client_status_title': _('Metricas disponibles'),
+            'client_status_message': _('La instancia esta lista para consultar los reportes operativos de ventas e inventario.'),
             'client_validation_debug': '',
         }
 
@@ -168,7 +153,7 @@ class PbiConnectionsApiConfig(models.Model):
                 'client_status_code': 'missing_configuration',
                 'client_status_title': _('Configuracion incompleta'),
                 'client_status_message': _(
-                    'Debes completar la configuracion de integracion (Key de instancia, clave de cliente, API key y URL base) antes de usar este modulo.'
+                    'Debes completar la configuracion de integracion (Key de instancia, clave de cliente, API key y URL base) antes de usar el modulo.'
                 ),
                 'client_validation_debug': _('Parametros faltantes: %s') % ', '.join(missing_settings),
             })
@@ -230,7 +215,7 @@ class PbiConnectionsApiConfig(models.Model):
                 'client_validation_state': 'payment_due',
                 'client_status_title': _('Cliente insolvente'),
                 'client_status_message': user_message or technical_message or _(
-                    'La instancia presenta un saldo pendiente. Contacta a soporte para reactivar el acceso al servicio.'
+                    'La instancia presenta un saldo pendiente. Contacta a soporte para reactivar el acceso a los reportes operativos del modulo.'
                 ),
             })
             return values
@@ -251,7 +236,7 @@ class PbiConnectionsApiConfig(models.Model):
         if not self:
             return
 
-        settings = self._get_navigation_settings()
+        settings = self._get_client_validation_settings()
         payload = {}
         error_message = None
 
@@ -259,10 +244,10 @@ class PbiConnectionsApiConfig(models.Model):
             payload = self._fetch_client_validation_payload(settings)
         except (HTTPError, URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
             error_message = str(exc)
-            _logger.warning('PBI Connections client validation failed: %s', exc)
+            _logger.warning('Advanced Metrics client validation failed: %s', exc)
         except Exception as exc:
             error_message = str(exc)
-            _logger.exception('Unexpected error during PBI Connections client validation: %s', exc)
+            _logger.exception('Unexpected error during Advanced Metrics client validation: %s', exc)
 
         values = self._build_client_status_values(
             payload=payload,
@@ -301,69 +286,6 @@ class PbiConnectionsApiConfig(models.Model):
             },
         }
 
-    @api.model
-    def _sync_legacy_config(self):
-        self.env.cr.execute("SELECT to_regclass('peack_planing_api_config')")
-        table_name = self.env.cr.fetchone()[0]
-        if not table_name:
-            return self.search([], limit=1)
-
-        self.env.cr.execute(
-            """
-            SELECT name, access_token, record_limit
-            FROM peack_planing_api_config
-            WHERE access_token IS NOT NULL AND access_token != ''
-            ORDER BY id
-            LIMIT 1
-            """
-        )
-        legacy_row = self.env.cr.dictfetchone()
-        current = self.search([], order='id asc', limit=1)
-
-        if not legacy_row:
-            return current
-
-        values = {
-            'name': legacy_row.get('name') or 'Produccion',
-            'access_token': legacy_row.get('access_token') or str(uuid.uuid4()),
-            'record_limit': legacy_row.get('record_limit') or 5000,
-        }
-
-        if current:
-            updates = {
-                key: value
-                for key, value in values.items()
-                if value and current[key] != value
-            }
-            if updates:
-                current.sudo().write(updates)
-            return current
-
-        return self.sudo().create(values)
-
-    @api.depends('access_token')
-    def _compute_api_url(self):
-        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
-        for rec in self:
-            rec.api_url = f"{base_url}/api/bi/customer-dashboard/frequent-customers?token={rec.access_token}"
-
-    def action_generate_new_token(self):
-        for rec in self:
-            rec.access_token = str(uuid.uuid4())
-
-    def action_open_external_instance(self):
-        self.ensure_one()
-        blocked_action = self._get_blocked_dashboard_action()
-        if blocked_action:
-            return blocked_action
-
-        instance_url, support_url = self._build_instance_and_support_urls()
-        return {
-            'type': 'ir.actions.act_url',
-            'url': instance_url,
-            'target': 'new',
-        }
-
     def action_request_support(self):
         self.ensure_one()
         instance_url, support_url = self._build_instance_and_support_urls()
@@ -373,6 +295,47 @@ class PbiConnectionsApiConfig(models.Model):
             'target': 'new',
         }
 
+    def action_open_external_instance(self):
+        self.ensure_one()
+        instance_url, _ = self._build_instance_and_support_urls()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': instance_url,
+            'target': 'new',
+        }
+
+    def action_open_sales_report(self):
+        self.ensure_one()
+        blocked_action = self._get_blocked_dashboard_action()
+        if blocked_action:
+            return blocked_action
+        action = self.env.ref('peack_planing.action_peack_planing_report_wizard').read()[0]
+        wizard = self.env['peack_planing.report.wizard'].create({})
+        form_view = self.env.ref('peack_planing.view_peack_planing_report_wizard_form')
+        action['res_id'] = wizard.id
+        action['view_id'] = form_view.id
+        action['views'] = [(form_view.id, 'form')]
+        action['_noBreadcrumbs'] = True
+        return action
+
+    def action_open_api_config(self):
+        self.ensure_one()
+        blocked_action = self._get_blocked_dashboard_action()
+        if blocked_action:
+            return blocked_action
+
+        return self.env.ref('pbi_connections.action_pbi_connections_api_config').read()[0]
+
     def action_open_settings(self):
         self.ensure_one()
-        return self.env.ref('pbi_connections.action_pbi_connections_settings').read()[0]
+        action = self.env.ref('peack_planing.action_peack_planing_settings').read()[0]
+        action['_noBreadcrumbs'] = True
+        return action
+
+
+class PeackPlaningRegistro(models.Model):
+    _name = 'peack_planing.registro'
+    _description = 'Registro de Advanced Metrics'
+
+    name = fields.Char(string='Nombre', required=True)
+    descripcion = fields.Text(string='Descripción')
