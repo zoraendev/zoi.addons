@@ -61,45 +61,53 @@
                         <div class="zrn_am_report_screen_header">
                             <div class="zrn_pp_header_main">
                                 <div class="zrn_pp_header_titles">
-                                    <h2>Detalle operativo</h2>
+                                    <h2>Planeación de Fabricación</h2>
                                     <p>
-                                        Vista agrupada por producto, cliente y orden de venta usando la seleccion definida en la pantalla anterior.
+                                        Vista agrupada por producto, cliente y orden de venta usando la selección definida en la pantalla anterior.
                                     </p>
-                                    <div class="zrn_pp_header_actions mt-3">
-                                        <button type="button" name="btn_save_filters" class="btn btn-secondary btn-sm zrn_am_save_filters_btn" title="Guardar filtros">
-                                            <i class="fa fa-save"></i> Guardar Filtros
-                                        </button>
-                                        <button type="button" name="btn_toggle_view" class="btn btn-secondary btn-sm zrn_pp_toggle_view_btn ms-2" title="Cambiar vista">
-                                            <i class="fa fa-th"></i> Cambiar Vista
-                                        </button>
-                                    </div>
                                 </div>
                                 <p class="zrn_am_report_range">
-                                    <field name="report_date_range_label" readonly="1" nolabel="1"/>
+                                    <strong><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
                                 </p>
                             </div>
                             <div class="zrn_am_report_screen_stats">
-                                <div class="zrn_am_report_stat_box">
-                                    <span>Clientes</span>
-                                    <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
+                                <div role="button" class="zrn_am_report_stat_box btn_stat zrn_am_stat_button" data-action="action_view_report_customers">
+                                    <span class="stat_label">Clientes</span>
+                                    <strong class="stat_value"><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
                                 </div>
-                                <div class="zrn_am_report_stat_box">
-                                    <span>Productos</span>
-                                    <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                                <div role="button" class="zrn_am_report_stat_box btn_stat zrn_am_stat_button" data-action="action_view_report_products">
+                                    <span class="stat_label">Productos</span>
+                                    <strong class="stat_value"><field name="report_product_count" readonly="1" nolabel="1"/></strong>
                                 </div>
-                                <div class="zrn_am_report_stat_box">
-                                    <span>OVs</span>
-                                    <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
-                                </div>
-                                <div class="zrn_am_report_stat_box">
-                                    <span>Lineas</span>
-                                    <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
+                                <div role="button" class="zrn_am_report_stat_box btn_stat zrn_am_stat_button" data-action="action_view_report_orders">
+                                    <span class="stat_label">OVs</span>
+                                    <strong class="stat_value"><field name="report_order_count" readonly="1" nolabel="1"/></strong>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="zrn_am_report_table_panel">
-                            <field name="report_html" widget="html" nolabel="1" readonly="1"/>
+                        <div class="zrn_am_workspace">
+                            <div class="zrn_am_results_panel">
+                                <div class="zrn_am_report_table_panel">
+                                    <field name="report_html" widget="html" nolabel="1" readonly="1"/>
+                                </div>
+                            </div>
+                            <div class="zrn_am_review_sidebar d-none">
+                                <div class="zrn_am_sidebar_content">
+                                    <div class="zrn_am_sidebar_section">
+                                        <h3 class="zrn_am_sidebar_title">RESUMEN OPERATIVO</h3>
+                                        <div class="zrn_am_sidebar_stats">
+                                            <!-- Inyectado vía JS -->
+                                        </div>
+                                    </div>
+                                    <div class="zrn_am_sidebar_section mt-4">
+                                        <h3 class="zrn_am_sidebar_title">DETALLE CONTACTO</h3>
+                                        <div class="zrn_am_sidebar_contact">
+                                            <!-- Inyectado vía JS -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </sheet>
@@ -120,30 +128,26 @@
                     <div class="zrn_am_report_screen zrn_am_production_screen">
                         <div class="zrn_am_report_screen_header">
                             <div>
-                                <h2>Resumen para fabricar</h2>
+                                <h2>Planeación de Fabricación (Resumen)</h2>
                                 <p>
                                     Consolidado por producto para revisar demanda, inventario disponible y cantidad sugerida a producir.
                                 </p>
                                 <p class="zrn_am_report_range">
-                                    <field name="report_date_range_label" readonly="1" nolabel="1"/>
+                                    <strong><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
                                 </p>
                             </div>
                             <div class="zrn_am_report_screen_stats">
-                                <div class="zrn_am_report_stat_box">
-                                    <span>Clientes</span>
-                                    <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
+                                <div role="button" class="zrn_am_report_stat_box btn_stat zrn_am_stat_button" data-action="action_view_report_customers">
+                                    <span class="stat_label">Clientes</span>
+                                    <strong class="stat_value"><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
                                 </div>
-                                <div class="zrn_am_report_stat_box">
-                                    <span>Productos</span>
-                                    <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                                <div role="button" class="zrn_am_report_stat_box btn_stat zrn_am_stat_button" data-action="action_view_report_products">
+                                    <span class="stat_label">Productos</span>
+                                    <strong class="stat_value"><field name="report_product_count" readonly="1" nolabel="1"/></strong>
                                 </div>
-                                <div class="zrn_am_report_stat_box">
-                                    <span>OVs</span>
-                                    <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
-                                </div>
-                                <div class="zrn_am_report_stat_box">
-                                    <span>Lineas</span>
-                                    <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
+                                <div role="button" class="zrn_am_report_stat_box btn_stat zrn_am_stat_button" data-action="action_view_report_orders">
+                                    <span class="stat_label">OVs</span>
+                                    <strong class="stat_value"><field name="report_order_count" readonly="1" nolabel="1"/></strong>
                                 </div>
                             </div>
                         </div>

@@ -12,6 +12,7 @@ class PeackPlaningReportFormController extends FormController {
     this.actionService = useService("action");
     // Inyectamos el servicio en window para que el JS custom pueda disparar acciones
     window.__peackPlaningDoAction = (action) => this.actionService.doAction(action);
+    window.__peackPlaningGetResId = () => this.model.root.resId;
   }
 
   async openProductionSummary() {

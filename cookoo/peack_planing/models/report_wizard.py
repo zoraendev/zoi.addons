@@ -1104,6 +1104,75 @@ class PeackPlaningReportWizard(models.TransientModel):
             'hasta': next_sunday.isoformat(),
         }
 
+    def action_view_report_customers(self):
+        self.ensure_one()
+        partner_ids = self.report_line_ids.mapped('partner_id').ids
+        return {
+            'name': 'Clientes en reporte',
+            'type': 'ir.actions.act_window',
+            'res_model': 'res.partner',
+            'view_mode': 'tree,form',
+            'domain': [('id', 'in', partner_ids)],
+            'target': 'current',
+        }
+
+    def action_view_report_products(self):
+        self.ensure_one()
+        product_ids = self.report_line_ids.mapped('product_id').ids
+        return {
+            'name': 'Productos en reporte',
+            'type': 'ir.actions.act_window',
+            'res_model': 'product.product',
+            'view_mode': 'tree,form',
+            'domain': [('id', 'in', product_ids)],
+            'target': 'current',
+        }
+
+    def action_view_report_orders(self):
+        self.ensure_one()
+        order_ids = self.report_line_ids.mapped('order_id').ids
+        return {
+            'name': 'Ordenes de venta en reporte',
+            'type': 'ir.actions.act_window',
+            'res_model': 'sale.order',
+            'view_mode': 'tree,form',
+            'domain': [('id', 'in', order_ids)],
+            'target': 'current',
+        }
+
+    @api.model
+    def get_partner_review_data(self, partner_id, wizard_id=None):
+        partner = self.env['res.partner'].browse(partner_id)
+        if not partner.exists():
+            return {'success': False, 'message': 'Cliente no encontrado'}
+
+        wizard = self.browse(wizard_id) if wizard_id else None
+        
+        # Filtramos las lineas de este cliente dentro del contexto del reporte actual
+        domain = [('partner_id', '=', partner.id)]
+        if wizard:
+            domain.append(('wizard_id', '=', wizard.id))
+        
+        report_lines = self.env['peack_planing.report.wizard.line'].search(domain)
+        
+        stats = [
+            {'label': 'OVs', 'value': len(report_lines.mapped('order_id'))},
+            {'label': 'Lineas', 'value': len(report_lines)},
+            {'label': 'Productos', 'value': len(report_lines.mapped('product_id'))},
+            {'label': 'Unidades', 'value': sum(report_lines.mapped('cantidad_vendida'))},
+        ]
+
+        return {
+            'success': True,
+            'partner_name': partner.name,
+            'stats': stats,
+            'contact': [
+                {'label': 'Ciudad', 'value': partner.city or 'No definida'},
+                {'label': 'Telefono', 'value': partner.phone or partner.mobile or 'No disponible'},
+                {'label': 'Correo', 'value': partner.email or 'Sin correo'},
+            ]
+        }
+
 class PeackPlaningReportWizardLine(models.TransientModel):
     _name = 'peack_planing.report.wizard.line'
     _description = 'Linea del reporte de ventas e inventario'

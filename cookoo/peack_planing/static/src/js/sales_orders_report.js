@@ -24,6 +24,86 @@ let currentRows = [];
 let currentSort = { key: null, direction: "asc" };
 let currentViewMode = "list"; // 'list' o 'cards'
 
+/**
+ * Actualiza el panel lateral (sidebar) con la informacion de un cliente.
+ */
+async function updateSidebar(partnerId) {
+  const sidebar = document.querySelector(".zrn_am_review_sidebar");
+  if (!sidebar) {
+    return;
+  }
+
+  try {
+    const wizardId = window.__peackPlaningGetResId?.();
+    const response = await fetch("/web/dataset/call_kw/peack_planing.report.wizard/get_partner_review_data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "call",
+        params: {
+          model: "peack_planing.report.wizard",
+          method: "get_partner_review_data",
+          args: [partnerId, wizardId],
+          kwargs: {},
+        },
+        id: Math.floor(Math.random() * 1000000),
+      }),
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error.data.message);
+    }
+    const result = data.result;
+
+    if (!result.success) {
+      return;
+    }
+
+    const statsContainer = sidebar.querySelector(".zrn_am_sidebar_stats");
+    const contactContainer = sidebar.querySelector(".zrn_am_sidebar_contact");
+
+    if (statsContainer) {
+      statsContainer.innerHTML = result.stats
+        .map(
+          (s) => `
+        <div class="zrn_am_sidebar_stat_item">
+          <label>${s.label}</label>
+          <span>${formatNumber(s.value)}</span>
+        </div>
+      `,
+        )
+        .join("");
+    }
+
+    if (contactContainer) {
+      contactContainer.innerHTML = result.contact
+        .map(
+          (c) => `
+        <div class="zrn_am_sidebar_contact_item">
+          <label>${c.label}</label>
+          <div>${c.value}</div>
+        </div>
+      `,
+        )
+        .join("");
+    }
+
+    sidebar.classList.remove("d-none");
+    
+    // Aplicar clase al contenedor principal para ajustar el ancho si es necesario
+    const workspace = document.querySelector(".zrn_am_workspace");
+    if (workspace) {
+        workspace.classList.add("has-sidebar");
+    }
+  } catch (err) {
+    console.error("Error updating sidebar", err);
+  }
+}
+
 const SORTABLE_COLUMN_MAP = {
   fecha_entrega: "fecha_entrega",
   dia_semana: "dia_semana",
@@ -742,12 +822,49 @@ function bindGenerateButtonListener() {
       return;
     }
 
+    // --- Botones de Estadisticas (Navegacion) ---
+    const statButton = ev.target.closest(".zrn_am_stat_button");
+    if (statButton) {
+        ev.preventDefault();
+        const actionName = statButton.dataset.action;
+        const wizardId = window.__peackPlaningGetResId?.();
+        if (actionName && wizardId) {
+            fetch("/web/dataset/call_kw/peack_planing.report.wizard/" + actionName, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "call",
+                    params: {
+                        model: "peack_planing.report.wizard",
+                        method: actionName,
+                        args: [[wizardId]],
+                        kwargs: {},
+                    },
+                    id: Math.floor(Math.random() * 1000000),
+                }),
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.result && window.__peackPlaningDoAction) {
+                      window.__peackPlaningDoAction(data.result);
+                  }
+              });
+        }
+        return;
+    }
+
     // --- Enlaces a registros de Odoo ---
     const recordLink = ev.target.closest(".zrn_pp_record_link");
     if (recordLink) {
       ev.preventDefault();
       const resModel = recordLink.dataset.model;
       const resId = parseInt(recordLink.dataset.id);
+      
+      if (resModel === "res.partner") {
+        updateSidebar(resId);
+        return;
+      }
+
       if (resModel && resId) {
         // Usamos el servicio de acciones de Odoo si esta disponible via window
         if (window.__peackPlaningDoAction) {

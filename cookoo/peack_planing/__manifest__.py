@@ -27,6 +27,8 @@
             'peack_planing/static/src/js/home_form_view.js',
             'peack_planing/static/src/js/production_form_view.js',
             'peack_planing/static/src/js/report_form_view.js',
+            'peack_planing/static/src/js/sales_orders_form_view.js',
+            'peack_planing/static/src/js/sales_orders_report.js',
             'peack_planing/static/src/xml/home_form_view.xml',
             'peack_planing/static/src/xml/production_form_view.xml',
             'peack_planing/static/src/xml/report_form_view.xml',

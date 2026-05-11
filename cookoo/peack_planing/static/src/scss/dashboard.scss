@@ -579,42 +579,148 @@
     color: var(--am-text);
   }
 
-  .zrn_am_report_screen_header .zrn_am_report_range .o_field_widget,
-  .zrn_am_report_screen_header .zrn_am_report_range .o_field_char,
-  .zrn_am_report_screen_header .zrn_am_report_range span {
-    color: inherit !important;
-    font-weight: inherit;
+  .zrn_am_report_screen_header .zrn_am_report_range strong {
+    font-weight: 800 !important;
+    color: var(--am-text) !important;
   }
 
   .zrn_am_report_screen_stats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(110px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    gap: 12px;
     width: 100%;
-    max-width: 520px;
+    max-width: 600px;
   }
 
-  .zrn_am_report_stat_box {
+  .zrn_am_report_stat_box.btn_stat {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 6px;
-    padding: 12px 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
     border-radius: 8px;
-    background: var(--am-surface);
-    border: 1px solid var(--am-border);
+    background: var(--am-surface) !important;
+    border: 1px solid var(--am-border) !important;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    width: 100%;
+    box-shadow: none;
+
+    &:hover {
+        background: var(--am-surface-alt) !important;
+        border-color: var(--am-brand) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(33, 37, 41, 0.08);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
   }
 
-  .zrn_am_report_stat_box span {
+  .zrn_am_report_stat_box .stat_label {
     color: var(--am-muted);
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0;
+    text-transform: none;
+    letter-spacing: normal;
   }
 
-  .zrn_am_report_stat_box strong {
-    font-size: 1.1rem;
-    color: var(--am-text);
+  .zrn_am_report_stat_box .stat_value,
+  .zrn_am_report_stat_box .stat_value span {
+    font-size: 1.15rem;
+    color: var(--am-brand) !important;
+    font-weight: 700;
+    pointer-events: none; /* Asegura que el click pase al botón padre */
+    user-select: none;    /* Evita la selección de texto accidental */
+  }
+
+  .zrn_am_workspace {
+    display: flex;
+    gap: 16px;
+    height: calc(100vh - 340px);
+    overflow: hidden;
+    margin-top: 10px;
+  }
+
+  .zrn_am_results_panel {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .zrn_am_review_sidebar {
+    width: 300px;
+    flex: 0 0 300px;
+    background: var(--am-surface-raised) !important;
+    border: 1px solid var(--am-border) !important;
+    border-radius: 12px;
+    padding: 24px;
+    overflow-y: auto;
+    animation: zrnFadeInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 30px rgba(33, 37, 41, 0.05);
+
+    &.d-none {
+        display: none !important;
+    }
+  }
+
+  @keyframes zrnFadeInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .zrn_am_sidebar_title {
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    color: var(--am-muted) !important;
+    letter-spacing: 0.1em !important;
+    margin-bottom: 18px !important;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--am-border);
+    padding-bottom: 10px;
+  }
+
+  .zrn_am_sidebar_stat_item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 0.98rem;
+
+    label {
+        color: var(--am-text);
+        font-weight: 500;
+        margin: 0;
+    }
+
+    span {
+        color: var(--am-brand);
+        font-weight: 700;
+    }
+  }
+
+  .zrn_am_sidebar_contact_item {
+    margin-bottom: 16px;
+
+    label {
+        display: block;
+        font-size: 0.72rem;
+        color: var(--am-muted);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    div {
+        font-size: 0.95rem;
+        color: var(--am-text);
+        font-weight: 600;
+        word-break: break-all;
+    }
   }
 
   .zrn_am_report_table_panel {
