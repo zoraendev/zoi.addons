@@ -15,6 +15,39 @@ class ZrnProdigynNavigationMixin:
     def action_open_home(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_inicio')
 
+    def action_open_button_1(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_production_planning')
+
+    def action_open_button_2(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_purchase_planning')
+
+    def action_open_button_3(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_delivery_planning')
+
+    def action_open_button_4(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_internal_tool_4')
+
+    def action_open_button_5(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_internal_tool_5')
+
+    def action_open_support(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'name': 'Open Support',
+            'url': 'https://adm.zoraen.com/support?tkn=cualquier_cosa_por_ahora',
+            'target': 'new',
+        }
+
+    def action_open_prodigyn_go(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'name': 'Prodigyn Go',
+            'url': 'https://prodigyn.zoraen.com/go?tkn=cualquier_cosa_por_ahora',
+            'target': 'new',
+        }
+
 
 class ZrnProdigynInicio(ZrnProdigynNavigationMixin, models.Model):
     _name = 'zrn_prodigyn.inicio'
@@ -51,3 +84,10 @@ class ZrnProdigynDeliveryPlanning(ZrnProdigynNavigationMixin, models.Model):
     _description = 'Planeacion de entregas'
 
     name = fields.Char(string='Nombre', required=True, default='Planeacion de Entregas')
+
+
+class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
+    _name = 'zrn_prodigyn.internal.tool'
+    _description = 'Herramienta interna de Prodigyn'
+
+    name = fields.Char(string='Nombre', required=True)

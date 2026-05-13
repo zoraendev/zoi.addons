@@ -14,8 +14,20 @@
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn,
+  .zrn_prodigyn_cp_btn,
   .o_form_view.zrn_prodigyn_submodule_form .o_form_sheet_bg > .o_form_sheet {
     box-shadow: var(--z-color-shadow, 0 14px 32px rgba(0, 0, 0, 0.28));
+  }
+
+  .zrn_prodigyn_cp_btn_dark {
+    background: var(--z-color-surface-sunken, #111827) !important;
+    border-color: var(--z-color-border-strong, #475467) !important;
+    color: var(--z-color-text-strong, #f3f4f6) !important;
+  }
+
+  .zrn_prodigyn_cp_btn_dark:hover,
+  .zrn_prodigyn_cp_btn_dark:focus {
+    background: var(--z-color-surface-4, #243041) !important;
   }
 
   .o_form_view.zrn_prodigyn_submodule_form .o_form_sheet_bg > .o_form_sheet {

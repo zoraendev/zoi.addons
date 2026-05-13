@@ -9,7 +9,7 @@
         <field name="name">zrn_prodigyn.purchase.planning.form</field>
         <field name="model">zrn_prodigyn.purchase.planning</field>
         <field name="arch" type="xml">
-            <form string="Planeacion de Insumos / Compras" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_submodule_form zrn_prodigyn_purchase_planning_form">
+            <form string="Planeacion de Insumos / Compras" js_class="zrn_prodigyn_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_submodule_form zrn_prodigyn_purchase_planning_form">
                 <sheet>
                     <field name="name" invisible="1"/>
                     <div class="zrn_prodigyn_submodule_nav">

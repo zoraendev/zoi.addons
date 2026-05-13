@@ -9,7 +9,7 @@
         <field name="name">zrn_prodigyn.production.planning.form</field>
         <field name="model">zrn_prodigyn.production.planning</field>
         <field name="arch" type="xml">
-            <form string="Planeacion de produccion/fabricacion" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_submodule_form zrn_prodigyn_production_planning_form">
+            <form string="Planeacion de produccion/fabricacion" js_class="zrn_prodigyn_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_submodule_form zrn_prodigyn_production_planning_form">
                 <sheet>
                     <field name="name" invisible="1"/>
                     <div class="zrn_prodigyn_submodule_nav">

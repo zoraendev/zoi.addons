@@ -20,7 +20,7 @@ Modulo principal de Prodigyn.
     'application': True,
 
     # any module necessary for this one to work correctly
-    'depends': ['base'],
+    'depends': ['base', 'base_setup'],
 
     # always loaded
     'data': [
@@ -28,11 +28,14 @@ Modulo principal de Prodigyn.
         'views/production_planning_views.xml',
         'views/purchase_planning_views.xml',
         'views/delivery_planning_views.xml',
+        'views/internal_tool_views.xml',
         'views/views.xml',
         'views/templates.xml',
     ],
     'assets': {
         'web.assets_backend': [
+            'zrn_prodigyn/static/src/js/prodigyn_form_view.js',
+            'zrn_prodigyn/static/src/xml/prodigyn_form_view.xml',
             'zrn_prodigyn/static/zrn/css/colors.css',
             'zrn_prodigyn/static/zrn/css/lib.css',
         ],
