@@ -12,4 +12,107 @@
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home + .mt-3 p {
     color: var(--z-color-text-muted, var(--o-view-text-muted, #6c757d));
   }
+
+  .o_form_view.zrn_prodigyn_home_form .o_form_statusbar,
+  .o_form_view.zrn_prodigyn_submodule_form .o_form_statusbar {
+    display: none !important;
+  }
+
+  .o_action_manager:has(.o_form_view.zrn_prodigyn_home_form) .o_cp_pager,
+  .o_action_manager:has(.o_form_view.zrn_prodigyn_submodule_form) .o_cp_pager {
+    display: none !important;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_menu {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn {
+    display: inline-flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--z-color-button-primary-border, var(--z-color-border, #dee2e6));
+    color: var(--z-color-button-primary-text, var(--z-color-text-strong, #212529)) !important;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+    box-shadow: var(--z-color-shadow, 0 10px 26px rgba(33, 37, 41, 0.08));
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_primary {
+    background: var(--z-color-button-primary-bg, var(--z-color-surface-3, #f8f9fa));
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_primary:hover,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_primary:focus {
+    background: var(--z-color-button-primary-bg-hover, var(--z-color-surface-4, #eef1f5));
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary {
+    background: var(--z-color-button-secondary-bg, var(--z-color-button-primary-bg, #355eff));
+    border-color: var(--z-color-button-secondary-border, var(--z-color-button-primary-border, #355eff));
+    color: var(--z-color-button-secondary-text, #ffffff) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary:hover,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary:focus {
+    filter: brightness(1.05);
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_tertiary {
+    background: var(--z-color-surface-raised, #ffffff);
+    border-color: var(--z-color-border-strong, var(--z-color-border, #dee2e6));
+    color: var(--z-color-text-strong, #212529) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_tertiary:hover,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_tertiary:focus {
+    background: var(--z-color-surface-4, #eef1f5);
+  }
+
+  .o_form_view.zrn_prodigyn_submodule_form .o_form_sheet_bg > .o_form_sheet {
+    background: var(--z-color-surface-2, var(--o-view-background-color, #ffffff));
+    border-color: var(--z-color-border, var(--o-border-color, #dee2e6));
+    color: var(--z-color-text, var(--o-main-text-color, #212529));
+  }
+
+  .o_form_view.zrn_prodigyn_submodule_form .oe_title h1 {
+    color: var(--z-color-text-strong, var(--o-main-text-color, #212529));
+  }
+
+  .o_form_view.zrn_prodigyn_submodule_form .zrn_prodigyn_submodule_nav {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .o_form_view.zrn_prodigyn_submodule_form .zrn_prodigyn_back_btn {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    gap: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--z-color-border-strong, var(--z-color-border, #dee2e6));
+    background: var(--z-color-surface-raised, #ffffff);
+    color: var(--z-color-text-strong, #212529) !important;
+    font-weight: 600;
+  }
+
+  .o_form_view.zrn_prodigyn_submodule_form .zrn_prodigyn_back_btn:hover,
+  .o_form_view.zrn_prodigyn_submodule_form .zrn_prodigyn_back_btn:focus {
+    background: var(--z-color-surface-4, #eef1f5);
+  }
+
+  @media (max-width: 991.98px) {
+    .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_menu {
+      grid-template-columns: 1fr;
+    }
+  }
 }

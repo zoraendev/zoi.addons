@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="zrn_prodigyn_production_planning_default" model="zrn_prodigyn.production.planning">
+        <field name="name">Planeacion de produccion/fabricacion</field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_planning_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.planning.form</field>
+        <field name="model">zrn_prodigyn.production.planning</field>
+        <field name="arch" type="xml">
+            <form string="Planeacion de produccion/fabricacion" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_submodule_form zrn_prodigyn_production_planning_form">
+                <sheet>
+                    <field name="name" invisible="1"/>
+                    <div class="zrn_prodigyn_submodule_nav">
+                        <button
+                            name="action_open_home"
+                            type="object"
+                            icon="fa-arrow-left"
+                            string="Volver a Prodigyn"
+                            class="btn zrn_prodigyn_back_btn"
+                        />
+                    </div>
+                    <div class="oe_title">
+                        <h1>Planeacion de produccion/fabricacion</h1>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zrn_prodigyn_production_planning" model="ir.actions.act_window">
+        <field name="name">Planeacion de produccion/fabricacion</field>
+        <field name="res_model">zrn_prodigyn.production.planning</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_zrn_prodigyn_production_planning_form"/>
+        <field name="res_id" ref="zrn_prodigyn_production_planning_default"/>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

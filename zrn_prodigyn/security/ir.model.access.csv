@@ -1,2 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_zrn_prodigyn_inicio,zrn_prodigyn.inicio,model_zrn_prodigyn_inicio,base.group_user,1,1,1,1
+access_zrn_prodigyn_production_planning,zrn_prodigyn.production.planning,model_zrn_prodigyn_production_planning,base.group_user,1,1,1,1
+access_zrn_prodigyn_purchase_planning,zrn_prodigyn.purchase.planning,model_zrn_prodigyn_purchase_planning,base.group_user,1,1,1,1
+access_zrn_prodigyn_delivery_planning,zrn_prodigyn.delivery.planning,model_zrn_prodigyn_delivery_planning,base.group_user,1,1,1,1

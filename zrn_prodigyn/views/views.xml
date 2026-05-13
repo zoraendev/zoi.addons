@@ -15,8 +15,28 @@
                     <div class="oe_title zrn_prodigyn_home">
                         <h1>Bienvenido a Prodigyn</h1>
                     </div>
-                    <div class="mt-3">
-                        <p>Este es el modulo principal de Prodigyn.</p>
+                    <div class="zrn_prodigyn_home_menu">
+                        <button
+                            name="action_open_production_planning"
+                            type="object"
+                            icon="fa-industry"
+                            string="Planeacion de produccion/fabricacion"
+                            class="btn zrn_prodigyn_menu_btn zrn_prodigyn_menu_btn_primary"
+                        />
+                        <button
+                            name="action_open_purchase_planning"
+                            type="object"
+                            icon="fa-shopping-cart"
+                            string="Planeacion de Insumos / Compras"
+                            class="btn zrn_prodigyn_menu_btn zrn_prodigyn_menu_btn_secondary"
+                        />
+                        <button
+                            name="action_open_delivery_planning"
+                            type="object"
+                            icon="fa-truck"
+                            string="Planeacion de Entregas"
+                            class="btn zrn_prodigyn_menu_btn zrn_prodigyn_menu_btn_tertiary"
+                        />
                     </div>
                 </sheet>
             </form>

@@ -25,6 +25,9 @@ Modulo principal de Prodigyn.
     # always loaded
     'data': [
         'security/ir.model.access.csv',
+        'views/production_planning_views.xml',
+        'views/purchase_planning_views.xml',
+        'views/delivery_planning_views.xml',
         'views/views.xml',
         'views/templates.xml',
     ],
