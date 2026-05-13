@@ -1,0 +1,15 @@
+@layer zrn-prodigyn-dark {
+  .o_form_view.zrn_prodigyn_home_form .o_form_sheet_bg > .o_form_sheet {
+    background: var(--z-color-surface-2, var(--o-view-background-color, #1b2432));
+    border-color: var(--z-color-border, var(--o-border-color, #344054));
+    color: var(--z-color-text, var(--o-main-text-color, #f3f4f6));
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home h1 {
+    color: var(--z-color-text-strong, var(--o-main-text-color, #f3f4f6));
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home + .mt-3 p {
+    color: var(--z-color-text-muted, var(--o-view-text-muted, #98a2b3));
+  }
+}
