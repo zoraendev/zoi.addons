@@ -10,7 +10,9 @@ class ZrnProdigynNavigationMixin:
         action = self.env.ref(action_xmlid, raise_if_not_found=False)
         if not action:
             raise UserError('No se encontro la accion configurada para esta pantalla.')
-        return action.read()[0]
+        action_data = action.read()[0]
+        action_data['_noBreadcrumbs'] = True
+        return action_data
 
     def action_open_home(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_inicio')

@@ -19,6 +19,23 @@
     gap: 8px;
   }
 
+  .zrn_prodigyn_cp_title_wrap {
+    display: flex;
+    align-items: center;
+    min-height: 30px;
+    min-width: 0;
+  }
+
+  .zrn_prodigyn_cp_title {
+    color: var(--z-color-text-strong, var(--o-main-text-color, #212529));
+    font-size: 2rem;
+    font-weight: 500;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .zrn_prodigyn_cp_btn {
     min-height: 34px;
     padding: 6px 12px;
@@ -133,6 +150,10 @@
   }
 
   @media (max-width: 991.98px) {
+    .zrn_prodigyn_cp_title {
+      font-size: 1.5rem;
+    }
+
     .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_menu {
       grid-template-columns: 1fr;
     }
