@@ -24,7 +24,76 @@
                     <div class="oe_title">
                         <h1>Planeacion de produccion/fabricacion</h1>
                     </div>
+                    <group string="Planeacion desde pedidos de venta">
+                        <div class="o_row">
+                            <button
+                                name="action_open_sale_order_filters"
+                                type="object"
+                                icon="fa-filter"
+                                string="Abrir filtros"
+                                class="btn btn-primary"
+                            />
+                        </div>
+                    </group>
                 </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_planning_filter_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.planning.wizard.form</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Filtros de fabricacion" create="0" delete="0" duplicate="0">
+                <header>
+                    <button name="action_continue" type="object" string="Continuar" class="btn btn-primary"/>
+                    <button name="action_clear_filters" type="object" string="Limpiar" class="btn btn-secondary"/>
+                </header>
+                <sheet>
+                    <group invisible="1">
+                        <field name="name"/>
+                        <field name="available_cliente_ids"/>
+                        <field name="available_product_ids"/>
+                    </group>
+
+                    <group string="Filtros para fabricacion">
+                        <group>
+                            <field name="fecha_entrega_desde"/>
+                            <field name="fecha_entrega_hasta"/>
+                        </group>
+                        <group>
+                            <field
+                                name="cliente_ids"
+                                widget="many2many_tags"
+                                domain="[('id', 'in', available_cliente_ids)]"
+                                context="{'show_address': 1, 'show_vat': True}"
+                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                string="Puntos de venta"
+                                placeholder="Selecciona uno o varios puntos de venta"
+                            />
+                            <field
+                                name="product_ids"
+                                widget="many2many_tags"
+                                domain="[('id', 'in', available_product_ids)]"
+                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                placeholder="Selecciona uno o varios productos"
+                            />
+                        </group>
+                    </group>
+
+                    <group string="Seleccion actual">
+                        <group>
+                            <field name="preview_order_count" readonly="1"/>
+                            <field name="preview_cliente_count" readonly="1"/>
+                            <field name="preview_product_count" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_continue" type="object" string="Continuar" class="btn btn-primary"/>
+                    <button name="action_clear_filters" type="object" string="Limpiar" class="btn btn-secondary"/>
+                    <button string="Cancelar" special="cancel" class="btn btn-secondary"/>
+                </footer>
             </form>
         </field>
     </record>

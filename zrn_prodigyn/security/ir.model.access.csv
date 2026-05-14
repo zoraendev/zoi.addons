@@ -4,3 +4,4 @@ access_zrn_prodigyn_production_planning,zrn_prodigyn.production.planning,model_z
 access_zrn_prodigyn_purchase_planning,zrn_prodigyn.purchase.planning,model_zrn_prodigyn_purchase_planning,base.group_user,1,1,1,1
 access_zrn_prodigyn_delivery_planning,zrn_prodigyn.delivery.planning,model_zrn_prodigyn_delivery_planning,base.group_user,1,1,1,1
 access_zrn_prodigyn_internal_tool,zrn_prodigyn.internal.tool,model_zrn_prodigyn_internal_tool,base.group_user,1,1,1,1
+access_zrn_prodigyn_production_planning_wizard,zrn_prodigyn.production.planning.wizard,model_zrn_prodigyn_production_planning_wizard,base.group_user,1,1,1,1

@@ -71,6 +71,11 @@ class ZrnProdigynProductionPlanning(ZrnProdigynNavigationMixin, models.Model):
 
     name = fields.Char(string='Nombre', required=True, default='Planeacion de produccion/fabricacion')
 
+    def action_open_sale_order_filters(self):
+        self.ensure_one()
+        wizard = self.env['zrn_prodigyn.production.planning.wizard'].create({})
+        return wizard.action_open_filters()
+
 
 class ZrnProdigynPurchasePlanning(ZrnProdigynNavigationMixin, models.Model):
     _name = 'zrn_prodigyn.purchase.planning'
