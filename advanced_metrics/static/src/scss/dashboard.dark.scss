@@ -1090,4 +1090,27 @@
   .zrn_am_summary_lines_group .o_list_table td {
     border-color: var(--o-border-color, #3b4354);
   }
+
+  /* Dark mode overrides for detail stat cards and contact strip */
+  .zrn_am_detail_stats_strip .zrn_am_report_stat_box {
+    background: #202b3c;
+    border-color: #344054;
+  }
+
+  .zrn_am_detail_stats_strip .zrn_am_report_stat_box:hover {
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+  }
+
+  .zrn_am_detail_contact_strip {
+    background: #202b3c;
+    border-color: #344054;
+  }
+
+  .zrn_am_detail_contact_item {
+    color: var(--am-text, #f3f4f6);
+  }
+
+  .zrn_am_detail_contact_item i.fa {
+    color: var(--am-muted, #98a2b3);
+  }
 }

@@ -1699,6 +1699,81 @@
     margin-bottom: 8px;
   }
 
+  /* --- Detail stat card strips ---
+   * Replaces the old vertical <group col="2"> layout with horizontal
+   * stat cards that use the full width of the form, eliminating
+   * whitespace on wide screens. Reuses the existing
+   * .zrn_am_report_stat_box styles from the report dashboard.
+   */
+  .zrn_am_detail_stats_strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 18px;
+  }
+
+  .zrn_am_detail_stats_strip .zrn_am_report_stat_box {
+    background: var(--am-surface, var(--o-view-background-color, #ffffff));
+    border: 1px solid var(--am-border, var(--o-border-color, #dee2e6));
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .zrn_am_detail_stats_strip .zrn_am_report_stat_box:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--am-shadow, 0 10px 26px rgba(33, 37, 41, 0.08));
+  }
+
+  .zrn_am_detail_stats_strip .zrn_am_report_stat_box span {
+    color: var(--am-muted, var(--o-main-text-color, #6c757d));
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .zrn_am_detail_stats_strip .zrn_am_report_stat_box strong {
+    font-size: 1.05rem;
+    color: var(--am-text, var(--o-main-text-color, #212529));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .zrn_am_detail_stats_inventory {
+    margin-top: 0;
+  }
+
+  /* --- Contact info strip (customer detail) ---
+   * Inline contact information with FontAwesome icons following
+   * the addon's icon usage pattern (fa-phone, fa-envelope-o).
+   */
+  .zrn_am_detail_contact_strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: var(--am-surface-alt, var(--o-view-background-color, #f8f9fa));
+    border: 1px solid var(--am-border, var(--o-border-color, #dee2e6));
+  }
+
+  .zrn_am_detail_contact_item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.92rem;
+    color: var(--am-text, var(--o-main-text-color, #212529));
+  }
+
+  .zrn_am_detail_contact_item i.fa {
+    color: var(--am-muted, #6c757d);
+    font-size: 0.88rem;
+    width: 16px;
+    text-align: center;
+  }
+
   .zrn_am_summary_group {
     width: 100%;
     margin-bottom: 16px;
@@ -1800,6 +1875,18 @@
 
     .zrn_am_summary_group > .o_inner_group {
       gap: 12px;
+    }
+
+    .zrn_am_detail_stats_strip {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .zrn_am_detail_contact_strip {
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px 12px;
     }
 
     .zrn_am_summary_lines_group {
