@@ -165,6 +165,12 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'target': 'main',
         }
 
+    def action_back_to_production_planning(self):
+        self.ensure_one()
+        action = self.env.ref('zrn_prodigyn.action_zrn_prodigyn_production_planning').read()[0]
+        action['target'] = 'main'
+        return action
+
     def action_continue(self):
         self.ensure_one()
         return {

@@ -132,9 +132,68 @@
     background: var(--z-color-surface-4, #eef1f5);
   }
 
+  .o_form_view.zrn_prodigyn_filter_form .o_form_button_box,
+  .o_form_view.zrn_prodigyn_filter_form footer,
+  .o_form_view .zrn_prodigyn_filter_form .o_form_button_box,
+  .o_form_view .zrn_prodigyn_filter_form footer {
+    width: 100%;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form header,
+  .o_form_view .zrn_prodigyn_filter_form header {
+    display: block;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_start,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_end,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_start,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_end {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_end,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_end {
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
   @media (max-width: 991.98px) {
     .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_menu {
       grid-template-columns: 1fr;
+    }
+
+    .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer,
+    .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_start,
+    .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_end,
+    .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_start,
+    .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_end {
+      width: 100%;
+    }
+
+    .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_end,
+    .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer_end {
+      margin-left: 0;
+      justify-content: flex-start;
     }
   }
 }
