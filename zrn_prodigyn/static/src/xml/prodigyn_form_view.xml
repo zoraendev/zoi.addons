@@ -2,11 +2,6 @@
 <templates xml:space="preserve">
     <t t-name="zrn_prodigyn.FormView" t-inherit="web.FormView" t-inherit-mode="primary">
         <xpath expr="//Layout" position="inside">
-            <t t-set-slot="control-panel-breadcrumb">
-                <div class="zrn_prodigyn_cp_title_wrap">
-                    <div class="zrn_prodigyn_cp_title" t-out="getControlPanelTitle()"/>
-                </div>
-            </t>
             <t t-set-slot="control-panel-navigation-additional">
                 <div class="zrn_prodigyn_cp_actions">
                     <button type="button" class="btn zrn_prodigyn_cp_btn zrn_prodigyn_cp_btn_blue" t-on-click="openButton1">Boton 1</button>

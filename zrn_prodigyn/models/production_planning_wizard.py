@@ -162,8 +162,7 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'view_mode': 'form',
             'view_id': filter_view.id,
             'views': [(filter_view.id, 'form')],
-            'target': 'current',
-            '_noBreadcrumbs': True,
+            'target': 'main',
         }
 
     def action_continue(self):

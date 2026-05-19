@@ -11,7 +11,7 @@ class ZrnProdigynNavigationMixin:
         if not action:
             raise UserError('No se encontro la accion configurada para esta pantalla.')
         action_data = action.read()[0]
-        action_data['_noBreadcrumbs'] = True
+        action_data['target'] = 'main'
         return action_data
 
     def action_open_home(self):
