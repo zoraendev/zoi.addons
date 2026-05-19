@@ -18,19 +18,19 @@ class ZrnProdigynNavigationMixin:
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_inicio')
 
     def action_open_button_1(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_production_planning')
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_summary')
 
     def action_open_button_2(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_purchase_planning')
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_commercial_planning')
 
     def action_open_button_3(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_delivery_planning')
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_production_planning')
 
     def action_open_button_4(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_internal_tool_4')
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_purchase_planning')
 
     def action_open_button_5(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_internal_tool_5')
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_delivery_planning')
 
     def action_open_support(self):
         self.ensure_one()
@@ -54,17 +54,46 @@ class ZrnProdigynNavigationMixin:
 class ZrnProdigynInicio(ZrnProdigynNavigationMixin, models.Model):
     _name = 'zrn_prodigyn.inicio'
     _description = 'Pantalla principal de Prodigyn'
+    _order = 'sequence, id'
 
     name = fields.Char(string='Nombre', required=True, default='Prodigyn')
+    sequence = fields.Integer(string='Secuencia', default=10)
+    page_key = fields.Selection(
+        [
+            ('overview', 'Resumen'),
+            ('workspace', 'Workspace'),
+        ],
+        string='Pagina',
+        required=True,
+        default='overview',
+    )
+
+    def action_open_summary(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_summary')
+
+    def action_open_commercial_planning(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_commercial_planning')
 
     def action_open_production_planning(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_production_planning')
 
-    def action_open_purchase_planning(self):
+    def action_open_supply_planning(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_purchase_planning')
 
-    def action_open_delivery_planning(self):
+    def action_open_logistics_planning(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_delivery_planning')
+
+    def action_open_resource_planning(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_resource_planning')
+
+    def action_open_scenarios(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_scenarios')
+
+    def action_open_reporting(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_reporting')
+
+    def action_open_settings_dashboard(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_settings')
 
 
 class ZrnProdigynProductionPlanning(ZrnProdigynNavigationMixin, models.Model):
@@ -83,14 +112,14 @@ class ZrnProdigynPurchasePlanning(ZrnProdigynNavigationMixin, models.Model):
     _name = 'zrn_prodigyn.purchase.planning'
     _description = 'Planeacion de insumos y compras'
 
-    name = fields.Char(string='Nombre', required=True, default='Planeacion de Insumos / Compras')
+    name = fields.Char(string='Nombre', required=True, default='Planeacion de Abastecimiento')
 
 
 class ZrnProdigynDeliveryPlanning(ZrnProdigynNavigationMixin, models.Model):
     _name = 'zrn_prodigyn.delivery.planning'
     _description = 'Planeacion de entregas'
 
-    name = fields.Char(string='Nombre', required=True, default='Planeacion de Entregas')
+    name = fields.Char(string='Nombre', required=True, default='Planeacion Logistica')
 
 
 class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
