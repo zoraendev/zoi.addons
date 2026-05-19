@@ -1,6 +1,6 @@
 @layer zrn-prodigyn-dark {
   .o_form_view.zrn_prodigyn_home_form .o_form_sheet_bg > .o_form_sheet {
-    background: var(--z-color-surface-2, var(--o-view-background-color, #1b2432));
+    background: var(--z-color-surface-2, #1b2432);
     border-color: var(--z-color-border, var(--o-border-color, #344054));
     color: var(--z-color-text, var(--o-main-text-color, #f3f4f6));
   }
@@ -13,10 +13,63 @@
     color: var(--z-color-text-muted, var(--o-view-text-muted, #98a2b3));
   }
 
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_hero_copy,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_quickstats,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_panel,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn {
+    border-color: color-mix(in srgb, var(--z-color-border) 76%, var(--z-color-brand-1300) 24%);
+    background: var(--z-color-surface-2, #1b2432);
+    box-shadow: none;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_hero_copy {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_kicker,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_section_title,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_panel_head,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_intro,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_stat_label {
+    color: color-mix(in srgb, var(--z-color-text-muted) 85%, var(--z-color-brand-200) 15%);
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_stat {
+    background: color-mix(in srgb, var(--z-color-surface-sunken) 24%, var(--z-color-surface-2) 76%);
+  }
+
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn,
   .zrn_prodigyn_cp_btn,
   .o_form_view.zrn_prodigyn_submodule_form .o_form_sheet_bg > .o_form_sheet {
-    box-shadow: var(--z-color-shadow, 0 14px 32px rgba(0, 0, 0, 0.28));
+    box-shadow: none;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_primary {
+    background: color-mix(in srgb, var(--z-color-brand-1700) 72%, var(--z-color-surface-2) 28%) !important;
+    color: var(--z-color-text-strong, #f3f4f6) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary {
+    background: color-mix(in srgb, var(--z-color-brand-800) 88%, var(--z-color-brand-1100) 12%) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_tertiary {
+    background: color-mix(in srgb, var(--z-color-success-1700) 68%, var(--z-color-surface-2) 32%) !important;
+    color: var(--z-color-text-strong, #f3f4f6) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_calendar,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_map,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_chart,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_list {
+    background: color-mix(in srgb, var(--z-color-brand-1900) 28%, var(--z-color-surface-2) 72%);
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_grid > div,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_row,
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_bars > div {
+    background: color-mix(in srgb, var(--z-color-brand-1700) 62%, var(--z-color-surface-2) 38%);
   }
 
   .zrn_prodigyn_cp_btn_dark {

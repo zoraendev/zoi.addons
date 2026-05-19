@@ -1,6 +1,6 @@
 @layer zrn-prodigyn {
   .o_form_view.zrn_prodigyn_home_form .o_form_sheet_bg > .o_form_sheet {
-    background: var(--z-color-surface-2, var(--o-view-background-color, #ffffff));
+    background: var(--z-color-surface-1, #ffffff);
     border-color: var(--z-color-border, var(--o-border-color, #dee2e6));
     color: var(--z-color-text, var(--o-main-text-color, #212529));
     max-width: none;
@@ -63,9 +63,9 @@
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_quickstats,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_panel,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn {
-    border: 1px solid var(--z-color-border, var(--o-border-color, #dee2e6));
+    border: 1px solid color-mix(in srgb, var(--z-color-border) 82%, var(--z-color-brand-200) 18%);
     background: var(--z-color-surface-raised, #ffffff);
-    box-shadow: var(--z-color-shadow, 0 10px 26px rgba(33, 37, 41, 0.08));
+    box-shadow: none;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_hero_copy {
@@ -76,19 +76,21 @@
     gap: 10px;
     border-radius: 8px;
     padding: 20px 24px;
+    background: transparent;
+    border-color: transparent;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_kicker,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_section_title,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_panel_head {
-    color: var(--z-color-text-muted, var(--o-view-text-muted, #6c757d));
+    color: color-mix(in srgb, var(--z-color-text-muted) 70%, var(--z-color-brand-1000) 30%);
     font-size: 0.85rem;
     font-weight: 700;
     text-transform: uppercase;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_intro {
-    color: var(--z-color-text-muted, var(--o-view-text-muted, #6c757d));
+    color: color-mix(in srgb, var(--z-color-text-muted) 82%, var(--z-color-text-strong) 18%);
     max-width: 700px;
     line-height: 1.35;
   }
@@ -108,16 +110,16 @@
     justify-content: center;
     gap: 6px;
     padding: 18px;
-    background: var(--z-color-surface-2, #ffffff);
+    background: var(--z-color-surface-2, #f8fafc);
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_stat_label {
-    color: var(--z-color-text-muted, var(--o-view-text-muted, #6c757d));
+    color: color-mix(in srgb, var(--z-color-text-muted) 80%, var(--z-color-brand-900) 20%);
     font-size: 0.88rem;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_stat_value {
-    color: var(--z-color-text-strong, var(--o-main-text-color, #212529));
+    color: color-mix(in srgb, var(--z-color-text-strong) 78%, var(--z-color-brand-1000) 22%);
     font-size: 1.8rem;
     font-weight: 700;
   }
@@ -151,7 +153,7 @@
     border-radius: 6px !important;
     font-weight: 600;
     line-height: 1.1;
-    box-shadow: var(--z-color-shadow, 0 10px 26px rgba(33, 37, 41, 0.08));
+    box-shadow: none;
   }
 
   .zrn_prodigyn_cp_btn_blue {
@@ -187,43 +189,69 @@
     justify-content: flex-start;
     gap: 10px;
     border-radius: 8px;
-    color: var(--z-color-button-primary-text, var(--z-color-text-strong, #212529)) !important;
+    color: var(--z-color-text-strong, #212529) !important;
     font-weight: 600;
     line-height: 1.2;
     text-align: left;
     white-space: normal;
     padding: 0 16px;
+    position: relative;
+    overflow: hidden;
+    transition:
+      border-color 180ms ease,
+      background-color 180ms ease,
+      color 180ms ease;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    border-radius: 8px 0 0 8px;
+    background: var(--z-color-brand-600);
+    opacity: 0.95;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_primary {
-    background: var(--z-color-button-primary-bg, var(--z-color-surface-3, #f8f9fa));
+    background: color-mix(in srgb, var(--z-color-brand-100) 82%, var(--z-color-surface-raised) 18%) !important;
+    border-color: color-mix(in srgb, var(--z-color-brand-300) 52%, var(--z-color-border) 48%);
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_primary:hover,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_primary:focus {
-    background: var(--z-color-button-primary-bg-hover, var(--z-color-surface-4, #eef1f5));
+    background: color-mix(in srgb, var(--z-color-brand-150) 84%, var(--z-color-surface-raised) 16%) !important;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary {
-    background: var(--z-color-button-secondary-bg, var(--z-color-button-primary-bg, #355eff));
-    border-color: var(--z-color-button-secondary-border, var(--z-color-button-primary-border, #355eff));
+    background: color-mix(in srgb, var(--z-color-brand-800) 92%, var(--z-color-brand-700) 8%) !important;
+    border-color: color-mix(in srgb, var(--z-color-brand-1100) 55%, var(--z-color-brand-700) 45%);
     color: var(--z-color-button-secondary-text, #ffffff) !important;
+    box-shadow: none;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary:hover,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary:focus {
-    filter: brightness(1.05);
+    background: color-mix(in srgb, var(--z-color-brand-700) 90%, var(--z-color-brand-600) 10%) !important;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_tertiary {
-    background: var(--z-color-surface-raised, #ffffff);
-    border-color: var(--z-color-border-strong, var(--z-color-border, #dee2e6));
+    background: color-mix(in srgb, var(--z-color-success-50) 84%, var(--z-color-surface-raised) 16%) !important;
+    border-color: color-mix(in srgb, var(--z-color-success-300) 48%, var(--z-color-border) 52%);
     color: var(--z-color-text-strong, #212529) !important;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_tertiary:hover,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_tertiary:focus {
-    background: var(--z-color-surface-4, #eef1f5);
+    background: color-mix(in srgb, var(--z-color-success-100) 86%, var(--z-color-surface-raised) 14%) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_tertiary::before {
+    background: var(--z-color-success-500);
+  }
+
+  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary::before {
+    background: color-mix(in srgb, white 64%, var(--z-color-brand-200) 36%);
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_previews {
@@ -239,6 +267,7 @@
     border-radius: 8px;
     overflow: hidden;
     min-height: 0;
+    background: var(--z-color-surface-raised, #ffffff);
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_panel_wide {
@@ -250,6 +279,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px 0;
+    color: color-mix(in srgb, var(--z-color-text-muted) 68%, var(--z-color-brand-1000) 32%);
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_panel_body {
@@ -264,8 +294,7 @@
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_chart,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_list {
     border-radius: 6px;
-    background:
-      linear-gradient(180deg, rgba(53, 94, 255, 0.06), rgba(53, 94, 255, 0.02));
+    background: color-mix(in srgb, var(--z-color-brand-50) 42%, var(--z-color-surface-raised) 58%);
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_calendar {
@@ -283,7 +312,7 @@
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_row,
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_bars > div {
     border-radius: 6px;
-    background: rgba(53, 94, 255, 0.12);
+    background: color-mix(in srgb, var(--z-color-brand-200) 62%, var(--z-color-surface-raised) 38%);
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_grid > div {
@@ -300,7 +329,7 @@
     position: absolute;
     inset: 16px 18px;
     border-radius: 18px;
-    background: rgba(53, 94, 255, 0.08);
+    background: color-mix(in srgb, var(--z-color-brand-100) 58%, var(--z-color-surface-raised) 42%);
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_dot {
@@ -308,8 +337,8 @@
     width: 14px;
     height: 14px;
     border-radius: 999px;
-    background: #355eff;
-    box-shadow: 0 0 0 4px rgba(53, 94, 255, 0.14);
+    background: var(--z-color-brand-700);
+    box-shadow: none;
   }
 
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_placeholder_dot_1 { top: 28%; left: 24%; }
