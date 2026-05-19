@@ -146,6 +146,21 @@
     margin-bottom: 16px;
   }
 
+  .o_form_view.zrn_prodigyn_filter_form .o_form_statusbar,
+  .o_form_view .zrn_prodigyn_filter_form .o_form_statusbar,
+  .o_form_view.zrn_prodigyn_filter_form .o_form_statusbar .o_statusbar_buttons,
+  .o_form_view .zrn_prodigyn_filter_form .o_form_statusbar .o_statusbar_buttons {
+    width: 100%;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .o_form_statusbar .o_statusbar_buttons,
+  .o_form_view .zrn_prodigyn_filter_form .o_form_statusbar .o_statusbar_buttons {
+    justify-content: space-between !important;
+    align-items: center;
+  }
+
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_footer {
     display: flex;
