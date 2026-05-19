@@ -309,6 +309,7 @@
         <field name="view_id" ref="view_zrn_prodigyn_inicio_form"/>
         <field name="target">current</field>
         <field name="domain">[('page_key', 'in', ['overview', 'workspace'])]</field>
+        <field name="context" eval="{'active_id': ref('zrn_prodigyn_inicio_default'), 'active_ids': [ref('zrn_prodigyn_inicio_default'), ref('zrn_prodigyn_inicio_secondary_default')]}"/>
     </record>
 
     <record id="action_zrn_prodigyn_support_url" model="ir.actions.act_url">

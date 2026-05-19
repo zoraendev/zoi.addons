@@ -11,6 +11,19 @@ class ZrnProdigynFormController extends FormController {
     this.orm = useService("orm");
   }
 
+  get modelParams() {
+    const modelParams = super.modelParams;
+    if (this.props.resModel === "zrn_prodigyn.inicio") {
+      const activeIds = this.props.context?.active_ids || [];
+      if (activeIds.length > 1) {
+        modelParams.config.resIds = activeIds;
+        modelParams.config.resId =
+          this.props.resId || this.props.context?.active_id || activeIds[0];
+      }
+    }
+    return modelParams;
+  }
+
   async openProdigynAction(methodName) {
     const action = await this.orm.call(this.props.resModel, methodName, [
       [this.model.root.resId],
