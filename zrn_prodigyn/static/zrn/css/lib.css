@@ -169,8 +169,7 @@
 
   @media (max-width: 991.98px) {
     .zrn_prodigyn_cp_actions {
-      overflow: auto;
-      width: 380px;
+      display: none;
     }
   }
 
@@ -1124,6 +1123,7 @@
       .zrn_prodigyn_production_dashboard {
       min-height: auto;
       height: auto;
+      overflow: visible;
     }
 
     .o_form_view.zrn_prodigyn_production_planning_form
@@ -1140,6 +1140,31 @@
     .o_form_view.zrn_prodigyn_production_planning_form
       .zrn_prodigyn_production_panels {
       grid-template-rows: none;
+    }
+
+    .o_form_view.zrn_prodigyn_production_planning_form
+      .zrn_prodigyn_production_shell_secondary
+      .zrn_prodigyn_production_dashboard,
+    .o_form_view.zrn_prodigyn_production_planning_form
+      .zrn_prodigyn_production_shell_secondary
+      .zrn_prodigyn_production_panels,
+    .o_form_view.zrn_prodigyn_production_planning_form
+      .zrn_prodigyn_production_shell_secondary
+      .zrn_prodigyn_production_hero {
+      grid-template-columns: 1fr !important;
+    }
+
+    .o_form_view.zrn_prodigyn_production_planning_form
+      .zrn_prodigyn_production_shell_secondary
+      .zrn_prodigyn_production_actions,
+    .o_form_view.zrn_prodigyn_production_planning_form
+      .zrn_prodigyn_production_shell_secondary
+      .zrn_prodigyn_production_panels,
+    .o_form_view.zrn_prodigyn_production_planning_form
+      .zrn_prodigyn_production_shell_secondary
+      .zrn_prodigyn_production_panel {
+      width: 100%;
+      min-width: 0;
     }
 
     .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_quickstats {
