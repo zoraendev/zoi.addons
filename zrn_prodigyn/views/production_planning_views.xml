@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="zrn_prodigyn_production_planning_default" model="zrn_prodigyn.production.planning">
+        <field name="name">Planeacion de produccion/fabricacion</field>
+        <field name="sequence">10</field>
+        <field name="page_key">overview</field>
+    </record>
+
+    <record id="zrn_prodigyn_production_planning_secondary_default" model="zrn_prodigyn.production.planning">
+        <field name="name">Planeacion de produccion/fabricacion</field>
+        <field name="sequence">20</field>
+        <field name="page_key">workspace</field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_planning_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.planning.form</field>
+        <field name="model">zrn_prodigyn.production.planning</field>
+        <field name="arch" type="xml">
+            <form string="Planeacion de produccion/fabricacion" js_class="zrn_prodigyn_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_submodule_form zrn_prodigyn_production_planning_form">
+                <sheet>
+                    <field name="name" invisible="1"/>
+                    <field name="page_key" invisible="1"/>
+                    <field name="sequence" invisible="1"/>
+                    <div class="zrn_prodigyn_submodule_nav">
+                        <button
+                            name="action_open_home"
+                            type="object"
+                            icon="fa-arrow-left"
+                            string="Volver a Prodigyn"
+                            class="btn zrn_prodigyn_back_btn"
+                        />
+                    </div>
+                    <div class="zrn_prodigyn_production_shell" invisible="page_key != 'overview'">
+                        <div class="zrn_prodigyn_production_hero">
+                            <div class="zrn_prodigyn_production_hero_copy">
+                                <div class="zrn_prodigyn_production_kicker">Produccion</div>
+                                <div class="oe_title">
+                                    <h1>Planeacion de produccion/fabricacion</h1>
+                                </div>
+                                <div class="zrn_prodigyn_production_intro">
+                                    Centro de trabajo para fabricar desde pedidos de venta, coordinar abastecimiento y visualizar el flujo operativo con una mejor distribucion del espacio.
+                                </div>
+                            </div>
+                            <div class="zrn_prodigyn_production_quickstats">
+                                <div class="zrn_prodigyn_production_stat">
+                                    <span class="zrn_prodigyn_production_stat_label">Ordenes</span>
+                                    <span class="zrn_prodigyn_production_stat_value">12</span>
+                                </div>
+                                <div class="zrn_prodigyn_production_stat">
+                                    <span class="zrn_prodigyn_production_stat_label">Prioridad alta</span>
+                                    <span class="zrn_prodigyn_production_stat_value">04</span>
+                                </div>
+                                <div class="zrn_prodigyn_production_stat">
+                                    <span class="zrn_prodigyn_production_stat_label">Lineas activas</span>
+                                    <span class="zrn_prodigyn_production_stat_value">27</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zrn_prodigyn_production_dashboard">
+                            <div class="zrn_prodigyn_production_actions">
+                                <div class="zrn_prodigyn_production_section_title">Planeacion desde pedidos de venta</div>
+                                <div class="zrn_prodigyn_production_menu">
+                                    <button
+                                        name="action_open_sale_order_filters"
+                                        type="object"
+                                        icon="fa-industry"
+                                        string="Fabricacion"
+                                        class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_secondary"
+                                    />
+                                    <button
+                                        name="action_open_button_4"
+                                        type="object"
+                                        icon="fa-shopping-cart"
+                                        string="Abastecimiento"
+                                        class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_primary"
+                                    />
+                                    <button
+                                        name="action_open_button_5"
+                                        type="object"
+                                        icon="fa-truck"
+                                        string="Logistica"
+                                        class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_tertiary"
+                                    />
+                                    <button
+                                        name="action_open_button_1"
+                                        type="object"
+                                        icon="fa-dashboard"
+                                        string="Resumen general"
+                                        class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_primary"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="zrn_prodigyn_production_panels">
+                                <div class="zrn_prodigyn_production_panel zrn_prodigyn_production_panel_wide">
+                                    <div class="zrn_prodigyn_production_panel_head">
+                                        <span>Pipeline de fabricacion</span>
+                                        <span>Semana actual</span>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_panel_body zrn_prodigyn_production_placeholder_grid">
+                                        <div class="zrn_prodigyn_production_placeholder_cells">
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_prodigyn_production_panel">
+                                    <div class="zrn_prodigyn_production_panel_head">
+                                        <span>Cobertura</span>
+                                        <span>Puntos clave</span>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_panel_body zrn_prodigyn_production_placeholder_map">
+                                        <div class="zrn_prodigyn_production_placeholder_blob"/>
+                                        <div class="zrn_prodigyn_production_placeholder_dot zrn_prodigyn_production_placeholder_dot_1"/>
+                                        <div class="zrn_prodigyn_production_placeholder_dot zrn_prodigyn_production_placeholder_dot_2"/>
+                                        <div class="zrn_prodigyn_production_placeholder_dot zrn_prodigyn_production_placeholder_dot_3"/>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_prodigyn_production_panel">
+                                    <div class="zrn_prodigyn_production_panel_head">
+                                        <span>Indicadores</span>
+                                        <span>Quick view</span>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_panel_body zrn_prodigyn_production_placeholder_chart">
+                                        <div class="zrn_prodigyn_production_placeholder_bars">
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_prodigyn_production_panel zrn_prodigyn_production_panel_wide">
+                                    <div class="zrn_prodigyn_production_panel_head">
+                                        <span>Actividad reciente</span>
+                                        <span>Ultimos movimientos</span>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_panel_body zrn_prodigyn_production_placeholder_list">
+                                        <div class="zrn_prodigyn_production_placeholder_row"/>
+                                        <div class="zrn_prodigyn_production_placeholder_row"/>
+                                        <div class="zrn_prodigyn_production_placeholder_row"/>
+                                        <div class="zrn_prodigyn_production_placeholder_row"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="zrn_prodigyn_production_shell zrn_prodigyn_production_shell_secondary" invisible="page_key != 'workspace'">
+                        <div class="zrn_prodigyn_production_hero zrn_prodigyn_production_hero_secondary">
+                            <div class="zrn_prodigyn_production_hero_copy">
+                                <div class="zrn_prodigyn_production_kicker">Fabricacion avanzada</div>
+                                <div class="oe_title">
+                                    <h1>Vista operativa de fabricacion</h1>
+                                </div>
+                                <div class="zrn_prodigyn_production_intro">
+                                    Segundo menu para alternar prioridades de fabricacion, seguimiento y decisiones rapidas sin salir del modulo.
+                                </div>
+                            </div>
+                            <div class="zrn_prodigyn_production_quickstats">
+                                <div class="zrn_prodigyn_production_stat">
+                                    <span class="zrn_prodigyn_production_stat_label">Capacidad</span>
+                                    <span class="zrn_prodigyn_production_stat_value">86%</span>
+                                </div>
+                                <div class="zrn_prodigyn_production_stat">
+                                    <span class="zrn_prodigyn_production_stat_label">Lotes</span>
+                                    <span class="zrn_prodigyn_production_stat_value">09</span>
+                                </div>
+                                <div class="zrn_prodigyn_production_stat">
+                                    <span class="zrn_prodigyn_production_stat_label">Alertas</span>
+                                    <span class="zrn_prodigyn_production_stat_value">03</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zrn_prodigyn_production_dashboard">
+                            <div class="zrn_prodigyn_production_actions">
+                                <div class="zrn_prodigyn_production_section_title">Menu de supervision</div>
+                                <div class="zrn_prodigyn_production_menu">
+                                    <button
+                                        name="action_open_sale_order_filters"
+                                        type="object"
+                                        icon="fa-sliders"
+                                        string="Filtros de fabricacion"
+                                        class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_secondary"
+                                    />
+                                    <button
+                                        name="action_open_button_3"
+                                        type="object"
+                                        icon="fa-cogs"
+                                        string="Vista principal"
+                                        class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_primary"
+                                    />
+                                    <button
+                                        name="action_open_button_4"
+                                        type="object"
+                                        icon="fa-cubes"
+                                        string="Materiales"
+                                        class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_tertiary"
+                                    />
+                                    <button
+                                        name="action_open_button_5"
+                                        type="object"
+                                        icon="fa-truck"
+                                        string="Despachos"
+                                        class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_primary"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="zrn_prodigyn_production_panels">
+                                <div class="zrn_prodigyn_production_panel">
+                                    <div class="zrn_prodigyn_production_panel_head">
+                                        <span>Estado por lote</span>
+                                        <span>Hoy</span>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_panel_body zrn_prodigyn_production_placeholder_chart">
+                                        <div class="zrn_prodigyn_production_placeholder_bars">
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_prodigyn_production_panel">
+                                    <div class="zrn_prodigyn_production_panel_head">
+                                        <span>Turnos</span>
+                                        <span>Disponibilidad</span>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_panel_body zrn_prodigyn_production_placeholder_list">
+                                        <div class="zrn_prodigyn_production_placeholder_row"/>
+                                        <div class="zrn_prodigyn_production_placeholder_row"/>
+                                        <div class="zrn_prodigyn_production_placeholder_row"/>
+                                        <div class="zrn_prodigyn_production_placeholder_row"/>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_prodigyn_production_panel zrn_prodigyn_production_panel_wide">
+                                    <div class="zrn_prodigyn_production_panel_head">
+                                        <span>Agenda de planta</span>
+                                        <span>Slots activos</span>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_panel_body zrn_prodigyn_production_placeholder_grid">
+                                        <div class="zrn_prodigyn_production_placeholder_cells">
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_prodigyn_production_panel zrn_prodigyn_production_panel_wide">
+                                    <div class="zrn_prodigyn_production_panel_head">
+                                        <span>Seguimiento</span>
+                                        <span>Ultimas novedades</span>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_panel_body zrn_prodigyn_production_placeholder_map">
+                                        <div class="zrn_prodigyn_production_placeholder_blob"/>
+                                        <div class="zrn_prodigyn_production_placeholder_dot zrn_prodigyn_production_placeholder_dot_1"/>
+                                        <div class="zrn_prodigyn_production_placeholder_dot zrn_prodigyn_production_placeholder_dot_2"/>
+                                        <div class="zrn_prodigyn_production_placeholder_dot zrn_prodigyn_production_placeholder_dot_3"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_planning_filter_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.planning.wizard.form</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Filtros de fabricacion" create="0" delete="0" duplicate="0" class="zrn_prodigyn_filter_form">
+                <sheet>
+                    <header>
+                        <div class="zrn_prodigyn_filter_footer">
+                            <div class="zrn_prodigyn_filter_footer_start">
+                                <button
+                                    name="action_back_to_production_planning"
+                                    type="object"
+                                    string="Regresar"
+                                    icon="fa-arrow-left"
+                                    class="btn zrn_prodigyn_back_btn"
+                                />
+                            </div>
+                            <div class="zrn_prodigyn_filter_footer_end">
+                                <button name="action_clear_filters" type="object" string="Limpiar" class="btn btn-secondary"/>
+                                <button name="action_continue" type="object" string="Continuar" class="btn btn-primary"/>
+                            </div>
+                        </div>
+                    </header>
+                    <group invisible="1">
+                        <field name="name"/>
+                        <field name="available_cliente_ids"/>
+                        <field name="available_product_ids"/>
+                    </group>
+
+                    <group string="Filtros para fabricacion">
+                        <group>
+                            <field name="fecha_entrega_desde"/>
+                            <field name="fecha_entrega_hasta"/>
+                        </group>
+                        <group>
+                            <field
+                                name="cliente_ids"
+                                widget="many2many_tags"
+                                domain="[('id', 'in', available_cliente_ids)]"
+                                context="{'show_address': 1, 'show_vat': True}"
+                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                string="Puntos de venta"
+                                placeholder="Selecciona uno o varios puntos de venta"
+                            />
+                            <field
+                                name="product_ids"
+                                widget="many2many_tags"
+                                domain="[('id', 'in', available_product_ids)]"
+                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                placeholder="Selecciona uno o varios productos"
+                            />
+                        </group>
+                    </group>
+
+                    <group string="Seleccion actual">
+                        <group>
+                            <field name="preview_order_count" readonly="1"/>
+                            <field name="preview_cliente_count" readonly="1"/>
+                            <field name="preview_product_count" readonly="1"/>
+                        </group>
+                    </group>
+                   
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zrn_prodigyn_production_planning" model="ir.actions.act_window">
+        <field name="name">Planeacion de produccion/fabricacion</field>
+        <field name="res_model">zrn_prodigyn.production.planning</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_zrn_prodigyn_production_planning_form"/>
+        <field name="res_id" ref="zrn_prodigyn_production_planning_default"/>
+        <field name="target">current</field>
+        <field name="domain">[('page_key', 'in', ['overview', 'workspace'])]</field>
+        <field name="context" eval="{'active_id': ref('zrn_prodigyn_production_planning_default'), 'active_ids': [ref('zrn_prodigyn_production_planning_default'), ref('zrn_prodigyn_production_planning_secondary_default')]}"/>
+    </record>
+
+</odoo>
