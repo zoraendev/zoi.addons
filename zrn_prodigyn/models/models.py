@@ -99,8 +99,19 @@ class ZrnProdigynInicio(ZrnProdigynNavigationMixin, models.Model):
 class ZrnProdigynProductionPlanning(ZrnProdigynNavigationMixin, models.Model):
     _name = 'zrn_prodigyn.production.planning'
     _description = 'Planeacion de produccion y fabricacion'
+    _order = 'sequence, id'
 
     name = fields.Char(string='Nombre', required=True, default='Planeacion de produccion/fabricacion')
+    sequence = fields.Integer(string='Secuencia', default=10)
+    page_key = fields.Selection(
+        [
+            ('overview', 'Resumen'),
+            ('workspace', 'Workspace'),
+        ],
+        string='Pagina',
+        required=True,
+        default='overview',
+    )
 
     def action_open_sale_order_filters(self):
         self.ensure_one()
