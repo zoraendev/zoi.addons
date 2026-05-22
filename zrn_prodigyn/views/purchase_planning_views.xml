@@ -24,6 +24,23 @@
                     <div class="oe_title">
                         <h1>Planeacion de Abastecimiento</h1>
                     </div>
+                    <div class="zrn_prodigyn_building_state">
+                        <div class="zrn_prodigyn_building_loader" aria-hidden="true">
+                            <span class="zrn_prodigyn_building_loader_ring zrn_prodigyn_building_loader_ring_outer"/>
+                            <span class="zrn_prodigyn_building_loader_ring zrn_prodigyn_building_loader_ring_inner"/>
+                            <span class="zrn_prodigyn_building_loader_core"/>
+                        </div>
+                        <div class="zrn_prodigyn_building_copy">
+                            <div class="zrn_prodigyn_building_kicker">Workspace en progreso</div>
+                            <div class="zrn_prodigyn_building_title">Estamos preparando esta vista</div>
+                            <div class="zrn_prodigyn_building_messages" aria-live="polite">
+                                <span>Construyendo el tablero de abastecimiento...</span>
+                                <span>Conectando compras, materiales e inventario...</span>
+                                <span>Armando accesos, indicadores y seguimiento operativo...</span>
+                                <span>Dejando lista la experiencia para esta pantalla...</span>
+                            </div>
+                        </div>
+                    </div>
                 </sheet>
             </form>
         </field>

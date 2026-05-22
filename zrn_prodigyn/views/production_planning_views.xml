@@ -356,6 +356,250 @@
         </field>
     </record>
 
+    <record id="view_zrn_prodigyn_production_planning_report_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.planning.wizard.report.form</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resumen de fabricacion" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_production_report_form">
+                <sheet>
+                    <group invisible="1">
+                        <field name="report_ready"/>
+                        <field name="report_customer_line_ids"/>
+                        <field name="report_product_line_ids"/>
+                        <field name="report_order_line_ids"/>
+                    </group>
+                    <div class="zrn_prodigyn_production_report_screen">
+                        <div class="zrn_prodigyn_production_report_header">
+                            <div>
+                                <h2>Detalle operativo de fabricacion</h2>
+                                <p>
+                                    Vista resumida por producto, cliente y OV usando los filtros seleccionados en la pantalla anterior.
+                                </p>
+                                <p class="zrn_prodigyn_production_report_range">
+                                    <field name="report_date_range_label" readonly="1" nolabel="1"/>
+                                </p>
+                            </div>
+                            <div class="zrn_prodigyn_production_report_stats">
+                                <div class="zrn_prodigyn_production_report_stat_box">
+                                    <span>Clientes</span>
+                                    <strong>
+                                        <button name="action_open_report_customers" type="object" class="oe_link zrn_prodigyn_production_stat_link">
+                                            <field name="report_customer_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
+                                </div>
+                                <div class="zrn_prodigyn_production_report_stat_box">
+                                    <span>Productos</span>
+                                    <strong>
+                                        <button name="action_open_report_products" type="object" class="oe_link zrn_prodigyn_production_stat_link">
+                                            <field name="report_product_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
+                                </div>
+                                <div class="zrn_prodigyn_production_report_stat_box">
+                                    <span>OVs</span>
+                                    <strong>
+                                        <button name="action_open_report_orders" type="object" class="oe_link zrn_prodigyn_production_stat_link">
+                                            <field name="report_order_count" readonly="1" nolabel="1"/>
+                                        </button>
+                                    </strong>
+                                </div>
+                                <div class="zrn_prodigyn_production_report_stat_box">
+                                    <span>Lineas</span>
+                                    <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zrn_prodigyn_production_report_table_panel">
+                            <div class="zrn_prodigyn_production_report_table_placeholder">
+                                <div class="zrn_prodigyn_production_report_table_placeholder_title">Espacio reservado para la tabla del reporte</div>
+                                <div class="zrn_prodigyn_production_report_table_placeholder_body"/>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_back_to_filters" type="object" string="Volver a filtros" class="btn btn-secondary"/>
+                    <button string="Cerrar" special="cancel" class="btn btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_report_customer_tree" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.report.customer.tree</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard.report.customer.line</field>
+        <field name="arch" type="xml">
+            <tree string="Clientes del reporte" create="0" edit="0" delete="0" import="0">
+                <field name="first_delivery_date"/>
+                <field name="last_delivery_date"/>
+                <field name="partner_id" string="Punto de venta"/>
+                <field name="customer_id" string="Cliente"/>
+                <field name="city"/>
+                <field name="order_count"/>
+                <field name="line_count"/>
+                <field name="product_count"/>
+                <field name="total_units" sum="Total unidades"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_report_customer_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.report.customer.form</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard.report.customer.line</field>
+        <field name="arch" type="xml">
+            <form string="Detalle del cliente" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_return_to_report" type="object" string="Regresar al reporte" class="btn btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="partner_id" readonly="1" nolabel="1"/></h1>
+                        <div class="text-muted">
+                            <field name="customer_id" readonly="1" nolabel="1"/>
+                            <span> | </span>
+                            <field name="city" readonly="1" nolabel="1"/>
+                        </div>
+                    </div>
+                    <group col="2">
+                        <field name="first_delivery_date" readonly="1"/>
+                        <field name="last_delivery_date" readonly="1"/>
+                        <field name="order_count" readonly="1"/>
+                        <field name="line_count" readonly="1"/>
+                        <field name="product_count" readonly="1"/>
+                        <field name="total_units" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zrn_prodigyn_production_report_customers" model="ir.actions.act_window">
+        <field name="name">Clientes del reporte</field>
+        <field name="res_model">zrn_prodigyn.production.planning.wizard.report.customer.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="zrn_prodigyn.view_zrn_prodigyn_production_report_customer_tree"/>
+        <field name="domain">[('wizard_id', '=', context.get('active_id'))]</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_report_product_tree" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.report.product.tree</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard.report.product.line</field>
+        <field name="arch" type="xml">
+            <tree string="Productos del reporte" create="0" edit="0" delete="0" import="0">
+                <field name="first_delivery_date"/>
+                <field name="last_delivery_date"/>
+                <field name="product_id" string="Producto"/>
+                <field name="default_code"/>
+                <field name="categ_name"/>
+                <field name="customer_count"/>
+                <field name="order_count"/>
+                <field name="line_count"/>
+                <field name="total_units" sum="Total demanda"/>
+                <field name="stock_initial" sum="Stock inicial"/>
+                <field name="stock_free" sum="Stock libre"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_report_product_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.report.product.form</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard.report.product.line</field>
+        <field name="arch" type="xml">
+            <form string="Detalle del producto" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_return_to_report" type="object" string="Regresar al reporte" class="btn btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="product_id" readonly="1" nolabel="1"/></h1>
+                        <div class="text-muted">
+                            <field name="default_code" readonly="1" nolabel="1"/>
+                            <span> | </span>
+                            <field name="categ_name" readonly="1" nolabel="1"/>
+                        </div>
+                    </div>
+                    <group col="2">
+                        <field name="first_delivery_date" readonly="1"/>
+                        <field name="last_delivery_date" readonly="1"/>
+                        <field name="customer_count" readonly="1"/>
+                        <field name="order_count" readonly="1"/>
+                        <field name="line_count" readonly="1"/>
+                        <field name="total_units" readonly="1"/>
+                        <field name="stock_initial" readonly="1"/>
+                        <field name="stock_free" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zrn_prodigyn_production_report_products" model="ir.actions.act_window">
+        <field name="name">Productos del reporte</field>
+        <field name="res_model">zrn_prodigyn.production.planning.wizard.report.product.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="zrn_prodigyn.view_zrn_prodigyn_production_report_product_tree"/>
+        <field name="domain">[('wizard_id', '=', context.get('active_id'))]</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_report_order_tree" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.report.order.tree</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard.report.order.line</field>
+        <field name="arch" type="xml">
+            <tree string="OVs del reporte" create="0" edit="0" delete="0" import="0">
+                <field name="first_delivery_date"/>
+                <field name="last_delivery_date"/>
+                <field name="order_id"/>
+                <field name="customer_id" string="Punto de venta"/>
+                <field name="state_label" string="Estado"/>
+                <field name="product_count"/>
+                <field name="line_count"/>
+                <field name="total_units" sum="Total unidades"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_report_order_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.report.order.form</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard.report.order.line</field>
+        <field name="arch" type="xml">
+            <form string="Detalle de la OV" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_return_to_report" type="object" string="Regresar al reporte" class="btn btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="order_id" readonly="1" nolabel="1"/></h1>
+                        <div class="text-muted">
+                            <field name="customer_id" readonly="1" nolabel="1"/>
+                            <span> | </span>
+                            <field name="state_label" readonly="1" nolabel="1"/>
+                        </div>
+                    </div>
+                    <group col="2">
+                        <field name="first_delivery_date" readonly="1"/>
+                        <field name="last_delivery_date" readonly="1"/>
+                        <field name="product_count" readonly="1"/>
+                        <field name="line_count" readonly="1"/>
+                        <field name="total_units" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zrn_prodigyn_production_report_orders" model="ir.actions.act_window">
+        <field name="name">OVs del reporte</field>
+        <field name="res_model">zrn_prodigyn.production.planning.wizard.report.order.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="zrn_prodigyn.view_zrn_prodigyn_production_report_order_tree"/>
+        <field name="domain">[('wizard_id', '=', context.get('active_id'))]</field>
+        <field name="target">current</field>
+    </record>
+
     <record id="action_zrn_prodigyn_production_planning" model="ir.actions.act_window">
         <field name="name">Planeacion de produccion/fabricacion</field>
         <field name="res_model">zrn_prodigyn.production.planning</field>

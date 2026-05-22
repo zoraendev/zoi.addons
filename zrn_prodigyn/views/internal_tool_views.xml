@@ -42,6 +42,23 @@
                             <field name="name" readonly="1" nolabel="1" class="oe_inline"/>
                         </h1>
                     </div>
+                    <div class="zrn_prodigyn_building_state">
+                        <div class="zrn_prodigyn_building_loader" aria-hidden="true">
+                            <span class="zrn_prodigyn_building_loader_ring zrn_prodigyn_building_loader_ring_outer"/>
+                            <span class="zrn_prodigyn_building_loader_ring zrn_prodigyn_building_loader_ring_inner"/>
+                            <span class="zrn_prodigyn_building_loader_core"/>
+                        </div>
+                        <div class="zrn_prodigyn_building_copy">
+                            <div class="zrn_prodigyn_building_kicker">Vista en construccion</div>
+                            <div class="zrn_prodigyn_building_title">Estamos armando este modulo</div>
+                            <div class="zrn_prodigyn_building_messages" aria-live="polite">
+                                <span>Construyendo componentes y accesos rapidos...</span>
+                                <span>Preparando widgets, datos y visualizaciones...</span>
+                                <span>Organizando la capa operativa de Prodigyn...</span>
+                                <span>Dejando lista la siguiente iteracion de esta vista...</span>
+                            </div>
+                        </div>
+                    </div>
                 </sheet>
             </form>
         </field>
