@@ -1624,15 +1624,91 @@
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_table_panel {
     display: flex;
+    flex-direction: column;
     flex: 1 1 auto;
     min-height: 420px;
     padding: 18px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_table_toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 0;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_table_toolbar_btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    border-radius: 999px;
+    box-shadow: none;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_table_toolbar_btn_primary {
+    display: inline-flex !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-brand-600) 78%,
+      var(--z-color-border) 22%
+    ) !important;
+    background-color: color-mix(
+      in srgb,
+      var(--z-color-brand-500) 88%,
+      white 12%
+    ) !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_table_toolbar_btn_primary
+    i,
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_table_toolbar_btn_primary
+    span {
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_table_toolbar_btn_primary:hover,
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_table_toolbar_btn_primary:focus {
+    transform: translateY(-1px);
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-brand-700) 82%,
+      var(--z-color-border) 18%
+    ) !important;
+    background-color: color-mix(
+      in srgb,
+      var(--z-color-brand-600) 90%,
+      white 10%
+    ) !important;
+    background-image: none !important;
+    box-shadow: 0 8px 18px -16px
+      color-mix(in srgb, var(--z-color-brand-800) 60%, transparent 40%);
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_table_panel
     .o_field_x2many {
     width: 100%;
+    margin-top: 8px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -1714,6 +1790,12 @@
     .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_menu {
       grid-template-columns: 1fr;
       grid-auto-rows: minmax(72px, auto);
+    }
+
+    .o_form_view.zrn_prodigyn_production_report_form
+      .zrn_prodigyn_production_report_table_toolbar {
+      flex-direction: column;
+      align-items: flex-start;
     }
 
     .zrn_prodigyn_cp_actions {

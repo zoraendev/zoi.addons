@@ -451,6 +451,20 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         self.report_active_tab = tab_name
         return self.action_open_report()
 
+    def _open_summary_list_action(self, action_xmlid, tab_name):
+        self.ensure_one()
+        action = self.env.ref(action_xmlid).read()[0]
+        action['domain'] = [('wizard_id', '=', self.id)]
+        action['context'] = {
+            'active_id': self.id,
+            'default_wizard_id': self.id,
+            'zrn_prodigyn_origin_view': 'report',
+            'zrn_prodigyn_summary_tab': tab_name,
+            'zrn_prodigyn_clean_export_fields': True,
+        }
+        action['target'] = 'current'
+        return action
+
     def action_open_report_overview(self):
         self.ensure_one()
         return self._open_report_tab('overview')
@@ -463,13 +477,42 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         self.ensure_one()
         return self._open_report_tab('customers')
 
+    def action_open_report_customers_list(self):
+        self.ensure_one()
+        return self._open_summary_list_action(
+            'zrn_prodigyn.action_zrn_prodigyn_production_report_customers',
+            'customers',
+        )
+
     def action_open_report_products(self):
         self.ensure_one()
         return self._open_report_tab('products')
 
+    def action_open_report_products_list(self):
+        self.ensure_one()
+        return self._open_summary_list_action(
+            'zrn_prodigyn.action_zrn_prodigyn_production_report_products',
+            'products',
+        )
+
     def action_open_report_orders(self):
         self.ensure_one()
         return self._open_report_tab('orders')
+
+    def action_open_report_orders_list(self):
+        self.ensure_one()
+        return self._open_summary_list_action(
+            'zrn_prodigyn.action_zrn_prodigyn_production_report_orders',
+            'orders',
+        )
+
+    @api.model
+    def action_back_to_report_from_context(self, wizard_id, summary_tab='overview'):
+        wizard = self.browse(wizard_id).exists()
+        if not wizard:
+            return False
+        wizard.report_active_tab = summary_tab or 'overview'
+        return wizard.action_open_report()
 
     def action_continue(self):
         self.ensure_one()
@@ -526,6 +569,31 @@ class ZrnProdigynProductionPlanningWizardReportCustomerLine(models.TransientMode
         readonly=True,
     )
 
+    @api.model
+    def fields_get(self, allfields=None, attributes=None):
+        fields_info = super().fields_get(allfields=allfields, attributes=attributes)
+        if (
+            not self.env.context.get('zrn_prodigyn_clean_export_fields')
+            or allfields not in (None, [])
+        ):
+            return fields_info
+        allowed_fields = {
+            'first_delivery_date',
+            'last_delivery_date',
+            'partner_id',
+            'customer_id',
+            'city',
+            'order_count',
+            'line_count',
+            'product_count',
+            'total_units',
+        }
+        return {
+            field_name: field_data
+            for field_name, field_data in fields_info.items()
+            if field_name in allowed_fields
+        }
+
     @api.depends('wizard_id', 'partner_id')
     def _compute_report_detail_sale_line_ids(self):
         for line in self:
@@ -574,6 +642,33 @@ class ZrnProdigynProductionPlanningWizardReportProductLine(models.TransientModel
         readonly=True,
     )
 
+    @api.model
+    def fields_get(self, allfields=None, attributes=None):
+        fields_info = super().fields_get(allfields=allfields, attributes=attributes)
+        if (
+            not self.env.context.get('zrn_prodigyn_clean_export_fields')
+            or allfields not in (None, [])
+        ):
+            return fields_info
+        allowed_fields = {
+            'first_delivery_date',
+            'last_delivery_date',
+            'product_id',
+            'default_code',
+            'categ_name',
+            'customer_count',
+            'order_count',
+            'line_count',
+            'total_units',
+            'stock_initial',
+            'stock_free',
+        }
+        return {
+            field_name: field_data
+            for field_name, field_data in fields_info.items()
+            if field_name in allowed_fields
+        }
+
     @api.depends('wizard_id', 'product_id')
     def _compute_report_detail_sale_line_ids(self):
         for line in self:
@@ -618,6 +713,30 @@ class ZrnProdigynProductionPlanningWizardReportOrderLine(models.TransientModel):
         compute='_compute_report_detail_sale_line_ids',
         readonly=True,
     )
+
+    @api.model
+    def fields_get(self, allfields=None, attributes=None):
+        fields_info = super().fields_get(allfields=allfields, attributes=attributes)
+        if (
+            not self.env.context.get('zrn_prodigyn_clean_export_fields')
+            or allfields not in (None, [])
+        ):
+            return fields_info
+        allowed_fields = {
+            'first_delivery_date',
+            'last_delivery_date',
+            'order_id',
+            'customer_id',
+            'state_label',
+            'product_count',
+            'line_count',
+            'total_units',
+        }
+        return {
+            field_name: field_data
+            for field_name, field_data in fields_info.items()
+            if field_name in allowed_fields
+        }
 
     @api.depends('wizard_id', 'order_id')
     def _compute_report_detail_sale_line_ids(self):
