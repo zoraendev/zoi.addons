@@ -886,7 +886,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 SummaryLine.create(summary_values)
 
     @api.model
-    def get_sales_orders_report_rows(self, filters=None, limit=500):
+    def get_sales_orders_report_rows(self, filters=None, limit=10000):
         """
         Genera las filas del reporte de planificacion semanal.
 
@@ -967,9 +967,8 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         # Paso critico: El descuento de inventario DEBE ser First-In-First-Out.
         # Ordenamos las lineas empezando por el Lunes mas temprano hasta el Domingo.
         def get_sort_date(line):
-            # Usamos commitment_date como fecha primaria de entrega
-            f_entrega = line.order_id.commitment_date or line.order_id.date_order or datetime.now()
-            return f_entrega.date() if hasattr(f_entrega, 'date') else f_entrega
+            effective_date = self._get_effective_line_date(line)
+            return effective_date or datetime.now().date()
 
         # Ordenamiento en memoria antes de construir las filas del reporte
         sorted_lines = sorted(order_lines, key=get_sort_date)
@@ -1005,15 +1004,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
                 running_free_stock_by_product[product_id] = max(free_qty_before - sold_qty, 0.0)
 
             # Fecha final para mostrar en el reporte (con filtro de respaldo)
-            f_entrega = line.order_id.commitment_date or line.order_id.date_order or datetime.now()
-
-            # Normalizacion de fecha para calculo de dia de semana
-            if hasattr(f_entrega, 'date'):
-                fecha_date = f_entrega.date()
-            elif hasattr(f_entrega, 'weekday'):
-                fecha_date = f_entrega
-            else:
-                fecha_date = datetime.now().date()
+            fecha_date = self._get_effective_line_date(line) or datetime.now().date()
 
             rows.append({
                 'order_id': line.order_id.id,

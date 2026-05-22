@@ -412,41 +412,38 @@
                                 <div class="zrn_prodigyn_production_report_actions">
                                     <button name="action_open_report_customers" type="object" class="btn zrn_prodigyn_production_report_action_btn" invisible="report_active_tab != 'customers'">
                                         <i class="fa fa-users"/>
-                                        <span>Clientes</span>
+                                        <span>Clientes:</span>
                                         <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
                                     </button>
                                     <button name="action_open_report_customers" type="object" class="btn zrn_prodigyn_production_report_action_btn zrn_prodigyn_production_report_action_btn_inactive" invisible="report_active_tab == 'customers'">
                                         <i class="fa fa-users"/>
-                                        <span>Clientes</span>
+                                        <span>Clientes:</span>
                                         <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
                                     </button>
                                     <button name="action_open_report_products" type="object" class="btn zrn_prodigyn_production_report_action_btn" invisible="report_active_tab != 'products'">
                                         <i class="fa fa-cubes"/>
-                                        <span>Productos</span>
+                                        <span>Productos:</span>
                                         <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
                                     </button>
                                     <button name="action_open_report_products" type="object" class="btn zrn_prodigyn_production_report_action_btn zrn_prodigyn_production_report_action_btn_inactive" invisible="report_active_tab == 'products'">
                                         <i class="fa fa-cubes"/>
-                                        <span>Productos</span>
+                                        <span>Productos:</span>
                                         <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
                                     </button>
                                     <button name="action_open_report_orders" type="object" class="btn zrn_prodigyn_production_report_action_btn" invisible="report_active_tab != 'orders'">
                                         <i class="fa fa-file-text-o"/>
-                                        <span>OVs</span>
+                                        <span>OVs:</span>
                                         <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
                                     </button>
                                     <button name="action_open_report_orders" type="object" class="btn zrn_prodigyn_production_report_action_btn zrn_prodigyn_production_report_action_btn_inactive" invisible="report_active_tab == 'orders'">
                                         <i class="fa fa-file-text-o"/>
-                                        <span>OVs</span>
+                                        <span>OVs:</span>
                                         <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
                                     </button>
-                                    <div class="zrn_prodigyn_production_report_inline_stat zrn_prodigyn_production_report_inline_stat_tooltip">
+                                    <div class="zrn_prodigyn_production_report_inline_stat">
                                         <i class="fa fa-list-ul"/>
-                                        <span>Lineas</span>
+                                        <span>Lineas:</span>
                                         <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
-                                        <span class="zrn_prodigyn_production_report_tooltip_body">
-                                            Cada linea representa una linea de pedido incluida en la consulta, segun el producto, la OV y el punto de venta pendiente de entregar.
-                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -535,27 +532,52 @@
         <field name="name">zrn_prodigyn.production.report.customer.form</field>
         <field name="model">zrn_prodigyn.production.planning.wizard.report.customer.line</field>
         <field name="arch" type="xml">
-            <form string="Detalle del cliente" create="0" edit="0" delete="0">
-                <header>
-                    <button name="action_return_to_report" type="object" string="Regresar al reporte" class="btn btn-secondary"/>
-                </header>
+            <form string="Detalle del cliente" create="0" edit="0" delete="0" class="zrn_prodigyn_report_detail_form">
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="partner_id" readonly="1" nolabel="1"/></h1>
-                        <div class="text-muted">
-                            <field name="customer_id" readonly="1" nolabel="1"/>
-                            <span> | </span>
-                            <field name="city" readonly="1" nolabel="1"/>
+                    <group invisible="1">
+                        <field name="partner_image_1920"/>
+                        <field name="report_detail_sale_line_ids"/>
+                    </group>
+                    <div class="zrn_prodigyn_report_detail_overview">
+                        <div class="zrn_prodigyn_report_detail_top">
+                            <div class="zrn_prodigyn_report_detail_media">
+                                <field name="partner_image_1920" widget="image" class="oe_avatar"
+                                       options="{'preview_image': 'partner_image_1920'}" nolabel="1"/>
+                            </div>
+                            <div class="zrn_prodigyn_report_detail_heading">
+                                <div class="oe_title">
+                                    <h1><field name="partner_id" readonly="1" nolabel="1"/></h1>
+                                </div>
+                                <div class="text-muted zrn_prodigyn_report_detail_subtitle">
+                                    <field name="customer_id" readonly="1" nolabel="1"/>
+                                    <span> | </span>
+                                    <field name="city" readonly="1" nolabel="1"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="zrn_prodigyn_report_detail_stats">
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Primera entrega</span><strong><field name="first_delivery_date" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Ultima entrega</span><strong><field name="last_delivery_date" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>OVs</span><strong><field name="order_count" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Lineas</span><strong><field name="line_count" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Productos</span><strong><field name="product_count" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Unidades</span><strong><field name="total_units" readonly="1" nolabel="1"/></strong></div>
                         </div>
                     </div>
-                    <group col="2">
-                        <field name="first_delivery_date" readonly="1"/>
-                        <field name="last_delivery_date" readonly="1"/>
-                        <field name="order_count" readonly="1"/>
-                        <field name="line_count" readonly="1"/>
-                        <field name="product_count" readonly="1"/>
-                        <field name="total_units" readonly="1"/>
-                    </group>
+                    <div class="zrn_prodigyn_report_detail_lines_group">
+                        <div class="o_horizontal_separator mt-4 mb-3 text-uppercase fw-bolder small">Lineas incluidas</div>
+                        <field name="report_detail_sale_line_ids" readonly="1" nolabel="1"
+                               context="{'form_view_ref': 'zrn_prodigyn.view_zrn_prodigyn_sale_order_line_modal_form'}">
+                            <tree create="0" edit="0" delete="0">
+                                <field name="order_id"/>
+                                <field name="product_id"/>
+                                <field name="name" string="Descripcion"/>
+                                <field name="product_uom_qty" string="Cantidad"/>
+                                <field name="qty_delivered" string="Entregado"/>
+                                <field name="price_total" string="Total"/>
+                            </tree>
+                        </field>
+                    </div>
                 </sheet>
             </form>
         </field>
@@ -594,29 +616,53 @@
         <field name="name">zrn_prodigyn.production.report.product.form</field>
         <field name="model">zrn_prodigyn.production.planning.wizard.report.product.line</field>
         <field name="arch" type="xml">
-            <form string="Detalle del producto" create="0" edit="0" delete="0">
-                <header>
-                    <button name="action_return_to_report" type="object" string="Regresar al reporte" class="btn btn-secondary"/>
-                </header>
+            <form string="Detalle del producto" create="0" edit="0" delete="0" class="zrn_prodigyn_report_detail_form">
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="product_id" readonly="1" nolabel="1"/></h1>
-                        <div class="text-muted">
-                            <field name="default_code" readonly="1" nolabel="1"/>
-                            <span> | </span>
-                            <field name="categ_name" readonly="1" nolabel="1"/>
+                    <group invisible="1">
+                        <field name="product_image_1920"/>
+                        <field name="report_detail_sale_line_ids"/>
+                    </group>
+                    <div class="zrn_prodigyn_report_detail_overview">
+                        <div class="zrn_prodigyn_report_detail_top">
+                            <div class="zrn_prodigyn_report_detail_media">
+                                <field name="product_image_1920" widget="image" class="oe_avatar"
+                                       options="{'preview_image': 'product_image_1920'}" nolabel="1"/>
+                            </div>
+                            <div class="zrn_prodigyn_report_detail_heading">
+                                <div class="oe_title">
+                                    <h1><field name="product_id" readonly="1" nolabel="1"/></h1>
+                                </div>
+                                <div class="text-muted zrn_prodigyn_report_detail_subtitle">
+                                    <field name="default_code" readonly="1" nolabel="1"/>
+                                    <span> | </span>
+                                    <field name="categ_name" readonly="1" nolabel="1"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="zrn_prodigyn_report_detail_stats">
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Primera entrega</span><strong><field name="first_delivery_date" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Ultima entrega</span><strong><field name="last_delivery_date" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Clientes</span><strong><field name="customer_count" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>OVs</span><strong><field name="order_count" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Lineas</span><strong><field name="line_count" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Demanda total</span><strong><field name="total_units" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Stock inicial</span><strong><field name="stock_initial" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Stock libre</span><strong><field name="stock_free" readonly="1" nolabel="1"/></strong></div>
                         </div>
                     </div>
-                    <group col="2">
-                        <field name="first_delivery_date" readonly="1"/>
-                        <field name="last_delivery_date" readonly="1"/>
-                        <field name="customer_count" readonly="1"/>
-                        <field name="order_count" readonly="1"/>
-                        <field name="line_count" readonly="1"/>
-                        <field name="total_units" readonly="1"/>
-                        <field name="stock_initial" readonly="1"/>
-                        <field name="stock_free" readonly="1"/>
-                    </group>
+                    <div class="zrn_prodigyn_report_detail_lines_group">
+                        <div class="o_horizontal_separator mt-4 mb-3 text-uppercase fw-bolder small">Lineas incluidas</div>
+                        <field name="report_detail_sale_line_ids" readonly="1" nolabel="1"
+                               context="{'form_view_ref': 'zrn_prodigyn.view_zrn_prodigyn_sale_order_line_modal_form'}">
+                            <tree create="0" edit="0" delete="0">
+                                <field name="order_id"/>
+                                <field name="name" string="Descripcion"/>
+                                <field name="product_uom_qty" string="Cantidad"/>
+                                <field name="qty_delivered" string="Entregado"/>
+                                <field name="price_total" string="Total"/>
+                            </tree>
+                        </field>
+                    </div>
                 </sheet>
             </form>
         </field>
@@ -652,26 +698,119 @@
         <field name="name">zrn_prodigyn.production.report.order.form</field>
         <field name="model">zrn_prodigyn.production.planning.wizard.report.order.line</field>
         <field name="arch" type="xml">
-            <form string="Detalle de la OV" create="0" edit="0" delete="0">
-                <header>
-                    <button name="action_return_to_report" type="object" string="Regresar al reporte" class="btn btn-secondary"/>
-                </header>
+            <form string="Detalle de la OV" create="0" edit="0" delete="0" class="zrn_prodigyn_report_detail_form">
                 <sheet>
-                    <div class="oe_title">
-                        <h1><field name="order_id" readonly="1" nolabel="1"/></h1>
-                        <div class="text-muted">
-                            <field name="customer_id" readonly="1" nolabel="1"/>
-                            <span> | </span>
-                            <field name="state_label" readonly="1" nolabel="1"/>
+                    <group invisible="1">
+                        <field name="report_detail_sale_line_ids"/>
+                    </group>
+                    <div class="zrn_prodigyn_report_detail_overview zrn_prodigyn_report_detail_overview_single">
+                        <div class="zrn_prodigyn_report_detail_top zrn_prodigyn_report_detail_top_no_media">
+                            <div class="zrn_prodigyn_report_detail_heading">
+                                <div class="oe_title">
+                                    <h1><field name="order_id" readonly="1" nolabel="1"/></h1>
+                                </div>
+                                <div class="text-muted zrn_prodigyn_report_detail_subtitle">
+                                    <field name="customer_id" readonly="1" nolabel="1"/>
+                                    <span> | </span>
+                                    <field name="state_label" readonly="1" nolabel="1"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="zrn_prodigyn_report_detail_stats">
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Primera entrega</span><strong><field name="first_delivery_date" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Ultima entrega</span><strong><field name="last_delivery_date" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Productos</span><strong><field name="product_count" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Lineas</span><strong><field name="line_count" readonly="1" nolabel="1"/></strong></div>
+                            <div class="zrn_prodigyn_report_detail_stat"><span>Unidades</span><strong><field name="total_units" readonly="1" nolabel="1"/></strong></div>
                         </div>
                     </div>
-                    <group col="2">
-                        <field name="first_delivery_date" readonly="1"/>
-                        <field name="last_delivery_date" readonly="1"/>
-                        <field name="product_count" readonly="1"/>
-                        <field name="line_count" readonly="1"/>
-                        <field name="total_units" readonly="1"/>
-                    </group>
+                    <div class="zrn_prodigyn_report_detail_lines_group">
+                        <div class="o_horizontal_separator mt-4 mb-3 text-uppercase fw-bolder small">Lineas incluidas</div>
+                        <field name="report_detail_sale_line_ids" readonly="1" nolabel="1"
+                               context="{'form_view_ref': 'zrn_prodigyn.view_zrn_prodigyn_sale_order_line_modal_form'}">
+                            <tree create="0" edit="0" delete="0">
+                                <field name="product_id"/>
+                                <field name="name" string="Descripcion"/>
+                                <field name="product_uom_qty" string="Cantidad"/>
+                                <field name="qty_delivered" string="Entregado"/>
+                                <field name="price_total" string="Total"/>
+                            </tree>
+                        </field>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_sale_order_line_modal_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.sale.order.line.modal.form</field>
+        <field name="model">sale.order.line</field>
+        <field name="arch" type="xml">
+            <form string="Linea incluida" edit="false" create="0" delete="0" class="zrn_prodigyn_report_line_detail_form">
+                <sheet>
+                    <field name="display_type" invisible="1"/>
+                    <field name="product_updatable" invisible="1"/>
+                    <field name="product_uom_category_id" invisible="1"/>
+                    <field name="product_uom_readonly" invisible="1"/>
+                    <field name="qty_delivered_method" invisible="1"/>
+                    <field name="state" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="tax_country_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <field name="order_partner_id" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="display_name" readonly="1" nolabel="1"/></h1>
+                    </div>
+                    <div class="zrn_prodigyn_report_line_detail_grid">
+                        <div class="zrn_prodigyn_report_line_detail_col">
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Referencia del pedido</span>
+                                <strong><field name="order_id" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Producto</span>
+                                <strong><field name="product_id" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Descripcion</span>
+                                <strong><field name="name" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Cantidad</span>
+                                <strong><field name="product_uom_qty" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Cantidad de entrega</span>
+                                <strong><field name="qty_delivered" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Cantidad facturada</span>
+                                <strong><field name="qty_invoiced" readonly="1" nolabel="1"/></strong>
+                            </div>
+                        </div>
+                        <div class="zrn_prodigyn_report_line_detail_col">
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Precio unitario</span>
+                                <strong><field name="price_unit" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Subtotal</span>
+                                <strong><field name="price_subtotal" readonly="1" nolabel="1" widget="monetary"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Impuestos</span>
+                                <strong><field name="tax_id" readonly="1" nolabel="1" widget="many2many_tags" options="{'no_create': True, 'no_open': True}"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Total de impuestos</span>
+                                <strong><field name="price_tax" readonly="1" nolabel="1" widget="monetary"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_report_line_detail_item">
+                                <span>Total</span>
+                                <strong><field name="price_total" readonly="1" nolabel="1" widget="monetary"/></strong>
+                            </div>
+                        </div>
+                    </div>
                 </sheet>
             </form>
         </field>

@@ -9,8 +9,8 @@
                     <button type="button" class="btn zrn_prodigyn_cp_btn zrn_prodigyn_cp_btn_blue" t-on-click="openButton3">Produccion</button>
                     <button type="button" class="btn zrn_prodigyn_cp_btn zrn_prodigyn_cp_btn_blue" t-on-click="openButton4">Abastecimiento</button>
                     <button type="button" class="btn zrn_prodigyn_cp_btn zrn_prodigyn_cp_btn_blue" t-on-click="openButton5">Logistica</button>
-                    <button type="button" class="btn zrn_prodigyn_cp_btn zrn_prodigyn_cp_btn_dark" t-on-click="openSupport">Open Support</button>
-                    <button type="button" class="btn zrn_prodigyn_cp_btn zrn_prodigyn_cp_btn_dark" t-on-click="openProdigynGo">Prodigyn Go</button>
+                    <button type="button" class="btn zrn_prodigyn_cp_btn zrn_prodigyn_cp_btn_dark" t-on-click="openSupport">Support</button>
+                    <button type="button" class="btn zrn_prodigyn_cp_btn zrn_prodigyn_cp_btn_dark" t-on-click="openProdigynGo">Go</button>
                 </div>
             </t>
         </xpath>

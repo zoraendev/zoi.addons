@@ -518,6 +518,26 @@ class ZrnProdigynProductionPlanningWizardReportCustomerLine(models.TransientMode
     total_units = fields.Float(string='Unidades')
     first_delivery_date = fields.Date(string='Primera entrega')
     last_delivery_date = fields.Date(string='Ultima entrega')
+    partner_image_1920 = fields.Binary(related='partner_id.image_1920', readonly=True)
+    report_detail_sale_line_ids = fields.Many2many(
+        'sale.order.line',
+        string='Lineas incluidas',
+        compute='_compute_report_detail_sale_line_ids',
+        readonly=True,
+    )
+
+    @api.depends('wizard_id', 'partner_id')
+    def _compute_report_detail_sale_line_ids(self):
+        for line in self:
+            detail_lines = self.env['sale.order.line']
+            if line.wizard_id and line.partner_id:
+                candidate_lines = line.wizard_id._search_sale_lines_from_filters(
+                    line.wizard_id._get_filter_values(include_selected=True)
+                )
+                detail_lines = candidate_lines.filtered(
+                    lambda sale_line: sale_line.order_id.partner_shipping_id == line.partner_id
+                )
+            line.report_detail_sale_line_ids = [(6, 0, detail_lines.ids)]
 
     def action_return_to_report(self):
         self.ensure_one()
@@ -546,6 +566,26 @@ class ZrnProdigynProductionPlanningWizardReportProductLine(models.TransientModel
     stock_free = fields.Float(string='Stock libre')
     first_delivery_date = fields.Date(string='Primera entrega')
     last_delivery_date = fields.Date(string='Ultima entrega')
+    product_image_1920 = fields.Binary(related='product_id.image_1920', readonly=True)
+    report_detail_sale_line_ids = fields.Many2many(
+        'sale.order.line',
+        string='Lineas incluidas',
+        compute='_compute_report_detail_sale_line_ids',
+        readonly=True,
+    )
+
+    @api.depends('wizard_id', 'product_id')
+    def _compute_report_detail_sale_line_ids(self):
+        for line in self:
+            detail_lines = self.env['sale.order.line']
+            if line.wizard_id and line.product_id:
+                candidate_lines = line.wizard_id._search_sale_lines_from_filters(
+                    line.wizard_id._get_filter_values(include_selected=True)
+                )
+                detail_lines = candidate_lines.filtered(
+                    lambda sale_line: sale_line.product_id == line.product_id
+                )
+            line.report_detail_sale_line_ids = [(6, 0, detail_lines.ids)]
 
     def action_return_to_report(self):
         self.ensure_one()
@@ -572,6 +612,25 @@ class ZrnProdigynProductionPlanningWizardReportOrderLine(models.TransientModel):
     total_units = fields.Float(string='Unidades')
     first_delivery_date = fields.Date(string='Primera entrega')
     last_delivery_date = fields.Date(string='Ultima entrega')
+    report_detail_sale_line_ids = fields.Many2many(
+        'sale.order.line',
+        string='Lineas incluidas',
+        compute='_compute_report_detail_sale_line_ids',
+        readonly=True,
+    )
+
+    @api.depends('wizard_id', 'order_id')
+    def _compute_report_detail_sale_line_ids(self):
+        for line in self:
+            detail_lines = self.env['sale.order.line']
+            if line.wizard_id and line.order_id:
+                candidate_lines = line.wizard_id._search_sale_lines_from_filters(
+                    line.wizard_id._get_filter_values(include_selected=True)
+                )
+                detail_lines = candidate_lines.filtered(
+                    lambda sale_line: sale_line.order_id == line.order_id
+                )
+            line.report_detail_sale_line_ids = [(6, 0, detail_lines.ids)]
 
     def action_return_to_report(self):
         self.ensure_one()
