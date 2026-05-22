@@ -133,6 +133,9 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             return False
         if isinstance(value, str):
             return fields.Date.from_string(value)
+        if isinstance(value, datetime):
+            localized_value = fields.Datetime.context_timestamp(self, value)
+            return localized_value.date()
         if hasattr(value, 'date'):
             return value.date()
         return value
@@ -140,6 +143,10 @@ class AdvancedMetricsReportWizard(models.TransientModel):
     def _get_effective_line_date(self, line):
         effective_date = line.order_id.commitment_date or line.order_id.date_order
         return self._coerce_to_date(effective_date)
+
+    def _get_line_filter_partner(self, line):
+        partner = line.order_id.partner_id or line.order_partner_id
+        return partner
 
     @api.model
     def _line_matches_filter_dates(self, line, fecha_desde=False, fecha_hasta=False):
@@ -208,11 +215,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             domain[0] = ('order_id.state', '=', sale_order_state)
 
         if normalized_cliente_ids:
-            domain.append(('order_id.partner_shipping_id', 'in', normalized_cliente_ids))
+            domain.append(('order_id.partner_id', 'in', normalized_cliente_ids))
         elif cliente_id:
-            domain.append(('order_id.partner_shipping_id', '=', int(cliente_id)))
+            domain.append(('order_id.partner_id', '=', int(cliente_id)))
         elif cliente_nombre:
-            domain.append(('order_id.partner_shipping_id.name', 'ilike', cliente_nombre))
+            domain.append(('order_id.partner_id.name', 'ilike', cliente_nombre))
 
         if normalized_product_ids:
             domain.append(('product_id', 'in', normalized_product_ids))
@@ -248,7 +255,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             client_values = []
             for partner in wizard.cliente_ids:
                 partner_lines = lines.filtered(
-                    lambda line: line.order_id.partner_shipping_id == partner
+                    lambda line: wizard._get_line_filter_partner(line) == partner
                 )
                 order_count = len(partner_lines.mapped('order_id'))
                 total_units = sum(partner_lines.mapped('product_uom_qty'))
@@ -310,20 +317,20 @@ class AdvancedMetricsReportWizard(models.TransientModel):
             available_lines = wizard._search_sale_lines_from_filters(base_filters)
             candidate_lines = wizard._get_candidate_sale_lines()
 
-            available_client_ids = available_lines.mapped('order_id.partner_shipping_id').ids
+            available_client_ids = available_lines.mapped('order_id.partner_id').ids
             available_product_ids = available_lines.mapped('product_id').ids
 
             preview_lines = candidate_lines
             if wizard.cliente_ids:
                 preview_lines = preview_lines.filtered(
-                    lambda line: line.order_id.partner_shipping_id in wizard.cliente_ids
+                    lambda line: wizard._get_line_filter_partner(line) in wizard.cliente_ids
                 )
             if wizard.product_ids:
                 preview_lines = preview_lines.filtered(
                     lambda line: line.product_id in wizard.product_ids
                 )
 
-            preview_client_ids = preview_lines.mapped('order_id.partner_shipping_id').ids
+            preview_client_ids = preview_lines.mapped('order_id.partner_id').ids
             preview_product_ids = preview_lines.mapped('product_id').ids
 
             wizard.available_cliente_ids = [(6, 0, available_client_ids)]
@@ -859,7 +866,7 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
             for order_id, lines in grouped_lines.items():
                 order = lines[0].order_id
-                customer = order.partner_shipping_id or lines[0].cliente_id
+                customer = order.partner_id or lines[0].cliente_id
                 product_ids = lines.mapped('product_id')
                 delivery_dates = [item for item in lines.mapped('fecha_entrega') if item]
                 summary_values.append({
@@ -1010,11 +1017,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
             rows.append({
                 'order_id': line.order_id.id,
-                'cliente_id': line.order_id.partner_shipping_id.id or line.order_partner_id.id,
+                'cliente_id': (line.order_id.partner_id.id or line.order_partner_id.id),
                 'product_id': product_id,
                 'fecha_entrega': fecha_date.isoformat(),
                 'dia_semana': DIAS_SEMANA.get(fecha_date.weekday(), ''),
-                'cliente': line.order_id.partner_shipping_id.display_name or line.order_partner_id.display_name or '',
+                'cliente': line.order_id.partner_id.display_name or line.order_partner_id.display_name or '',
                 'numero_orden_venta': line.order_id.name or '',
                 'producto': line.product_id.display_name or '',
                 'barcode': line.product_id.barcode or '',
