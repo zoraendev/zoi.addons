@@ -8,7 +8,7 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
     _description = 'Filtros de planeacion de produccion'
     _rec_name = 'name'
 
-    name = fields.Char(string='Titulo', default='Filtros de fabricacion')
+    name = fields.Char(string='Titulo', default='Planeacion de fabricacion')
     fecha_entrega_desde = fields.Date(string='Fecha de entrega desde')
     fecha_entrega_hasta = fields.Date(string='Fecha de entrega hasta')
     cliente_ids = fields.Many2many(
@@ -62,11 +62,35 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         string='OVs del reporte',
     )
     report_ready = fields.Boolean(string='Reporte listo', default=False)
+    report_active_tab = fields.Selection(
+        [
+            ('overview', 'Reporte'),
+            ('customers', 'Clientes'),
+            ('products', 'Productos'),
+            ('orders', 'OVs'),
+        ],
+        string='Vista activa del reporte',
+        default='overview',
+        readonly=True,
+    )
     report_row_count = fields.Integer(string='Lineas del reporte', readonly=True)
     report_order_count = fields.Integer(string='Ordenes consideradas', readonly=True)
     report_customer_count = fields.Integer(string='Clientes en reporte', readonly=True)
     report_product_count = fields.Integer(string='Productos en reporte', readonly=True)
     report_date_range_label = fields.Char(string='Rango consultado', readonly=True)
+    report_date_from_label = fields.Char(string='Fecha inicial del reporte', readonly=True)
+    report_date_to_label = fields.Char(string='Fecha final del reporte', readonly=True)
+    report_date_range_mode = fields.Selection(
+        [
+            ('all', 'Todas las fechas'),
+            ('from', 'Desde'),
+            ('to', 'Hasta'),
+            ('range', 'Rango'),
+        ],
+        string='Modo del rango del reporte',
+        default='all',
+        readonly=True,
+    )
 
     @api.model
     def _coerce_to_date(self, value):
@@ -129,6 +153,9 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             domain.append(('product_id', 'in', product_ids))
 
         sale_lines = self.env['sale.order.line'].search(domain, order='id asc')
+        sale_lines = sale_lines.filtered(
+            lambda line: float(line.qty_delivered or 0.0) < float(line.product_uom_qty or 0.0)
+        )
         if fecha_desde or fecha_hasta:
             sale_lines = sale_lines.filtered(
                 lambda line: self._line_matches_filter_dates(
@@ -178,7 +205,7 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         filter_view = self.env.ref('zrn_prodigyn.view_zrn_prodigyn_production_planning_filter_form')
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Filtros de fabricacion',
+            'name': 'Planeacion de fabricacion',
             'res_model': 'zrn_prodigyn.production.planning.wizard',
             'res_id': self.id,
             'view_mode': 'form',
@@ -199,11 +226,15 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             wizard.report_product_line_ids.unlink()
             wizard.report_order_line_ids.unlink()
             wizard.report_ready = False
+            wizard.report_active_tab = 'overview'
             wizard.report_row_count = 0
             wizard.report_order_count = 0
             wizard.report_customer_count = 0
             wizard.report_product_count = 0
             wizard.report_date_range_label = False
+            wizard.report_date_from_label = False
+            wizard.report_date_to_label = False
+            wizard.report_date_range_mode = 'all'
 
     def _get_effective_report_date_range(self, candidate_lines):
         self.ensure_one()
@@ -218,16 +249,36 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             return min(line_dates), max(line_dates)
         return self.fecha_entrega_desde, self.fecha_entrega_hasta
 
-    def _format_report_date_range_label(self, candidate_lines):
+    def _get_report_date_range_payload(self, candidate_lines):
         self.ensure_one()
         date_from, date_to = self._get_effective_report_date_range(candidate_lines)
         if date_from and date_to:
-            return f'Rango consultado: {date_from.strftime("%d/%m/%Y")} al {date_to.strftime("%d/%m/%Y")}'
+            return {
+                'label': f'{date_from.strftime("%d/%m/%Y")} al {date_to.strftime("%d/%m/%Y")}',
+                'from_label': date_from.strftime("%d/%m/%Y"),
+                'to_label': date_to.strftime("%d/%m/%Y"),
+                'mode': 'range',
+            }
         if date_from:
-            return f'Rango consultado: desde {date_from.strftime("%d/%m/%Y")}'
+            return {
+                'label': f'desde {date_from.strftime("%d/%m/%Y")}',
+                'from_label': date_from.strftime("%d/%m/%Y"),
+                'to_label': False,
+                'mode': 'from',
+            }
         if date_to:
-            return f'Rango consultado: hasta {date_to.strftime("%d/%m/%Y")}'
-        return 'Rango consultado: todas las fechas disponibles'
+            return {
+                'label': f'hasta {date_to.strftime("%d/%m/%Y")}',
+                'from_label': False,
+                'to_label': date_to.strftime("%d/%m/%Y"),
+                'mode': 'to',
+            }
+        return {
+            'label': 'todas las fechas disponibles',
+            'from_label': False,
+            'to_label': False,
+            'mode': 'all',
+        }
 
     def _sync_report_customer_lines(self, candidate_lines):
         SummaryLine = self.env['zrn_prodigyn.production.planning.wizard.report.customer.line']
@@ -395,30 +446,30 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'target': 'main',
         }
 
+    def _open_report_tab(self, tab_name):
+        self.ensure_one()
+        self.report_active_tab = tab_name
+        return self.action_open_report()
+
+    def action_open_report_overview(self):
+        self.ensure_one()
+        return self._open_report_tab('overview')
+
     def action_back_to_filters(self):
         self.ensure_one()
         return self.action_open_filters()
 
     def action_open_report_customers(self):
         self.ensure_one()
-        action = self.env.ref('zrn_prodigyn.action_zrn_prodigyn_production_report_customers').read()[0]
-        action['domain'] = [('wizard_id', '=', self.id)]
-        action['context'] = {'active_id': self.id, 'default_wizard_id': self.id}
-        return action
+        return self._open_report_tab('customers')
 
     def action_open_report_products(self):
         self.ensure_one()
-        action = self.env.ref('zrn_prodigyn.action_zrn_prodigyn_production_report_products').read()[0]
-        action['domain'] = [('wizard_id', '=', self.id)]
-        action['context'] = {'active_id': self.id, 'default_wizard_id': self.id}
-        return action
+        return self._open_report_tab('products')
 
     def action_open_report_orders(self):
         self.ensure_one()
-        action = self.env.ref('zrn_prodigyn.action_zrn_prodigyn_production_report_orders').read()[0]
-        action['domain'] = [('wizard_id', '=', self.id)]
-        action['context'] = {'active_id': self.id, 'default_wizard_id': self.id}
-        return action
+        return self._open_report_tab('orders')
 
     def action_continue(self):
         self.ensure_one()
@@ -431,11 +482,18 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         self._sync_report_order_lines(candidate_lines)
         self.write({
             'report_ready': True,
+            'report_active_tab': 'overview',
             'report_row_count': len(candidate_lines),
             'report_order_count': len(candidate_lines.mapped('order_id')),
             'report_customer_count': len(candidate_lines.mapped('order_id.partner_shipping_id')),
             'report_product_count': len(candidate_lines.mapped('product_id')),
-            'report_date_range_label': self._format_report_date_range_label(candidate_lines),
+        })
+        date_range_payload = self._get_report_date_range_payload(candidate_lines)
+        self.write({
+            'report_date_range_label': date_range_payload['label'],
+            'report_date_from_label': date_range_payload['from_label'],
+            'report_date_to_label': date_range_payload['to_label'],
+            'report_date_range_mode': date_range_payload['mode'],
         })
         return self.action_open_report()
 
