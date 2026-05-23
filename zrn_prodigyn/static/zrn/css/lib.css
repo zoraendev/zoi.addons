@@ -1350,7 +1350,7 @@
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_page,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_page {
     display: grid;
-    gap: 16px;
+    gap: 8px;
     width: 100%;
   }
 
@@ -1359,26 +1359,21 @@
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_panel {
     width: 100%;
-    padding: 18px 20px;
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--z-color-border) 84%,
-        var(--z-color-brand-200) 16%
-      );
-    border-radius: 12px;
-    background: var(--z-color-surface-raised, #ffffff);
+    padding: 10px 4px 16px;
+    border: 0;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--z-color-border) 88%, transparent 12%);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel_head,
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_head,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel_head,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_head {
-    display: grid;
-    grid-template-columns: minmax(0, 0.95fr) minmax(280px, 0.75fr);
-    gap: 14px;
-    align-items: end;
-    margin-bottom: 16px;
+    display: block;
+    margin-bottom: 10px;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_kicker,
@@ -1401,17 +1396,13 @@
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_head h2 {
     margin: 0;
     color: var(--z-color-text-strong, #1f2937);
-    font-size: 1.42rem;
+    font-size: 1.18rem;
     font-weight: 700;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_intro,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_intro {
-    color: var(--z-color-text-muted, #6b7280);
-    line-height: 1.45;
-    justify-self: end;
-    text-align: right;
-    max-width: 420px;
+    display: none;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_fields,
@@ -1423,8 +1414,8 @@
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot {
-    margin-top: 14px;
-    padding-top: 16px;
+    margin-top: 10px;
+    padding-top: 12px;
     border-top: 1px solid
       color-mix(in srgb, var(--z-color-border) 86%, transparent 14%);
   }
@@ -1436,30 +1427,81 @@
       var(--z-color-text-muted) 70%,
       var(--z-color-brand-1000) 30%
     );
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_actions_bottom,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_actions_bottom {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 18px;
-    padding-top: 16px;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 12px;
     border-top: 1px solid
-      color-mix(in srgb, var(--z-color-border) 86%, transparent 14%);
+      color-mix(in srgb, var(--z-color-border) 90%, transparent 10%);
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_actions_bottom .btn,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_actions_bottom .btn {
-    min-height: 38px;
-    border-radius: 8px;
+    min-height: 34px;
+    border-radius: 4px;
     font-weight: 600;
-    padding: 0.45rem 1rem;
+    padding: 0.38rem 0.9rem;
+    box-shadow: none !important;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn {
+    border: 1px solid var(--z-color-border, #d7dce5) !important;
+    background: transparent !important;
+    color: var(--z-color-text-strong, #1f2937) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn:hover,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn:focus,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn:hover,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn:focus {
+    background: color-mix(
+      in srgb,
+      var(--z-color-brand-50) 55%,
+      var(--z-color-surface-raised, #ffffff) 45%
+    ) !important;
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-brand-300) 50%,
+      var(--z-color-border) 50%
+    ) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn_primary,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn_primary {
+    border-color: var(--z-color-brand-700, #4862c9) !important;
+    background: var(--z-color-brand-700, #4862c9) !important;
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn_primary:hover,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn_primary:focus,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn_primary:hover,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn_primary:focus {
+    background: var(--z-color-brand-800, #3d53ad) !important;
+    border-color: var(--z-color-brand-800, #3d53ad) !important;
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn_secondary,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn_secondary {
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-border) 88%,
+      var(--z-color-brand-300) 12%
+    ) !important;
+    background: transparent !important;
+    color: var(--z-color-text-strong, #1f2937) !important;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_panel .o_field_widget,

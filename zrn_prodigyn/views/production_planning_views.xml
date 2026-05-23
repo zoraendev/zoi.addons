@@ -395,11 +395,7 @@
                         <div class="zrn_prodigyn_filter_panel">
                             <div class="zrn_prodigyn_filter_panel_head">
                                 <div>
-                                    <div class="zrn_prodigyn_filter_kicker">Planeacion comercial a fabricacion</div>
                                     <h2>Filtros para fabricacion</h2>
-                                </div>
-                                <div class="zrn_prodigyn_filter_intro">
-                                    Define el rango, los puntos de venta y los productos a considerar antes de entrar al planning operativo.
                                 </div>
                             </div>
 
@@ -429,7 +425,7 @@
                             </group>
 
                             <div class="zrn_prodigyn_filter_snapshot">
-                                <div class="zrn_prodigyn_filter_snapshot_title">Seleccion actual</div>
+                                <div class="zrn_prodigyn_filter_snapshot_title">Resumen</div>
                                 <group class="zrn_prodigyn_filter_snapshot_grid">
                                     <group>
                                         <field name="preview_order_count" readonly="1"/>
@@ -444,23 +440,29 @@
                             </div>
 
                             <div class="zrn_prodigyn_filter_actions_bottom">
-                                <button name="action_clear_filters" type="object" string="Limpiar filtros" class="btn btn-secondary"/>
-                                <button name="action_continue" type="object" string="Ir al planning" class="btn btn-primary"/>
+                                <button
+                                    name="action_clear_filters"
+                                    type="object"
+                                    string="Limpiar"
+                                    class="btn zrn_prodigyn_filter_btn zrn_prodigyn_filter_btn_secondary"
+                                />
+                                <button
+                                    name="action_continue"
+                                    type="object"
+                                    string="Continuar"
+                                    class="btn zrn_prodigyn_filter_btn zrn_prodigyn_filter_btn_primary"
+                                />
                             </div>
                         </div>
 
                         <div class="zrn_prodigyn_filter_table_panel">
                             <div class="zrn_prodigyn_filter_table_head">
                                 <div>
-                                    <div class="zrn_prodigyn_filter_kicker">Planings registrados</div>
-                                    <h2>Planings de fabricacion creados</h2>
-                                </div>
-                                <div class="zrn_prodigyn_filter_intro">
-                                    Consulta los planes guardados y abre su detalle con la interfaz nativa de Odoo.
+                                    <h2>Planes creados</h2>
                                 </div>
                             </div>
                             <div class="zrn_prodigyn_filter_snapshot">
-                                <div class="zrn_prodigyn_filter_snapshot_title">Resumen de planes</div>
+                                <div class="zrn_prodigyn_filter_snapshot_title">Total</div>
                                 <group class="zrn_prodigyn_filter_snapshot_grid">
                                     <group>
                                         <field name="planning_record_count" readonly="1"/>
@@ -471,8 +473,8 @@
                                 <button
                                     name="action_open_existing_plans"
                                     type="object"
-                                    string="Ver planes creados"
-                                    class="btn btn-secondary"
+                                    string="Ver planes"
+                                    class="btn zrn_prodigyn_filter_btn zrn_prodigyn_filter_btn_secondary"
                                 />
                             </div>
                         </div>

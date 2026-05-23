@@ -22,45 +22,98 @@
                                     class="btn zrn_prodigyn_back_btn"
                                 />
                             </div>
-                            <div class="zrn_prodigyn_filter_footer_end">
-                                <button name="action_clear_filters" type="object" string="Limpiar" class="btn btn-secondary"/>
-                                <button name="action_continue" type="object" string="Continuar" class="btn btn-primary"/>
-                            </div>
                         </div>
                     </header>
 
                     <group invisible="1">
                         <field name="name"/>
                         <field name="available_supply_product_ids"/>
+                        <field name="planning_record_count"/>
                     </group>
 
-                    <group string="Filtros para abastecimiento">
-                        <group>
-                            <field name="fecha_desde"/>
-                            <field name="fecha_hasta"/>
-                            <field name="planning_basis" widget="radio"/>
-                            <field name="mrp_source_state" invisible="planning_basis != 'mrp'"/>
-                            <field name="sale_source_state" invisible="planning_basis != 'sale'"/>
-                        </group>
-                        <group>
-                            <field
-                                name="supply_product_ids"
-                                widget="many2many_tags"
-                                domain="[('id', 'in', available_supply_product_ids)]"
-                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
-                                string="Insumos para fabricar"
-                                placeholder="Selecciona uno o varios insumos"
-                            />
-                        </group>
-                    </group>
+                    <div class="zrn_prodigyn_filter_page">
+                        <div class="zrn_prodigyn_filter_panel">
+                            <div class="zrn_prodigyn_filter_panel_head">
+                                <div>
+                                    <h2>Filtros para abastecimiento</h2>
+                                </div>
+                            </div>
 
-                    <group string="Seleccion actual">
-                        <group>
-                            <field name="preview_supply_product_count" readonly="1"/>
-                            <field name="preview_bom_count" readonly="1"/>
-                            <field name="preview_source_count" readonly="1"/>
-                        </group>
-                    </group>
+                            <group class="zrn_prodigyn_filter_fields">
+                                <group>
+                                    <field name="fecha_desde"/>
+                                    <field name="fecha_hasta"/>
+                                    <field name="planning_basis" widget="radio"/>
+                                    <field name="mrp_source_state" invisible="planning_basis != 'mrp'"/>
+                                    <field name="sale_source_state" invisible="planning_basis != 'sale'"/>
+                                </group>
+                                <group>
+                                    <field
+                                        name="supply_product_ids"
+                                        widget="many2many_tags"
+                                        domain="[('id', 'in', available_supply_product_ids)]"
+                                        options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                        string="Insumos"
+                                        placeholder="Selecciona uno o varios insumos"
+                                    />
+                                </group>
+                            </group>
+
+                            <div class="zrn_prodigyn_filter_snapshot">
+                                <div class="zrn_prodigyn_filter_snapshot_title">Resumen</div>
+                                <group class="zrn_prodigyn_filter_snapshot_grid">
+                                    <group>
+                                        <field name="preview_supply_product_count" readonly="1"/>
+                                    </group>
+                                    <group>
+                                        <field name="preview_bom_count" readonly="1"/>
+                                    </group>
+                                    <group>
+                                        <field name="preview_source_count" readonly="1"/>
+                                    </group>
+                                </group>
+                            </div>
+
+                            <div class="zrn_prodigyn_filter_actions_bottom">
+                                <button
+                                    name="action_clear_filters"
+                                    type="object"
+                                    string="Limpiar"
+                                    class="btn zrn_prodigyn_filter_btn zrn_prodigyn_filter_btn_secondary"
+                                />
+                                <button
+                                    name="action_continue"
+                                    type="object"
+                                    string="Continuar"
+                                    class="btn zrn_prodigyn_filter_btn zrn_prodigyn_filter_btn_primary"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="zrn_prodigyn_filter_table_panel">
+                            <div class="zrn_prodigyn_filter_table_head">
+                                <div>
+                                    <h2>Planes creados</h2>
+                                </div>
+                            </div>
+                            <div class="zrn_prodigyn_filter_snapshot">
+                                <div class="zrn_prodigyn_filter_snapshot_title">Total</div>
+                                <group class="zrn_prodigyn_filter_snapshot_grid">
+                                    <group>
+                                        <field name="planning_record_count" readonly="1"/>
+                                    </group>
+                                </group>
+                            </div>
+                            <div class="zrn_prodigyn_filter_actions_bottom">
+                                <button
+                                    name="action_open_existing_plans"
+                                    type="object"
+                                    string="Ver planes"
+                                    class="btn zrn_prodigyn_filter_btn zrn_prodigyn_filter_btn_secondary"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </sheet>
             </form>
         </field>
