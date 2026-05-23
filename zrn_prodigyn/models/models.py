@@ -118,6 +118,11 @@ class ZrnProdigynProductionPlanning(ZrnProdigynNavigationMixin, models.Model):
         wizard = self.env['zrn_prodigyn.production.planning.wizard'].create({})
         return wizard.action_open_filters()
 
+    def action_open_supply_filters(self):
+        self.ensure_one()
+        wizard = self.env['zrn_prodigyn.purchase.planning.wizard'].create({})
+        return wizard.action_open_filters()
+
 
 class ZrnProdigynPurchasePlanning(ZrnProdigynNavigationMixin, models.Model):
     _name = 'zrn_prodigyn.purchase.planning'

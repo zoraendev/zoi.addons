@@ -461,6 +461,7 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'zrn_prodigyn_origin_view': 'report',
             'zrn_prodigyn_summary_tab': tab_name,
             'zrn_prodigyn_clean_export_fields': True,
+            'zrn_prodigyn_wizard_model': 'zrn_prodigyn.production.planning.wizard',
         }
         action['target'] = 'current'
         return action

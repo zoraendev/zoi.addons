@@ -322,10 +322,6 @@
     background: var(--z-color-success-500);
   }
 
-  .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_menu_btn_secondary::before {
-    background: color-mix(in srgb, white 64%, var(--z-color-brand-200) 36%);
-  }
-
   .o_form_view.zrn_prodigyn_home_form .zrn_prodigyn_home_previews {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

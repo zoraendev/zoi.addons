@@ -37,14 +37,23 @@ class ZrnProdigynReportSummaryListController extends ListController {
     );
   }
 
+  _getWizardModel() {
+    return (
+      this.props?.context?.zrn_prodigyn_wizard_model ||
+      this.model?.root?.context?.zrn_prodigyn_wizard_model ||
+      "zrn_prodigyn.production.planning.wizard"
+    );
+  }
+
   async returnToReport() {
     const wizardId = this._getWizardId();
     if (!wizardId) {
       return;
     }
     const summaryTab = this._getSummaryTab();
+    const wizardModel = this._getWizardModel();
     const action = await this.orm.call(
-      "zrn_prodigyn.production.planning.wizard",
+      wizardModel,
       "action_back_to_report_from_context",
       [wizardId, summaryTab],
     );

@@ -70,7 +70,7 @@
                                         class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_secondary"
                                     />
                                     <button
-                                        name="action_open_button_4"
+                                        name="action_open_supply_filters"
                                         type="object"
                                         icon="fa-shopping-cart"
                                         string="Abastecimiento"
@@ -204,7 +204,7 @@
                                         class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_submodule_menu_btn_primary"
                                     />
                                     <button
-                                        name="action_open_button_4"
+                                        name="action_open_supply_filters"
                                         type="object"
                                         icon="fa-cubes"
                                         string="Materiales"
