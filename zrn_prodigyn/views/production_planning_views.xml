@@ -289,6 +289,83 @@
         </field>
     </record>
 
+    <record id="view_zrn_prodigyn_mfg_plan_tree" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.mfg.plan.tree</field>
+        <field name="model">zrn_prodigyn.mfg.plan</field>
+        <field name="arch" type="xml">
+            <tree string="Planings de fabricacion" create="0" delete="0">
+                <field name="name"/>
+                <field name="planning_basis"/>
+                <field name="state"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="warehouse_id"/>
+                <field name="line_count" string="Lineas"/>
+                <field name="source_count" string="Documentos base"/>
+                <field name="supply_count" string="Insumos"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_mfg_plan_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.mfg.plan.form</field>
+        <field name="model">zrn_prodigyn.mfg.plan</field>
+        <field name="arch" type="xml">
+            <form string="Planning de fabricacion">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="warehouse_id"/>
+                            <field name="planning_basis"/>
+                            <field name="state"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="approved_at" readonly="1"/>
+                            <field name="released_at" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes" placeholder="Notas del planning"/>
+                    </group>
+                    <notebook>
+                        <page string="Lineas">
+                            <field name="line_ids" readonly="1">
+                                <tree create="0" delete="0">
+                                    <field name="production_date"/>
+                                    <field name="delivery_date"/>
+                                    <field name="product_id"/>
+                                    <field name="bom_id"/>
+                                    <field name="qty_planned"/>
+                                    <field name="qty_released"/>
+                                    <field name="qty_executed"/>
+                                    <field name="state"/>
+                                    <field name="supply_count"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Origenes">
+                            <field name="source_ids" readonly="1">
+                                <tree create="0" delete="0">
+                                    <field name="source_ref"/>
+                                    <field name="source_model"/>
+                                    <field name="customer_id"/>
+                                    <field name="source_date"/>
+                                    <field name="source_state"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
     <record id="view_zrn_prodigyn_production_planning_filter_form" model="ir.ui.view">
         <field name="name">zrn_prodigyn.production.planning.wizard.form</field>
         <field name="model">zrn_prodigyn.production.planning.wizard</field>
@@ -306,51 +383,100 @@
                                     class="btn zrn_prodigyn_back_btn"
                                 />
                             </div>
-                            <div class="zrn_prodigyn_filter_footer_end">
-                                <button name="action_clear_filters" type="object" string="Limpiar" class="btn btn-secondary"/>
-                                <button name="action_continue" type="object" string="Continuar" class="btn btn-primary"/>
-                            </div>
                         </div>
                     </header>
                     <group invisible="1">
                         <field name="name"/>
                         <field name="available_cliente_ids"/>
                         <field name="available_product_ids"/>
+                        <field name="planning_record_count"/>
                     </group>
+                    <div class="zrn_prodigyn_filter_page">
+                        <div class="zrn_prodigyn_filter_panel">
+                            <div class="zrn_prodigyn_filter_panel_head">
+                                <div>
+                                    <div class="zrn_prodigyn_filter_kicker">Planeacion comercial a fabricacion</div>
+                                    <h2>Filtros para fabricacion</h2>
+                                </div>
+                                <div class="zrn_prodigyn_filter_intro">
+                                    Define el rango, los puntos de venta y los productos a considerar antes de entrar al planning operativo.
+                                </div>
+                            </div>
 
-                    <group string="Filtros para fabricacion">
-                        <group>
-                            <field name="fecha_entrega_desde"/>
-                            <field name="fecha_entrega_hasta"/>
-                        </group>
-                        <group>
-                            <field
-                                name="cliente_ids"
-                                widget="many2many_tags"
-                                domain="[('id', 'in', available_cliente_ids)]"
-                                context="{'show_address': 1, 'show_vat': True}"
-                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
-                                string="Puntos de venta"
-                                placeholder="Selecciona uno o varios puntos de venta"
-                            />
-                            <field
-                                name="product_ids"
-                                widget="many2many_tags"
-                                domain="[('id', 'in', available_product_ids)]"
-                                options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
-                                placeholder="Selecciona uno o varios productos"
-                            />
-                        </group>
-                    </group>
+                            <group class="zrn_prodigyn_filter_fields">
+                                <group>
+                                    <field name="fecha_entrega_desde"/>
+                                    <field name="fecha_entrega_hasta"/>
+                                </group>
+                                <group>
+                                    <field
+                                        name="cliente_ids"
+                                        widget="many2many_tags"
+                                        domain="[('id', 'in', available_cliente_ids)]"
+                                        context="{'show_address': 1, 'show_vat': True}"
+                                        options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                        string="Puntos de venta"
+                                        placeholder="Selecciona uno o varios puntos de venta"
+                                    />
+                                    <field
+                                        name="product_ids"
+                                        widget="many2many_tags"
+                                        domain="[('id', 'in', available_product_ids)]"
+                                        options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                                        placeholder="Selecciona uno o varios productos"
+                                    />
+                                </group>
+                            </group>
 
-                    <group string="Seleccion actual">
-                        <group>
-                            <field name="preview_order_count" readonly="1"/>
-                            <field name="preview_cliente_count" readonly="1"/>
-                            <field name="preview_product_count" readonly="1"/>
-                        </group>
-                    </group>
-                   
+                            <div class="zrn_prodigyn_filter_snapshot">
+                                <div class="zrn_prodigyn_filter_snapshot_title">Seleccion actual</div>
+                                <group class="zrn_prodigyn_filter_snapshot_grid">
+                                    <group>
+                                        <field name="preview_order_count" readonly="1"/>
+                                    </group>
+                                    <group>
+                                        <field name="preview_cliente_count" readonly="1"/>
+                                    </group>
+                                    <group>
+                                        <field name="preview_product_count" readonly="1"/>
+                                    </group>
+                                </group>
+                            </div>
+
+                            <div class="zrn_prodigyn_filter_actions_bottom">
+                                <button name="action_clear_filters" type="object" string="Limpiar filtros" class="btn btn-secondary"/>
+                                <button name="action_continue" type="object" string="Ir al planning" class="btn btn-primary"/>
+                            </div>
+                        </div>
+
+                        <div class="zrn_prodigyn_filter_table_panel">
+                            <div class="zrn_prodigyn_filter_table_head">
+                                <div>
+                                    <div class="zrn_prodigyn_filter_kicker">Planings registrados</div>
+                                    <h2>Planings de fabricacion creados</h2>
+                                </div>
+                                <div class="zrn_prodigyn_filter_intro">
+                                    Consulta los planes guardados y abre su detalle con la interfaz nativa de Odoo.
+                                </div>
+                            </div>
+                            <div class="zrn_prodigyn_filter_snapshot">
+                                <div class="zrn_prodigyn_filter_snapshot_title">Resumen de planes</div>
+                                <group class="zrn_prodigyn_filter_snapshot_grid">
+                                    <group>
+                                        <field name="planning_record_count" readonly="1"/>
+                                    </group>
+                                </group>
+                            </div>
+                            <div class="zrn_prodigyn_filter_actions_bottom">
+                                <button
+                                    name="action_open_existing_plans"
+                                    type="object"
+                                    string="Ver planes creados"
+                                    class="btn btn-secondary"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </sheet>
             </form>
         </field>

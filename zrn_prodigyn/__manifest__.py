@@ -20,7 +20,7 @@ Modulo principal de Prodigyn.
     'application': True,
 
     # any module necessary for this one to work correctly
-    'depends': ['base', 'base_setup', 'sale_stock'],
+    'depends': ['base', 'base_setup', 'sale_stock', 'mrp', 'purchase_stock'],
 
     # always loaded
     'data': [
