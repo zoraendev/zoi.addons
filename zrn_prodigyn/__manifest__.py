@@ -35,8 +35,10 @@ Modulo principal de Prodigyn.
     'assets': {
         'web.assets_backend': [
             'zrn_prodigyn/static/src/js/prodigyn_form_view.js',
+            'zrn_prodigyn/static/src/js/production_report_form_view.js',
             'zrn_prodigyn/static/src/js/report_summary_list_view.js',
             'zrn_prodigyn/static/src/xml/prodigyn_form_view.xml',
+            'zrn_prodigyn/static/src/xml/production_report_form_view.xml',
             'zrn_prodigyn/static/src/xml/report_summary_list_view.xml',
             'zrn_prodigyn/static/zrn/css/colors.css',
             'zrn_prodigyn/static/zrn/css/lib.css',

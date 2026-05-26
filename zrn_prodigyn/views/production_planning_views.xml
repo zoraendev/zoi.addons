@@ -488,7 +488,7 @@
         <field name="name">zrn_prodigyn.production.planning.wizard.report.form</field>
         <field name="model">zrn_prodigyn.production.planning.wizard</field>
         <field name="arch" type="xml">
-            <form string="Planeacion de fabricacion" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_production_report_form">
+            <form string="Planeacion de fabricacion" js_class="zrn_prodigyn_production_report_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_production_report_form">
                 <sheet>
                     <group invisible="1">
                         <field name="report_ready"/>
@@ -651,6 +651,118 @@
                     </div>
                 </sheet>
                 <footer>
+                    <button name="action_back_to_filters" type="object" string="Volver a filtros" class="btn btn-secondary"/>
+                    <button string="Cerrar" special="cancel" class="btn btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_production_planning_manufacture_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.planning.wizard.manufacture.form</field>
+        <field name="model">zrn_prodigyn.production.planning.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Tabla para fabricar" js_class="zrn_prodigyn_production_manufacture_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_production_report_form">
+                <sheet>
+                    <group invisible="1">
+                        <field name="report_product_line_ids"/>
+                        <field name="report_date_range_mode"/>
+                        <field name="report_date_from_label"/>
+                        <field name="report_date_to_label"/>
+                        <field name="report_date_range_label"/>
+                        <field name="report_customer_count"/>
+                        <field name="report_product_count"/>
+                        <field name="report_order_count"/>
+                        <field name="report_row_count"/>
+                    </group>
+                    <div class="zrn_prodigyn_production_report_screen">
+                        <div class="zrn_prodigyn_production_report_header_shell">
+                            <div class="zrn_prodigyn_production_report_header">
+                                <div class="zrn_prodigyn_production_report_heading_group">
+                                    <button
+                                        name="action_back_to_report"
+                                        type="object"
+                                        string="Regresar"
+                                        icon="fa-arrow-left"
+                                        class="btn zrn_prodigyn_back_btn zrn_prodigyn_report_back_inline"
+                                    />
+                                    <div class="btn zrn_prodigyn_production_report_title_tab">
+                                        Tabla para fabricar
+                                    </div>
+                                </div>
+                                <div class="zrn_prodigyn_production_report_header_range">
+                                    <span>Rango consultado:</span>
+                                    <strong invisible="report_date_range_mode != 'range'">
+                                        <field name="report_date_from_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                    <span invisible="report_date_range_mode != 'range'">al</span>
+                                    <strong invisible="report_date_range_mode != 'range'">
+                                        <field name="report_date_to_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                    <strong invisible="report_date_range_mode != 'from'">
+                                        desde <field name="report_date_from_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                    <strong invisible="report_date_range_mode != 'to'">
+                                        hasta <field name="report_date_to_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                    <strong invisible="report_date_range_mode != 'all'">
+                                        <field name="report_date_range_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                </div>
+                                <div class="zrn_prodigyn_production_report_actions">
+                                    <div class="zrn_prodigyn_production_report_inline_stat">
+                                        <i class="fa fa-users"/>
+                                        <span>Clientes:</span>
+                                        <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_report_inline_stat">
+                                        <i class="fa fa-cubes"/>
+                                        <span>Productos:</span>
+                                        <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_report_inline_stat">
+                                        <i class="fa fa-file-text-o"/>
+                                        <span>OVs:</span>
+                                        <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
+                                    </div>
+                                    <div class="zrn_prodigyn_production_report_inline_stat">
+                                        <i class="fa fa-list-ul"/>
+                                        <span>Lineas:</span>
+                                        <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="zrn_prodigyn_production_report_table_panel">
+                            <div class="zrn_prodigyn_production_report_table_toolbar">
+                                <div class="zrn_prodigyn_production_report_table_placeholder_title">
+                                    Datos relevantes para crear el planning de fabricacion
+                                </div>
+                            </div>
+                            <div>
+                                <field name="report_product_line_ids" readonly="1" nolabel="1">
+                                    <tree create="0" edit="0" delete="0">
+                                        <field name="first_delivery_date"/>
+                                        <field name="last_delivery_date"/>
+                                        <field name="product_id" string="Producto"/>
+                                        <field name="default_code"/>
+                                        <field name="categ_name"/>
+                                        <field name="customer_count"/>
+                                        <field name="order_count"/>
+                                        <field name="line_count"/>
+                                        <field name="total_units" sum="Total demanda"/>
+                                        <field name="stock_initial" sum="Stock inicial"/>
+                                        <field name="stock_free" sum="Stock libre"/>
+                                        <field name="suggested_production" sum="Sugerido fabricar"/>
+                                        <field name="projected_balance" sum="Saldo proyectado"/>
+                                    </tree>
+                                </field>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_back_to_report" type="object" string="Volver al reporte" class="btn btn-secondary"/>
                     <button name="action_back_to_filters" type="object" string="Volver a filtros" class="btn btn-secondary"/>
                     <button string="Cerrar" special="cancel" class="btn btn-primary"/>
                 </footer>

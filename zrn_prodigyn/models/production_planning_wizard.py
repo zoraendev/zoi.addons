@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class ZrnProdigynProductionPlanningWizard(models.TransientModel):
@@ -397,12 +398,15 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
                 product = self.env['product.product'].browse(product_id)
                 order_ids = lines.mapped('order_id')
                 customer_ids = lines.mapped('order_id.partner_shipping_id')
+                total_units = sum(lines.mapped('product_uom_qty'))
                 delivery_dates = [
                     effective_date for effective_date in
                     (wizard._get_effective_line_date(line) for line in lines)
                     if effective_date
                 ]
                 stock_info = stock_data.get(product.id, {})
+                stock_initial = stock_info.get('stock_initial', 0.0)
+                stock_free = stock_info.get('stock_free', 0.0)
                 summary_values.append({
                     'wizard_id': wizard.id,
                     'product_id': product.id,
@@ -411,9 +415,11 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
                     'customer_count': len(customer_ids),
                     'order_count': len(order_ids),
                     'line_count': len(lines),
-                    'total_units': sum(lines.mapped('product_uom_qty')),
-                    'stock_initial': stock_info.get('stock_initial', 0.0),
-                    'stock_free': stock_info.get('stock_free', 0.0),
+                    'total_units': total_units,
+                    'stock_initial': stock_initial,
+                    'stock_free': stock_free,
+                    'suggested_production': max(total_units - stock_free, 0.0),
+                    'projected_balance': stock_initial - total_units,
                     'first_delivery_date': min(delivery_dates) if delivery_dates else False,
                     'last_delivery_date': max(delivery_dates) if delivery_dates else False,
                 })
@@ -481,6 +487,115 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'target': 'main',
         }
 
+    def action_open_manufacture_table(self):
+        self.ensure_one()
+        manufacture_view = self.env.ref(
+            'zrn_prodigyn.view_zrn_prodigyn_production_planning_manufacture_form'
+        )
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tabla para fabricar',
+            'res_model': 'zrn_prodigyn.production.planning.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'view_id': manufacture_view.id,
+            'views': [(manufacture_view.id, 'form')],
+            'target': 'main',
+        }
+
+    def action_create_mfg_plan(self):
+        self.ensure_one()
+        if not self.report_product_line_ids:
+            raise UserError(_('No hay datos en la tabla para crear el planning.'))
+
+        warehouse = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)],
+            limit=1,
+        )
+        date_start = self.fecha_entrega_desde or min(
+            self.report_product_line_ids.mapped('first_delivery_date') or [False]
+        )
+        date_end = self.fecha_entrega_hasta or max(
+            self.report_product_line_ids.mapped('last_delivery_date') or [False]
+        )
+        plan = self.env['zrn_prodigyn.mfg.plan'].create({
+            'name': _('Planning de fabricacion %s') % fields.Date.today().strftime('%d/%m/%Y'),
+            'company_id': self.env.company.id,
+            'warehouse_id': warehouse.id if warehouse else False,
+            'planning_basis': 'sale',
+            'state': 'draft',
+            'date_start': date_start,
+            'date_end': date_end,
+            'notes': _(
+                'Planning generado desde Planeacion de fabricacion.'
+            ),
+        })
+
+        bom_model = self.env['mrp.bom']
+        line_values = []
+        for sequence, report_line in enumerate(
+            self.report_product_line_ids.sorted(
+                key=lambda line: (
+                    line.first_delivery_date or fields.Date.today(),
+                    line.product_id.display_name or '',
+                    line.id,
+                )
+            ),
+            start=1,
+        ):
+            bom = bom_model.search([('product_id', '=', report_line.product_id.id)], limit=1)
+            if not bom:
+                bom = bom_model.search(
+                    [('product_tmpl_id', '=', report_line.product_id.product_tmpl_id.id)],
+                    limit=1,
+                )
+            planned_qty = report_line.suggested_production or report_line.total_units
+            line_values.append({
+                'plan_id': plan.id,
+                'sequence': sequence * 10,
+                'warehouse_id': warehouse.id if warehouse else False,
+                'product_id': report_line.product_id.id,
+                'bom_id': bom.id if bom else False,
+                'production_date': report_line.first_delivery_date or fields.Date.today(),
+                'delivery_date': report_line.last_delivery_date or report_line.first_delivery_date,
+                'qty_planned': planned_qty,
+                'state': 'draft',
+            })
+        if line_values:
+            self.env['zrn_prodigyn.mfg.plan.line'].create(line_values)
+
+        source_values = []
+        for order_line in self.report_order_line_ids.sorted(
+            key=lambda line: (
+                line.first_delivery_date or fields.Date.today(),
+                line.order_id.name or '',
+                line.id,
+            )
+        ):
+            source_values.append({
+                'plan_id': plan.id,
+                'source_model': 'sale.order',
+                'source_id': order_line.order_id.id,
+                'source_ref': order_line.order_id.name or '',
+                'customer_id': order_line.customer_id.id,
+                'source_date': order_line.first_delivery_date or order_line.last_delivery_date,
+                'source_state': order_line.state_label or order_line.state or '',
+            })
+        if source_values:
+            self.env['zrn_prodigyn.mfg.plan.source'].create(source_values)
+
+        form_view = self.env.ref('zrn_prodigyn.view_zrn_prodigyn_mfg_plan_form')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Planning de fabricacion'),
+            'res_model': 'zrn_prodigyn.mfg.plan',
+            'res_id': plan.id,
+            'view_mode': 'form',
+            'view_id': form_view.id,
+            'views': [(form_view.id, 'form')],
+            'target': 'current',
+        }
+
     def _open_report_tab(self, tab_name):
         self.ensure_one()
         self.report_active_tab = tab_name
@@ -504,6 +619,11 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
     def action_open_report_overview(self):
         self.ensure_one()
         return self._open_report_tab('overview')
+
+    def action_back_to_report(self):
+        self.ensure_one()
+        self.report_active_tab = 'overview'
+        return self.action_open_report()
 
     def action_back_to_filters(self):
         self.ensure_one()
@@ -668,6 +788,8 @@ class ZrnProdigynProductionPlanningWizardReportProductLine(models.TransientModel
     total_units = fields.Float(string='Demanda total')
     stock_initial = fields.Float(string='Stock inicial')
     stock_free = fields.Float(string='Stock libre')
+    suggested_production = fields.Float(string='Sugerido fabricar')
+    projected_balance = fields.Float(string='Saldo proyectado')
     first_delivery_date = fields.Date(string='Primera entrega')
     last_delivery_date = fields.Date(string='Ultima entrega')
     product_image_1920 = fields.Binary(related='product_id.image_1920', readonly=True)
@@ -698,6 +820,8 @@ class ZrnProdigynProductionPlanningWizardReportProductLine(models.TransientModel
             'total_units',
             'stock_initial',
             'stock_free',
+            'suggested_production',
+            'projected_balance',
         }
         return {
             field_name: field_data
