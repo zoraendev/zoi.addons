@@ -1277,20 +1277,18 @@
   }
 
   .o_form_view.zrn_prodigyn_filter_form .o_form_sheet_bg > .o_form_sheet,
-  .o_form_view .zrn_prodigyn_filter_form .o_form_sheet_bg > .o_form_sheet {
-    width: 100%;
-    max-width: none;
+  .o_form_view .zrn_prodigyn_filter_form .o_form_sheet_bg > .o_form_sheet,
+  .o_form_view.zrn_prodigyn_filter_form .o_form_sheet,
+  .o_form_view .zrn_prodigyn_filter_form .o_form_sheet {
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
-    padding: 0;
+    padding: 24px !important;
     --formView-sheet-margin-x: 0;
     --formView-sheet-border-width-md: 0;
     --formView-sheet-border-radius-md: 0;
-  }
-
-  .o_form_view.zrn_prodigyn_filter_form .o_form_sheet,
-  .o_form_view .zrn_prodigyn_filter_form .o_form_sheet {
-    width: 100%;
-    max-width: none;
+    --FormView-sheet-max-width: 100% !important;
+    --formView-sheet-max-width: 100% !important;
   }
 
   .o_form_view.zrn_prodigyn_filter_form header,
@@ -1347,25 +1345,80 @@
     margin-left: auto;
   }
 
+  /* Banner de cabecera moderno y premium */
+  .zrn_prodigyn_filter_header_banner {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--z-color-brand-800, #4862c9) 82%, #131212) 0%, color-mix(in srgb, var(--z-color-brand-600, #4862c9) 92%, #ffffff) 100%);
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px -4px rgba(72, 98, 201, 0.15);
+    border: 1px solid color-mix(in srgb, var(--z-color-brand-700) 30%, transparent 70%);
+  }
+
+  .zrn_prodigyn_filter_header_banner h1 {
+    color: #ffffff !important;
+    font-size: 1.75rem !important;
+    font-weight: 800 !important;
+    margin: 4px 0 6px 0 !important;
+    letter-spacing: -0.02em !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .zrn_prodigyn_filter_header_left .zrn_prodigyn_filter_kicker {
+    color: color-mix(in srgb, var(--z-color-brand-100) 80%, white) !important;
+    font-size: 0.72rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    display: inline-block !important;
+  }
+
+  .zrn_prodigyn_filter_subtitle {
+    color: color-mix(in srgb, var(--z-color-brand-50) 84%, #ffffff) !important;
+    font-size: 0.9rem !important;
+    margin: 0 !important;
+    opacity: 0.95;
+    font-weight: 500;
+  }
+
+  /* Grid principal de dos columnas responsivo */
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_page,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_page {
     display: grid;
-    gap: 8px;
+    grid-template-columns: 1fr;
+    gap: 20px;
     width: 100%;
   }
 
+  @media (min-width: 992px) {
+    .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_page,
+    .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_page {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 24px;
+      align-items: start;
+    }
+  }
+
+  /* Tarjetas/Paneles flotantes con estilo premium */
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel,
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_panel,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_panel {
     width: 100%;
-    padding: 10px 4px 16px;
-    border: 0;
-    border-bottom: 1px solid
-      color-mix(in srgb, var(--z-color-border) 88%, transparent 12%);
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
+    padding: 24px;
+    border: 1px solid var(--z-color-border, #d7dce5);
+    border-radius: 12px;
+    background: var(--z-color-surface-raised, #ffffff);
+    box-shadow: 0 4px 20px -4px rgba(72, 98, 201, 0.06);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel:hover,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_panel:hover,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel:hover,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_panel:hover {
+    box-shadow: 0 8px 30px -4px rgba(72, 98, 201, 0.12);
+    border-color: color-mix(in srgb, var(--z-color-brand-300) 40%, var(--z-color-border) 60%);
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel_head,
@@ -1373,7 +1426,7 @@
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel_head,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_head {
     display: block;
-    margin-bottom: 10px;
+    margin-bottom: 18px;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_kicker,
@@ -1383,11 +1436,11 @@
       var(--z-color-text-muted) 68%,
       var(--z-color-brand-1000) 32%
     );
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel_head h2,
@@ -1395,9 +1448,26 @@
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel_head h2,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_head h2 {
     margin: 0;
-    color: var(--z-color-text-strong, #1f2937);
-    font-size: 1.18rem;
-    font-weight: 700;
+    color: var(--z-color-brand-800, #4862c9);
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    position: relative;
+    padding-bottom: 8px;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel_head h2::after,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_head h2::after,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_panel_head h2::after,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_table_head h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 32px;
+    height: 3px;
+    background: var(--z-color-brand-600, #4f75ff);
+    border-radius: 99px;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_intro,
@@ -1406,52 +1476,139 @@
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_fields,
-  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid,
-  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_fields,
-  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid {
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_fields {
     margin-bottom: 0;
   }
 
+  /* KPI Badges y Resumenes Optimizados */
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot {
-    margin-top: 10px;
-    padding-top: 12px;
-    border-top: 1px solid
-      color-mix(in srgb, var(--z-color-border) 86%, transparent 14%);
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px dashed color-mix(in srgb, var(--z-color-border) 70%, transparent 30%);
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_title,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_title {
-    color: color-mix(
-      in srgb,
-      var(--z-color-text-muted) 70%,
-      var(--z-color-brand-1000) 30%
-    );
-    font-size: 0.76rem;
-    font-weight: 700;
+    color: var(--z-color-text-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px;
+    margin-bottom: 0;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    margin-bottom: 0;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid .o_inner_group,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single .o_inner_group,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid .o_inner_group,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single .o_inner_group {
+    display: block !important;
+    width: 100% !important;
+    padding: 12px 8px !important;
+    border-radius: 8px !important;
+    background: color-mix(in srgb, var(--z-color-brand-50, #eff3fa) 50%, var(--z-color-surface-raised, #ffffff) 50%) !important;
+    border: 1px solid color-mix(in srgb, var(--z-color-brand-100) 40%, var(--z-color-border) 60%) !important;
+    text-align: center !important;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid .o_cell,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single .o_cell,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid .o_cell,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single .o_cell {
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    align-items: center !important;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid label,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single label,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid label,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single label {
+    font-size: 0.68rem !important;
+    font-weight: 800 !important;
+    color: var(--z-color-text-muted, #71717b) !important;
+    margin-top: 4px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid .o_field_widget,
+  .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single .o_field_widget,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid .o_field_widget,
+  .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_snapshot_grid_single .o_field_widget {
+    font-size: 1.45rem !important;
+    font-weight: 800 !important;
+    color: var(--z-color-brand-800, #355eff) !important;
+  }
+
+  /* Listado integrado de Planes creados */
+  .zrn_prodigyn_plans_list_container {
+    margin-top: 14px;
+    border: 1px solid var(--z-color-border, #d7dce5);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .zrn_prodigyn_plans_list_container .o_list_renderer {
+    border: 0 !important;
+  }
+
+  .zrn_prodigyn_plans_list_container .o_list_table {
+    margin-bottom: 0 !important;
+  }
+
+  .zrn_prodigyn_plans_list_container th {
+    background-color: color-mix(in srgb, var(--z-color-brand-50) 64%, #ffffff) !important;
+    color: var(--z-color-brand-900) !important;
+    font-weight: 700 !important;
+    font-size: 0.76rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+    padding: 8px 12px !important;
+  }
+
+  .zrn_prodigyn_plans_list_container td {
+    padding: 8px 12px !important;
+    font-size: 0.8rem !important;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_actions_bottom,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_actions_bottom {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    margin-top: 10px;
-    padding-top: 12px;
-    border-top: 1px solid
-      color-mix(in srgb, var(--z-color-border) 90%, transparent 10%);
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed color-mix(in srgb, var(--z-color-border) 70%, transparent 30%);
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_actions_bottom .btn,
   .o_form_view .zrn_prodigyn_filter_form .zrn_prodigyn_filter_actions_bottom .btn {
-    min-height: 34px;
-    border-radius: 4px;
-    font-weight: 600;
-    padding: 0.38rem 0.9rem;
+    min-height: 36px;
+    border-radius: 6px;
+    font-weight: 700;
+    padding: 0.45rem 1.1rem;
     box-shadow: none !important;
+    transition: all 0.2s ease;
   }
 
   .o_form_view.zrn_prodigyn_filter_form .zrn_prodigyn_filter_btn,
