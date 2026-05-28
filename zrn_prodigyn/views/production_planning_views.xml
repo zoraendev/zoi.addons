@@ -303,6 +303,7 @@
                 <field name="line_count" string="Lineas"/>
                 <field name="source_count" string="Documentos base"/>
                 <field name="supply_count" string="Insumos"/>
+                <field name="production_count" string="OFs"/>
             </tree>
         </field>
     </record>
@@ -312,6 +313,16 @@
         <field name="model">zrn_prodigyn.mfg.plan</field>
         <field name="arch" type="xml">
             <form string="Planning de fabricacion">
+                <header>
+                    <button
+                        name="action_confirm_plan"
+                        type="object"
+                        string="Confirmar planning"
+                        class="btn btn-primary"
+                        invisible="state not in ('draft', 'pending_confirmation')"
+                    />
+                    <field name="state" widget="statusbar" statusbar_visible="draft,pending_confirmation,approved,released,done,cancel"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <h1><field name="name"/></h1>
@@ -346,6 +357,19 @@
                                     <field name="qty_executed"/>
                                     <field name="state"/>
                                     <field name="supply_count"/>
+                                    <field name="production_count"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Ordenes de fabricacion">
+                            <field name="production_ids" readonly="1">
+                                <tree create="0" delete="0">
+                                    <field name="name"/>
+                                    <field name="product_id"/>
+                                    <field name="product_qty"/>
+                                    <field name="state"/>
+                                    <field name="date_start"/>
+                                    <field name="date_deadline"/>
                                 </tree>
                             </field>
                         </page>
@@ -725,28 +749,28 @@
                                         <field name="report_date_range_label" readonly="1" nolabel="1"/>
                                     </strong>
                                 </div>
-                                <div class="zrn_prodigyn_production_report_actions">
-                                    <div class="zrn_prodigyn_production_report_inline_stat">
-                                        <i class="fa fa-users"/>
-                                        <span>Clientes:</span>
-                                        <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
-                                    </div>
-                                    <div class="zrn_prodigyn_production_report_inline_stat">
-                                        <i class="fa fa-cubes"/>
-                                        <span>Productos:</span>
-                                        <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
-                                    </div>
-                                    <div class="zrn_prodigyn_production_report_inline_stat">
-                                        <i class="fa fa-file-text-o"/>
-                                        <span>OVs:</span>
-                                        <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
-                                    </div>
-                                    <div class="zrn_prodigyn_production_report_inline_stat">
-                                        <i class="fa fa-list-ul"/>
-                                        <span>Lineas:</span>
-                                        <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
-                                    </div>
-                                </div>
+                                 <div class="zrn_prodigyn_production_report_actions">
+                                     <div class="zrn_prodigyn_production_report_inline_stat zrn_prodigyn_production_report_inline_stat_passive">
+                                         <i class="fa fa-users"/>
+                                         <span>Clientes:</span>
+                                         <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
+                                     </div>
+                                     <div class="zrn_prodigyn_production_report_inline_stat zrn_prodigyn_production_report_inline_stat_passive">
+                                         <i class="fa fa-cubes"/>
+                                         <span>Productos:</span>
+                                         <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                                     </div>
+                                     <div class="zrn_prodigyn_production_report_inline_stat zrn_prodigyn_production_report_inline_stat_passive">
+                                         <i class="fa fa-file-text-o"/>
+                                         <span>OVs:</span>
+                                         <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
+                                     </div>
+                                     <div class="zrn_prodigyn_production_report_inline_stat zrn_prodigyn_production_report_inline_stat_passive">
+                                         <i class="fa fa-list-ul"/>
+                                         <span>Lineas:</span>
+                                         <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
+                                     </div>
+                                 </div>
                             </div>
                         </div>
                         <div class="zrn_prodigyn_production_report_table_panel">
@@ -781,6 +805,78 @@
                     <button name="action_back_to_report" type="object" string="Volver al reporte" class="btn btn-secondary"/>
                     <button name="action_back_to_filters" type="object" string="Volver a filtros" class="btn btn-secondary"/>
                     <button string="Cerrar" special="cancel" class="btn btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_create_mfg_plan_modal_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.production.planning.create.plan.wizard.form</field>
+        <field name="model">zrn_prodigyn.production.planning.create.plan.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Crear planning de fabricacion" create="0" delete="0" edit="1" class="zrn_prodigyn_create_plan_modal_form">
+                <sheet>
+                    <group invisible="1">
+                        <field name="production_wizard_id"/>
+                        <field name="report_product_line_ids"/>
+                        <field name="report_date_range_mode"/>
+                        <field name="report_date_from_label"/>
+                        <field name="report_date_to_label"/>
+                    </group>
+                    <div class="zrn_prodigyn_create_plan_modal">
+                        <div class="zrn_prodigyn_create_plan_modal_head">
+                            <h2>Resumen previo del planning</h2>
+                            <p>El planning se crea solo cuando presionas guardar en esta ventana.</p>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="plan_name"/>
+                                <field name="plan_state" widget="radio"/>
+                            </group>
+                            <group>
+                                <field name="notes" placeholder="Notas internas del planning"/>
+                            </group>
+                        </group>
+                        <div class="zrn_prodigyn_create_plan_modal_stats">
+                            <div class="zrn_prodigyn_create_plan_modal_stat">
+                                <span>Rango consultado</span>
+                                <strong invisible="report_date_range_mode == 'all'"><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
+                                <strong invisible="report_date_range_mode != 'all'"><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_create_plan_modal_stat">
+                                <span>Clientes</span>
+                                <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_create_plan_modal_stat">
+                                <span>Productos</span>
+                                <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_create_plan_modal_stat">
+                                <span>OVs</span>
+                                <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_create_plan_modal_stat">
+                                <span>Lineas</span>
+                                <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                        </div>
+                        <div class="zrn_prodigyn_create_plan_modal_table">
+                            <field name="report_product_line_ids" readonly="1" nolabel="1">
+                                <tree create="0" edit="0" delete="0">
+                                    <field name="product_id" string="Producto"/>
+                                    <field name="first_delivery_date"/>
+                                    <field name="last_delivery_date"/>
+                                    <field name="total_units" sum="Demanda total"/>
+                                    <field name="stock_free" sum="Stock libre"/>
+                                    <field name="suggested_production" sum="Sugerido fabricar"/>
+                                </tree>
+                            </field>
+                        </div>
+                    </div>
+                </sheet>
+                <footer>
+                    <button string="Cancelar" special="cancel" class="btn btn-secondary"/>
+                    <button name="action_save_plan" type="object" string="Guardar" class="btn btn-primary"/>
                 </footer>
             </form>
         </field>

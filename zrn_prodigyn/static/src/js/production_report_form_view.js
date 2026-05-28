@@ -36,7 +36,7 @@ class ZrnProdigynProductionManufactureFormController extends FormController {
     }
     const action = await this.orm.call(
       this.props.resModel,
-      "action_create_mfg_plan",
+      "action_open_create_mfg_plan_modal",
       [[this.model.root.resId]],
     );
     await this.actionService.doAction(action);

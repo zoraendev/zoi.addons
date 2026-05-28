@@ -1983,6 +1983,41 @@
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_inline_stat_passive {
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    cursor: default;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: none;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_inline_stat_passive:hover,
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_inline_stat_passive:focus {
+    transform: none;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_inline_stat_passive
+    i,
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_inline_stat_passive
+    span,
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_inline_stat_passive
+    strong {
+    color: inherit;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_table_panel {
     display: flex;
     flex-direction: column;
@@ -2338,6 +2373,81 @@
   .modal-content:has(.zrn_prodigyn_report_line_detail_form) {
     margin: 34px 34px 34px 56px !important;
     border-radius: 12px;
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .o_form_sheet_bg,
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .o_form_sheet,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .o_form_sheet_bg,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .o_form_sheet {
+    background: transparent;
+    box-shadow: none;
+    border: 0;
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .o_form_sheet,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .o_form_sheet {
+    padding: 16px 18px 12px;
+    margin: 0;
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_head h2,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_head h2 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_head p,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_head p {
+    margin: 0;
+    color: var(--z-color-text-muted, #6b7280);
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_stats,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_stats {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_stat,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_stat {
+    padding: 12px 14px;
+    border: 1px solid var(--z-color-border, #d6dae1);
+    border-radius: 12px;
+    background: var(--z-color-surface-raised, #fff);
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_stat span,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_stat span {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--z-color-text-muted, #6b7280);
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_stat strong,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_stat strong {
+    font-size: 1rem;
+    color: var(--z-color-text-strong, #111827);
+  }
+
+  .o_form_view.zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_table,
+  .o_form_view .zrn_prodigyn_create_plan_modal_form .zrn_prodigyn_create_plan_modal_table {
+    max-height: 320px;
+    overflow: auto;
+    border: 1px solid var(--z-color-border, #d6dae1);
+    border-radius: 14px;
+    background: var(--z-color-surface-raised, #fff);
   }
 
   .o_form_view.zrn_prodigyn_report_detail_form .o_content,

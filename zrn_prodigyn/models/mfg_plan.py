@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class ZrnProdigynMfgPlan(models.Model):
@@ -43,6 +44,7 @@ class ZrnProdigynMfgPlan(models.Model):
     state = fields.Selection(
         [
             ('draft', 'Borrador'),
+            ('pending_confirmation', 'Pendiente de confirmar'),
             ('approved', 'Aprobado'),
             ('released', 'Liberado'),
             ('done', 'Finalizado'),
@@ -82,13 +84,108 @@ class ZrnProdigynMfgPlan(models.Model):
         compute='_compute_counts',
         store=False,
     )
+    production_ids = fields.Many2many(
+        'mrp.production',
+        string='Ordenes de fabricacion',
+        compute='_compute_counts',
+        store=False,
+    )
+    production_count = fields.Integer(
+        string='OFs',
+        compute='_compute_counts',
+        store=False,
+    )
 
-    @api.depends('line_ids', 'line_ids.supply_ids', 'source_ids')
+    @api.depends('line_ids', 'line_ids.supply_ids', 'line_ids.production_ids', 'source_ids')
     def _compute_counts(self):
         for plan in self:
             plan.line_count = len(plan.line_ids)
             plan.source_count = len(plan.source_ids)
             plan.supply_count = len(plan.line_ids.mapped('supply_ids'))
+            plan.production_ids = [(6, 0, plan.line_ids.mapped('production_ids').ids)]
+            plan.production_count = len(plan.line_ids.mapped('production_ids'))
+
+    def _create_draft_mrp_productions(self):
+        Production = self.env['mrp.production']
+        created_productions = Production
+
+        for plan in self:
+            for line in plan.line_ids:
+                if line.production_ids:
+                    continue
+                if not line.product_id:
+                    continue
+
+                bom = line.bom_id
+                if not bom:
+                    bom = self.env['mrp.bom'].search([('product_id', '=', line.product_id.id)], limit=1)
+                if not bom:
+                    bom = self.env['mrp.bom'].search(
+                        [('product_tmpl_id', '=', line.product_id.product_tmpl_id.id)],
+                        limit=1,
+                    )
+
+                qty_planned = float(line.qty_planned or 0.0)
+                if qty_planned <= 0:
+                    continue
+
+                production_vals = {
+                    'product_id': line.product_id.id,
+                    'product_uom_id': line.product_id.uom_id.id,
+                    'product_qty': qty_planned,
+                    'bom_id': bom.id if bom else False,
+                    'date_start': line.production_date,
+                    'date_deadline': line.delivery_date or line.production_date,
+                    'origin': plan.name,
+                    'company_id': plan.company_id.id,
+                    'location_src_id': (
+                        plan.warehouse_id.lot_stock_id.id
+                        if plan.warehouse_id and plan.warehouse_id.lot_stock_id
+                        else False
+                    ),
+                    'location_dest_id': (
+                        bom.picking_type_id.default_location_dest_id.id
+                        if bom and bom.picking_type_id and bom.picking_type_id.default_location_dest_id
+                        else (
+                            plan.warehouse_id.manu_type_id.default_location_dest_id.id
+                            if plan.warehouse_id and plan.warehouse_id.manu_type_id
+                            and plan.warehouse_id.manu_type_id.default_location_dest_id
+                            else False
+                        )
+                    ),
+                    'picking_type_id': (
+                        bom.picking_type_id.id
+                        if bom and bom.picking_type_id
+                        else (
+                            plan.warehouse_id.manu_type_id.id
+                            if plan.warehouse_id and plan.warehouse_id.manu_type_id
+                            else False
+                        )
+                    ),
+                    'zrn_prodigyn_plan_id': plan.id,
+                    'zrn_prodigyn_plan_line_id': line.id,
+                }
+                production = Production.create(production_vals)
+                line.qty_released = qty_planned
+                line.state = 'released'
+                created_productions |= production
+
+        return created_productions
+
+    def action_confirm_plan(self):
+        for plan in self:
+            if plan.state not in ('draft', 'pending_confirmation'):
+                continue
+            if not plan.line_ids:
+                raise UserError(_('El planning no tiene lineas para confirmar.'))
+
+            plan._create_draft_mrp_productions()
+            plan.write({
+                'state': 'approved',
+                'approved_at': fields.Datetime.now(),
+                'approved_by': self.env.user.id,
+            })
+        return True
 
 
 class ZrnProdigynMfgPlanLine(models.Model):
@@ -158,11 +255,23 @@ class ZrnProdigynMfgPlanLine(models.Model):
         compute='_compute_supply_count',
         store=False,
     )
+    production_ids = fields.One2many(
+        'mrp.production',
+        'zrn_prodigyn_plan_line_id',
+        string='Ordenes de fabricacion',
+        readonly=True,
+    )
+    production_count = fields.Integer(
+        string='Cantidad de OFs',
+        compute='_compute_supply_count',
+        store=False,
+    )
 
-    @api.depends('supply_ids')
+    @api.depends('supply_ids', 'production_ids')
     def _compute_supply_count(self):
         for line in self:
             line.supply_count = len(line.supply_ids)
+            line.production_count = len(line.production_ids)
 
 
 class ZrnProdigynMfgPlanSupply(models.Model):
@@ -225,3 +334,20 @@ class ZrnProdigynMfgPlanSource(models.Model):
     customer_id = fields.Many2one('res.partner', string='Cliente / punto de venta')
     source_date = fields.Date(string='Fecha origen')
     source_state = fields.Char(string='Estado origen')
+
+
+class MrpProduction(models.Model):
+    _inherit = 'mrp.production'
+
+    zrn_prodigyn_plan_id = fields.Many2one(
+        'zrn_prodigyn.mfg.plan',
+        string='Planning Prodigyn',
+        readonly=True,
+        copy=False,
+    )
+    zrn_prodigyn_plan_line_id = fields.Many2one(
+        'zrn_prodigyn.mfg.plan.line',
+        string='Linea de planning Prodigyn',
+        readonly=True,
+        copy=False,
+    )

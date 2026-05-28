@@ -103,6 +103,15 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         default='all',
         readonly=True,
     )
+    pending_plan_state = fields.Selection(
+        [
+            ('draft', 'Borrador'),
+            ('pending_confirmation', 'Pendiente de confirmar'),
+            ('approved', 'Confirmado'),
+        ],
+        string='Estado sugerido del planning',
+        default='draft',
+    )
 
     @api.model
     def _coerce_to_date(self, value):
@@ -503,7 +512,28 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'target': 'main',
         }
 
-    def action_create_mfg_plan(self):
+    def action_open_create_mfg_plan_modal(self):
+        self.ensure_one()
+        if not self.report_product_line_ids:
+            raise UserError(_('No hay datos en la tabla para crear el planning.'))
+
+        modal = self.env['zrn_prodigyn.production.planning.create.plan.wizard'].create({
+            'production_wizard_id': self.id,
+            'plan_state': self.pending_plan_state or 'draft',
+        })
+        form_view = self.env.ref('zrn_prodigyn.view_zrn_prodigyn_create_mfg_plan_modal_form')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Crear planning de fabricacion'),
+            'res_model': 'zrn_prodigyn.production.planning.create.plan.wizard',
+            'res_id': modal.id,
+            'view_mode': 'form',
+            'view_id': form_view.id,
+            'views': [(form_view.id, 'form')],
+            'target': 'new',
+        }
+
+    def _create_mfg_plan(self, target_state='draft', notes=False, plan_name=False):
         self.ensure_one()
         if not self.report_product_line_ids:
             raise UserError(_('No hay datos en la tabla para crear el planning.'))
@@ -519,16 +549,14 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             self.report_product_line_ids.mapped('last_delivery_date') or [False]
         )
         plan = self.env['zrn_prodigyn.mfg.plan'].create({
-            'name': _('Planning de fabricacion %s') % fields.Date.today().strftime('%d/%m/%Y'),
+            'name': plan_name or (_('Planning de fabricacion %s') % fields.Date.today().strftime('%d/%m/%Y')),
             'company_id': self.env.company.id,
             'warehouse_id': warehouse.id if warehouse else False,
             'planning_basis': 'sale',
-            'state': 'draft',
+            'state': target_state,
             'date_start': date_start,
             'date_end': date_end,
-            'notes': _(
-                'Planning generado desde Planeacion de fabricacion.'
-            ),
+            'notes': notes or _('Planning generado desde Planeacion de fabricacion.'),
         })
 
         bom_model = self.env['mrp.bom']
@@ -583,6 +611,11 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             })
         if source_values:
             self.env['zrn_prodigyn.mfg.plan.source'].create(source_values)
+
+        self.pending_plan_state = target_state
+
+        if target_state == 'approved':
+            plan.action_confirm_plan()
 
         form_view = self.env.ref('zrn_prodigyn.view_zrn_prodigyn_mfg_plan_form')
         return {
@@ -695,6 +728,92 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'report_date_range_mode': date_range_payload['mode'],
         })
         return self.action_open_report()
+
+
+class ZrnProdigynProductionPlanningCreatePlanWizard(models.TransientModel):
+    _name = 'zrn_prodigyn.production.planning.create.plan.wizard'
+    _description = 'Confirmacion para crear planning de fabricacion'
+
+    production_wizard_id = fields.Many2one(
+        'zrn_prodigyn.production.planning.wizard',
+        string='Wizard de produccion',
+        required=True,
+        ondelete='cascade',
+    )
+    plan_name = fields.Char(
+        string='Nombre del planning',
+        default=lambda self: _('Planning de fabricacion %s') % fields.Date.today().strftime('%d/%m/%Y'),
+        required=True,
+    )
+    plan_state = fields.Selection(
+        [
+            ('draft', 'Borrador'),
+            ('pending_confirmation', 'Pendiente de confirmar'),
+            ('approved', 'Confirmado'),
+        ],
+        string='Estado inicial',
+        required=True,
+        default='draft',
+    )
+    notes = fields.Text(string='Notas')
+    report_date_range_label = fields.Char(
+        string='Rango consultado',
+        related='production_wizard_id.report_date_range_label',
+        readonly=True,
+    )
+    report_date_from_label = fields.Char(
+        string='Fecha inicial',
+        related='production_wizard_id.report_date_from_label',
+        readonly=True,
+    )
+    report_date_to_label = fields.Char(
+        string='Fecha final',
+        related='production_wizard_id.report_date_to_label',
+        readonly=True,
+    )
+    report_date_range_mode = fields.Selection(
+        related='production_wizard_id.report_date_range_mode',
+        readonly=True,
+    )
+    report_customer_count = fields.Integer(
+        string='Clientes',
+        related='production_wizard_id.report_customer_count',
+        readonly=True,
+    )
+    report_product_count = fields.Integer(
+        string='Productos',
+        related='production_wizard_id.report_product_count',
+        readonly=True,
+    )
+    report_order_count = fields.Integer(
+        string='OVs',
+        related='production_wizard_id.report_order_count',
+        readonly=True,
+    )
+    report_row_count = fields.Integer(
+        string='Lineas',
+        related='production_wizard_id.report_row_count',
+        readonly=True,
+    )
+    report_product_line_ids = fields.Many2many(
+        'zrn_prodigyn.production.planning.wizard.report.product.line',
+        string='Productos del planning',
+        compute='_compute_report_product_line_ids',
+        readonly=True,
+    )
+
+    @api.depends('production_wizard_id', 'production_wizard_id.report_product_line_ids')
+    def _compute_report_product_line_ids(self):
+        for wizard in self:
+            wizard.report_product_line_ids = [(6, 0, wizard.production_wizard_id.report_product_line_ids.ids)]
+
+    def action_save_plan(self):
+        self.ensure_one()
+        return self.production_wizard_id._create_mfg_plan(
+            target_state=self.plan_state,
+            notes=self.notes or False,
+            plan_name=self.plan_name or False,
+        )
 
 
 class ZrnProdigynProductionPlanningWizardReportCustomerLine(models.TransientModel):
