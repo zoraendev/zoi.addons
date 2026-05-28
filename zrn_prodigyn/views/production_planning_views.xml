@@ -618,29 +618,18 @@
                         </div>
                         <div class="zrn_prodigyn_production_report_table_panel">
                             <div class="zrn_prodigyn_production_report_table_toolbar">
-                                <button name="action_open_report_customers_list" type="object"
-                                        class="btn zrn_prodigyn_production_report_table_toolbar_btn zrn_prodigyn_production_report_table_toolbar_btn_primary"
-                                        invisible="report_active_tab != 'customers'">
-                                    <i class="fa fa-check-square-o" style='margin-right:4px;'/>
-                                    <span>Seleccionar y exportar</span>
-                                </button>
-                                <button name="action_open_report_products_list" type="object"
-                                        class="btn zrn_prodigyn_production_report_table_toolbar_btn zrn_prodigyn_production_report_table_toolbar_btn_primary"
-                                        invisible="report_active_tab != 'products'">
-                                    <i class="fa fa-check-square-o" style='margin-right:4px;'/>
-                                    <span>Seleccionar y exportar</span>
-                                </button>
-                                <button name="action_open_report_orders_list" type="object"
-                                        class="btn zrn_prodigyn_production_report_table_toolbar_btn zrn_prodigyn_production_report_table_toolbar_btn_primary"
-                                        invisible="report_active_tab != 'orders'">
-                                    <i class="fa fa-check-square-o" style='margin-right:4px;'/>
-                                    <span>Seleccionar y exportar</span>
-                                </button>
                             </div>
                             <div class="zrn_prodigyn_production_report_table_placeholder">
                                 <div class="zrn_prodigyn_production_report_table_placeholder_title" invisible="report_active_tab != 'overview'">Espacio reservado para la tabla del reporte</div>
                                 <div class="zrn_prodigyn_production_report_table_placeholder_body" invisible="report_active_tab != 'overview'"/>
                                 <div invisible="report_active_tab != 'customers'">
+                                    <div class="zrn_prodigyn_production_report_list_shell">
+                                        <button name="action_open_report_customers_list" type="object"
+                                                class="btn zrn_prodigyn_production_report_table_toolbar_btn zrn_prodigyn_production_report_table_toolbar_btn_primary">
+                                            <i class="fa fa-check-square-o" style='margin-right:4px;'/>
+                                            <span>Seleccionar</span>
+                                        </button>
+                                    </div>
                                     <field name="report_customer_line_ids" readonly="1" nolabel="1">
                                         <tree create="0" edit="0" delete="0">
                                             <field name="first_delivery_date"/>
@@ -656,6 +645,13 @@
                                     </field>
                                 </div>
                                 <div invisible="report_active_tab != 'products'">
+                                    <div class="zrn_prodigyn_production_report_list_shell">
+                                        <button name="action_open_report_products_list" type="object"
+                                                class="btn zrn_prodigyn_production_report_table_toolbar_btn zrn_prodigyn_production_report_table_toolbar_btn_primary">
+                                            <i class="fa fa-check-square-o" style='margin-right:4px;'/>
+                                            <span>Seleccionar</span>
+                                        </button>
+                                    </div>
                                     <field name="report_product_line_ids" readonly="1" nolabel="1">
                                         <tree create="0" edit="0" delete="0">
                                             <field name="first_delivery_date"/>
@@ -673,6 +669,13 @@
                                     </field>
                                 </div>
                                 <div invisible="report_active_tab != 'orders'">
+                                    <div class="zrn_prodigyn_production_report_list_shell">
+                                        <button name="action_open_report_orders_list" type="object"
+                                                class="btn zrn_prodigyn_production_report_table_toolbar_btn zrn_prodigyn_production_report_table_toolbar_btn_primary">
+                                            <i class="fa fa-check-square-o" style='margin-right:4px;'/>
+                                            <span>Seleccionar</span>
+                                        </button>
+                                    </div>
                                     <field name="report_order_line_ids" readonly="1" nolabel="1">
                                         <tree create="0" edit="0" delete="0">
                                             <field name="first_delivery_date"/>
@@ -774,11 +777,6 @@
                             </div>
                         </div>
                         <div class="zrn_prodigyn_production_report_table_panel">
-                            <div class="zrn_prodigyn_production_report_table_toolbar">
-                                <div class="zrn_prodigyn_production_report_table_placeholder_title">
-                                    Datos relevantes para crear el planning de fabricacion
-                                </div>
-                            </div>
                             <div>
                                 <field name="report_product_line_ids" readonly="1" nolabel="1">
                                     <tree create="0" edit="0" delete="0">

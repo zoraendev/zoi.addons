@@ -2048,6 +2048,52 @@
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_list_shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_list_shell
+    > .btn {
+    justify-self: start;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_list_shell
+    + .o_field_widget,
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_list_shell
+    + .o_field_widget
+    > div,
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_list_shell
+    + .o_field_widget
+    > div
+    > .o_list_view {
+    display: contents;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_list_shell
+    + .o_field_widget
+    .o_x2m_control_panel {
+    display: flex;
+    justify-content: flex-end;
+    margin: -52px 0 8px auto !important;
+    width: auto;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_list_shell
+    + .o_field_widget
+    .o_list_renderer {
+    margin-top: 0;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_table_toolbar_btn_primary {
     display: inline-flex !important;
     border-width: 1px !important;
