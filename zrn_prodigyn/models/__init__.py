@@ -4,3 +4,4 @@ from . import models
 from . import mfg_plan
 from . import production_planning_wizard
 from . import purchase_planning_wizard
+from . import res_config_settings

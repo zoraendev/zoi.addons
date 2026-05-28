@@ -960,8 +960,14 @@ class AdvancedMetricsReportWizard(models.TransientModel):
         # MITIGACION RIESGO MATEMATICO: Para evitar la "Doble Contabilidad" de stock, 
         # creamos una copia del inventario actual. A medida que procesamos cada orden 
         # cronologicamente, vamos restando lo vendido de esta memoria virtual.
-        running_stock_by_product = qty_by_product_id.copy()
-        running_free_stock_by_product = free_qty_by_product_id.copy()
+        running_stock_by_product = {
+            product_id: float(qty_by_product_id.get(product_id, 0.0))
+            for product_id in product_ids
+        }
+        running_free_stock_by_product = {
+            product_id: float(free_qty_by_product_id.get(product_id, 0.0))
+            for product_id in product_ids
+        }
 
         # --- ORDENAMIENTO CRONOLOGICO (El pilar de la planificacion) ---
         # Paso critico: El descuento de inventario DEBE ser First-In-First-Out.
@@ -981,6 +987,11 @@ class AdvancedMetricsReportWizard(models.TransientModel):
 
             product_id = line.product_id.id
             sold_qty = float(line.product_uom_qty or 0.0)
+
+            if product_id not in running_stock_by_product:
+                running_stock_by_product[product_id] = float(qty_by_product_id.get(product_id, 0.0))
+            if product_id not in running_free_stock_by_product:
+                running_free_stock_by_product[product_id] = float(free_qty_by_product_id.get(product_id, 0.0))
 
             # LOGICA DE ASIGNACION DE STOCK (Cascada):
             # Leemos cuanto stock queda disponible y libre de usar

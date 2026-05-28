@@ -13,9 +13,10 @@ class AdvancedMetricsInicio(models.Model):
     _name = 'advanced_metrics.inicio'
     _description = 'Pantalla principal de Advanced Metrics'
 
-    _DEFAULT_CLIENT_VALIDATION_BASE_URL = 'https://api.zoraen.com/api/production-v1-public'
-    _DEFAULT_CLIENT_KEY = ''
-    _DEFAULT_CLIENT_VALIDATION_API_KEY = ''
+    _DEFAULT_CONNECTION_BASE_URL = 'https://api.zoraen.com'
+    _DEFAULT_CONNECTION_API_PATH = '/api/production/addons/vladdonconnection'
+    _DEFAULT_CONNECTION_API_KEY = ''
+    _DEFAULT_CONNECTION_ADDON_API_KEY = ''
     _DEFAULT_INSTANCE_KEY = ''
     _INSTANCE_BASE_URL = 'https://adm.zoraen.com/instances/i'
     _SUPPORT_BASE_URL = 'https://adm.zoraen.com/support?instance='
@@ -58,27 +59,25 @@ class AdvancedMetricsInicio(models.Model):
             base_url = f'https://{base_url[len("ttps://"):]}'
         elif base_url.startswith('ttp://'):
             base_url = f'http://{base_url[len("ttp://"):]}'
-        marker = '/clients/key/'
-        if marker in base_url:
-            base_url = base_url.split(marker, 1)[0]
         return base_url
 
     @api.model
     def _get_client_validation_settings(self):
         config = self.env['ir.config_parameter'].sudo()
         instance_key = config.get_param('advanced_metrics.instance_key', self._DEFAULT_INSTANCE_KEY)
-        if not instance_key:
-            instance_key = config.get_param('advanced_metrics.client_key', self._DEFAULT_CLIENT_KEY)
         instance_key = self._normalize_external_key(instance_key)
         return {
             'base_url': self._normalize_validation_base_url(
-                config.get_param('advanced_metrics.client_validation_base_url', self._DEFAULT_CLIENT_VALIDATION_BASE_URL)
+                config.get_param('advanced_metrics.connection_base_url', self._DEFAULT_CONNECTION_BASE_URL)
             ),
-            'client_key': self._normalize_external_key(
-                config.get_param('advanced_metrics.client_key', self._DEFAULT_CLIENT_KEY)
+            'api_path': self._normalize_external_key(
+                config.get_param('advanced_metrics.connection_api_path', self._DEFAULT_CONNECTION_API_PATH)
             ),
             'api_key': self._normalize_external_key(
-                config.get_param('advanced_metrics.client_validation_api_key', self._DEFAULT_CLIENT_VALIDATION_API_KEY)
+                config.get_param('advanced_metrics.connection_api_key', self._DEFAULT_CONNECTION_API_KEY)
+            ),
+            'addon_api_key': self._normalize_external_key(
+                config.get_param('advanced_metrics.connection_addon_api_key', self._DEFAULT_CONNECTION_ADDON_API_KEY)
             ),
             'support_url': config.get_param('advanced_metrics.support_url', ''),
             'instance_key': instance_key,
@@ -98,8 +97,9 @@ class AdvancedMetricsInicio(models.Model):
         settings = settings or self._get_client_validation_settings()
         required_values = {
             'base_url': settings.get('base_url'),
-            'client_key': settings.get('client_key'),
+            'api_path': settings.get('api_path'),
             'api_key': settings.get('api_key'),
+            'addon_api_key': settings.get('addon_api_key'),
             'instance_key': settings.get('instance_key'),
         }
         return [
@@ -111,16 +111,18 @@ class AdvancedMetricsInicio(models.Model):
     @api.model
     def _fetch_client_validation_payload(self, settings):
         base_url = self._normalize_validation_base_url(settings.get('base_url'))
-        client_key = self._normalize_external_key(settings.get('client_key'))
-        if not base_url or not client_key:
-            raise ValueError(_('No se ha configurado la URL base o la clave de cliente.'))
-        url = f'{base_url}/clients/key/{client_key}'
+        api_path = self._normalize_external_key(settings.get('api_path')).lstrip('/')
+        if not base_url or not api_path:
+            raise ValueError(_('No se ha configurado la URL base o el path de conexion.'))
+        url = f'{base_url}/{api_path}'
 
         headers = {
             'Accept': 'application/json',
         }
         if settings.get('api_key'):
             headers['x-api-key'] = settings['api_key']
+        if settings.get('addon_api_key'):
+            headers['x-addonapi-key'] = settings['addon_api_key']
 
         request = Request(url, headers=headers, method='GET')
         # Bypass environment proxy settings; curl works here while urllib may fail
@@ -153,7 +155,7 @@ class AdvancedMetricsInicio(models.Model):
                 'client_status_code': 'missing_configuration',
                 'client_status_title': _('Configuracion incompleta'),
                 'client_status_message': _(
-                    'Debes completar la configuracion de integracion (Key de instancia, clave de cliente, API key y URL base) antes de usar el modulo.'
+                    'Debes completar la configuracion de integracion (Key de instancia, URL base, path, API key y Addon API key) antes de usar el modulo.'
                 ),
                 'client_validation_debug': _('Parametros faltantes: %s') % ', '.join(missing_settings),
             })
@@ -173,62 +175,26 @@ class AdvancedMetricsInicio(models.Model):
             return values
 
         payload = payload if isinstance(payload, dict) else {}
-        payload_code = str(payload.get('code') or '')
-        raw_data = payload.get('data')
-        data = {}
-        if isinstance(raw_data, list) and raw_data:
-            first_item = raw_data[0]
-            if isinstance(first_item, dict):
-                data = first_item
-        elif isinstance(raw_data, dict):
-            data = raw_data
-
-        has_status = 'status' in data and data.get('status') not in (None, '')
-        status_code = data.get('status') if has_status else ''
-        values['client_status_code'] = str(status_code or '')
+        success = payload.get('success') is True
+        response_code = str(payload.get('rescode') or '')
+        values['client_status_code'] = response_code
         values['client_validation_debug'] = json.dumps({
-            'code': payload.get('code'),
-            'status': status_code,
-            'userMessage': payload.get('userMessage'),
-            'technicalMessage': payload.get('technicalMessage'),
-            'data': raw_data,
+            'success': payload.get('success'),
+            'rescode': payload.get('rescode'),
+            'response': payload,
         }, ensure_ascii=False)
 
-        user_message = (payload.get('userMessage') or '').strip()
-        technical_message = (payload.get('technicalMessage') or '').strip()
-
-        if payload_code != '200' or not has_status:
+        if not success:
             values.update({
                 'show_dashboard': False,
                 'client_validation_state': 'error',
-                'client_status_code': payload_code or 'invalid_response',
+                'client_status_code': response_code or 'invalid_response',
                 'client_status_title': _('Cliente no valido'),
-                'client_status_message': user_message or technical_message or _(
-                    'La respuesta del servicio no confirma un cliente valido. Verifica la clave del cliente, la API key y la URL configurada.'
+                'client_status_message': _(
+                    'La conexion no fue autorizada. Verifica la configuracion y revisa el codigo de respuesta devuelto por el servicio.'
                 ),
             })
             return values
-
-        if str(status_code) == '5':
-            values.update({
-                'show_dashboard': False,
-                'client_validation_state': 'payment_due',
-                'client_status_title': _('Cliente insolvente'),
-                'client_status_message': user_message or technical_message or _(
-                    'La instancia presenta un saldo pendiente. Contacta a soporte para reactivar el acceso a los reportes operativos del modulo.'
-                ),
-            })
-            return values
-
-        if str(status_code) != '1':
-            values.update({
-                'show_dashboard': False,
-                'client_validation_state': 'error',
-                'client_status_title': _('Cliente sin acceso'),
-                'client_status_message': user_message or technical_message or _(
-                    'El estado del cliente no permite acceder al servicio en este momento.'
-                ),
-            })
 
         return values
 
