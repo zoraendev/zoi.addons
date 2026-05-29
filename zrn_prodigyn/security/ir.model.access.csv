@@ -4,6 +4,7 @@ access_zrn_prodigyn_production_planning,zrn_prodigyn.production.planning,model_z
 access_zrn_prodigyn_purchase_planning,zrn_prodigyn.purchase.planning,model_zrn_prodigyn_purchase_planning,base.group_user,1,1,1,1
 access_zrn_prodigyn_delivery_planning,zrn_prodigyn.delivery.planning,model_zrn_prodigyn_delivery_planning,base.group_user,1,1,1,1
 access_zrn_prodigyn_internal_tool,zrn_prodigyn.internal.tool,model_zrn_prodigyn_internal_tool,base.group_user,1,1,1,1
+access_zrn_prodigyn_reporting_analysis,zrn_prodigyn.reporting.analysis,model_zrn_prodigyn_reporting_analysis,base.group_user,1,1,1,1
 access_zrn_prodigyn_mfg_plan,zrn_prodigyn.mfg.plan,model_zrn_prodigyn_mfg_plan,base.group_user,1,1,1,1
 access_zrn_prodigyn_mfg_plan_line,zrn_prodigyn.mfg.plan.line,model_zrn_prodigyn_mfg_plan_line,base.group_user,1,1,1,1
 access_zrn_prodigyn_mfg_plan_supply,zrn_prodigyn.mfg.plan.supply,model_zrn_prodigyn_mfg_plan_supply,base.group_user,1,1,1,1
