@@ -229,7 +229,10 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'view_mode': 'tree,form',
             'views': [(tree_view.id, 'tree'), (form_view.id, 'form')],
             'domain': [('company_id', '=', self.env.company.id)],
-            'context': {'search_default_active': 1},
+            'context': {
+                'search_default_active': 1,
+                'create': False,
+            },
             'target': 'current',
         }
 
