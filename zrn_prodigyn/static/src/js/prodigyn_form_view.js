@@ -52,6 +52,10 @@ class ZrnProdigynFormController extends FormController {
     return this.openProdigynAction("action_open_button_5");
   }
 
+  openSettings() {
+    return this.openProdigynAction("action_open_settings_dashboard");
+  }
+
   openSupport() {
     return this.openProdigynAction("action_open_support");
   }

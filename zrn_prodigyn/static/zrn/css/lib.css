@@ -204,6 +204,13 @@
     color: var(--z-color-text-inverse, #ffffff) !important;
   }
 
+  .zrn_prodigyn_cp_btn_ghost {
+    border: 1px solid
+      var(--z-color-button-secondary-border, var(--z-color-border, #d0d5dd)) !important;
+    background: transparent !important;
+    color: var(--z-color-text, var(--o-main-text-color, #344054)) !important;
+  }
+
   .zrn_prodigyn_cp_btn:hover,
   .zrn_prodigyn_cp_btn:focus {
     filter: brightness(1.06);
