@@ -2543,10 +2543,10 @@
   .o_form_view
     .zrn_prodigyn_report_detail_form
     .zrn_prodigyn_report_detail_overview {
-    display: grid;
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-    gap: 18px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
     margin-bottom: 18px;
   }
 
@@ -2653,8 +2653,8 @@
     .zrn_prodigyn_report_detail_form
     .zrn_prodigyn_report_detail_stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px !important;
     width: 100%;
     margin-bottom: 0;
   }

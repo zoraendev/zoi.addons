@@ -332,6 +332,13 @@
     color: #a78bfa !important;
   }
 
+  /* 4-column Stats grid layout overrides in dark mode */
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stats,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stats {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px !important;
+  }
+
   /* Stats grid box overrides in dark mode */
   .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stat,
   .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stat {
