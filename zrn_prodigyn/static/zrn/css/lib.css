@@ -1748,9 +1748,9 @@
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_screen {
     display: flex;
-    min-height: calc(100vh - 290px);
+    min-height: calc(100vh - 180px);
     flex-direction: column;
-    gap: 14px;
+    gap: 6px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -1771,13 +1771,13 @@
     position: sticky;
     top: 0;
     z-index: 120;
-    padding: 16px 24px;
+    padding: 10px 16px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
     border: 1px solid rgba(99, 102, 241, 0.14) !important;
     border-radius: 14px;
     box-shadow: 0 10px 30px -15px rgba(99, 102, 241, 0.12);
     backdrop-filter: blur(12px);
-    margin-bottom: 18px;
+    margin-bottom: 0px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -2091,8 +2091,8 @@
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    min-height: 420px;
-    padding: 18px;
+    min-height: 520px;
+    padding: 10px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -3023,7 +3023,7 @@
   max-width: 100% !important;
   min-width: 100% !important;
   margin: 0 !important;
-  padding: 16px !important;
+  padding: 8px !important;
 }
 .o_form_view:has(.zrn_prodigyn_production_report_screen, .zrn_prodigyn_production_shell, .zrn_prodigyn_home_shell, .zrn_prodigyn_purchase_report_screen) {
   width: 100% !important;
@@ -3151,3 +3151,323 @@
   transform: translateY(-1px) !important;
 }
 
+/* ==========================================
+   ADVANCED METRICS MATRIX REPORT TABLE PORT
+   ========================================== */
+.zrn_am_report_view {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  min-width: 100%;
+}
+
+.zrn_am_report_matrix_wrap {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 520px;
+  height: 100%;
+  max-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  border: 1px solid var(--am-border, #e2e8f0);
+  border-radius: 10px;
+  background: #fbfbfd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: auto;
+  scrollbar-color: #8a7897 #ece7f1;
+}
+
+.zrn_am_report_matrix {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+}
+
+.zrn_am_report_matrix_wrap::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.zrn_am_report_matrix_wrap::-webkit-scrollbar-track {
+  background: #ece7f1;
+}
+
+.zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb {
+  background: #8a7897;
+  border-radius: 999px;
+  border: 2px solid #ece7f1;
+}
+
+.zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb:hover {
+  background: #7c6a8b;
+}
+
+.zrn_am_report_matrix thead th,
+.zrn_am_report_matrix tbody td {
+  padding: 10px 12px;
+  border-right: 1px solid var(--am-border, #e2e8f0);
+  border-bottom: 1px solid var(--am-border, #e2e8f0);
+  white-space: nowrap;
+}
+
+.zrn_am_report_matrix thead th {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--am-text, #1e293b);
+}
+
+.zrn_am_report_matrix thead tr:nth-child(1) th {
+  background: #7c6a8b;
+  color: #fff;
+}
+
+.zrn_am_report_matrix thead tr:nth-child(1) th .zrn_am_day_heading,
+.zrn_am_report_matrix thead tr:nth-child(1) th .zrn_am_day_heading_date {
+  display: block;
+  line-height: 1.15;
+}
+
+.zrn_am_report_matrix thead tr:nth-child(1) th .zrn_am_day_heading_date {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.88;
+}
+
+.zrn_am_report_matrix thead tr:nth-child(2) th {
+  background: #8a7897;
+  color: #fff;
+}
+
+.zrn_am_report_matrix thead tr:nth-child(3) th {
+  background: #eee7f2;
+  color: #4d3f59;
+}
+
+.zrn_am_report_matrix thead .zrn_am_day_total_head {
+  background: #685473 !important;
+  color: #fff !important;
+  border-left: 3px solid #f1e6fb;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.zrn_am_report_matrix thead .zrn_am_week_total_head {
+  background: #4f6a54 !important;
+  color: #fff !important;
+  border-left: 4px solid #d6ead9;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.zrn_am_report_matrix thead .zrn_am_month_total_head {
+  background: #7a5f2f !important;
+  color: #fff !important;
+  border-left: 4px solid #f2e0b3;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.zrn_am_report_matrix thead tr:nth-child(3) .zrn_am_day_total_head {
+  background: #ddcfeb !important;
+  color: #513f60 !important;
+  border-left-color: #b899d4;
+  font-weight: 700;
+}
+
+.zrn_am_report_matrix thead tr:nth-child(3) .zrn_am_week_total_head {
+  background: #d6ead9 !important;
+  color: #35523b !important;
+  border-left-color: #8eb497;
+  font-weight: 700;
+}
+
+.zrn_am_report_matrix thead tr:nth-child(3) .zrn_am_month_total_head {
+  background: #f2e0b3 !important;
+  color: #6f5723 !important;
+  border-left-color: #c7a85d;
+  font-weight: 700;
+}
+
+.zrn_am_report_matrix tbody td {
+  background: #ffffff;
+  color: var(--am-text, #1e293b);
+}
+
+.zrn_am_report_matrix tbody tr:nth-child(even) td {
+  background: #faf9fc;
+}
+
+.zrn_am_report_matrix tbody tr:hover td {
+  background: #f3eff7;
+}
+
+.zrn_am_report_matrix .zrn_am_sticky_col {
+  position: sticky;
+  left: 0;
+  z-index: 7;
+  width: 144px;
+  min-width: 144px;
+  max-width: 144px;
+  background: #ffffff;
+  background-clip: padding-box;
+  overflow: hidden;
+}
+
+.zrn_am_report_matrix thead .zrn_am_sticky_col {
+  z-index: 10;
+}
+
+.zrn_am_report_matrix .zrn_am_sticky_col_2 {
+  left: 144px;
+  z-index: 8;
+  width: 132px;
+  min-width: 132px;
+  max-width: 132px;
+}
+
+.zrn_am_report_matrix .zrn_am_sticky_col_3 {
+  left: 276px;
+  z-index: 9;
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+}
+
+.zrn_am_report_matrix tbody .zrn_am_sticky_col,
+.zrn_am_report_matrix tbody .zrn_am_sticky_col_2,
+.zrn_am_report_matrix tbody .zrn_am_sticky_col_3 {
+  background: #ffffff;
+  box-shadow:
+    1px 0 0 0 #d8dce6,
+    14px 0 16px -16px rgba(78, 63, 89, 0.28);
+}
+
+.zrn_am_report_matrix thead .zrn_am_sticky_col,
+.zrn_am_report_matrix thead .zrn_am_sticky_col_2,
+.zrn_am_report_matrix thead .zrn_am_sticky_col_3 {
+  box-shadow:
+    1px 0 0 0 #d8dce6,
+    14px 0 16px -16px rgba(78, 63, 89, 0.18);
+}
+
+.zrn_am_report_matrix tbody tr:nth-child(even) .zrn_am_sticky_col,
+.zrn_am_report_matrix tbody tr:nth-child(even) .zrn_am_sticky_col_2,
+.zrn_am_report_matrix tbody tr:nth-child(even) .zrn_am_sticky_col_3 {
+  background: #faf9fc;
+}
+
+.zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col,
+.zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col_2,
+.zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col_3 {
+  background: #f3eff7;
+}
+
+.zrn_am_report_matrix .zrn_am_product_name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zrn_am_report_matrix .zrn_am_num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.zrn_am_report_matrix .zrn_am_change_cell {
+  background: #f7f1fb;
+}
+
+.zrn_am_report_matrix .zrn_am_day_total {
+  font-weight: 700;
+  background: #e1d1ee;
+  border-left: 3px solid #b899d4;
+  box-shadow: inset 0 0 0 1px rgba(104, 84, 115, 0.08);
+}
+
+.zrn_am_report_matrix .zrn_am_week_total {
+  font-weight: 700;
+  background: #dcecdf;
+  border-left: 4px solid #8eb497;
+  box-shadow: inset 0 0 0 1px rgba(79, 106, 84, 0.12);
+}
+
+.zrn_am_report_matrix .zrn_am_month_total {
+  font-weight: 700;
+  background: #f8e9c7;
+  border-left: 4px solid #c7a85d;
+  box-shadow: inset 0 0 0 1px rgba(122, 95, 47, 0.12);
+}
+
+.zrn_am_report_matrix tbody tr:hover .zrn_am_change_cell {
+  background: #eee4f5;
+}
+
+.zrn_am_report_matrix tbody tr:hover .zrn_am_day_total {
+  background: #d9c6e8;
+}
+
+.zrn_am_report_matrix tbody tr:hover .zrn_am_week_total {
+  background: #cfe4d4;
+}
+
+.zrn_am_report_matrix tbody tr:hover .zrn_am_month_total {
+  background: #f2ddb0;
+}
+
+/* ==========================================
+   UX ENHANCEMENTS AND FORMATTING RULES
+   ========================================== */
+.zrn_am_report_matrix .zrn_am_num_zero {
+  color: #d1d5db !important;
+  opacity: 0.45;
+}
+
+.zrn_am_report_matrix .zrn_am_stock_shortage {
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+  font-weight: 700 !important;
+}
+
+.zrn_am_report_matrix .zrn_am_stock_surplus {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  font-weight: 700 !important;
+}
+
+.zrn_am_report_matrix .zrn_am_stock_zero {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+}
+
+/* Sticky vertical table header */
+.zrn_am_report_matrix thead th {
+  position: sticky !important;
+  z-index: 10;
+}
+.zrn_am_report_matrix thead tr:nth-child(1) th {
+  top: 0 !important;
+  z-index: 12;
+}
+.zrn_am_report_matrix thead tr:nth-child(2) th {
+  top: 36px !important;
+  z-index: 12;
+}
+.zrn_am_report_matrix thead tr:nth-child(3) th {
+  top: 72px !important;
+  z-index: 11;
+}
+
+/* Sticky left columns top positioning override when header is sticky */
+.zrn_am_report_matrix thead th.zrn_am_sticky_col,
+.zrn_am_report_matrix thead th.zrn_am_sticky_col_2,
+.zrn_am_report_matrix thead th.zrn_am_sticky_col_3 {
+  z-index: 25 !important;
+}

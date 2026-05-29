@@ -390,4 +390,168 @@
   .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group table.o_list_table tr:hover td {
     background-color: rgba(124, 58, 237, 0.12) !important;
   }
+
+  /* ==========================================
+     ADVANCED METRICS MATRIX REPORT TABLE PORT (DARK MODE)
+     ========================================== */
+  .zrn_am_report_matrix_wrap {
+    background: #1f2430 !important;
+    border-color: var(--o-border-color, #3b4354) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .zrn_am_report_matrix {
+    background: #1f2430 !important;
+    color: var(--o-main-text-color, #f3f4f6) !important;
+  }
+
+  .zrn_am_report_matrix thead th,
+  .zrn_am_report_matrix tbody td {
+    border-right-color: var(--o-border-color, #3b4354) !important;
+    border-bottom-color: var(--o-border-color, #3b4354) !important;
+    color: var(--o-main-text-color, #f3f4f6) !important;
+  }
+
+  .zrn_am_report_matrix thead tr:nth-child(1) th {
+    background: #5f496e !important;
+    color: var(--o-main-text-color, #f3f4f6) !important;
+  }
+
+  .zrn_am_report_matrix thead tr:nth-child(2) th {
+    background: #705781 !important;
+    color: var(--o-main-text-color, #f3f4f6) !important;
+  }
+
+  .zrn_am_report_matrix thead tr:nth-child(3) th {
+    background: #3a3140 !important;
+    color: #e6dff0 !important;
+  }
+
+  .zrn_am_report_matrix tbody td,
+  .zrn_am_report_matrix tbody .zrn_am_sticky_col,
+  .zrn_am_report_matrix tbody .zrn_am_sticky_col_2,
+  .zrn_am_report_matrix tbody .zrn_am_sticky_col_3 {
+    background: #1f2430 !important;
+    color: var(--o-main-text-color, #f3f4f6) !important;
+    box-shadow:
+      1px 0 0 0 var(--o-border-color, #3b4354),
+      12px 0 14px -14px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  .zrn_am_report_matrix tbody tr:nth-child(even) td,
+  .zrn_am_report_matrix tbody tr:nth-child(even) .zrn_am_sticky_col,
+  .zrn_am_report_matrix tbody tr:nth-child(even) .zrn_am_sticky_col_2,
+  .zrn_am_report_matrix tbody tr:nth-child(even) .zrn_am_sticky_col_3 {
+    background: #2a3140 !important;
+  }
+
+  .zrn_am_report_matrix tbody tr:hover td,
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col,
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col_2,
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_sticky_col_3 {
+    background: #342c39 !important;
+  }
+
+  .zrn_am_report_matrix_wrap {
+    scrollbar-color: #705781 #2b2330 !important;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-track {
+    background: #2b2330 !important;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb {
+    background: #705781 !important;
+    border-color: #2b2330 !important;
+  }
+
+  .zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb:hover {
+    background: #8a6d9f !important;
+  }
+
+  .zrn_am_report_matrix .zrn_am_change_cell {
+    background: #312937 !important;
+    color: #f3f4f6 !important;
+  }
+
+  .zrn_am_report_matrix .zrn_am_day_total {
+    background: #4c3d57 !important;
+    color: #f8f5fc !important;
+    border-left-color: #9f7cc0 !important;
+  }
+
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_change_cell {
+    background: #3a3041 !important;
+  }
+
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_day_total {
+    background: #584565 !important;
+  }
+
+  .zrn_am_report_matrix .zrn_am_week_total,
+  .zrn_am_report_matrix thead .zrn_am_week_total_head {
+    background: #314b39 !important;
+    color: #eef8ef !important;
+    border-left-color: #6fa17c !important;
+  }
+
+  .zrn_am_report_matrix .zrn_am_month_total,
+  .zrn_am_report_matrix thead .zrn_am_month_total_head {
+    background: #574524 !important;
+    color: #fff4d6 !important;
+    border-left-color: #c79d46 !important;
+  }
+
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_week_total {
+    background: #3a5944 !important;
+  }
+
+  .zrn_am_report_matrix tbody tr:hover .zrn_am_month_total {
+    background: #66512a !important;
+  }
+
+  .zrn_am_report_matrix .zrn_am_num,
+  .zrn_am_report_matrix .zrn_am_product_name,
+  .zrn_am_report_matrix .zrn_am_sticky_col,
+  .zrn_am_report_matrix .zrn_am_sticky_col_2,
+  .zrn_am_report_matrix .zrn_am_sticky_col_3 {
+    color: var(--o-main-text-color, #f3f4f6) !important;
+  }
+
+  .zrn_am_report_matrix .zrn_am_product_name {
+    font-weight: 600 !important;
+  }
+
+  .zrn_am_report_matrix thead .zrn_am_sticky_col,
+  .zrn_am_report_matrix thead .zrn_am_sticky_col_2,
+  .zrn_am_report_matrix thead .zrn_am_sticky_col_3 {
+    box-shadow:
+      1px 0 0 0 var(--o-border-color, #3b4354),
+      12px 0 14px -14px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  /* Dark mode colors for matrix conditional formatting */
+  .zrn_am_report_matrix .zrn_am_num_zero {
+    color: #475569 !important;
+    opacity: 0.35;
+  }
+
+  .zrn_am_report_matrix .zrn_am_stock_shortage {
+    background-color: #450a0a !important;
+    color: #fca5a5 !important;
+    font-weight: 700 !important;
+  }
+
+  .zrn_am_report_matrix .zrn_am_stock_surplus {
+    background-color: #064e3b !important;
+    color: #6ee7b7 !important;
+    font-weight: 700 !important;
+  }
+
+  .zrn_am_report_matrix .zrn_am_stock_zero {
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+  }
 }
+
+
