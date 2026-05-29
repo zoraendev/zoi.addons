@@ -293,7 +293,7 @@
         <field name="name">zrn_prodigyn.mfg.plan.tree</field>
         <field name="model">zrn_prodigyn.mfg.plan</field>
         <field name="arch" type="xml">
-            <tree string="Planings de fabricacion" create="0" delete="0">
+            <tree string="Planings de fabricacion" create="0" delete="0" import="0">
                 <field name="name"/>
                 <field name="planning_basis"/>
                 <field name="state"/>
@@ -321,7 +321,7 @@
         <field name="name">zrn_prodigyn.mfg.plan.form</field>
         <field name="model">zrn_prodigyn.mfg.plan</field>
         <field name="arch" type="xml">
-            <form string="Planning de fabricacion">
+            <form string="Planning de fabricacion" create="0" duplicate="0">
                 <header>
                     <button
                         name="action_confirm_plan"
