@@ -1722,26 +1722,30 @@
     background: var(--z-color-surface-raised, #ffffff);
   }
 
-  .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_header_shell {
     position: sticky;
     top: 0;
     z-index: 120;
-    padding: 14px 16px;
-    background: color-mix(in srgb, var(--z-color-surface-raised) 92%, white 8%);
-    backdrop-filter: blur(8px);
+    padding: 16px 24px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
+    border: 1px solid rgba(99, 102, 241, 0.14) !important;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px -15px rgba(99, 102, 241, 0.12);
+    backdrop-filter: blur(12px);
+    margin-bottom: 18px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_header {
-    display: grid;
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
+    display: flex;
     align-items: center;
-    gap: 16px;
+    justify-content: space-between;
+    gap: 20px;
     padding: 0;
     background: transparent;
     border: 0;
     border-radius: 0;
+    width: 100%;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -1749,51 +1753,74 @@
     display: flex;
     min-width: 0;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_report_back_inline {
     flex: 0 0 auto;
+    border-radius: 50px !important;
+    padding: 8px 18px !important;
+    font-weight: 600 !important;
+    background: rgba(99, 102, 241, 0.08) !important;
+    border: 1px solid rgba(99, 102, 241, 0.18) !important;
+    color: #6366f1 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_report_back_inline:hover {
+    background: #6366f1 !important;
+    color: #ffffff !important;
+    transform: translateX(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_title_tab {
     padding: 0;
     border: 0;
-    background: transparent !important;
-    color: var(--z-color-text-strong, var(--o-main-text-color, #212529));
-    font-size: 1.28rem;
-    font-weight: 700;
-    text-decoration: underline;
-    text-decoration-color: var(--z-color-brand-600);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 6px;
+    background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-decoration: none !important;
     box-shadow: none;
+    position: relative;
+  }
+  
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_title_tab::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, #4f46e5, #10b981);
+    border-radius: 99px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_title_tab_inactive {
-    color: color-mix(
-      in srgb,
-      var(--z-color-text-muted) 72%,
-      var(--z-color-brand-700) 28%
-    );
-    text-decoration: none;
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-weight: 700;
+  }
+  
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_title_tab_inactive::after {
+    display: none;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
-    .zrn_prodigyn_production_report_title_tab_inactive:hover,
-  .o_form_view.zrn_prodigyn_production_report_form
-    .zrn_prodigyn_production_report_title_tab_inactive:focus {
-    color: var(--z-color-brand-700);
-    text-decoration: underline;
-    text-decoration-color: color-mix(
-      in srgb,
-      var(--z-color-brand-500) 80%,
-      transparent 20%
-    );
-    text-underline-offset: 6px;
+    .zrn_prodigyn_production_report_title_tab_inactive:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -1802,18 +1829,25 @@
     min-width: 0;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
+    background: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+    padding: 6px 18px;
+    border-radius: 99px;
+    box-shadow: inset 0 1px 2px rgba(99, 102, 241, 0.03);
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_header_range
     span {
-    color: var(--z-color-text-muted, #6c757d);
-    font-size: 0.92rem;
+    color: #64748b;
+    font-size: 0.88rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -1831,9 +1865,9 @@
     .zrn_prodigyn_production_report_header_range
     strong
     span {
-    color: var(--z-color-text-strong, var(--o-main-text-color, #212529));
-    font-size: 0.98rem;
-    font-weight: 800;
+    color: #4f46e5;
+    font-size: 0.94rem;
+    font-weight: 700;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -1842,108 +1876,91 @@
     min-width: 0;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
-    flex-wrap: wrap;
-    position: relative;
-    z-index: 3;
+    gap: 10px;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
-    .zrn_prodigyn_production_report_action_btn,
-  .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_inline_stat {
-    display: flex;
-    min-height: 44px;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 9px 12px;
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--z-color-brand-300) 64%,
-        var(--z-color-border) 36%
-      );
-    border-radius: 999px;
-    appearance: none;
-    -webkit-appearance: none;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--z-color-brand-100) 78%, white 22%) 0%,
-      color-mix(in srgb, var(--z-color-brand-50) 58%, white 42%) 100%
-    );
-    cursor: pointer;
+    gap: 6px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #64748b !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    padding: 6px 12px !important;
+    min-height: auto !important;
+    cursor: default !important;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_inline_stat i {
+    color: #4f46e5;
+    font-size: 0.94rem;
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_inline_stat strong {
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 1.0rem;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_action_btn {
-    min-width: 0;
-    color: var(
-      --z-color-text-strong,
-      var(--o-main-text-color, #212529)
-    ) !important;
-    box-shadow: none;
-    white-space: nowrap;
-    display: inline-flex !important;
+    display: flex;
+    min-height: 38px;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    border-style: solid !important;
-    border-width: 1px !important;
-    transition:
-      transform 180ms ease,
-      border-color 180ms ease,
-      background-color 180ms ease,
-      box-shadow 180ms ease;
+    gap: 8px;
+    padding: 6px 16px;
+    border: 1.5px solid rgba(124, 58, 237, 0.25);
+    border-radius: 999px;
+    background: #ffffff;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.22) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .o_form_view.zrn_prodigyn_production_report_form
+    .zrn_prodigyn_production_report_action_btn {
+    color: #7c3aed !important;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_action_btn_inactive {
-    border-color: color-mix(
-      in srgb,
-      var(--z-color-border) 84%,
-      var(--z-color-brand-200) 16%
-    );
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--z-color-surface-raised) 90%, white 10%) 0%,
-      color-mix(in srgb, var(--z-color-brand-50) 30%, white 70%) 100%
-    );
+    border-color: rgba(226, 232, 240, 0.8);
+    background: #f8fafc;
+    color: #64748b !important;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.08) !important;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
-    .zrn_prodigyn_production_report_action_btn:hover,
+    .zrn_prodigyn_production_report_action_btn:hover {
+    transform: translateY(-2px);
+    border-color: #7c3aed;
+    background: #7c3aed;
+    color: #ffffff !important;
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45) !important;
+  }
+  
   .o_form_view.zrn_prodigyn_production_report_form
-    .zrn_prodigyn_production_report_action_btn:focus {
-    transform: translateY(-1px);
-    border-color: color-mix(
-      in srgb,
-      var(--z-color-brand-500) 62%,
-      var(--z-color-border) 38%
-    );
-    background: color-mix(
-      in srgb,
-      var(--z-color-brand-150) 68%,
-      var(--z-color-surface-raised) 32%
-    );
-    box-shadow: 0 10px 18px -16px
-      color-mix(in srgb, var(--z-color-brand-700) 46%, transparent 54%);
+    .zrn_prodigyn_production_report_action_btn_inactive:hover {
+    border-color: rgba(124, 58, 237, 0.45);
+    background: rgba(124, 58, 237, 0.06);
+    color: #7c3aed !important;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25) !important;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
     .zrn_prodigyn_production_report_action_btn:not(
       .zrn_prodigyn_production_report_action_btn_inactive
     ) {
-    border-color: color-mix(
-      in srgb,
-      var(--z-color-brand-500) 72%,
-      var(--z-color-border) 28%
-    );
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--z-color-brand-200) 78%, white 22%) 0%,
-      color-mix(in srgb, var(--z-color-brand-100) 68%, white 32%) 100%
-    );
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, white 45%, transparent 55%);
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.22) !important;
   }
 
   .o_form_view.zrn_prodigyn_production_report_form
@@ -2375,6 +2392,38 @@
     display: none;
   }
 
+  .modal-content:has(.zrn_prodigyn_report_detail_form) {
+    border-radius: 16px !important;
+    border: 1px solid rgba(124, 58, 237, 0.15) !important;
+    box-shadow: 0 10px 30px rgba(124, 58, 237, 0.12) !important;
+    overflow: hidden;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .modal-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.1) !important;
+    padding: 16px 24px !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .modal-title {
+    font-family: 'Outfit', 'Inter', sans-serif !important;
+    font-weight: 700 !important;
+    color: #1e1b4b !important;
+    font-size: 1.2rem !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .btn-close {
+    opacity: 0.8 !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .btn-close:hover {
+    opacity: 1 !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .modal-body {
+    padding: 20px 24px !important;
+  }
+
   .modal-content:has(.zrn_prodigyn_report_detail_form) .modal-footer,
   .modal-content:has(.zrn_prodigyn_report_detail_form) .o_form_button_save,
   .modal-content:has(.zrn_prodigyn_report_detail_form) .o_form_button_cancel,
@@ -2494,10 +2543,10 @@
   .o_form_view
     .zrn_prodigyn_report_detail_form
     .zrn_prodigyn_report_detail_overview {
-    display: grid;
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-    gap: 18px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
     margin-bottom: 18px;
   }
 
@@ -2518,6 +2567,11 @@
     gap: 18px;
     align-items: center;
     margin-bottom: 0;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.04) 0%, rgba(124, 58, 237, 0.01) 100%) !important;
+    border: 1px solid rgba(124, 58, 237, 0.12) !important;
+    padding: 18px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.02) !important;
   }
 
   .o_form_view.zrn_prodigyn_report_detail_form
@@ -2538,19 +2592,11 @@
     height: 108px;
     align-items: center;
     justify-content: center;
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--z-color-border) 82%,
-        var(--z-color-brand-200) 18%
-      );
+    border: 1px solid rgba(124, 58, 237, 0.2);
     border-radius: 14px;
-    background: color-mix(
-      in srgb,
-      var(--z-color-surface-raised) 86%,
-      var(--z-color-brand-50) 14%
-    );
+    background: #ffffff;
     overflow: hidden;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.06) !important;
   }
 
   .o_form_view.zrn_prodigyn_report_detail_form
@@ -2586,7 +2632,7 @@
     .oe_title
     h1 {
     margin-bottom: 6px;
-    color: var(--z-color-brand-900, #4c51bf);
+    color: #7c3aed;
   }
 
   .o_form_view.zrn_prodigyn_report_detail_form
@@ -2607,8 +2653,8 @@
     .zrn_prodigyn_report_detail_form
     .zrn_prodigyn_report_detail_stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px !important;
     width: 100%;
     margin-bottom: 0;
   }
@@ -2623,14 +2669,10 @@
     justify-content: center;
     gap: 6px;
     padding: 12px 14px;
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--z-color-border) 84%,
-        var(--z-color-brand-200) 16%
-      );
-    border-radius: 10px;
-    background: var(--z-color-surface-raised, #ffffff);
+    border: 1px solid rgba(124, 58, 237, 0.1) !important;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.03) !important;
   }
 
   .o_form_view.zrn_prodigyn_report_detail_form
@@ -2928,3 +2970,139 @@
     }
   }
 }
+
+/* Force all Prodigyn and report wizard form sheets to occupy 100% of the screen width */
+.o_form_view:has(.zrn_prodigyn_production_report_screen, .zrn_prodigyn_production_shell, .zrn_prodigyn_home_shell, .zrn_prodigyn_purchase_report_screen) .o_form_sheet_bg,
+.o_form_view:has(.zrn_prodigyn_production_report_screen, .zrn_prodigyn_production_shell, .zrn_prodigyn_home_shell, .zrn_prodigyn_purchase_report_screen) .o_form_sheet {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  margin: 0 !important;
+  padding: 16px !important;
+}
+.o_form_view:has(.zrn_prodigyn_production_report_screen, .zrn_prodigyn_production_shell, .zrn_prodigyn_home_shell, .zrn_prodigyn_purchase_report_screen) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+}
+
+/* ==========================================
+   PREMIUM STYLING FOR PLAN LINE MODAL
+   ========================================== */
+.modal-content:has(.zrn_prodigyn_mfg_plan_line_modal) {
+  border-radius: 16px !important;
+  border: 1px solid rgba(124, 58, 237, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.12) !important;
+  background: #ffffff !important;
+  overflow: hidden;
+}
+
+.modal-content:has(.zrn_prodigyn_mfg_plan_line_modal) .modal-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1) !important;
+  padding: 16px 24px !important;
+}
+
+.modal-content:has(.zrn_prodigyn_mfg_plan_line_modal) .modal-title {
+  font-family: 'Outfit', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+  color: #1e1b4b !important;
+  font-size: 1.2rem !important;
+}
+
+.modal-content:has(.zrn_prodigyn_mfg_plan_line_modal) .modal-body {
+  padding: 24px !important;
+  background: #ffffff !important;
+}
+
+/* Beautiful custom section titles */
+.zrn_prodigyn_mfg_plan_line_modal strong {
+  display: block;
+  font-family: 'Outfit', 'Inter', sans-serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  color: #1e1b4b !important;
+  border-left: 4px solid #7c3aed;
+  padding-left: 10px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* Fields & Groups alignment */
+.zrn_prodigyn_mfg_plan_line_modal .o_group {
+  margin-bottom: 20px !important;
+  background: #f8fafc !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Improve fields style inside the modal */
+.zrn_prodigyn_mfg_plan_line_modal .o_field_widget {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.92rem !important;
+}
+
+.zrn_prodigyn_mfg_plan_line_modal .o_form_label {
+  font-weight: 600 !important;
+  color: #64748b !important;
+}
+
+/* Tree views styling within modal */
+.zrn_prodigyn_mfg_plan_line_modal .o_list_view {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  margin-bottom: 20px !important;
+}
+
+.zrn_prodigyn_mfg_plan_line_modal table.o_list_table {
+  width: 100% !important;
+  table-layout: auto !important;
+}
+
+.zrn_prodigyn_mfg_plan_line_modal table.o_list_table th {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  padding: 10px 8px !important;
+  white-space: nowrap !important;
+  border-bottom: 2px solid rgba(226, 232, 240, 1) !important;
+}
+
+.zrn_prodigyn_mfg_plan_line_modal table.o_list_table td {
+  font-size: 0.86rem !important;
+  padding: 8px 8px !important;
+  color: #334155 !important;
+}
+
+.zrn_prodigyn_mfg_plan_line_modal table.o_list_table tr:hover td {
+  background-color: rgba(124, 58, 237, 0.04) !important;
+}
+
+/* Footer Styling */
+.modal-content:has(.zrn_prodigyn_mfg_plan_line_modal) .modal-footer {
+  border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
+  padding: 14px 24px !important;
+  background: #f8fafc !important;
+}
+
+.modal-content:has(.zrn_prodigyn_mfg_plan_line_modal) .modal-footer .btn-primary {
+  background: #7c3aed !important;
+  border-color: #7c3aed !important;
+  border-radius: 999px !important;
+  padding: 8px 24px !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', sans-serif !important;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25) !important;
+  transition: all 0.2s !important;
+}
+
+.modal-content:has(.zrn_prodigyn_mfg_plan_line_modal) .modal-footer .btn-primary:hover {
+  background: #6d28d9 !important;
+  border-color: #6d28d9 !important;
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
