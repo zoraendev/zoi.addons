@@ -152,7 +152,7 @@
                         <div class="zrn_prodigyn_production_dashboard">
                             <div class="zrn_prodigyn_production_actions">
                                 <div class="zrn_prodigyn_production_section_title">Accesos de analisis operativo</div>
-                                <div class="zrn_prodigyn_production_menu zrn_prodigyn_reporting_menu">
+                                <div class="zrn_prodigyn_production_menu zrn_prodigyn_reporting_menu zrn_prodigyn_reporting_menu_workspace">
                                     <button name="action_open_reporting_operations" type="object" icon="fa-cogs" string="Hub Operaciones" class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_reporting_menu_btn zrn_prodigyn_submodule_menu_btn_secondary"/>
                                     <button name="action_open_reporting_forecast" type="object" icon="fa-line-chart" string="Forecast de Demanda" class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_reporting_menu_btn zrn_prodigyn_submodule_menu_btn_primary"/>
                                     <button name="action_open_reporting_stockouts" type="object" icon="fa-exclamation-triangle" string="Stockouts y Alertas" class="btn zrn_prodigyn_submodule_menu_btn zrn_prodigyn_reporting_menu_btn zrn_prodigyn_submodule_menu_btn_tertiary"/>
@@ -229,6 +229,8 @@
         <field name="view_id" ref="view_zrn_prodigyn_reporting_analysis_form"/>
         <field name="res_id" ref="zrn_prodigyn_reporting_analysis_default"/>
         <field name="target">current</field>
+        <field name="domain">[('page_key', 'in', ['overview', 'workspace'])]</field>
+        <field name="context" eval="{'active_id': ref('zrn_prodigyn_reporting_analysis_default'), 'active_ids': [ref('zrn_prodigyn_reporting_analysis_default'), ref('zrn_prodigyn_reporting_analysis_workspace_default')]}"/>
     </record>
 
     <record id="action_zrn_prodigyn_reporting_analysis_workspace" model="ir.actions.act_window">
@@ -238,6 +240,8 @@
         <field name="view_id" ref="view_zrn_prodigyn_reporting_analysis_form"/>
         <field name="res_id" ref="zrn_prodigyn_reporting_analysis_workspace_default"/>
         <field name="target">current</field>
+        <field name="domain">[('page_key', 'in', ['overview', 'workspace'])]</field>
+        <field name="context" eval="{'active_id': ref('zrn_prodigyn_reporting_analysis_workspace_default'), 'active_ids': [ref('zrn_prodigyn_reporting_analysis_default'), ref('zrn_prodigyn_reporting_analysis_workspace_default')]}"/>
     </record>
 
 </odoo>
