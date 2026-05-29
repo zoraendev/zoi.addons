@@ -380,6 +380,7 @@
         web_icon="zrn_prodigyn,static/zrn/imgs/prodigyn-l.png"
     />
 
+    <!-- Commented out to only leave Configuracion (Settings) button/menu as requested by the user
     <menuitem
         id="menu_zrn_prodigyn_summary"
         name="Resumen"
@@ -435,6 +436,7 @@
         action="action_zrn_prodigyn_reporting"
         sequence="70"
     />
+    -->
 
     <menuitem
         id="menu_zrn_prodigyn_settings"
