@@ -280,4 +280,107 @@
     border-color: #7c3aed !important;
     color: #ffffff !important;
   }
+
+  /* ==========================================
+     PREMIUM STYLING FOR DETAIL REPORT MODAL (DARK MODE)
+     ========================================== */
+  .modal-content:has(.zrn_prodigyn_report_detail_form) {
+    border: 1px solid rgba(124, 58, 237, 0.3) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    background: #0f172a !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .modal-header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.2) !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .modal-title {
+    color: #f1f5f9 !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .modal-body {
+    background: #0f172a !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .btn-close {
+    filter: invert(1) !important;
+    opacity: 0.8 !important;
+  }
+
+  .modal-content:has(.zrn_prodigyn_report_detail_form) .btn-close:hover {
+    opacity: 1 !important;
+  }
+
+  /* Profile header card styling in dark mode */
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_top,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_top {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(30, 41, 59, 0.5) 100%) !important;
+    border: 1px solid rgba(124, 58, 237, 0.22) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_media,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_media {
+    background: #1e293b !important;
+    border-color: rgba(124, 58, 237, 0.3) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_heading .oe_title h1,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_heading .oe_title h1 {
+    color: #a78bfa !important;
+  }
+
+  /* Stats grid box overrides in dark mode */
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stat,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stat {
+    border: 1px solid rgba(124, 58, 237, 0.2) !important;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stat span,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stat span {
+    color: #94a3b8 !important;
+  }
+
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stat strong,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_stat strong {
+    color: #f1f5f9 !important;
+  }
+
+  /* Included Lines section styling */
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group .o_horizontal_separator,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group .o_horizontal_separator {
+    color: #f1f5f9 !important;
+    border-left: 4px solid #7c3aed !important;
+    padding-left: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em;
+  }
+
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group .o_list_view,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group .o_list_view {
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group table.o_list_table th,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group table.o_list_table th {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group table.o_list_table td,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group table.o_list_table td {
+    color: #cbd5e1 !important;
+  }
+
+  .o_form_view.zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group table.o_list_table tr:hover td,
+  .o_form_view .zrn_prodigyn_report_detail_form .zrn_prodigyn_report_detail_lines_group table.o_list_table tr:hover td {
+    background-color: rgba(124, 58, 237, 0.12) !important;
+  }
 }
