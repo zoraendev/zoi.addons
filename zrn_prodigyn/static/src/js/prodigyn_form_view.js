@@ -13,7 +13,11 @@ class ZrnProdigynFormController extends FormController {
 
   get modelParams() {
     const modelParams = super.modelParams;
-    const multiRecordModels = ["zrn_prodigyn.inicio", "zrn_prodigyn.production.planning"];
+    const multiRecordModels = [
+      "zrn_prodigyn.inicio",
+      "zrn_prodigyn.production.planning",
+      "zrn_prodigyn.reporting.analysis",
+    ];
     if (multiRecordModels.includes(this.props.resModel)) {
       const activeIds = this.props.context?.active_ids || [];
       if (activeIds.length > 1) {

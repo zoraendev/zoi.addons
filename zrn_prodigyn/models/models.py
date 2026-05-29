@@ -40,6 +40,9 @@ class ZrnProdigynNavigationMixin:
     def action_open_button_5(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_delivery_planning')
 
+    def action_open_reporting_center(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_reporting_analysis')
+
     def action_open_settings_dashboard(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_settings')
 
@@ -313,10 +316,10 @@ class ZrnProdigynInicio(ZrnProdigynNavigationMixin, models.Model):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_resource_planning')
 
     def action_open_scenarios(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_scenarios')
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_reporting_scenarios')
 
     def action_open_reporting(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_reporting')
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_reporting_analysis')
 
 class ZrnProdigynProductionPlanning(ZrnProdigynNavigationMixin, models.Model):
     _name = 'zrn_prodigyn.production.planning'
