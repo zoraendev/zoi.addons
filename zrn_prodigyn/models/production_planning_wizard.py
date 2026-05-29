@@ -1,4 +1,17 @@
-# -*- coding: utf-8 -*-
+from collections import OrderedDict
+from datetime import datetime, timedelta
+
+def escape(s):
+    if not isinstance(s, str):
+        s = str(s)
+    return (
+        s.replace('&', '&amp;')
+         .replace('<', '&lt;')
+         .replace('>', '&gt;')
+         .replace('"', '&quot;')
+         .replace("'", '&#39;')
+     )
+
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -90,6 +103,11 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
     report_customer_count = fields.Integer(string='Clientes en reporte', readonly=True)
     report_product_count = fields.Integer(string='Productos en reporte', readonly=True)
     report_date_range_label = fields.Char(string='Rango consultado', readonly=True)
+    report_html = fields.Html(
+        string='Detalle del reporte',
+        sanitize=False,
+        readonly=True,
+    )
     report_date_from_label = fields.Char(string='Fecha inicial del reporte', readonly=True)
     report_date_to_label = fields.Char(string='Fecha final del reporte', readonly=True)
     report_date_range_mode = fields.Selection(
@@ -283,6 +301,7 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             wizard.report_date_from_label = False
             wizard.report_date_to_label = False
             wizard.report_date_range_mode = 'all'
+            wizard.report_html = False
 
     def _get_effective_report_date_range(self, candidate_lines):
         self.ensure_one()
@@ -706,6 +725,323 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         wizard.report_active_tab = summary_tab or 'overview'
         return wizard.action_open_report()
 
+    def _get_inventory_snapshot_label(self):
+        snapshot_date = fields.Date.context_today(self)
+        if not snapshot_date:
+            return False
+        return snapshot_date.strftime('%d/%m/%Y')
+
+    def _get_planning_range_label(self, candidate_lines):
+        self.ensure_one()
+        date_from, date_to = self._get_effective_report_date_range(candidate_lines)
+        if date_from and date_to:
+            return f'{date_from.strftime("%d/%m/%Y")} al {date_to.strftime("%d/%m/%Y")}'
+        if date_from:
+            return f'desde {date_from.strftime("%d/%m/%Y")}'
+        if date_to:
+            return f'hasta {date_to.strftime("%d/%m/%Y")}'
+        return 'todas las fechas'
+
+    def _format_report_number(self, value):
+        value = float(value or 0.0)
+        if value.is_integer():
+            return f'{int(value):,}'
+        return f'{value:,.2f}'
+
+    def _get_report_week_group_key(self, fecha_entrega=False):
+        fecha_value = self._coerce_to_date(fecha_entrega)
+        if not fecha_value:
+            return False
+        week_of_month = ((fecha_value.day - 1) // 7) + 1
+        return (fecha_value.year, fecha_value.month, week_of_month)
+
+    def _get_report_month_group_key(self, fecha_entrega=False):
+        fecha_value = self._coerce_to_date(fecha_entrega)
+        if not fecha_value:
+            return False
+        return (fecha_value.year, fecha_value.month)
+
+    def _format_report_week_label(self, week_key):
+        if not week_key:
+            return 'Semana'
+        year, month, week_of_month = week_key
+        month_names = {
+            1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+            7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
+        }
+        return f'Semana {week_of_month} {month_names.get(month, "")} {year}'.strip()
+
+    def _format_report_month_label(self, month_key):
+        if not month_key:
+            return 'Total mes'
+        year, month = month_key
+        month_names = {
+            1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+            7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
+        }
+        return f'Total {month_names.get(month, "")} {year}'.strip()
+
+    def _format_report_day_label(self, day_name, fecha_entrega=False):
+        if not fecha_entrega:
+            return escape(day_name or '')
+        fecha_value = self._coerce_to_date(fecha_entrega)
+        if not fecha_value:
+            return escape(day_name or '')
+        return (
+            f'<span class="zrn_am_day_heading">{escape(day_name or "")}</span>'
+            f'<span class="zrn_am_day_heading_date">Fecha de entrega: {escape(fecha_value.strftime("%d/%m/%Y"))}</span>'
+        )
+
+    def _get_report_group_sort_key(self, group_key, group_meta=None):
+        fecha_value = self._coerce_to_date((group_meta or {}).get('fecha_entrega') or group_key)
+        if fecha_value:
+            return (0, fecha_value)
+        order_map = {
+            'Lunes': 0, 'Martes': 1, 'Miercoles': 2, 'Jueves': 3, 'Viernes': 4, 'Sabado': 5, 'Domingo': 6,
+        }
+        day_name = (group_meta or {}).get('day_name') or group_key
+        return (1, order_map.get(day_name or '', 99), day_name or '')
+
+    def _build_report_matrix_payload(self, candidate_lines):
+        day_client_order = OrderedDict()
+        day_meta_map = {}
+        product_buckets = OrderedDict()
+
+        # Let's get stock data for products in advance
+        product_ids = candidate_lines.mapped('product_id').ids
+        stock_data = {}
+        StockQuant = self.env['stock.quant'] if 'stock.quant' in self.env else False
+        if product_ids and StockQuant:
+            grouped_quants = StockQuant.read_group(
+                [('product_id', 'in', product_ids), ('location_id.usage', '=', 'internal')],
+                ['product_id', 'available_quantity:sum', 'quantity:sum'],
+                ['product_id'],
+            )
+            stock_data = {
+                item['product_id'][0]: {
+                    'stock_initial': item.get('quantity', 0.0),
+                    'stock_free': item.get('available_quantity', 0.0),
+                }
+                for item in grouped_quants
+                if item.get('product_id')
+            }
+
+        # Day names dictionary in Spanish
+        day_names_es = {
+            'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miercoles',
+            'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sabado', 'Sunday': 'Domingo'
+        }
+
+        for line in candidate_lines:
+            fecha_entrega = self._get_effective_line_date(line)
+            if not fecha_entrega:
+                continue
+            day_date = fields.Date.to_string(fecha_entrega)
+            day_name = day_names_es.get(fecha_entrega.strftime('%A'), fecha_entrega.strftime('%A'))
+            day_key = day_date or day_name or ''
+            
+            client_name = line.order_id.partner_id.name or 'Punto de venta sin nombre'
+            day_clients = day_client_order.setdefault(day_key, [])
+            if client_name not in day_clients:
+                day_clients.append(client_name)
+            if day_key and day_key not in day_meta_map:
+                day_meta_map[day_key] = {
+                    'day_name': day_name,
+                    'fecha_entrega': day_date,
+                }
+
+            product = line.product_id
+            product_key = product.id or 0
+            stock_info = stock_data.get(product.id, {})
+            product_bucket = product_buckets.setdefault(product_key, {
+                'barcode': product.barcode or '',
+                'item_vm': product.default_code or '',
+                'name': product.display_name or 'Producto sin nombre',
+                'initial_inventory': float(stock_info.get('stock_initial', 0.0)),
+                'week_total': 0.0,
+                'by_day': {},
+            })
+            product_bucket['week_total'] += float(line.product_uom_qty or 0.0)
+
+            day_bucket = product_bucket['by_day'].setdefault(day_key, {})
+            day_bucket[client_name] = day_bucket.get(client_name, 0.0) + float(line.product_uom_qty or 0.0)
+
+        sorted_days = sorted(
+            day_client_order.keys(),
+            key=lambda group_key: self._get_report_group_sort_key(group_key, day_meta_map.get(group_key)),
+        )
+        week_day_order = OrderedDict()
+        for day_key in sorted_days:
+            week_key = self._get_report_week_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
+            week_day_order.setdefault(week_key, []).append(day_key)
+
+        month_week_order = OrderedDict()
+        for week_key, week_days in week_day_order.items():
+            month_key = False
+            for day_key in week_days:
+                month_key = self._get_report_month_group_key((day_meta_map.get(day_key) or {}).get('fecha_entrega') or day_key)
+                if month_key:
+                    break
+            month_week_order.setdefault(month_key, []).append(week_key)
+
+        week_display_meta = {
+            week_key: {
+                'days': week_days,
+                'show_total': len(week_days) > 1,
+            }
+            for week_key, week_days in week_day_order.items()
+        }
+        month_display_meta = {
+            month_key: {
+                'weeks': month_weeks,
+                'show_total': len(month_weeks) > 1,
+            }
+            for month_key, month_weeks in month_week_order.items()
+        }
+
+        return {
+            'day_client_order': day_client_order,
+            'day_meta_map': day_meta_map,
+            'product_buckets': product_buckets,
+            'week_day_order': week_day_order,
+            'month_week_order': month_week_order,
+            'week_display_meta': week_display_meta,
+            'month_display_meta': month_display_meta,
+        }
+
+    def _build_report_html(self, candidate_lines):
+        if not candidate_lines:
+            return '<div class="zrn_am_report_empty">No hay ordenes de venta para mostrar con la seleccion actual.</div>'
+        matrix = self._build_report_matrix_payload(candidate_lines)
+        day_client_order = matrix['day_client_order']
+        day_meta_map = matrix['day_meta_map']
+        product_buckets = matrix['product_buckets']
+        week_day_order = matrix['week_day_order']
+        month_week_order = matrix['month_week_order']
+        week_display_meta = matrix['week_display_meta']
+        month_display_meta = matrix['month_display_meta']
+
+        parts = [
+            '<div class="zrn_am_report_matrix_wrap">',
+            '<table class="zrn_am_report_matrix">',
+            '<thead>',
+            '<tr>',
+            '<th class="zrn_am_sticky_col" rowspan="3">Cod. barra</th>',
+            '<th class="zrn_am_sticky_col zrn_am_sticky_col_2" rowspan="3">Item MV</th>',
+            '<th class="zrn_am_sticky_col zrn_am_sticky_col_3" rowspan="3">Producto</th>',
+            f'<th colspan="3">Inventario al {escape(self._get_inventory_snapshot_label() or "")}</th>',
+        ]
+
+        for month_key, month_weeks in month_week_order.items():
+            for week_key in month_weeks:
+                week_days = week_day_order.get(week_key, [])
+                for day_key in week_days:
+                    day_meta = day_meta_map.get(day_key, {})
+                    parts.append(
+                        f'<th colspan="{len(day_client_order.get(day_key, [])) + 1}">{self._format_report_day_label(day_meta.get("day_name") or day_key, day_meta.get("fecha_entrega"))}</th>'
+                    )
+                if week_display_meta.get(week_key, {}).get('show_total'):
+                    parts.append(f'<th class="zrn_am_week_total_head">{escape(self._format_report_week_label(week_key))}</th>')
+            if month_display_meta.get(month_key, {}).get('show_total'):
+                parts.append(f'<th class="zrn_am_month_total_head">{escape(self._format_report_month_label(month_key))}</th>')
+
+        parts.extend([
+            '</tr>',
+            '<tr>',
+            f'<th rowspan="2">Stock inicial al {escape(self._get_inventory_snapshot_label() or "")}</th>',
+            f'<th rowspan="2">Total rango {escape(self._get_planning_range_label(candidate_lines))}</th>',
+            f'<th rowspan="2">Stock final proyectado del rango</th>',
+        ])
+
+        for month_key, month_weeks in month_week_order.items():
+            for week_key in month_weeks:
+                week_days = week_day_order.get(week_key, [])
+                for day_key in week_days:
+                    for client_name in day_client_order.get(day_key, []):
+                        parts.append(f'<th>{escape(client_name)}</th>')
+                    parts.append('<th class="zrn_am_day_total_head">Ventas dia</th>')
+                if week_display_meta.get(week_key, {}).get('show_total'):
+                    parts.append('<th class="zrn_am_week_total_head zrn_am_week_total_title">Ventas semana</th>')
+            if month_display_meta.get(month_key, {}).get('show_total'):
+                parts.append('<th class="zrn_am_month_total_head zrn_am_month_total_title">Ventas mes</th>')
+
+        parts.extend(['</tr>', '<tr>'])
+
+        for month_key, month_weeks in month_week_order.items():
+            for week_key in month_weeks:
+                week_days = week_day_order.get(week_key, [])
+                for day_key in week_days:
+                    for _client_name in day_client_order.get(day_key, []):
+                        parts.append('<th>OC</th>')
+                    parts.append('<th class="zrn_am_day_total_head zrn_am_day_total_subhead">OC</th>')
+                if week_display_meta.get(week_key, {}).get('show_total'):
+                    parts.append('<th class="zrn_am_week_total_head zrn_am_week_total_subhead">OC</th>')
+            if month_display_meta.get(month_key, {}).get('show_total'):
+                parts.append('<th class="zrn_am_month_total_head zrn_am_month_total_subhead">OC</th>')
+
+        parts.extend(['</tr>', '</thead>', '<tbody>'])
+
+        for product_data in product_buckets.values():
+            final_inventory = product_data['initial_inventory'] - product_data['week_total']
+            
+            # Formato condicional del inventario proyectado final
+            if final_inventory < 0:
+                final_class = 'zrn_am_num zrn_am_stock_shortage'
+            elif final_inventory > 0:
+                final_class = 'zrn_am_num zrn_am_stock_surplus'
+            else:
+                final_class = 'zrn_am_num zrn_am_stock_zero'
+            
+            # Atenuar stock inicial y total del rango si son cero
+            initial_class = 'zrn_am_num zrn_am_num_zero' if product_data['initial_inventory'] == 0.0 else 'zrn_am_num'
+            range_total_class = 'zrn_am_num zrn_am_num_zero' if product_data['week_total'] == 0.0 else 'zrn_am_num'
+
+            parts.extend([
+                '<tr>',
+                f'<td class="zrn_am_sticky_col">{escape(product_data["barcode"])}</td>',
+                f'<td class="zrn_am_sticky_col zrn_am_sticky_col_2">{escape(product_data["item_vm"])}</td>',
+                f'<td class="zrn_am_sticky_col zrn_am_sticky_col_3 zrn_am_product_name">{escape(product_data["name"])}</td>',
+                f'<td class="{initial_class}">{self._format_report_number(product_data["initial_inventory"])}</td>',
+                f'<td class="{range_total_class}">{self._format_report_number(product_data["week_total"])}</td>',
+                f'<td class="{final_class}">{self._format_report_number(final_inventory)}</td>',
+            ])
+
+            for month_key, month_weeks in month_week_order.items():
+                month_total_oc = 0.0
+
+                for week_key in month_weeks:
+                    week_days = week_day_order.get(week_key, [])
+                    week_total_oc = 0.0
+
+                    for day_key in week_days:
+                        day_total_oc = 0.0
+                        day_values = product_data['by_day'].get(day_key, {})
+
+                        for client_name in day_client_order.get(day_key, []):
+                            sale_qty = float(day_values.get(client_name, 0.0))
+                            day_total_oc += sale_qty
+                            qty_class = 'zrn_am_num zrn_am_num_zero' if sale_qty == 0.0 else 'zrn_am_num'
+                            parts.append(f'<td class="{qty_class}">{self._format_report_number(sale_qty)}</td>')
+
+                        week_total_oc += day_total_oc
+                        day_total_class = 'zrn_am_num zrn_am_day_total zrn_am_num_zero' if day_total_oc == 0.0 else 'zrn_am_num zrn_am_day_total'
+                        parts.append(f'<td class="{day_total_class}">{self._format_report_number(day_total_oc)}</td>')
+
+                    month_total_oc += week_total_oc
+                    if week_display_meta.get(week_key, {}).get('show_total'):
+                        week_total_class = 'zrn_am_num zrn_am_week_total zrn_am_num_zero' if week_total_oc == 0.0 else 'zrn_am_num zrn_am_week_total'
+                        parts.append(f'<td class="{week_total_class}">{self._format_report_number(week_total_oc)}</td>')
+
+                if month_display_meta.get(month_key, {}).get('show_total'):
+                    month_total_class = 'zrn_am_num zrn_am_month_total zrn_am_num_zero' if month_total_oc == 0.0 else 'zrn_am_num zrn_am_month_total'
+                    parts.append(f'<td class="{month_total_class}">{self._format_report_number(month_total_oc)}</td>')
+
+            parts.append('</tr>')
+
+        parts.extend(['</tbody>', '</table>', '</div>'])
+        return ''.join(parts)
+
+
     def action_continue(self):
         self.ensure_one()
         candidate_lines = self._search_sale_lines_from_filters(
@@ -722,6 +1058,7 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
             'report_order_count': len(candidate_lines.mapped('order_id')),
             'report_customer_count': len(candidate_lines.mapped('order_id.partner_shipping_id')),
             'report_product_count': len(candidate_lines.mapped('product_id')),
+            'report_html': self._build_report_html(candidate_lines),
         })
         date_range_payload = self._get_report_date_range_payload(candidate_lines)
         self.write({
