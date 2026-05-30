@@ -25,23 +25,6 @@
                     </div>
 
                     <div class="zrn_prodigyn_reporting_commercial_view">
-                        <div class="zrn_prodigyn_reporting_commercial_hero">
-                            <div class="zrn_prodigyn_reporting_commercial_hero_copy">
-                                <div class="zrn_prodigyn_reporting_commercial_kicker">Comercial</div>
-                                <div class="oe_title">
-                                    <h1>Hub Comercial</h1>
-                                </div>
-                                <div class="zrn_prodigyn_reporting_commercial_intro">
-                                    Resumen principal del submodulo con datos reales de Odoo para concentracion comercial por cuenta, punto de venta y producto.
-                                </div>
-                            </div>
-                            <div class="zrn_prodigyn_reporting_commercial_status">
-                                <span class="zrn_prodigyn_reporting_commercial_status_label">Periodo activo</span>
-                                <span class="zrn_prodigyn_reporting_commercial_status_value"><field name="commercial_period_label" readonly="1" nolabel="1"/></span>
-                                <span class="zrn_prodigyn_reporting_commercial_status_meta">Base armada con pedidos confirmados o completados del a&#241;o en curso.</span>
-                            </div>
-                        </div>
-
                         <div class="zrn_prodigyn_reporting_commercial_stats">
                             <div class="zrn_prodigyn_reporting_commercial_stat_box">
                                 <span>Venta total</span>
@@ -68,24 +51,143 @@
                         <div class="zrn_prodigyn_reporting_commercial_grid">
                             <section class="zrn_prodigyn_reporting_commercial_panel zrn_prodigyn_reporting_commercial_panel_wide">
                                 <div class="zrn_prodigyn_reporting_commercial_panel_head">
-                                    <span>Venta diaria</span>
-                                    <span>Placeholder estatico</span>
+                                    <div class="zrn_prodigyn_reporting_commercial_chart_tabs" data-commercial-chart-tabs="1">
+                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab is-active" data-chart-tab="linea">Linea / Area</a>
+                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="barras_verticales">Barras verticales</a>
+                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="barras_horizontales">Barras horizontales</a>
+                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="barras_apiladas">Barras apiladas</a>
+                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="pareto">Pareto 80/20</a>
+                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="heatmap">Heatmap calendario</a>
+                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="donut">Donut / Pie</a>
+                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="scatter">Scatter / Burbujas</a>
+                                    </div>
+                                    <span>Graficas utiles del resumen</span>
                                 </div>
                                 <div class="zrn_prodigyn_reporting_commercial_daily_static">
-                                    <div class="zrn_prodigyn_reporting_commercial_daily_note">
-                                        La grafica quedara estatica por ahora. En el siguiente pase la conectamos a la serie diaria real.
-                                    </div>
-                                    <div class="zrn_prodigyn_reporting_commercial_chart_placeholder" aria-hidden="true">
-                                        <span style="height:32%"></span>
-                                        <span style="height:48%"></span>
-                                        <span style="height:41%"></span>
-                                        <span style="height:64%"></span>
-                                        <span style="height:58%"></span>
-                                        <span style="height:80%"></span>
-                                        <span style="height:62%"></span>
-                                        <span style="height:74%"></span>
-                                        <span style="height:54%"></span>
-                                        <span style="height:68%"></span>
+                                    <div class="zrn_prodigyn_reporting_commercial_chart_stage">
+                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel is-active" data-chart-panel="linea">
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
+                                                <strong>Linea / Area</strong>
+                                                <span>Tendencia de venta diaria, pedidos o unidades.</span>
+                                            </div>
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_placeholder zrn_prodigyn_reporting_commercial_chart_placeholder_line" aria-hidden="true">
+                                                <span style="left:4%; top:72%"></span>
+                                                <span style="left:16%; top:58%"></span>
+                                                <span style="left:28%; top:62%"></span>
+                                                <span style="left:40%; top:44%"></span>
+                                                <span style="left:52%; top:48%"></span>
+                                                <span style="left:64%; top:28%"></span>
+                                                <span style="left:76%; top:36%"></span>
+                                                <span style="left:88%; top:24%"></span>
+                                            </div>
+                                        </div>
+                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="barras_verticales">
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
+                                                <strong>Barras verticales</strong>
+                                                <span>Comparativo rapido por dia, semana o mes.</span>
+                                            </div>
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_placeholder zrn_prodigyn_reporting_commercial_chart_placeholder_bars" aria-hidden="true">
+                                                <span style="height:30%"></span>
+                                                <span style="height:46%"></span>
+                                                <span style="height:38%"></span>
+                                                <span style="height:64%"></span>
+                                                <span style="height:58%"></span>
+                                                <span style="height:80%"></span>
+                                                <span style="height:52%"></span>
+                                                <span style="height:68%"></span>
+                                                <span style="height:44%"></span>
+                                                <span style="height:74%"></span>
+                                            </div>
+                                        </div>
+                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="barras_horizontales">
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
+                                                <strong>Barras horizontales</strong>
+                                                <span>Ranking de clientes, PDVs, canales o productos.</span>
+                                            </div>
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_placeholder zrn_prodigyn_reporting_commercial_chart_placeholder_hbars" aria-hidden="true">
+                                                <span style="width:88%"></span>
+                                                <span style="width:74%"></span>
+                                                <span style="width:66%"></span>
+                                                <span style="width:54%"></span>
+                                                <span style="width:46%"></span>
+                                                <span style="width:38%"></span>
+                                            </div>
+                                        </div>
+                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="barras_apiladas">
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
+                                                <strong>Barras apiladas</strong>
+                                                <span>Composicion por canal, cuenta o categoria.</span>
+                                            </div>
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_placeholder zrn_prodigyn_reporting_commercial_chart_placeholder_stacked" aria-hidden="true">
+                                                <div><i style="height:34%"></i><i style="height:18%"></i><i style="height:12%"></i></div>
+                                                <div><i style="height:42%"></i><i style="height:16%"></i><i style="height:9%"></i></div>
+                                                <div><i style="height:28%"></i><i style="height:22%"></i><i style="height:14%"></i></div>
+                                                <div><i style="height:48%"></i><i style="height:20%"></i><i style="height:10%"></i></div>
+                                                <div><i style="height:36%"></i><i style="height:18%"></i><i style="height:16%"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="pareto">
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
+                                                <strong>Pareto 80/20</strong>
+                                                <span>Concentracion de venta en clientes, PDVs o productos.</span>
+                                            </div>
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_placeholder zrn_prodigyn_reporting_commercial_chart_placeholder_pareto" aria-hidden="true">
+                                                <div class="zrn_prodigyn_reporting_commercial_chart_placeholder_bars">
+                                                    <span style="height:78%"></span>
+                                                    <span style="height:56%"></span>
+                                                    <span style="height:42%"></span>
+                                                    <span style="height:34%"></span>
+                                                    <span style="height:28%"></span>
+                                                    <span style="height:20%"></span>
+                                                </div>
+                                                <div class="zrn_prodigyn_reporting_commercial_chart_placeholder_curve">
+                                                    <span style="left:5%; top:68%"></span>
+                                                    <span style="left:23%; top:46%"></span>
+                                                    <span style="left:41%; top:30%"></span>
+                                                    <span style="left:59%; top:18%"></span>
+                                                    <span style="left:77%; top:11%"></span>
+                                                    <span style="left:92%; top:8%"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="heatmap">
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
+                                                <strong>Heatmap calendario</strong>
+                                                <span>Patrones de actividad por dia o semana.</span>
+                                            </div>
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_placeholder zrn_prodigyn_reporting_commercial_chart_placeholder_heatmap" aria-hidden="true">
+                                                <span class="tone-1"></span><span class="tone-3"></span><span class="tone-2"></span><span class="tone-4"></span><span class="tone-1"></span><span class="tone-5"></span><span class="tone-2"></span>
+                                                <span class="tone-2"></span><span class="tone-4"></span><span class="tone-1"></span><span class="tone-3"></span><span class="tone-2"></span><span class="tone-4"></span><span class="tone-1"></span>
+                                                <span class="tone-3"></span><span class="tone-1"></span><span class="tone-2"></span><span class="tone-5"></span><span class="tone-3"></span><span class="tone-2"></span><span class="tone-4"></span>
+                                                <span class="tone-1"></span><span class="tone-2"></span><span class="tone-4"></span><span class="tone-2"></span><span class="tone-5"></span><span class="tone-3"></span><span class="tone-1"></span>
+                                            </div>
+                                        </div>
+                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="donut">
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
+                                                <strong>Donut / Pie</strong>
+                                                <span>Participacion porcentual simple por canal o categoria.</span>
+                                            </div>
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_placeholder zrn_prodigyn_reporting_commercial_chart_placeholder_donut" aria-hidden="true">
+                                                <div class="zrn_prodigyn_reporting_commercial_donut_ring"></div>
+                                                <div class="zrn_prodigyn_reporting_commercial_donut_legend">
+                                                    <span></span><span></span><span></span><span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="scatter">
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
+                                                <strong>Scatter / Burbujas</strong>
+                                                <span>Relacion entre ticket, pedidos y venta.</span>
+                                            </div>
+                                            <div class="zrn_prodigyn_reporting_commercial_chart_placeholder zrn_prodigyn_reporting_commercial_chart_placeholder_scatter" aria-hidden="true">
+                                                <span style="left:10%; top:70%; width:18px; height:18px"></span>
+                                                <span style="left:24%; top:52%; width:22px; height:22px"></span>
+                                                <span style="left:38%; top:60%; width:14px; height:14px"></span>
+                                                <span style="left:52%; top:34%; width:28px; height:28px"></span>
+                                                <span style="left:66%; top:44%; width:20px; height:20px"></span>
+                                                <span style="left:80%; top:26%; width:32px; height:32px"></span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </section>

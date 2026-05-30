@@ -56,6 +56,7 @@ Modulo principal de Prodigyn.
             'zrn_prodigyn/static/src/js/production_report_form_view.js',
             'zrn_prodigyn/static/src/js/report_summary_list_view.js',
             'zrn_prodigyn/static/src/reporting_analysis/executive/js/reporting_executive_view.js',
+            'zrn_prodigyn/static/src/reporting_analysis/commercial/js/reporting_commercial_tabs.js',
             'zrn_prodigyn/static/src/xml/prodigyn_form_view.xml',
             'zrn_prodigyn/static/src/xml/production_report_form_view.xml',
             'zrn_prodigyn/static/src/xml/report_summary_list_view.xml',
