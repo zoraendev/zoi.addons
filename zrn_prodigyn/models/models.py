@@ -45,6 +45,9 @@ class ZrnProdigynNavigationMixin:
     def action_open_reporting_center(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_reporting_analysis')
 
+    def action_open_commercial_center(self):
+        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_commercial_planning')
+
     def action_open_settings_dashboard(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_settings')
 

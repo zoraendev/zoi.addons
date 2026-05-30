@@ -26,6 +26,8 @@ Modulo principal de Prodigyn.
     'data': [
         'security/ir.model.access.csv',
         'views/res_config_settings.xml',
+        'views/commercial_planning_views.xml',
+        'views/commercial_planning_placeholders.xml',
         'views/production_planning_views.xml',
         'views/purchase_planning_views.xml',
         'views/delivery_planning_views.xml',
