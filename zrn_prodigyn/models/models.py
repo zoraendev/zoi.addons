@@ -391,6 +391,11 @@ class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
     commercial_daily_graph_data = fields.Text(string='Grafica de venta diaria', readonly=True)
     commercial_totals_graph_data = fields.Text(string='Grafica de venta total', readonly=True)
     commercial_ranking_graph_data = fields.Text(string='Grafica de ranking comercial', readonly=True)
+    commercial_stacked_chart_data = fields.Text(string='Grafica apilada comercial', readonly=True)
+    commercial_pareto_chart_data = fields.Text(string='Grafica pareto comercial', readonly=True)
+    commercial_heatmap_chart_data = fields.Text(string='Grafica heatmap comercial', readonly=True)
+    commercial_donut_chart_data = fields.Text(string='Grafica donut comercial', readonly=True)
+    commercial_scatter_chart_data = fields.Text(string='Grafica scatter comercial', readonly=True)
     commercial_channel_line_ids = fields.One2many(
         'zrn_prodigyn.reporting.commercial.channel.line',
         'tool_id',
@@ -554,25 +559,160 @@ class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
             product.id: product.display_name
             for product in self.env['product.product'].browse([item['product_id'] for item in products if item.get('product_id')])
         }
-        values = [{
-            'label': (product_map.get(item['product_id']) or _('Sin producto'))[:24],
-            'value': round(item['sales_amount'], 2),
-            'type': 'past',
-        } for item in products[:8]]
+        labels = [(product_map.get(item['product_id']) or _('Sin producto'))[:24] for item in products[:8]]
+        values = [round(item['sales_amount'], 2) for item in products[:8]]
 
-        if not values:
-            values.append({
-                'label': _('Sin ventas'),
-                'value': 0.0,
-                'type': 'past',
+        if not labels:
+            labels = [_('Sin ventas')]
+            values = [0.0]
+
+        return json.dumps({
+            'labels': labels,
+            'values': values,
+        })
+
+    @api.model
+    def _build_commercial_stacked_chart_json(self, channel_map, order_lines):
+        ranked_channels = sorted(channel_map.values(), key=lambda item: item['total_amount'], reverse=True)[:5]
+        ranked_channel_ids = [item['partner_id'] for item in ranked_channels]
+
+        product_amounts = defaultdict(float)
+        channel_product_amounts = defaultdict(lambda: defaultdict(float))
+        for line in order_lines:
+            partner = line.order_id.partner_id.commercial_partner_id or line.order_id.partner_id
+            product = line.product_id
+            if not partner or partner.id not in ranked_channel_ids or not product:
+                continue
+            amount = float(line.price_total or 0.0)
+            product_amounts[product.id] += amount
+            channel_product_amounts[partner.id][product.id] += amount
+
+        top_product_ids = [product_id for product_id, _amount in sorted(product_amounts.items(), key=lambda item: item[1], reverse=True)[:4]]
+        product_map = {
+            product.id: product.display_name[:24]
+            for product in self.env['product.product'].browse(top_product_ids)
+        }
+        labels = []
+        series = []
+
+        for channel in ranked_channels:
+            partner = self.env['res.partner'].browse(channel['partner_id'])
+            labels.append(partner.display_name[:24])
+
+        for product_id in top_product_ids:
+            series.append({
+                'name': product_map.get(product_id) or _('Producto'),
+                'type': 'bar',
+                'stack': 'total',
+                'data': [
+                    round(channel_product_amounts[channel['partner_id']].get(product_id, 0.0), 2)
+                    for channel in ranked_channels
+                ],
             })
 
-        return json.dumps([{
-            'values': values,
-            'title': _('Top productos'),
-            'key': _('Venta total por producto'),
-            'is_sample_data': False,
-        }])
+        return json.dumps({
+            'labels': labels,
+            'series': series,
+        })
+
+    @api.model
+    def _build_commercial_pareto_chart_json(self, products):
+        top_products = products[:10]
+        total_sales = sum(item['sales_amount'] for item in top_products) or 1.0
+        labels = []
+        bar_values = []
+        cumulative_values = []
+        running_total = 0.0
+
+        product_map = {
+            product.id: product.display_name
+            for product in self.env['product.product'].browse([item['product_id'] for item in top_products if item.get('product_id')])
+        }
+
+        for item in top_products:
+            running_total += item['sales_amount']
+            labels.append((product_map.get(item['product_id']) or _('Producto'))[:24])
+            bar_values.append(round(item['sales_amount'], 2))
+            cumulative_values.append(round((running_total / total_sales) * 100, 2))
+
+        return json.dumps({
+            'labels': labels,
+            'bar_values': bar_values,
+            'line_values': cumulative_values,
+        })
+
+    @api.model
+    def _build_commercial_heatmap_chart_json(self, orders, date_from, date_to):
+        series_start = max(date_from, date_to - timedelta(days=55)) if date_from and date_to else date_from
+        current_date = series_start
+        order_counts = defaultdict(int)
+
+        for order in orders:
+            if not order.date_order:
+                continue
+            order_date = fields.Datetime.to_datetime(order.date_order).date()
+            if order_date < series_start or order_date > date_to:
+                continue
+            order_counts[order_date] += 1
+
+        week_labels = []
+        day_labels = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
+        data = []
+        week_index_map = {}
+
+        while current_date and current_date <= date_to:
+            week_start = current_date - timedelta(days=current_date.weekday())
+            if week_start not in week_index_map:
+                week_index_map[week_start] = len(week_labels)
+                week_labels.append(week_start.strftime('%d/%m'))
+            data.append([
+                week_index_map[week_start],
+                current_date.weekday(),
+                order_counts.get(current_date, 0),
+            ])
+            current_date += timedelta(days=1)
+
+        return json.dumps({
+            'week_labels': week_labels,
+            'day_labels': day_labels,
+            'data': data,
+        })
+
+    @api.model
+    def _build_commercial_donut_chart_json(self, channel_map):
+        ranked_channels = sorted(channel_map.values(), key=lambda item: item['total_amount'], reverse=True)[:6]
+        partner_map = {
+            partner.id: partner.display_name
+            for partner in self.env['res.partner'].browse([item['partner_id'] for item in ranked_channels if item.get('partner_id')])
+        }
+        series = [{
+            'name': (partner_map.get(item['partner_id']) or _('Canal'))[:28],
+            'value': round(item['total_amount'], 2),
+        } for item in ranked_channels]
+        return json.dumps({'series': series})
+
+    @api.model
+    def _build_commercial_scatter_chart_json(self, customers):
+        top_customers = customers[:10]
+        partner_map = {
+            partner.id: partner.display_name
+            for partner in self.env['res.partner'].browse([item['partner_id'] for item in top_customers if item.get('partner_id')])
+        }
+        points = []
+        for item in top_customers:
+            order_count = item.get('order_count') or 0
+            average_ticket = item.get('average_ticket')
+            if average_ticket is None:
+                average_ticket = (float(item.get('total_amount') or 0.0) / order_count) if order_count else 0.0
+            points.append({
+                'name': (partner_map.get(item['partner_id']) or _('PDV'))[:24],
+                'value': [
+                    round(average_ticket, 2),
+                    order_count,
+                    round(float(item.get('total_amount') or 0.0), 2),
+                ],
+            })
+        return json.dumps({'points': points})
 
     @api.model
     def _build_commercial_summary_payload(self, date_from, date_to):
@@ -681,6 +821,11 @@ class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
                 'commercial_daily_graph_data': self._build_commercial_line_chart_json(orders, date_from, date_to),
                 'commercial_totals_graph_data': self._build_commercial_totals_chart_json(orders, date_from, date_to),
                 'commercial_ranking_graph_data': self._build_commercial_ranking_chart_json(top_products),
+                'commercial_stacked_chart_data': self._build_commercial_stacked_chart_json(channel_map, order_lines),
+                'commercial_pareto_chart_data': self._build_commercial_pareto_chart_json(top_products),
+                'commercial_heatmap_chart_data': self._build_commercial_heatmap_chart_json(orders, date_from, date_to),
+                'commercial_donut_chart_data': self._build_commercial_donut_chart_json(channel_map),
+                'commercial_scatter_chart_data': self._build_commercial_scatter_chart_json(top_customers),
             },
             'channels': [
                 {

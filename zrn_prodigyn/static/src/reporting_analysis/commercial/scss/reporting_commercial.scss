@@ -22,6 +22,11 @@
   color: var(--commercial-text);
 }
 
+.zrn_prodigyn_reporting_commercial_chart_sources,
+.zrn_prodigyn_reporting_commercial_chart_source {
+  display: none;
+}
+
 .zrn_prodigyn_reporting_commercial_hero,
 .zrn_prodigyn_reporting_commercial_panel {
   background: var(--commercial-panel);
@@ -240,6 +245,13 @@
 .zrn_prodigyn_reporting_commercial_chart_native canvas {
   width: 100% !important;
   height: 246px !important;
+}
+
+.zrn_prodigyn_reporting_commercial_chart_canvas {
+  min-height: 280px;
+  border: 1px solid var(--commercial-line);
+  border-radius: 6px;
+  background: #fff;
 }
 
 .zrn_prodigyn_reporting_commercial_chart_placeholder {

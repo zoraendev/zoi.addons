@@ -1,5 +1,75 @@
 # ZRN Prodigyn
 
+## Control de librerias de graficas
+
+Para el Hub Comercial se manejaran dos caminos de graficas:
+
+- Graficas nativas de Odoo cuando el caso sea simple y el widget ya resuelva bien la necesidad.
+- Graficas con libreria JS externa cuando Odoo nativo no cubra el tipo de visualizacion o limite demasiado el layout del dashboard.
+
+### Graficas nativas de Odoo
+
+Se mantiene el uso de `widget="dashboard_graph"` para casos sencillos como:
+
+- linea o area simple
+- barras verticales simples
+- comparativos rapidos dentro del formulario
+
+Esto evita dependencias innecesarias cuando Odoo ya resuelve bien el caso.
+
+### Libreria externa aprobada
+
+La libreria autorizada para las graficas no cubiertas por Odoo nativo sera:
+
+- `Apache ECharts`
+
+### Motivo de eleccion
+
+Se elige `Apache ECharts` porque permite cubrir en una sola libreria los tipos que se necesitan en el resumen comercial sin forzar hacks visuales:
+
+- barras horizontales reales
+- barras apiladas
+- donut / pie
+- scatter / burbujas
+- heatmap calendario
+- pareto 80/20
+- combinaciones de series en un mismo lienzo
+
+Adicionalmente:
+
+- funciona bien en dashboards administrativos
+- permite configuraciones sobrias alineadas con Odoo
+- evita mezclar varias librerias para distintos tipos de grafica
+- da control suficiente para datos comerciales agregados
+
+### Regla de uso en este addon
+
+- Si la grafica se puede resolver con `dashboard_graph` sin perder claridad, se deja nativa de Odoo.
+- Si requiere barras horizontales, heatmap, donut, scatter, pareto o varias series combinadas, se implementa con `Apache ECharts`.
+- No se deben introducir varias librerias de graficas en paralelo para el mismo submodulo salvo decision documentada aqui.
+
+### Alcance inicial para Hub Comercial
+
+Graficas que pueden seguir nativas:
+
+- `Venta diaria, pedidos diarios, unidades`
+- `Venta total, pedidos, unidades`
+
+Graficas que migraran a `Apache ECharts`:
+
+- `Top clientes, top PDVs, top productos`
+- `Venta por canal y producto`
+- `Clientes, PDVs, productos`
+- `Venta diaria, pedidos, actividad`
+- `Venta por canal o categoria`
+- `Ticket promedio vs pedidos vs venta`
+
+### Estado actual
+
+- `dashboard_graph` ya se usa en el resumen comercial para algunas visualizaciones simples.
+- `Apache ECharts` queda aprobado y documentado en este archivo como libreria externa para la siguiente fase de implementacion.
+- Mientras no se integre en assets y JS del addon, no debe asumirse como activa en produccion.
+
 ## Planeacion desacoplada de ejecucion
 
 Para evitar que una orden de fabricacion creada con anticipacion reserve o afecte inventario antes de tiempo, la recomendacion es no usar `mrp.production` como tabla de planeacion.
