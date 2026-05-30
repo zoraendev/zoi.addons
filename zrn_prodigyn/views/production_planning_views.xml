@@ -712,8 +712,7 @@
                             <div class="zrn_prodigyn_production_report_table_toolbar">
                             </div>
                             <div class="zrn_prodigyn_production_report_table_placeholder">
-                                <div class="zrn_prodigyn_production_report_table_placeholder_title" invisible="report_active_tab != 'overview'">Espacio reservado para la tabla del reporte</div>
-                                <div class="zrn_prodigyn_production_report_table_placeholder_body" invisible="report_active_tab != 'overview'"/>
+                                <field name="report_html" widget="html" nolabel="1" readonly="1" invisible="report_active_tab != 'overview'"/>
                                 <div invisible="report_active_tab != 'customers'">
                                     <div class="zrn_prodigyn_production_report_list_shell">
                                         <button name="action_open_report_customers_list" type="object"
