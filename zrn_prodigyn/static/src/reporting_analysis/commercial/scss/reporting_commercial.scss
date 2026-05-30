@@ -221,6 +221,27 @@
   font-size: 12px;
 }
 
+.zrn_prodigyn_reporting_commercial_chart_native {
+  min-height: 280px;
+  padding: 12px 12px 8px;
+  border: 1px solid var(--commercial-line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.zrn_prodigyn_reporting_commercial_chart_native .o_field_widget {
+  width: 100%;
+}
+
+.zrn_prodigyn_reporting_commercial_chart_native .o_dashboard_graph {
+  height: 246px;
+}
+
+.zrn_prodigyn_reporting_commercial_chart_native canvas {
+  width: 100% !important;
+  height: 246px !important;
+}
+
 .zrn_prodigyn_reporting_commercial_chart_placeholder {
   position: relative;
   min-height: 240px;

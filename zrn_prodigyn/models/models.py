@@ -3,6 +3,7 @@
 import json
 import logging
 from collections import defaultdict
+from datetime import timedelta
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import HTTPSHandler, ProxyHandler, Request, build_opener
@@ -387,6 +388,9 @@ class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
     commercial_customer_count = fields.Integer(string='Clientes comerciales', readonly=True)
     commercial_point_count = fields.Integer(string='PDVs considerados', readonly=True)
     commercial_product_count = fields.Integer(string='Productos vendidos', readonly=True)
+    commercial_daily_graph_data = fields.Text(string='Grafica de venta diaria', readonly=True)
+    commercial_totals_graph_data = fields.Text(string='Grafica de venta total', readonly=True)
+    commercial_ranking_graph_data = fields.Text(string='Grafica de ranking comercial', readonly=True)
     commercial_channel_line_ids = fields.One2many(
         'zrn_prodigyn.reporting.commercial.channel.line',
         'tool_id',
@@ -460,6 +464,115 @@ class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
             fields.Date.to_string(date_from),
             fields.Date.to_string(date_to),
         )
+
+    @api.model
+    def _build_commercial_line_chart_json(self, orders, date_from, date_to):
+        series_start = max(date_from, date_to - timedelta(days=13)) if date_from and date_to else date_from
+        daily_amounts = defaultdict(float)
+        current_date = series_start
+
+        for order in orders:
+            if not order.date_order:
+                continue
+            order_date = fields.Datetime.to_datetime(order.date_order).date()
+            if order_date < series_start or order_date > date_to:
+                continue
+            daily_amounts[order_date] += float(order.amount_total or 0.0)
+
+        values = []
+        while current_date and current_date <= date_to:
+            values.append({
+                'x': current_date.strftime('%d/%m'),
+                'y': round(daily_amounts.get(current_date, 0.0), 2),
+                'name': current_date.strftime('%d/%m/%Y'),
+            })
+            current_date += timedelta(days=1)
+
+        if not values:
+            fallback_date = date_to or fields.Date.context_today(self)
+            values.append({
+                'x': fallback_date.strftime('%d/%m'),
+                'y': 0.0,
+                'name': fallback_date.strftime('%d/%m/%Y'),
+            })
+
+        return json.dumps([{
+            'values': values,
+            'title': _('Venta diaria'),
+            'key': _('Venta diaria'),
+            'area': True,
+            'color': '#355eff',
+            'is_sample_data': False,
+        }])
+
+    @api.model
+    def _build_commercial_totals_chart_json(self, orders, date_from, date_to):
+        series_start = max(date_from, date_to - timedelta(days=55)) if date_from and date_to else date_from
+        weekly_amounts = defaultdict(float)
+        week_order = []
+
+        for order in orders:
+            if not order.date_order:
+                continue
+            order_date = fields.Datetime.to_datetime(order.date_order).date()
+            if order_date < series_start or order_date > date_to:
+                continue
+            week_start = order_date - timedelta(days=order_date.weekday())
+            if week_start not in weekly_amounts:
+                week_order.append(week_start)
+            weekly_amounts[week_start] += float(order.amount_total or 0.0)
+
+        values = []
+        for week_start in sorted(week_order):
+            week_end = min(week_start + timedelta(days=6), date_to)
+            values.append({
+                'label': '%s - %s' % (
+                    week_start.strftime('%d/%m'),
+                    week_end.strftime('%d/%m'),
+                ),
+                'value': round(weekly_amounts[week_start], 2),
+                'type': 'past',
+            })
+
+        if not values and date_to:
+            values.append({
+                'label': date_to.strftime('%d/%m'),
+                'value': 0.0,
+                'type': 'past',
+            })
+
+        return json.dumps([{
+            'values': values,
+            'title': _('Venta total'),
+            'key': _('Venta total por semana'),
+            'is_sample_data': False,
+        }])
+
+    @api.model
+    def _build_commercial_ranking_chart_json(self, products):
+        product_map = {
+            product.id: product.display_name
+            for product in self.env['product.product'].browse([item['product_id'] for item in products if item.get('product_id')])
+        }
+        values = [{
+            'label': (product_map.get(item['product_id']) or _('Sin producto'))[:24],
+            'value': round(item['sales_amount'], 2),
+            'type': 'past',
+        } for item in products[:8]]
+
+        if not values:
+            values.append({
+                'label': _('Sin ventas'),
+                'value': 0.0,
+                'type': 'past',
+            })
+
+        return json.dumps([{
+            'values': values,
+            'title': _('Top productos'),
+            'key': _('Venta total por producto'),
+            'is_sample_data': False,
+        }])
 
     @api.model
     def _build_commercial_summary_payload(self, date_from, date_to):
@@ -564,6 +677,11 @@ class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
                 'commercial_point_count': len(customer_map),
                 'commercial_product_count': len(product_map),
             },
+            'charts': {
+                'commercial_daily_graph_data': self._build_commercial_line_chart_json(orders, date_from, date_to),
+                'commercial_totals_graph_data': self._build_commercial_totals_chart_json(orders, date_from, date_to),
+                'commercial_ranking_graph_data': self._build_commercial_ranking_chart_json(top_products),
+            },
             'channels': [
                 {
                     'sequence': index + 1,
@@ -618,6 +736,7 @@ class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
 
         for record in target_records:
             values = dict(payload['summary'])
+            values.update(payload['charts'])
             values.update({
                 'commercial_channel_line_ids': [(5, 0, 0)] + [
                     (0, 0, line_values) for line_values in payload['channels']
