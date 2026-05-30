@@ -60,6 +60,7 @@ Modulo principal de Prodigyn.
             'zrn_prodigyn/static/src/xml/production_report_form_view.xml',
             'zrn_prodigyn/static/src/xml/report_summary_list_view.xml',
             'zrn_prodigyn/static/src/reporting_analysis/executive/scss/reporting_executive.scss',
+            'zrn_prodigyn/static/src/reporting_analysis/commercial/scss/reporting_commercial.scss',
             'zrn_prodigyn/static/zrn/css/colors.css',
             'zrn_prodigyn/static/zrn/css/lib.css',
         ],

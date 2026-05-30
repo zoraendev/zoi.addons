@@ -2,6 +2,7 @@
 
 import json
 import logging
+from collections import defaultdict
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import HTTPSHandler, ProxyHandler, Request, build_opener
@@ -368,3 +369,319 @@ class ZrnProdigynInternalTool(ZrnProdigynNavigationMixin, models.Model):
     _description = 'Herramienta interna de Prodigyn'
 
     name = fields.Char(string='Nombre', required=True)
+    company_currency_id = fields.Many2one(
+        'res.currency',
+        string='Moneda',
+        default=lambda self: self.env.company.currency_id.id,
+        readonly=True,
+    )
+    commercial_date_from = fields.Date(string='Fecha inicial comercial', readonly=True)
+    commercial_date_to = fields.Date(string='Fecha final comercial', readonly=True)
+    commercial_period_label = fields.Char(string='Periodo comercial', readonly=True)
+    commercial_total_amount = fields.Monetary(
+        string='Venta total',
+        currency_field='company_currency_id',
+        readonly=True,
+    )
+    commercial_order_count = fields.Integer(string='Pedidos considerados', readonly=True)
+    commercial_customer_count = fields.Integer(string='Clientes comerciales', readonly=True)
+    commercial_point_count = fields.Integer(string='PDVs considerados', readonly=True)
+    commercial_product_count = fields.Integer(string='Productos vendidos', readonly=True)
+    commercial_channel_line_ids = fields.One2many(
+        'zrn_prodigyn.reporting.commercial.channel.line',
+        'tool_id',
+        string='Top canales',
+        readonly=True,
+    )
+    commercial_customer_line_ids = fields.One2many(
+        'zrn_prodigyn.reporting.commercial.customer.line',
+        'tool_id',
+        string='Top clientes / PDVs',
+        readonly=True,
+    )
+    commercial_product_line_ids = fields.One2many(
+        'zrn_prodigyn.reporting.commercial.product.line',
+        'tool_id',
+        string='Top productos',
+        readonly=True,
+    )
+
+    @api.model
+    def _get_commercial_tool_record(self):
+        return self.env.ref(
+            'zrn_prodigyn.zrn_prodigyn_reporting_commercial_default',
+            raise_if_not_found=False,
+        )
+
+    @api.model
+    def _get_commercial_summary_period(self):
+        date_to = fields.Date.to_date(fields.Date.context_today(self))
+        date_from = date_to.replace(month=1, day=1)
+        return date_from, date_to
+
+    @api.model
+    def _get_commercial_sale_orders(self, date_from, date_to):
+        if 'sale.order' not in self.env:
+            return self.env['sale.order']
+
+        domain = [
+            ('state', 'in', ['sale', 'done']),
+            ('partner_id', '!=', False),
+        ]
+        if date_from:
+            domain.append(('date_order', '>=', f'{date_from} 00:00:00'))
+        if date_to:
+            domain.append(('date_order', '<=', f'{date_to} 23:59:59'))
+
+        return self.env['sale.order'].search(domain, order='date_order desc, id desc')
+
+    @api.model
+    def _get_commercial_sale_order_lines(self, date_from, date_to):
+        if 'sale.order.line' not in self.env:
+            return self.env['sale.order.line']
+
+        domain = [
+            ('order_id.state', 'in', ['sale', 'done']),
+            ('display_type', '=', False),
+            ('product_id', '!=', False),
+        ]
+        if date_from:
+            domain.append(('order_id.date_order', '>=', f'{date_from} 00:00:00'))
+        if date_to:
+            domain.append(('order_id.date_order', '<=', f'{date_to} 23:59:59'))
+
+        return self.env['sale.order.line'].search(domain, order='id desc')
+
+    @api.model
+    def _build_commercial_period_label(self, date_from, date_to):
+        if not date_from or not date_to:
+            return 'Sin periodo'
+        return '%s al %s' % (
+            fields.Date.to_string(date_from),
+            fields.Date.to_string(date_to),
+        )
+
+    @api.model
+    def _build_commercial_summary_payload(self, date_from, date_to):
+        orders = self._get_commercial_sale_orders(date_from, date_to)
+        order_lines = self._get_commercial_sale_order_lines(date_from, date_to)
+
+        valid_order_lines_by_order = defaultdict(list)
+        for line in order_lines:
+            valid_order_lines_by_order[line.order_id.id].append(line)
+
+        channel_map = {}
+        customer_map = {}
+        product_map = {}
+
+        for order in orders:
+            order_partner = order.partner_id
+            commercial_partner = order_partner.commercial_partner_id or order_partner
+            if not commercial_partner:
+                continue
+
+            valid_lines = valid_order_lines_by_order.get(order.id, [])
+            unit_count = sum(line.product_uom_qty for line in valid_lines)
+            amount_total = float(order.amount_total or 0.0)
+            order_date = fields.Datetime.to_datetime(order.date_order).date() if order.date_order else False
+
+            channel_entry = channel_map.setdefault(
+                commercial_partner.id,
+                {
+                    'partner_id': commercial_partner.id,
+                    'order_count': 0,
+                    'unit_count': 0.0,
+                    'total_amount': 0.0,
+                    'last_order_date': False,
+                },
+            )
+            channel_entry['order_count'] += 1
+            channel_entry['unit_count'] += unit_count
+            channel_entry['total_amount'] += amount_total
+            if order_date and (
+                not channel_entry['last_order_date']
+                or order_date > channel_entry['last_order_date']
+            ):
+                channel_entry['last_order_date'] = order_date
+
+            customer_entry = customer_map.setdefault(
+                order_partner.id,
+                {
+                    'partner_id': order_partner.id,
+                    'customer_id': commercial_partner.id,
+                    'order_count': 0,
+                    'unit_count': 0.0,
+                    'total_amount': 0.0,
+                    'last_order_date': False,
+                },
+            )
+            customer_entry['order_count'] += 1
+            customer_entry['unit_count'] += unit_count
+            customer_entry['total_amount'] += amount_total
+            if order_date and (
+                not customer_entry['last_order_date']
+                or order_date > customer_entry['last_order_date']
+            ):
+                customer_entry['last_order_date'] = order_date
+
+        for line in order_lines:
+            product = line.product_id
+            if not product:
+                continue
+            commercial_partner = line.order_id.partner_id.commercial_partner_id or line.order_id.partner_id
+            product_entry = product_map.setdefault(
+                product.id,
+                {
+                    'product_id': product.id,
+                    'default_code': product.default_code or '',
+                    'category_name': product.categ_id.display_name or '',
+                    'quantity_sold': 0.0,
+                    'sales_amount': 0.0,
+                    'customer_ids': set(),
+                    'order_ids': set(),
+                },
+            )
+            product_entry['quantity_sold'] += float(line.product_uom_qty or 0.0)
+            product_entry['sales_amount'] += float(line.price_total or 0.0)
+            if commercial_partner:
+                product_entry['customer_ids'].add(commercial_partner.id)
+            if line.order_id:
+                product_entry['order_ids'].add(line.order_id.id)
+
+        top_channels = sorted(channel_map.values(), key=lambda item: item['total_amount'], reverse=True)[:10]
+        top_customers = sorted(customer_map.values(), key=lambda item: item['total_amount'], reverse=True)[:10]
+        top_products = sorted(product_map.values(), key=lambda item: item['sales_amount'], reverse=True)[:10]
+
+        return {
+            'summary': {
+                'company_currency_id': self.env.company.currency_id.id,
+                'commercial_date_from': date_from,
+                'commercial_date_to': date_to,
+                'commercial_period_label': self._build_commercial_period_label(date_from, date_to),
+                'commercial_total_amount': round(sum(float(amount or 0.0) for amount in orders.mapped('amount_total')), 2),
+                'commercial_order_count': len(orders),
+                'commercial_customer_count': len(channel_map),
+                'commercial_point_count': len(customer_map),
+                'commercial_product_count': len(product_map),
+            },
+            'channels': [
+                {
+                    'sequence': index + 1,
+                    'partner_id': item['partner_id'],
+                    'order_count': item['order_count'],
+                    'unit_count': item['unit_count'],
+                    'total_amount': round(item['total_amount'], 2),
+                    'average_ticket': round(item['total_amount'] / item['order_count'], 2) if item['order_count'] else 0.0,
+                    'last_order_date': item['last_order_date'],
+                }
+                for index, item in enumerate(top_channels)
+            ],
+            'customers': [
+                {
+                    'sequence': index + 1,
+                    'partner_id': item['partner_id'],
+                    'customer_id': item['customer_id'],
+                    'order_count': item['order_count'],
+                    'unit_count': item['unit_count'],
+                    'total_amount': round(item['total_amount'], 2),
+                    'average_ticket': round(item['total_amount'] / item['order_count'], 2) if item['order_count'] else 0.0,
+                    'last_order_date': item['last_order_date'],
+                }
+                for index, item in enumerate(top_customers)
+            ],
+            'products': [
+                {
+                    'sequence': index + 1,
+                    'product_id': item['product_id'],
+                    'default_code': item['default_code'],
+                    'category_name': item['category_name'],
+                    'quantity_sold': item['quantity_sold'],
+                    'sales_amount': round(item['sales_amount'], 2),
+                    'customer_count': len(item['customer_ids']),
+                    'order_count': len(item['order_ids']),
+                }
+                for index, item in enumerate(top_products)
+            ],
+        }
+
+    def _refresh_commercial_summary(self):
+        commercial_record = self._get_commercial_tool_record()
+        if not commercial_record:
+            return
+
+        target_records = self.filtered(lambda record: record.id == commercial_record.id)
+        if not target_records:
+            return
+
+        date_from, date_to = self._get_commercial_summary_period()
+        payload = self._build_commercial_summary_payload(date_from, date_to)
+
+        for record in target_records:
+            values = dict(payload['summary'])
+            values.update({
+                'commercial_channel_line_ids': [(5, 0, 0)] + [
+                    (0, 0, line_values) for line_values in payload['channels']
+                ],
+                'commercial_customer_line_ids': [(5, 0, 0)] + [
+                    (0, 0, line_values) for line_values in payload['customers']
+                ],
+                'commercial_product_line_ids': [(5, 0, 0)] + [
+                    (0, 0, line_values) for line_values in payload['products']
+                ],
+            })
+            record.with_context(skip_commercial_summary_refresh=True).sudo().write(values)
+
+    def read(self, fields=None, load='_classic_read'):
+        if not self.env.context.get('skip_commercial_summary_refresh'):
+            self._refresh_commercial_summary()
+        return super().read(fields=fields, load=load)
+
+
+class ZrnProdigynReportingCommercialChannelLine(models.Model):
+    _name = 'zrn_prodigyn.reporting.commercial.channel.line'
+    _description = 'Resumen comercial por canal'
+    _order = 'sequence, id'
+
+    sequence = fields.Integer(string='Secuencia', readonly=True)
+    tool_id = fields.Many2one('zrn_prodigyn.internal.tool', string='Herramienta', required=True, ondelete='cascade')
+    currency_id = fields.Many2one('res.currency', related='tool_id.company_currency_id', readonly=True)
+    partner_id = fields.Many2one('res.partner', string='Canal / cuenta', required=True, readonly=True)
+    order_count = fields.Integer(string='Pedidos', readonly=True)
+    unit_count = fields.Float(string='Unidades', readonly=True)
+    total_amount = fields.Monetary(string='Venta total', currency_field='currency_id', readonly=True)
+    average_ticket = fields.Monetary(string='Ticket promedio', currency_field='currency_id', readonly=True)
+    last_order_date = fields.Date(string='Ultimo pedido', readonly=True)
+
+
+class ZrnProdigynReportingCommercialCustomerLine(models.Model):
+    _name = 'zrn_prodigyn.reporting.commercial.customer.line'
+    _description = 'Resumen comercial por cliente o PDV'
+    _order = 'sequence, id'
+
+    sequence = fields.Integer(string='Secuencia', readonly=True)
+    tool_id = fields.Many2one('zrn_prodigyn.internal.tool', string='Herramienta', required=True, ondelete='cascade')
+    currency_id = fields.Many2one('res.currency', related='tool_id.company_currency_id', readonly=True)
+    partner_id = fields.Many2one('res.partner', string='Punto de venta', required=True, readonly=True)
+    customer_id = fields.Many2one('res.partner', string='Cliente comercial', readonly=True)
+    order_count = fields.Integer(string='Pedidos', readonly=True)
+    unit_count = fields.Float(string='Unidades', readonly=True)
+    total_amount = fields.Monetary(string='Venta total', currency_field='currency_id', readonly=True)
+    average_ticket = fields.Monetary(string='Ticket promedio', currency_field='currency_id', readonly=True)
+    last_order_date = fields.Date(string='Ultimo pedido', readonly=True)
+
+
+class ZrnProdigynReportingCommercialProductLine(models.Model):
+    _name = 'zrn_prodigyn.reporting.commercial.product.line'
+    _description = 'Resumen comercial por producto'
+    _order = 'sequence, id'
+
+    sequence = fields.Integer(string='Secuencia', readonly=True)
+    tool_id = fields.Many2one('zrn_prodigyn.internal.tool', string='Herramienta', required=True, ondelete='cascade')
+    currency_id = fields.Many2one('res.currency', related='tool_id.company_currency_id', readonly=True)
+    product_id = fields.Many2one('product.product', string='Producto', required=True, readonly=True)
+    default_code = fields.Char(string='Referencia interna', readonly=True)
+    category_name = fields.Char(string='Categoria', readonly=True)
+    quantity_sold = fields.Float(string='Unidades vendidas', readonly=True)
+    sales_amount = fields.Monetary(string='Venta total', currency_field='currency_id', readonly=True)
+    customer_count = fields.Integer(string='Clientes', readonly=True)
+    order_count = fields.Integer(string='Pedidos', readonly=True)

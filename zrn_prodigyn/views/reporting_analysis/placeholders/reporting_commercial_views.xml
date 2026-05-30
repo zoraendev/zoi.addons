@@ -9,30 +9,139 @@
         <field name="name">zrn_prodigyn.reporting.commercial.form</field>
         <field name="model">zrn_prodigyn.internal.tool</field>
         <field name="arch" type="xml">
-            <form string="Hub Comercial" js_class="zrn_prodigyn_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_submodule_form zrn_prodigyn_internal_tool_form">
+            <form string="Hub Comercial" js_class="zrn_prodigyn_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_prodigyn_submodule_form zrn_prodigyn_internal_tool_form zrn_prodigyn_reporting_commercial_form">
                 <sheet>
                     <field name="name" invisible="1"/>
+                    <field name="company_currency_id" invisible="1"/>
+
                     <div class="zrn_prodigyn_submodule_nav">
-                        <button name="action_open_reporting_center" type="object" icon="fa-arrow-left" string="Volver a Reporteria y Analisis" class="btn zrn_prodigyn_back_btn"/>
+                        <button
+                            name="action_open_reporting_center"
+                            type="object"
+                            icon="fa-arrow-left"
+                            string="Volver a Reporteria y Analisis"
+                            class="btn zrn_prodigyn_back_btn"
+                        />
                     </div>
-                    <div class="oe_title">
-                        <h1>Hub Comercial</h1>
-                    </div>
-                    <div class="zrn_prodigyn_building_state">
-                        <div class="zrn_prodigyn_building_loader" aria-hidden="true">
-                            <span class="zrn_prodigyn_building_loader_ring zrn_prodigyn_building_loader_ring_outer"/>
-                            <span class="zrn_prodigyn_building_loader_ring zrn_prodigyn_building_loader_ring_inner"/>
-                            <span class="zrn_prodigyn_building_loader_core"/>
-                        </div>
-                        <div class="zrn_prodigyn_building_copy">
-                            <div class="zrn_prodigyn_building_kicker">Trabajando</div>
-                            <div class="zrn_prodigyn_building_title">Estamos preparando esta vista</div>
-                            <div class="zrn_prodigyn_building_messages" aria-live="polite">
-                                <span>Separando el hub comercial y sus tabs analiticos...</span>
-                                <span>Reservando espacio para overview, canales y clientes...</span>
-                                <span>Montando la base de SKUs y sell-in vs sell-out...</span>
-                                <span>Listando esta vista para desarrollarla despues...</span>
+
+                    <div class="zrn_prodigyn_reporting_commercial_view">
+                        <div class="zrn_prodigyn_reporting_commercial_hero">
+                            <div class="zrn_prodigyn_reporting_commercial_hero_copy">
+                                <div class="zrn_prodigyn_reporting_commercial_kicker">Comercial</div>
+                                <div class="oe_title">
+                                    <h1>Hub Comercial</h1>
+                                </div>
+                                <div class="zrn_prodigyn_reporting_commercial_intro">
+                                    Resumen principal del submodulo con datos reales de Odoo para concentracion comercial por cuenta, punto de venta y producto.
+                                </div>
                             </div>
+                            <div class="zrn_prodigyn_reporting_commercial_status">
+                                <span class="zrn_prodigyn_reporting_commercial_status_label">Periodo activo</span>
+                                <span class="zrn_prodigyn_reporting_commercial_status_value"><field name="commercial_period_label" readonly="1" nolabel="1"/></span>
+                                <span class="zrn_prodigyn_reporting_commercial_status_meta">Base armada con pedidos confirmados o completados del a&#241;o en curso.</span>
+                            </div>
+                        </div>
+
+                        <div class="zrn_prodigyn_reporting_commercial_stats">
+                            <div class="zrn_prodigyn_reporting_commercial_stat_box">
+                                <span>Venta total</span>
+                                <strong><field name="commercial_total_amount" readonly="1" nolabel="1" widget="monetary" options="{'currency_field': 'company_currency_id'}"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_reporting_commercial_stat_box">
+                                <span>Pedidos</span>
+                                <strong><field name="commercial_order_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_reporting_commercial_stat_box">
+                                <span>Cuentas comerciales</span>
+                                <strong><field name="commercial_customer_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_reporting_commercial_stat_box">
+                                <span>PDVs</span>
+                                <strong><field name="commercial_point_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_prodigyn_reporting_commercial_stat_box">
+                                <span>Productos</span>
+                                <strong><field name="commercial_product_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                        </div>
+
+                        <div class="zrn_prodigyn_reporting_commercial_grid">
+                            <section class="zrn_prodigyn_reporting_commercial_panel zrn_prodigyn_reporting_commercial_panel_wide">
+                                <div class="zrn_prodigyn_reporting_commercial_panel_head">
+                                    <span>Venta diaria</span>
+                                    <span>Placeholder estatico</span>
+                                </div>
+                                <div class="zrn_prodigyn_reporting_commercial_daily_static">
+                                    <div class="zrn_prodigyn_reporting_commercial_daily_note">
+                                        La grafica quedara estatica por ahora. En el siguiente pase la conectamos a la serie diaria real.
+                                    </div>
+                                    <div class="zrn_prodigyn_reporting_commercial_chart_placeholder" aria-hidden="true">
+                                        <span style="height:32%"></span>
+                                        <span style="height:48%"></span>
+                                        <span style="height:41%"></span>
+                                        <span style="height:64%"></span>
+                                        <span style="height:58%"></span>
+                                        <span style="height:80%"></span>
+                                        <span style="height:62%"></span>
+                                        <span style="height:74%"></span>
+                                        <span style="height:54%"></span>
+                                        <span style="height:68%"></span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="zrn_prodigyn_reporting_commercial_panel">
+                                <div class="zrn_prodigyn_reporting_commercial_panel_head">
+                                    <span>Top canales / cuentas</span>
+                                    <span>Tabla nativa Odoo</span>
+                                </div>
+                                <field name="commercial_channel_line_ids" readonly="1" nolabel="1">
+                                    <tree create="0" edit="0" delete="0">
+                                        <field name="partner_id"/>
+                                        <field name="order_count"/>
+                                        <field name="unit_count" sum="Total unidades"/>
+                                        <field name="average_ticket" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        <field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Venta total"/>
+                                        <field name="last_order_date"/>
+                                    </tree>
+                                </field>
+                            </section>
+
+                            <section class="zrn_prodigyn_reporting_commercial_panel">
+                                <div class="zrn_prodigyn_reporting_commercial_panel_head">
+                                    <span>Top clientes / PDVs</span>
+                                    <span>Tabla nativa Odoo</span>
+                                </div>
+                                <field name="commercial_customer_line_ids" readonly="1" nolabel="1">
+                                    <tree create="0" edit="0" delete="0">
+                                        <field name="partner_id"/>
+                                        <field name="customer_id"/>
+                                        <field name="order_count"/>
+                                        <field name="unit_count" sum="Total unidades"/>
+                                        <field name="average_ticket" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        <field name="total_amount" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Venta total"/>
+                                        <field name="last_order_date"/>
+                                    </tree>
+                                </field>
+                            </section>
+
+                            <section class="zrn_prodigyn_reporting_commercial_panel zrn_prodigyn_reporting_commercial_panel_wide">
+                                <div class="zrn_prodigyn_reporting_commercial_panel_head">
+                                    <span>Top productos</span>
+                                    <span>Tabla nativa Odoo</span>
+                                </div>
+                                <field name="commercial_product_line_ids" readonly="1" nolabel="1">
+                                    <tree create="0" edit="0" delete="0">
+                                        <field name="product_id"/>
+                                        <field name="default_code"/>
+                                        <field name="category_name"/>
+                                        <field name="customer_count"/>
+                                        <field name="order_count"/>
+                                        <field name="quantity_sold" sum="Total unidades"/>
+                                        <field name="sales_amount" widget="monetary" options="{'currency_field': 'currency_id'}" sum="Venta total"/>
+                                    </tree>
+                                </field>
+                            </section>
                         </div>
                     </div>
                 </sheet>
