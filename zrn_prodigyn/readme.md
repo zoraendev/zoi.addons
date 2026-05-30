@@ -70,6 +70,19 @@ Graficas que migraran a `Apache ECharts`:
 - `Apache ECharts` queda aprobado y documentado en este archivo como libreria externa para la siguiente fase de implementacion.
 - Mientras no se integre en assets y JS del addon, no debe asumirse como activa en produccion.
 
+## Marcas comerciales
+
+Para la nueva capa de marcas comerciales se dejo documentacion tecnica separada en:
+
+- `docs/db/commercial_brands_schema.sql`
+- `docs/db/commercial_brands_er.md`
+
+La estructura base contempla:
+
+- una tabla madre para la marca comercial
+- una tabla puente para asignar productos vendibles de Odoo
+- unicidad por producto para evitar que un mismo producto quede ligado a dos marcas
+
 ## Planeacion desacoplada de ejecucion
 
 Para evitar que una orden de fabricacion creada con anticipacion reserve o afecte inventario antes de tiempo, la recomendacion es no usar `mrp.production` como tabla de planeacion.

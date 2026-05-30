@@ -1,5 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_zrn_prodigyn_inicio,zrn_prodigyn.inicio,model_zrn_prodigyn_inicio,base.group_user,1,1,1,1
+access_zrn_prodigyn_commercial_brand,zrn_prodigyn.commercial.brand,model_zrn_prodigyn_commercial_brand,base.group_user,1,1,1,1
+access_zrn_prodigyn_commercial_brand_product,zrn_prodigyn.commercial.brand.product,model_zrn_prodigyn_commercial_brand_product,base.group_user,1,1,1,1
 access_zrn_prodigyn_commercial_planning,zrn_prodigyn.commercial.planning,model_zrn_prodigyn_commercial_planning,base.group_user,1,1,1,1
 access_zrn_prodigyn_production_planning,zrn_prodigyn.production.planning,model_zrn_prodigyn_production_planning,base.group_user,1,1,1,1
 access_zrn_prodigyn_purchase_planning,zrn_prodigyn.purchase.planning,model_zrn_prodigyn_purchase_planning,base.group_user,1,1,1,1
