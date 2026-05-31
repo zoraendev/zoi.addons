@@ -75,12 +75,18 @@ class ZrnProdigynCommercialBrandProduct(models.Model):
         store=True,
         readonly=True,
     )
+    available_product_ids = fields.Many2many(
+        'product.product',
+        string='Productos disponibles',
+        compute='_compute_available_product_ids',
+        store=False,
+    )
     product_id = fields.Many2one(
         'product.product',
         string='Producto',
         required=True,
         ondelete='restrict',
-        domain=[('sale_ok', '=', True)],
+        domain="[('id', 'in', available_product_ids)]",
     )
     product_tmpl_id = fields.Many2one(
         'product.template',
@@ -119,6 +125,18 @@ class ZrnProdigynCommercialBrandProduct(models.Model):
             'El producto ya fue asignado a una marca comercial.',
         ),
     ]
+
+    @api.depends('brand_id', 'product_id')
+    def _compute_available_product_ids(self):
+        Product = self.env['product.product']
+        assigned_product_ids = self.search([]).mapped('product_id').ids
+        for record in self:
+            current_product_ids = record.product_id.ids
+            available_products = Product.search([
+                ('sale_ok', '=', True),
+                ('id', 'not in', list(set(assigned_product_ids) - set(current_product_ids))),
+            ])
+            record.available_product_ids = available_products
 
     @api.constrains('product_id')
     def _check_sale_ok_product(self):

@@ -32,7 +32,15 @@ class ZrnProdigynCommercialPlanning(ZrnProdigynNavigationMixin, models.Model):
 
     def action_open_commercial_brands(self):
         self.ensure_one()
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_commercial_brands')
+        action = self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_commercial_brands')
+        action.pop('res_id', None)
+        action.pop('res_ids', None)
+        action_context = dict(self.env.context)
+        action_context.pop('active_id', None)
+        action_context.pop('active_ids', None)
+        action_context.pop('active_model', None)
+        action['context'] = action_context
+        return action
 
     def action_open_commercial_portfolio(self):
         self.ensure_one()
