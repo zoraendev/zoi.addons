@@ -1,17 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="zrn_prodigyn_commercial_brands_default" model="zrn_prodigyn.internal.tool">
-        <field name="name">Marcas comerciales</field>
+    <record id="view_zrn_prodigyn_commercial_brand_list" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.commercial.brand.list</field>
+        <field name="model">zrn_prodigyn.commercial.brand</field>
+        <field name="arch" type="xml">
+            <tree string="Marcas comerciales">
+                <field name="active" optional="show" widget="boolean_toggle"/>
+                <field name="name"/>
+                <field name="code" optional="show"/>
+                <field name="owner_partner_id" optional="show"/>
+                <field name="country_id" optional="show"/>
+                <field name="product_count" string="Productos"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_zrn_prodigyn_commercial_brand_form" model="ir.ui.view">
+        <field name="name">zrn_prodigyn.commercial.brand.form</field>
+        <field name="model">zrn_prodigyn.commercial.brand</field>
+        <field name="arch" type="xml">
+            <form string="Marca comercial">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre de la marca"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="owner_partner_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="logo" widget="image" class="oe_avatar"/>
+                            <field name="country_id"/>
+                            <field name="launch_date"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="website"/>
+                        <field name="email"/>
+                        <field name="phone"/>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Descripcion de la marca"/>
+                        <field name="notes" placeholder="Notas internas"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
     </record>
 
     <record id="action_zrn_prodigyn_commercial_brands" model="ir.actions.act_window">
         <field name="name">Marcas comerciales</field>
-        <field name="res_model">zrn_prodigyn.internal.tool</field>
-        <field name="view_mode">form</field>
-        <field name="view_id" ref="view_zrn_prodigyn_commercial_placeholder_form"/>
-        <field name="res_id" ref="zrn_prodigyn_commercial_brands_default"/>
+        <field name="res_model">zrn_prodigyn.commercial.brand</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_zrn_prodigyn_commercial_brand_list"/>
         <field name="target">current</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primera marca comercial
+            </p>
+            <p>
+                Aqui podras registrar las marcas comerciales para luego agrupar productos y construir metricas de inventario, ventas y compras.
+            </p>
+        </field>
     </record>
 
 </odoo>
