@@ -69,8 +69,8 @@
                             </div>
                         </div>
 
-                        <div class="zrn_prodigyn_reporting_commercial_grid">
-                            <section class="zrn_prodigyn_reporting_commercial_panel zrn_prodigyn_reporting_commercial_panel_wide">
+                        <div class="zrn_prodigyn_reporting_commercial_top_row">
+                            <section class="zrn_prodigyn_reporting_commercial_panel zrn_prodigyn_reporting_commercial_top_main">
                                 <div class="zrn_prodigyn_reporting_commercial_panel_head">
                                     <div class="zrn_prodigyn_reporting_commercial_chart_tabs" data-commercial-chart-tabs="1">
                                         <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab is-active" data-chart-tab="linea">Venta diaria, pedidos diarios, unidades</a>
@@ -79,7 +79,6 @@
                                         <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="barras_apiladas">Venta por canal y producto</a>
                                         <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="pareto">Clientes, PDVs, productos</a>
                                         <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="heatmap">Venta diaria, pedidos, actividad</a>
-                                        <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="donut">Venta por canal o categoria</a>
                                         <a href="#" class="zrn_prodigyn_reporting_commercial_chart_tab" data-chart-tab="scatter">Ticket promedio vs pedidos vs venta</a>
                                     </div>
                                     <span>Graficas utiles del resumen</span>
@@ -132,13 +131,6 @@
                                             </div>
                                             <div class="zrn_prodigyn_reporting_commercial_chart_canvas" data-echart-kind="heatmap" data-echart-source="commercial_heatmap_chart_data"></div>
                                         </div>
-                                        <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="donut">
-                                            <div class="zrn_prodigyn_reporting_commercial_chart_meta">
-                                                <strong>Venta por canal o categoria</strong>
-                                                <span>Participacion actual por cuentas comerciales con mayor venta.</span>
-                                            </div>
-                                            <div class="zrn_prodigyn_reporting_commercial_chart_canvas" data-echart-kind="donut" data-echart-source="commercial_donut_chart_data"></div>
-                                        </div>
                                         <div class="zrn_prodigyn_reporting_commercial_chart_panel" data-chart-panel="scatter">
                                             <div class="zrn_prodigyn_reporting_commercial_chart_meta">
                                                 <strong>Ticket promedio vs pedidos vs venta</strong>
@@ -150,6 +142,18 @@
                                 </div>
                             </section>
 
+                            <section class="zrn_prodigyn_reporting_commercial_panel zrn_prodigyn_reporting_commercial_mix_panel">
+                                <div class="zrn_prodigyn_reporting_commercial_panel_head">
+                                    <span>Mix por marca</span>
+                                    <span>Participacion del periodo</span>
+                                </div>
+                                <div class="zrn_prodigyn_reporting_commercial_mix_body">
+                                    <div class="zrn_prodigyn_reporting_commercial_chart_canvas zrn_prodigyn_reporting_commercial_chart_canvas_compact" data-echart-kind="donut" data-echart-source="commercial_donut_chart_data"></div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="zrn_prodigyn_reporting_commercial_grid">
                             <section class="zrn_prodigyn_reporting_commercial_panel">
                                 <div class="zrn_prodigyn_reporting_commercial_panel_head">
                                     <span>Top canales / cuentas</span>

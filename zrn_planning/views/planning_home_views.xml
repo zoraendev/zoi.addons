@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="zrn_planning_home_default" model="zrn_planning.home">
+        <field name="name">Zoraen Planning</field>
+        <field name="sequence">10</field>
+        <field name="page_key">overview</field>
+    </record>
+
+    <record id="view_zrn_planning_home_form" model="ir.ui.view">
+        <field name="name">zrn_planning.home.form</field>
+        <field name="model">zrn_planning.home</field>
+        <field name="arch" type="xml">
+            <form string="Zoraen Planning" js_class="zrn_planning_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_planning_submodule_form zrn_planning_production_planning_form zrn_planning_home_form">
+                <sheet>
+                    <field name="name" invisible="1"/>
+                    <field name="page_key" invisible="1"/>
+                    <field name="sequence" invisible="1"/>
+
+                    <div class="zrn_planning_production_shell">
+                        <div class="zrn_planning_production_hero">
+                            <div class="zrn_planning_production_hero_copy">
+                                <div class="zrn_planning_production_kicker">Zoraen Planning</div>
+                                <div class="oe_title">
+                                    <h1>Centro de planeacion</h1>
+                                </div>
+                                <div class="zrn_planning_production_intro">
+                                    Centro operativo para coordinar fabricacion, abastecimiento, logistica y seguimiento de planes desacoplados de la ejecucion.
+                                </div>
+                            </div>
+                            <div class="zrn_planning_production_quickstats">
+                                <div class="zrn_planning_production_stat">
+                                    <span class="zrn_planning_production_stat_label">Frentes</span>
+                                    <span class="zrn_planning_production_stat_value">3</span>
+                                </div>
+                                <div class="zrn_planning_production_stat">
+                                    <span class="zrn_planning_production_stat_label">Planes</span>
+                                    <span class="zrn_planning_production_stat_value">Activos</span>
+                                </div>
+                                <div class="zrn_planning_production_stat">
+                                    <span class="zrn_planning_production_stat_label">Objetivo</span>
+                                    <span class="zrn_planning_production_stat_value">Control</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="zrn_planning_production_dashboard">
+                            <div class="zrn_planning_production_actions">
+                                <div class="zrn_planning_production_section_title">Frentes de trabajo</div>
+                                <div class="zrn_planning_production_menu">
+                                    <button
+                                        name="action_open_production_planning"
+                                        type="object"
+                                        icon="fa-industry"
+                                        string="Produccion"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
+                                    />
+                                    <button
+                                        name="action_open_supply_planning"
+                                        type="object"
+                                        icon="fa-shopping-cart"
+                                        string="Abastecimiento"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_primary"
+                                    />
+                                    <button
+                                        name="action_open_logistics_planning"
+                                        type="object"
+                                        icon="fa-truck"
+                                        string="Logistica"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_tertiary"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="zrn_planning_production_panels">
+                                <div class="zrn_planning_production_panel zrn_planning_production_panel_wide">
+                                    <div class="zrn_planning_production_panel_head">
+                                        <span>Contexto operativo</span>
+                                        <span>Planeacion transversal</span>
+                                    </div>
+                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_list">
+                                        <div class="zrn_planning_production_placeholder_row"/>
+                                        <div class="zrn_planning_production_placeholder_row"/>
+                                        <div class="zrn_planning_production_placeholder_row"/>
+                                        <div class="zrn_planning_production_placeholder_row"/>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_planning_production_panel">
+                                    <div class="zrn_planning_production_panel_head">
+                                        <span>Alertas</span>
+                                        <span>Inventario y pagos</span>
+                                    </div>
+                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_map">
+                                        <div class="zrn_planning_production_placeholder_blob"/>
+                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_1"/>
+                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_2"/>
+                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_3"/>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_planning_production_panel">
+                                    <div class="zrn_planning_production_panel_head">
+                                        <span>Seguimiento</span>
+                                        <span>Capacidad y ritmo</span>
+                                    </div>
+                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_chart">
+                                        <div class="zrn_planning_production_placeholder_bars">
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                            <div/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zrn_planning_home" model="ir.actions.act_window">
+        <field name="name">Zoraen Planning</field>
+        <field name="res_model">zrn_planning.home</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_zrn_planning_home_form"/>
+        <field name="res_id" ref="zrn_planning_home_default"/>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_zrn_planning_root"
+        name="Zoraen Planning"
+        sequence="10"
+        action="action_zrn_planning_home"
+    />
+
+    <menuitem
+        id="menu_zrn_planning_production"
+        name="Produccion"
+        parent="menu_zrn_planning_root"
+        sequence="20"
+        action="action_zrn_planning_production_planning"
+    />
+
+    <menuitem
+        id="menu_zrn_planning_supply"
+        name="Abastecimiento"
+        parent="menu_zrn_planning_root"
+        sequence="30"
+        action="action_zrn_planning_purchase_planning"
+    />
+
+    <menuitem
+        id="menu_zrn_planning_delivery"
+        name="Logistica"
+        parent="menu_zrn_planning_root"
+        sequence="40"
+        action="action_zrn_planning_delivery_planning"
+    />
+
+</odoo>

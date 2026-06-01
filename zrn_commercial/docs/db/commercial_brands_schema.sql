@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS zrn_prodigyn_commercial_brand (
+CREATE TABLE IF NOT EXISTS zrn_commercial_commercial_brand (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR NOT NULL,
     code VARCHAR,
@@ -19,17 +19,17 @@ CREATE TABLE IF NOT EXISTS zrn_prodigyn_commercial_brand (
     write_date TIMESTAMP
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS zrn_prodigyn_commercial_brand_company_code_uniq
-    ON zrn_prodigyn_commercial_brand (company_id, code)
+CREATE UNIQUE INDEX IF NOT EXISTS zrn_commercial_brand_company_code_uniq
+    ON zrn_commercial_commercial_brand (company_id, code)
     WHERE code IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS zrn_prodigyn_commercial_brand_company_idx
-    ON zrn_prodigyn_commercial_brand (company_id);
+CREATE INDEX IF NOT EXISTS zrn_commercial_brand_company_idx
+    ON zrn_commercial_commercial_brand (company_id);
 
-CREATE TABLE IF NOT EXISTS zrn_prodigyn_commercial_brand_product (
+CREATE TABLE IF NOT EXISTS zrn_commercial_commercial_brand_product (
     id BIGSERIAL PRIMARY KEY,
     sequence INTEGER NOT NULL DEFAULT 10,
-    brand_id BIGINT NOT NULL REFERENCES zrn_prodigyn_commercial_brand(id) ON DELETE CASCADE,
+    brand_id BIGINT NOT NULL REFERENCES zrn_commercial_commercial_brand(id) ON DELETE CASCADE,
     company_id BIGINT REFERENCES res_company(id) ON DELETE SET NULL,
     product_id BIGINT NOT NULL REFERENCES product_product(id) ON DELETE RESTRICT,
     product_tmpl_id BIGINT REFERENCES product_template(id) ON DELETE SET NULL,
@@ -44,14 +44,14 @@ CREATE TABLE IF NOT EXISTS zrn_prodigyn_commercial_brand_product (
     write_date TIMESTAMP
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS zrn_prodigyn_commercial_brand_product_product_uniq
-    ON zrn_prodigyn_commercial_brand_product (product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS zrn_commercial_brand_product_product_uniq
+    ON zrn_commercial_commercial_brand_product (product_id);
 
-CREATE INDEX IF NOT EXISTS zrn_prodigyn_commercial_brand_product_brand_idx
-    ON zrn_prodigyn_commercial_brand_product (brand_id);
+CREATE INDEX IF NOT EXISTS zrn_commercial_brand_product_brand_idx
+    ON zrn_commercial_commercial_brand_product (brand_id);
 
-CREATE INDEX IF NOT EXISTS zrn_prodigyn_commercial_brand_product_company_idx
-    ON zrn_prodigyn_commercial_brand_product (company_id);
+CREATE INDEX IF NOT EXISTS zrn_commercial_brand_product_company_idx
+    ON zrn_commercial_commercial_brand_product (company_id);
 
-CREATE INDEX IF NOT EXISTS zrn_prodigyn_commercial_brand_product_template_idx
-    ON zrn_prodigyn_commercial_brand_product (product_tmpl_id);
+CREATE INDEX IF NOT EXISTS zrn_commercial_brand_product_template_idx
+    ON zrn_commercial_commercial_brand_product (product_tmpl_id);

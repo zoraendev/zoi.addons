@@ -9,8 +9,8 @@ from odoo.tools.image import ImageProcess
 from odoo.tools.mimetypes import guess_mimetype
 
 
-class ZrnProdigynCommercialBrand(models.Model):
-    _name = 'zrn_prodigyn.commercial.brand'
+class ZrnCommercialBrand(models.Model):
+    _name = 'zrn_commercial.commercial.brand'
     _description = 'Marca comercial'
     _order = 'name, id'
 
@@ -40,7 +40,7 @@ class ZrnProdigynCommercialBrand(models.Model):
     description = fields.Text(string='Descripcion')
     notes = fields.Text(string='Notas internas')
     product_link_ids = fields.One2many(
-        'zrn_prodigyn.commercial.brand.product',
+        'zrn_commercial.commercial.brand.product',
         'brand_id',
         string='Productos asignados',
     )
@@ -76,15 +76,12 @@ class ZrnProdigynCommercialBrand(models.Model):
 
             if len(logo_binary) > self._LOGO_MAX_FILE_SIZE:
                 raise ValidationError(
-                    'El logo excede el tamano permitido de 5 MB. '
-                    'Usa una imagen mas liviana.'
+                    'El logo excede el tamano permitido de 5 MB. Usa una imagen mas liviana.'
                 )
 
             mimetype = guess_mimetype(logo_binary, default='application/octet-stream')
             if mimetype not in self._LOGO_ALLOWED_MIMETYPES:
-                raise ValidationError(
-                    'El logo debe estar en formato PNG, JPG/JPEG o WEBP.'
-                )
+                raise ValidationError('El logo debe estar en formato PNG, JPG/JPEG o WEBP.')
 
             try:
                 ImageProcess(logo_binary, verify_resolution=True)
@@ -94,14 +91,14 @@ class ZrnProdigynCommercialBrand(models.Model):
                 ) from error
 
 
-class ZrnProdigynCommercialBrandProduct(models.Model):
-    _name = 'zrn_prodigyn.commercial.brand.product'
+class ZrnCommercialBrandProduct(models.Model):
+    _name = 'zrn_commercial.commercial.brand.product'
     _description = 'Producto asignado a marca comercial'
     _order = 'sequence, id'
 
     sequence = fields.Integer(string='Secuencia', default=10)
     brand_id = fields.Many2one(
-        'zrn_prodigyn.commercial.brand',
+        'zrn_commercial.commercial.brand',
         string='Marca comercial',
         required=True,
         ondelete='cascade',
@@ -170,9 +167,10 @@ class ZrnProdigynCommercialBrandProduct(models.Model):
         assigned_product_ids = self.search([]).mapped('product_id').ids
         for record in self:
             current_product_ids = record.product_id.ids
+            blocked_product_ids = list(set(assigned_product_ids) - set(current_product_ids))
             available_products = Product.search([
                 ('sale_ok', '=', True),
-                ('id', 'not in', list(set(assigned_product_ids) - set(current_product_ids))),
+                ('id', 'not in', blocked_product_ids),
             ])
             record.available_product_ids = available_products
 

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="view_zrn_prodigyn_commercial_brand_list" model="ir.ui.view">
-        <field name="name">zrn_prodigyn.commercial.brand.list</field>
-        <field name="model">zrn_prodigyn.commercial.brand</field>
+    <record id="view_zrn_commercial_brand_list" model="ir.ui.view">
+        <field name="name">zrn_commercial.commercial.brand.list</field>
+        <field name="model">zrn_commercial.commercial.brand</field>
         <field name="arch" type="xml">
             <tree string="Marcas comerciales">
                 <field name="active" optional="show" widget="boolean_toggle"/>
@@ -17,9 +17,9 @@
         </field>
     </record>
 
-    <record id="view_zrn_prodigyn_commercial_brand_form" model="ir.ui.view">
-        <field name="name">zrn_prodigyn.commercial.brand.form</field>
-        <field name="model">zrn_prodigyn.commercial.brand</field>
+    <record id="view_zrn_commercial_brand_form" model="ir.ui.view">
+        <field name="name">zrn_commercial.commercial.brand.form</field>
+        <field name="model">zrn_commercial.commercial.brand</field>
         <field name="arch" type="xml">
             <form string="Marca comercial">
                 <sheet>
@@ -36,7 +36,12 @@
                             <field name="active"/>
                         </group>
                         <group>
-                            <field name="logo" widget="image" class="oe_avatar"/>
+                            <field
+                                name="logo"
+                                widget="image"
+                                class="oe_avatar"
+                                help="Formatos permitidos: PNG, JPG/JPEG o WEBP. Tamano maximo: 5 MB."
+                            />
                             <field name="country_id"/>
                             <field name="launch_date"/>
                         </group>
@@ -84,22 +89,35 @@
         </field>
     </record>
 
-    <record id="action_zrn_prodigyn_commercial_brands" model="ir.actions.act_window">
+    <record id="action_zrn_commercial_brands" model="ir.actions.act_window">
         <field name="name">Marcas comerciales</field>
-        <field name="res_model">zrn_prodigyn.commercial.brand</field>
+        <field name="res_model">zrn_commercial.commercial.brand</field>
         <field name="view_mode">tree,form</field>
-        <field name="view_id" ref="view_zrn_prodigyn_commercial_brand_list"/>
-        <field name="res_id" eval="False"/>
-        <field name="context">{}</field>
+        <field name="view_id" ref="view_zrn_commercial_brand_list"/>
         <field name="target">current</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Crea tu primera marca comercial
             </p>
             <p>
-                Aqui podras registrar las marcas comerciales para luego agrupar productos y construir metricas de inventario, ventas y compras.
+                Aqui podras registrar marcas comerciales y asociar productos vendibles para futuros comparativos de inventario, ventas y compras.
             </p>
         </field>
     </record>
+
+    <menuitem
+        id="menu_zrn_commercial_root"
+        name="Zoraen Commercial"
+        sequence="70"
+        web_icon="zrn_commercial,static/description/icon.png"
+    />
+
+    <menuitem
+        id="menu_zrn_commercial_brands"
+        name="Marcas comerciales"
+        parent="menu_zrn_commercial_root"
+        action="action_zrn_commercial_brands"
+        sequence="10"
+    />
 
 </odoo>
