@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="zrn_planning.FormView" t-inherit="web.FormView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="inside">
+            <t t-set-slot="control-panel-navigation-additional">
+                <div class="zrn_planning_cp_actions">
+                    <button type="button" class="btn zrn_planning_cp_btn zrn_planning_cp_btn_ghost" t-on-click="openHome">
+                        Planning
+                    </button>
+                </div>
+            </t>
+        </xpath>
+    </t>
+</templates>
