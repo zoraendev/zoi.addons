@@ -79,7 +79,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         readonly=True,
     )
     planning_record_ids = fields.Many2many(
-        'zrn_planning.mfg.plan',
+        'zrn_prodigyn.mfg.plan',
         string='Planings creados',
         compute='_compute_planning_record_ids',
         readonly=True,
@@ -412,7 +412,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         self._compute_filter_data()
 
     def _compute_planning_record_ids(self):
-        plans = self.env['zrn_planning.mfg.plan'].search(
+        plans = self.env['zrn_prodigyn.mfg.plan'].search(
             [('company_id', '=', self.env.company.id)],
             order='date_start desc, id desc',
         )
@@ -427,7 +427,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Planings de abastecimiento creados',
-            'res_model': 'zrn_planning.mfg.plan',
+            'res_model': 'zrn_prodigyn.mfg.plan',
             'view_mode': 'tree,form',
             'views': [(tree_view.id, 'tree'), (form_view.id, 'form')],
             'domain': [('company_id', '=', self.env.company.id)],

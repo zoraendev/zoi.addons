@@ -138,12 +138,22 @@
         action="action_zrn_planning_home"
     />
 
+    <record id="action_server_open_production_wizard" model="ir.actions.server">
+        <field name="name">Abrir planeacion de fabricacion</field>
+        <field name="model_id" ref="model_zrn_planning_production_planning_wizard"/>
+        <field name="state">code</field>
+        <field name="code">
+wizard = env['zrn_planning.production.planning.wizard'].create({})
+action = wizard.action_open_filters()
+        </field>
+    </record>
+
     <menuitem
         id="menu_zrn_planning_production"
         name="Produccion"
         parent="menu_zrn_planning_root"
         sequence="20"
-        action="action_zrn_planning_production_planning"
+        action="action_server_open_production_wizard"
     />
 
     <menuitem

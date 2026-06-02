@@ -18,7 +18,7 @@ Addon dedicado a planeacion operativa:
     'version': '0.1',
     'license': 'LGPL-3',
     'application': True,
-    'depends': ['base', 'sale_stock', 'mrp', 'purchase_stock'],
+    'depends': ['base', 'sale_stock', 'mrp', 'purchase_stock', 'zrn_prodigyn'],
     'data': [
         'security/ir.model.access.csv',
         'views/production_planning_views.xml',
