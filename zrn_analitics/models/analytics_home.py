@@ -4,7 +4,7 @@ from odoo import fields, models
 from odoo.exceptions import UserError
 
 
-class ZrnAnaliticsNavigationMixin:
+class ZrnAnalyticsNavigationMixin:
     def _open_singleton_action(self, action_xmlid):
         self.ensure_one()
         action = self.env.ref(action_xmlid, raise_if_not_found=False)
@@ -20,6 +20,9 @@ class ZrnAnaliticsNavigationMixin:
     def action_open_workspace(self):
         return self._open_singleton_action('zrn_analitics.action_zrn_analitics_workspace')
 
+    def action_open_scenarios(self):
+        return self._open_singleton_action('zrn_analitics.action_zrn_analitics_scenarios')
+
     def action_open_button_1(self):
         return self.action_open_home()
 
@@ -27,7 +30,7 @@ class ZrnAnaliticsNavigationMixin:
         return self.action_open_workspace()
 
     def action_open_button_3(self):
-        return self.action_open_workspace()
+        return self.action_open_scenarios()
 
     def action_open_button_4(self):
         return self.action_open_workspace()
@@ -36,17 +39,18 @@ class ZrnAnaliticsNavigationMixin:
         return self.action_open_workspace()
 
 
-class ZrnAnaliticsHome(ZrnAnaliticsNavigationMixin, models.Model):
+class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
     _name = 'zrn_analitics.home'
-    _description = 'Centro principal de Zoraen Analitics'
+    _description = 'Centro principal de Zoraen Analytics'
     _order = 'sequence, id'
 
-    name = fields.Char(string='Nombre', required=True, default='Zoraen Analitics')
+    name = fields.Char(string='Nombre', required=True, default='Zoraen Analytics')
     sequence = fields.Integer(string='Secuencia', default=10)
     page_key = fields.Selection(
         [
             ('overview', 'Resumen'),
             ('workspace', 'Workspace'),
+            ('scenarios', 'Escenarios'),
         ],
         string='Pagina',
         required=True,
@@ -64,3 +68,7 @@ class ZrnAnaliticsHome(ZrnAnaliticsNavigationMixin, models.Model):
     def action_open_processing(self):
         self.ensure_one()
         return self.action_open_workspace()
+
+    def action_open_scenarios(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_analitics.action_zrn_analitics_scenarios')

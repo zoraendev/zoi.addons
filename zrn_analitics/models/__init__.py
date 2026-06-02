@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from . import analitics_home
+from . import analytics_home

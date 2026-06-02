@@ -5,7 +5,7 @@ import { useService } from "@web/core/utils/hooks";
 import { formView } from "@web/views/form/form_view";
 import { FormController } from "@web/views/form/form_controller";
 
-class ZrnAnaliticsFormController extends FormController {
+class ZrnAnalyticsFormController extends FormController {
   setup() {
     super.setup();
     this.orm = useService("orm");
@@ -24,7 +24,7 @@ class ZrnAnaliticsFormController extends FormController {
     return modelParams;
   }
 
-  async openAnaliticsAction(methodName) {
+  async openAnalyticsAction(methodName) {
     const action = await this.orm.call(this.props.resModel, methodName, [
       [this.model.root.resId],
     ]);
@@ -32,35 +32,35 @@ class ZrnAnaliticsFormController extends FormController {
   }
 
   openButton1() {
-    return this.openAnaliticsAction("action_open_button_1");
+    return this.openAnalyticsAction("action_open_button_1");
   }
 
   openButton2() {
-    return this.openAnaliticsAction("action_open_button_2");
+    return this.openAnalyticsAction("action_open_button_2");
   }
 
   openButton3() {
-    return this.openAnaliticsAction("action_open_button_3");
+    return this.openAnalyticsAction("action_open_button_3");
   }
 
   openButton4() {
-    return this.openAnaliticsAction("action_open_button_4");
+    return this.openAnalyticsAction("action_open_button_4");
   }
 
   openButton5() {
-    return this.openAnaliticsAction("action_open_button_5");
+    return this.openAnalyticsAction("action_open_button_5");
   }
 
   openHome() {
-    return this.openAnaliticsAction("action_open_home");
+    return this.openAnalyticsAction("action_open_home");
   }
 }
 
-ZrnAnaliticsFormController.template = "zrn_analitics.FormView";
+ZrnAnalyticsFormController.template = "zrn_analitics.FormView";
 
-export const ZrnAnaliticsFormView = {
+export const ZrnAnalyticsFormView = {
   ...formView,
-  Controller: ZrnAnaliticsFormController,
+  Controller: ZrnAnalyticsFormController,
 };
 
-registry.category("views").add("zrn_analitics_form", ZrnAnaliticsFormView);
+registry.category("views").add("zrn_analitics_form", ZrnAnalyticsFormView);

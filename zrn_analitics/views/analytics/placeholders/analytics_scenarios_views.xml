@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_zrn_analitics_home_form_scenarios" model="ir.ui.view">
+        <field name="name">zrn_analitics.home.form.scenarios</field>
+        <field name="model">zrn_analitics.home</field>
+        <field name="inherit_id" ref="zrn_analitics.view_zrn_analitics_home_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="zrn_analitics_shell" invisible="page_key != 'scenarios'">
+                    <div class="zrn_analitics_header zrn_analitics_header_workspace">
+                        <div>
+                            <div class="zrn_analitics_kicker">Escenarios</div>
+                            <div class="oe_title">
+                                <h1>Escenarios analiticos</h1>
+                            </div>
+                            <div class="zrn_analitics_intro">
+                                Espacio reservado para analisis de escenarios, supuestos y comparativos antes de llevarlos al addon de simulacion.
+                            </div>
+                        </div>
+                        <div class="zrn_analitics_header_actions">
+                            <button
+                                name="action_open_home"
+                                type="object"
+                                icon="fa-arrow-left"
+                                string="Volver al centro"
+                                class="btn zrn_analitics_back_btn"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="zrn_analitics_workspace_cards">
+                        <div class="zrn_analitics_workspace_card">
+                            <div class="zrn_analitics_workspace_title">Supuestos base</div>
+                            <div class="zrn_analitics_workspace_text">Bloque reservado para variables de negocio, filtros y drivers que afecten comparativos futuros.</div>
+                        </div>
+                        <div class="zrn_analitics_workspace_card">
+                            <div class="zrn_analitics_workspace_title">Comparativos</div>
+                            <div class="zrn_analitics_workspace_text">Aqui podran vivir comparaciones entre cortes de datos, metas, forecast y resultados observados.</div>
+                        </div>
+                        <div class="zrn_analitics_workspace_card">
+                            <div class="zrn_analitics_workspace_title">Sensibilidades</div>
+                            <div class="zrn_analitics_workspace_text">Base para sensibilidad de indicadores, variaciones y lectura de impacto por cambios de supuestos.</div>
+                        </div>
+                        <div class="zrn_analitics_workspace_card">
+                            <div class="zrn_analitics_workspace_title">Puente a simulacion</div>
+                            <div class="zrn_analitics_workspace_text">Este frente servira para preparar escenarios analiticos antes de escalar a simulaciones mas profundas.</div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

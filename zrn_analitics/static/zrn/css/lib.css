@@ -132,6 +132,12 @@
   color: var(--zrn-analitics-accent-600);
 }
 
+.zrn_analitics_menu_btn_quaternary {
+  background: #f4eefb;
+  border-color: #dfd3f4;
+  color: #6e4aa8;
+}
+
 .zrn_analitics_grid,
 .zrn_analitics_workspace_cards {
   display: grid;

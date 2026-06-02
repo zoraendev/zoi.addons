@@ -1,4 +1,4 @@
-# Arquitectura de Zoraen Analitics
+# Arquitectura de Zoraen Analytics
 
 ## Objetivo
 

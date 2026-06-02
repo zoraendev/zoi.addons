@@ -1,4 +1,4 @@
-# Zoraen Analitics
+# Zoraen Analytics
 
 Addon base para centralizar:
 
@@ -13,7 +13,7 @@ Este addon nace como una base liviana separada de `zrn_prodigyn`, sin mover toda
 
 Incluye:
 
-- app propia de Zoraen Analitics
+- app propia de Zoraen Analytics
 - pantalla principal con dos paginas
 - workspace reservado para hubs y dashboards futuros
 - assets minimos de color y estructura visual
