@@ -25,12 +25,12 @@ class ZrnAnalyticsNavigationMixin:
 
     def action_open_hubs_client(self):
         self.ensure_one()
-        action = self.env.ref('zrn_analitics.action_zrn_analitics_hubs', raise_if_not_found=False)
-        if not action:
-            raise UserError('No se encontro la accion configurada para hubs.')
-        action_data = action.read()[0]
-        action_data['target'] = 'main'
-        return action_data
+        return {
+            'type': 'ir.actions.client',
+            'name': 'Hubs',
+            'tag': 'zrn_analitics.hubs',
+            'target': 'main',
+        }
 
     def action_open_button_1(self):
         return self.action_open_home()

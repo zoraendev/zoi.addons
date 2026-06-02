@@ -21,8 +21,8 @@ Addon base para la capa analitica:
     'depends': ['base', 'web'],
     'data': [
         'security/ir.model.access.csv',
-        'views/analytics/analytics_home_views.xml',
         'views/analytics/placeholders/analytics_hub_views.xml',
+        'views/analytics/analytics_home_views.xml',
         'views/analytics/placeholders/analytics_overview_views.xml',
         'views/analytics/placeholders/analytics_workspace_views.xml',
         'views/analytics/placeholders/analytics_scenarios_views.xml',
