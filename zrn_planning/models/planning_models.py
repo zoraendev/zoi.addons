@@ -51,7 +51,8 @@ class ZrnPlanningHome(ZrnPlanningNavigationMixin, models.Model):
 
     def action_open_production_planning(self):
         self.ensure_one()
-        return self._open_singleton_action('zrn_planning.action_zrn_planning_production_planning')
+        wizard = self.env['zrn_planning.production.planning.wizard'].create({})
+        return wizard.action_open_filters()
 
     def action_open_supply_planning(self):
         self.ensure_one()
