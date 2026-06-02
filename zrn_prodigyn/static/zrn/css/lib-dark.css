@@ -552,6 +552,120 @@
     color: #94a3b8 !important;
     font-weight: 600 !important;
   }
+
+  /* ==========================================
+     PRODUCTION & PURCHASE PLANNING FORMS (DARK MODE CONTRAST FIX)
+     ========================================== */
+  .o_form_view.zrn_prodigyn_production_planning_form,
+  .o_form_view.zrn_prodigyn_purchase_planning_form,
+  .o_form_view.zrn_prodigyn_delivery_planning_form {
+    background: #0f172a !important;
+  }
+
+  .o_form_view.zrn_prodigyn_production_planning_form .o_form_sheet_bg,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .o_form_sheet_bg,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .o_form_sheet_bg {
+    background: #0f172a !important;
+  }
+
+  .o_form_view.zrn_prodigyn_production_planning_form .o_form_sheet,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .o_form_sheet,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .o_form_sheet {
+    background: #0f172a !important;
+    color: #f1f5f9 !important;
+  }
+
+  /* Labels (Fecha de entrega, Puntos de venta, Productos) */
+  .o_form_view.zrn_prodigyn_production_planning_form .o_form_label,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .o_form_label,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .o_form_label {
+    color: #cbd5e1 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Panels (Filtros de Búsqueda / Planes Creados Cards) */
+  .o_form_view.zrn_prodigyn_production_planning_form .zrn_prodigyn_production_panel,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .zrn_prodigyn_production_panel,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .zrn_prodigyn_production_panel {
+    background: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Panel Headings (Filtros de Búsqueda / Planes Creados H2) */
+  .o_form_view.zrn_prodigyn_production_planning_form .zrn_prodigyn_production_panel_head,
+  .o_form_view.zrn_prodigyn_production_planning_form .zrn_prodigyn_production_panel_head h2,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .zrn_prodigyn_production_panel_head,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .zrn_prodigyn_production_panel_head h2,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .zrn_prodigyn_production_panel_head,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .zrn_prodigyn_production_panel_head h2 {
+    color: #f1f5f9 !important;
+  }
+
+  /* KPI boxes container */
+  .o_form_view.zrn_prodigyn_production_planning_form .zrn_prodigyn_production_quickstats,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .zrn_prodigyn_production_quickstats,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .zrn_prodigyn_production_quickstats {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Individual KPI boxes */
+  .o_form_view.zrn_prodigyn_production_planning_form .zrn_prodigyn_production_stat,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .zrn_prodigyn_production_stat,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .zrn_prodigyn_production_stat {
+    background: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* KPI labels (CANTIDAD DE PEDIDOS...) */
+  .o_form_view.zrn_prodigyn_production_planning_form .zrn_prodigyn_production_stat_label,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .zrn_prodigyn_production_stat_label,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .zrn_prodigyn_production_stat_label {
+    color: #94a3b8 !important;
+    font-weight: 700 !important;
+  }
+
+  /* KPI values (220, 66, 62) */
+  .o_form_view.zrn_prodigyn_production_planning_form .zrn_prodigyn_production_stat_value,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .zrn_prodigyn_production_stat_value,
+  .o_form_view.zrn_prodigyn_delivery_planning_form .zrn_prodigyn_production_stat_value {
+    color: #60a5fa !important;
+    font-weight: 800 !important;
+  }
+
+  /* Empty placeholder area / Tables inside planes creados */
+  .o_form_view.zrn_prodigyn_production_planning_form .zrn_prodigyn_production_placeholder_list,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .zrn_prodigyn_production_placeholder_list {
+    background: #0f172a !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    color: #94a3b8 !important;
+  }
+
+  /* Tree tables in planning dashboard */
+  .o_form_view.zrn_prodigyn_production_planning_form .o_list_table,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .o_list_table {
+    background: #1e293b !important;
+  }
+
+  .o_form_view.zrn_prodigyn_production_planning_form .o_list_table th,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .o_list_table th {
+    background: #0f172a !important;
+    color: #f1f5f9 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_production_planning_form .o_list_table td,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .o_list_table td {
+    color: #cbd5e1 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .o_form_view.zrn_prodigyn_production_planning_form .o_list_table tr:hover td,
+  .o_form_view.zrn_prodigyn_purchase_planning_form .o_list_table tr:hover td {
+    background: rgba(255, 255, 255, 0.04) !important;
+  }
 }
+
 
 

@@ -290,8 +290,8 @@
     </record>
 
     <record id="view_zrn_planning_mfg_plan_tree" model="ir.ui.view">
-        <field name="name">zrn_planning.mfg.plan.tree</field>
-        <field name="model">zrn_planning.mfg.plan</field>
+        <field name="name">zrn_prodigyn.mfg.plan.tree</field>
+        <field name="model">zrn_prodigyn.mfg.plan</field>
         <field name="arch" type="xml">
             <tree string="Planings de fabricacion" create="0" delete="0" import="0">
                 <field name="name"/>
@@ -325,8 +325,8 @@
     </record>
 
     <record id="view_zrn_planning_mfg_plan_line_form_modal" model="ir.ui.view">
-        <field name="name">zrn_planning.mfg.plan.line.form.modal</field>
-        <field name="model">zrn_planning.mfg.plan.line</field>
+        <field name="name">zrn_prodigyn.mfg.plan.line.form.modal</field>
+        <field name="model">zrn_prodigyn.mfg.plan.line</field>
         <field name="arch" type="xml">
             <form string="Lineas del plan" create="0" edit="0" delete="0" duplicate="0" class="zrn_planning_mfg_plan_line_modal">
                 <sheet>
@@ -391,8 +391,8 @@
     </record>
 
     <record id="view_zrn_planning_mfg_plan_form" model="ir.ui.view">
-        <field name="name">zrn_planning.mfg.plan.form</field>
-        <field name="model">zrn_planning.mfg.plan</field>
+        <field name="name">zrn_prodigyn.mfg.plan.form</field>
+        <field name="model">zrn_prodigyn.mfg.plan</field>
         <field name="arch" type="xml">
             <form string="Planning de fabricacion" create="0" duplicate="0">
                 <header>
@@ -504,7 +504,7 @@
                         <div class="zrn_planning_filter_panel">
                             <div class="zrn_planning_filter_panel_head">
                                 <div>
-                                    <h2>Filtros de BÃºsqueda</h2>
+                                    <h2>Filtros de Busqueda</h2>
                                 </div>
                             </div>
 
@@ -534,7 +534,7 @@
                             </group>
 
                             <div class="zrn_planning_filter_snapshot">
-                                <div class="zrn_planning_filter_snapshot_title">SelecciÃ³n Actual</div>
+                                <div class="zrn_planning_filter_snapshot_title">Seleccion Actual</div>
                                 <group class="zrn_planning_filter_snapshot_grid">
                                     <group>
                                         <field name="preview_order_count" readonly="1"/>
@@ -580,7 +580,7 @@
                                 </group>
                             </div>
 
-                            <!-- Listado integrado de Planes de FabricaciÃ³n Recientes -->
+                            <!-- Listado integrado de Planes de Fabricacion Recientes -->
                             <div class="zrn_planning_plans_list_container">
                                 <field name="planning_record_ids" readonly="1" nolabel="1">
                                     <tree limit="5" create="0" delete="0" edit="0">
