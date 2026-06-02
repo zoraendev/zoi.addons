@@ -23,6 +23,15 @@ class ZrnAnalyticsNavigationMixin:
     def action_open_scenarios(self):
         return self._open_singleton_action('zrn_analitics.action_zrn_analitics_scenarios')
 
+    def action_open_hubs_client(self):
+        self.ensure_one()
+        action = self.env.ref('zrn_analitics.action_zrn_analitics_hubs', raise_if_not_found=False)
+        if not action:
+            raise UserError('No se encontro la accion configurada para hubs.')
+        action_data = action.read()[0]
+        action_data['target'] = 'main'
+        return action_data
+
     def action_open_button_1(self):
         return self.action_open_home()
 
@@ -59,7 +68,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     def action_open_hubs(self):
         self.ensure_one()
-        return self.action_open_workspace()
+        return self.action_open_hubs_client()
 
     def action_open_dashboards(self):
         self.ensure_one()

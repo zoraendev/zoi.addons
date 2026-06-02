@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_zrn_commercial_hubs" model="ir.actions.client">
+        <field name="name">Hubs</field>
+        <field name="tag">zrn_commercial.hubs</field>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_zrn_commercial_hubs"
+        name="Hubs"
+        parent="menu_zrn_commercial_root"
+        action="action_zrn_commercial_hubs"
+        sequence="5"
+        groups="base.group_no_one"
+    />
+
+</odoo>

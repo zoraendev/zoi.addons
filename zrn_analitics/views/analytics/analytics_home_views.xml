@@ -73,10 +73,10 @@
 
     <menuitem
         id="menu_zrn_analitics_workspace"
-        name="Workspace"
+        name="Hubs"
         parent="menu_zrn_analitics_root"
         sequence="20"
-        action="action_zrn_analitics_workspace"
+        action="action_zrn_analitics_hubs"
     />
 
     <menuitem

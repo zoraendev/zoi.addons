@@ -1,0 +1,97 @@
+.o_action_manager .zrn_hub_workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: #f6f7fb;
+}
+
+.o_action_manager .zrn_hub_header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 14px;
+  background: #ffffff;
+  border-bottom: 1px solid #d9dee7;
+}
+
+.o_action_manager .zrn_hub_header_main h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.o_action_manager .zrn_hub_kicker {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7a8699;
+}
+
+.o_action_manager .zrn_hub_header_actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.o_action_manager .zrn_hub_switch.btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #d9dee7;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #445066;
+  font-weight: 600;
+}
+
+.o_action_manager .zrn_hub_switch.btn:hover,
+.o_action_manager .zrn_hub_switch.btn:focus {
+  border-color: #aab4c5;
+  background: #f8fafc;
+  color: #253046;
+}
+
+.o_action_manager .zrn_hub_switch_active.btn,
+.o_action_manager .zrn_hub_switch_active.btn:hover,
+.o_action_manager .zrn_hub_switch_active.btn:focus {
+  border-color: #bd1730;
+  background: #bd1730;
+  color: #ffffff;
+}
+
+.o_action_manager .zrn_hub_body {
+  padding: 24px;
+}
+
+.o_action_manager .zrn_hub_panel {
+  padding: 24px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.o_action_manager .zrn_hub_panel_title {
+  margin-bottom: 8px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.o_action_manager .zrn_hub_panel_text {
+  font-size: 15px;
+  color: #5b667a;
+}
+
+@media (max-width: 991.98px) {
+  .o_action_manager .zrn_hub_header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .o_action_manager .zrn_hub_header_actions {
+    width: 100%;
+  }
+}

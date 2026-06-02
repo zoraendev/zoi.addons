@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="zrn_analitics.HubRrhh">
+        <div class="zrn_analitics_hub_panel">
+            <div class="zrn_analitics_hub_panel_title">Hub RRHH</div>
+            <div class="zrn_analitics_hub_panel_text">Vista de prueba activa para el hub de RRHH.</div>
+        </div>
+    </t>
+</templates>

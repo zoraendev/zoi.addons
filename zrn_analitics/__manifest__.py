@@ -18,10 +18,11 @@ Addon base para la capa analitica:
     'version': '0.1',
     'license': 'LGPL-3',
     'application': True,
-    'depends': ['base'],
+    'depends': ['base', 'web'],
     'data': [
         'security/ir.model.access.csv',
         'views/analytics/analytics_home_views.xml',
+        'views/analytics/placeholders/analytics_hub_views.xml',
         'views/analytics/placeholders/analytics_overview_views.xml',
         'views/analytics/placeholders/analytics_workspace_views.xml',
         'views/analytics/placeholders/analytics_scenarios_views.xml',
@@ -29,7 +30,15 @@ Addon base para la capa analitica:
     'assets': {
         'web.assets_backend': [
             'zrn_analitics/static/src/js/analytics_form_view.js',
+            'zrn_analitics/static/src/js/analytics_hub_action.js',
             'zrn_analitics/static/src/xml/analytics_form_view.xml',
+            'zrn_analitics/static/src/xml/analytics_hub_action.xml',
+            'zrn_analitics/static/src/xml/hubs/hub_direction.xml',
+            'zrn_analitics/static/src/xml/hubs/hub_commercial.xml',
+            'zrn_analitics/static/src/xml/hubs/hub_financial.xml',
+            'zrn_analitics/static/src/xml/hubs/hub_operations.xml',
+            'zrn_analitics/static/src/xml/hubs/hub_pdv.xml',
+            'zrn_analitics/static/src/xml/hubs/hub_rrhh.xml',
             'zrn_analitics/static/zrn/css/colors.css',
             'zrn_analitics/static/zrn/css/lib.css',
         ],

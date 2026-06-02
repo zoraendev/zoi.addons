@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="zrn_commercial.HubAction">
+        <div class="zrn_hub_workspace">
+            <div class="zrn_hub_header">
+                <div class="zrn_hub_header_main">
+                    <div class="zrn_hub_kicker">Workspace comercial</div>
+                    <h1>Hubs</h1>
+                </div>
+                <div class="zrn_hub_header_actions">
+                    <t t-foreach="hubs" t-as="hub" t-key="hub.key">
+                        <button
+                            type="button"
+                            class="btn zrn_hub_switch"
+                            t-att-class="state.activeHub === hub.key ? 'zrn_hub_switch_active' : ''"
+                            t-on-click="() => this.setActiveHub(hub.key)"
+                        >
+                            <t t-esc="hub.label"/>
+                        </button>
+                    </t>
+                </div>
+            </div>
+
+            <div class="zrn_hub_body">
+                <t t-if="activeHub.key === 'direction'" t-call="zrn_commercial.HubDirection"/>
+                <t t-if="activeHub.key === 'commercial'" t-call="zrn_commercial.HubCommercial"/>
+                <t t-if="activeHub.key === 'financial'" t-call="zrn_commercial.HubFinancial"/>
+                <t t-if="activeHub.key === 'operations'" t-call="zrn_commercial.HubOperations"/>
+                <t t-if="activeHub.key === 'pdv'" t-call="zrn_commercial.HubPdv"/>
+                <t t-if="activeHub.key === 'rrhh'" t-call="zrn_commercial.HubRrhh"/>
+            </div>
+        </div>
+    </t>
+</templates>
