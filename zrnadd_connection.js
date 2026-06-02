@@ -3,7 +3,7 @@ const API_PREFIX = "/api/production";
 const API_KEY = "9we92sds";
 const ADDON_API_KEY =
   process.env.ADDON_API_KEY ??
-  "hhVjv5JzUE4Gq8Td:YCj7HQbvWbKoAUwFXaOAx8QDruGqYGnNHn424io9JuxaScU/vh+/M3uh/Q==:L56EkacmQKjLmDAp9X1CyQ==";
+  "C2zGSFrTWvJ9BbYi:LhKiTOmIlnvM4fXLHg67kQuU+Pstfp+AWhkn+aHElngZGitMcAClSUMugQ==:jxZGaipgI+5uGsoyM5pJwA==";
 
 async function readResponse(response) {
   const contentType = response.headers.get("content-type") ?? "";
