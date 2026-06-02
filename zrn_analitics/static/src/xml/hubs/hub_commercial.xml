@@ -1,9 +1,201 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="zrn_analitics.HubCommercial">
-        <div class="zrn_analitics_hub_panel">
-            <div class="zrn_analitics_hub_panel_title">Hub Comercial</div>
-            <div class="zrn_analitics_hub_panel_text">Vista de prueba activa para el hub Comercial.</div>
+        <div class="zrn_analitics_commercial_hub">
+            <div class="zrn_analitics_commercial_hero">
+                <div>
+                    <div class="zrn_analitics_commercial_title_row">
+                        <div class="zrn_analitics_hub_panel_title">Hub Comercial</div>
+                    </div>
+                    <div class="zrn_analitics_commercial_badges">
+                        <span class="zrn_analitics_commercial_badge zrn_analitics_commercial_badge_sync">
+                            Sync con Odoo: <t t-esc="commercialPayload.summary.sync_label"/>
+                        </span>
+                        <span class="zrn_analitics_commercial_badge">
+                            <t t-esc="commercialPayload.summary.period_label"/>
+                        </span>
+                        <span class="zrn_analitics_commercial_badge">
+                            <t t-esc="formatCount(commercialPayload.summary.brand_count)"/> marcas / <t t-esc="formatCount(commercialPayload.summary.product_count)"/> productos
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="zrn_analitics_commercial_section_tabs">
+                <t t-foreach="commercialTabs" t-as="tab" t-key="tab.key">
+                    <button
+                        type="button"
+                        class="btn zrn_analitics_commercial_section_tab"
+                        t-att-class="state.commercialTab === tab.key ? 'is-active' : ''"
+                        t-on-click="() => this.setCommercialTab(tab.key)"
+                    >
+                        <i class="fa zrn_analitics_commercial_section_tab_icon" t-att-class="tab.icon"></i>
+                        <span><t t-esc="tab.label"/></span>
+                    </button>
+                </t>
+            </div>
+
+            <t t-if="state.commercialLoading">
+                <div class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_hub_panel_text">Cargando resumen comercial...</div>
+                </div>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'overview'">
+                <div class="zrn_analitics_commercial_stats">
+                    <div class="zrn_analitics_commercial_stat_box">
+                        <span>Venta total</span>
+                        <strong><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(commercialPayload.summary.total_amount)"/></strong>
+                    </div>
+                    <div class="zrn_analitics_commercial_stat_box">
+                        <span>Pedidos</span>
+                        <strong><t t-esc="formatCount(commercialPayload.summary.order_count)"/></strong>
+                    </div>
+                    <div class="zrn_analitics_commercial_stat_box">
+                        <span>Cuentas comerciales</span>
+                        <strong><t t-esc="formatCount(commercialPayload.summary.customer_count)"/></strong>
+                    </div>
+                    <div class="zrn_analitics_commercial_stat_box">
+                        <span>PDVs</span>
+                        <strong><t t-esc="formatCount(commercialPayload.summary.point_count)"/></strong>
+                    </div>
+                    <div class="zrn_analitics_commercial_stat_box">
+                        <span>Ticket promedio</span>
+                        <strong><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(commercialPayload.summary.average_ticket)"/></strong>
+                    </div>
+                </div>
+
+                <t t-if="!commercialPayload.has_brands || commercialPayload.empty_message">
+                    <div class="zrn_analitics_commercial_empty_note">
+                        <t t-esc="commercialPayload.empty_message"/>
+                    </div>
+                </t>
+
+                <div class="zrn_analitics_commercial_top_row">
+                    <section class="zrn_analitics_hub_panel zrn_analitics_commercial_panel_main">
+                        <div class="zrn_analitics_commercial_panel_head">
+                            <span>Venta por mes</span>
+                            <span>Vista principal</span>
+                        </div>
+                        <div class="zrn_analitics_commercial_chart_meta">
+                            <strong>Venta YTD de productos asociados a marcas</strong>
+                            <span>Se calcula solo con productos ligados a marcas activas de Zoraen Commercial.</span>
+                        </div>
+                        <div class="zrn_analitics_commercial_line_chart">
+                            <t t-if="commercialSeriesMax">
+                                <svg viewBox="0 0 440 220" preserveAspectRatio="none" class="zrn_analitics_commercial_line_svg">
+                                    <polygon t-att-points="getCommercialAreaPoints()" class="zrn_analitics_commercial_area"/>
+                                    <polyline t-att-points="getCommercialPolylinePoints()" class="zrn_analitics_commercial_line"/>
+                                </svg>
+                                <div class="zrn_analitics_commercial_axis_labels">
+                                    <t t-foreach="commercialPayload.revenue_series" t-as="point" t-key="point.label">
+                                        <span><t t-esc="point.label"/></span>
+                                    </t>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="zrn_analitics_commercial_chart_empty">Sin datos de venta para graficar.</div>
+                            </t>
+                        </div>
+                    </section>
+
+                    <section class="zrn_analitics_hub_panel zrn_analitics_commercial_panel_side">
+                        <div class="zrn_analitics_commercial_panel_head">
+                            <span>Mix por marca</span>
+                            <span>Participacion del periodo</span>
+                        </div>
+                        <div class="zrn_analitics_commercial_donut_wrap">
+                            <t t-if="commercialPayload.brand_mix.length">
+                                <div class="zrn_analitics_commercial_donut_ring" t-att-style="getCommercialDonutStyle()"></div>
+                                <div class="zrn_analitics_commercial_donut_legend">
+                                    <t t-foreach="commercialPayload.brand_mix.slice(0, 5)" t-as="brand" t-key="brand.name">
+                                        <div class="zrn_analitics_commercial_donut_legend_item">
+                                            <strong><t t-esc="brand.name"/></strong>
+                                            <span><t t-esc="brand.percentage"/>%</span>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="zrn_analitics_commercial_chart_empty">Sin marcas con venta en el periodo.</div>
+                            </t>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="zrn_analitics_commercial_bottom_grid">
+                    <section class="zrn_analitics_hub_panel">
+                        <div class="zrn_analitics_commercial_panel_head">
+                            <span>Top clientes</span>
+                            <span>Venta acumulada</span>
+                        </div>
+                        <div class="zrn_analitics_commercial_bar_list">
+                            <t t-if="commercialPayload.top_customers.length">
+                                <t t-foreach="commercialPayload.top_customers" t-as="customer" t-key="customer.name">
+                                    <div class="zrn_analitics_commercial_bar_row">
+                                        <div class="zrn_analitics_commercial_bar_label"><t t-esc="customer.name"/></div>
+                                        <div class="zrn_analitics_commercial_bar_track">
+                                            <div class="zrn_analitics_commercial_bar_fill" t-att-style="getCommercialBarStyle(customer.total_amount)"></div>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_bar_value"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(customer.total_amount)"/></div>
+                                    </div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div class="zrn_analitics_commercial_chart_empty">Sin clientes para mostrar.</div>
+                            </t>
+                        </div>
+                    </section>
+
+                    <section class="zrn_analitics_hub_panel">
+                        <div class="zrn_analitics_commercial_panel_head">
+                            <span>Top productos</span>
+                            <span>Base por marca</span>
+                        </div>
+                        <div class="zrn_analitics_commercial_table_wrap">
+                            <t t-if="commercialPayload.top_products.length">
+                                <table class="zrn_analitics_commercial_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Categoria</th>
+                                            <th>Unidades</th>
+                                            <th>Venta</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="commercialPayload.top_products" t-as="product" t-key="product.name">
+                                            <tr>
+                                                <td>
+                                                    <strong><t t-esc="product.name"/></strong>
+                                                    <div t-if="product.default_code" class="zrn_analitics_commercial_table_sub"><t t-esc="product.default_code"/></div>
+                                                </td>
+                                                <td><t t-esc="product.category_name"/></td>
+                                                <td><t t-esc="formatCount(product.quantity_sold)"/></td>
+                                                <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(product.sales_amount)"/></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div class="zrn_analitics_commercial_chart_empty">Sin productos para mostrar.</div>
+                            </t>
+                        </div>
+                    </section>
+                </div>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab !== 'overview'">
+                <div class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_hub_panel_title">
+                        <t t-esc="activeCommercialTab.label"/>
+                    </div>
+                    <div class="zrn_analitics_hub_panel_text">
+                        Esta vista queda reservada para el siguiente bloque del hub comercial.
+                    </div>
+                </div>
+            </t>
         </div>
     </t>
 </templates>
