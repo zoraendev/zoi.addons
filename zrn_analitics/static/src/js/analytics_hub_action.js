@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { SelectMenu } from "@web/core/select_menu/select_menu";
 import { useService } from "@web/core/utils/hooks";
 import {
   Component,
@@ -57,39 +56,8 @@ class ZrnAnalyticsHubAction extends Component {
       commercialTab: "overview",
       commercialPayload: null,
       commercialLoading: false,
-      overviewFilters: {
-        period_key: "ytd",
-        channel: "",
-        brand: "",
-        category: "",
-        search: "",
-      },
-      portfolioFilters: {
-        period_key: "ytd",
-        channel: "",
-        brand: "",
-        category: "",
-        search: "",
-      },
-      channelPayload: null,
-      channelLoading: false,
-      channelFilters: {
-        period_key: "ytd",
-        channel: "",
-        brand: "",
-        category: "",
-        search: "",
-      },
-      channelModalRow: null,
       coveragePayload: null,
       coverageLoading: false,
-      coverageFilters: {
-        period_key: "ytd",
-        channel: "",
-        brand: "",
-        category: "",
-        search: "",
-      },
       selectedPortfolioUnit: "",
       portfolioExpanded: {},
       sorts: {
@@ -104,7 +72,6 @@ class ZrnAnalyticsHubAction extends Component {
       await Promise.all([
         this.loadCommercialPayload(),
         this.loadCoveragePayload(),
-        this.loadChannelPayload(),
       ]);
     });
     onMounted(() => {
@@ -224,7 +191,6 @@ class ZrnAnalyticsHubAction extends Component {
     if (hubKey === "commercial") {
       await Promise.all([
         this.loadCommercialPayload(),
-        this.loadChannelPayload(),
         this.loadCoveragePayload(),
       ]);
       this.queueChartRender();
@@ -233,22 +199,10 @@ class ZrnAnalyticsHubAction extends Component {
 
   async setCommercialTab(tabKey) {
     this.state.commercialTab = tabKey;
-    if (tabKey === "overview" || tabKey === "portafolio") {
-      await this.loadCommercialPayload(true);
-    }
-    if (tabKey === "canal") {
-      await this.loadChannelPayload(true);
-    }
     if (tabKey === "cobertura") {
-      await this.loadCoveragePayload(true);
+      await this.loadCoveragePayload();
     }
     this.queueChartRender();
-  }
-
-  getCurrentCommercialFilters() {
-    return this.state.commercialTab === "portafolio"
-      ? this.state.portfolioFilters
-      : this.state.overviewFilters;
   }
 
   async loadCommercialPayload(force = false) {
@@ -260,7 +214,7 @@ class ZrnAnalyticsHubAction extends Component {
       this.state.commercialPayload = await this.orm.call(
         "zrn_analitics.home",
         "get_commercial_hub_payload",
-        [this.getCurrentCommercialFilters()],
+        [],
       );
     } finally {
       this.state.commercialLoading = false;
@@ -276,161 +230,11 @@ class ZrnAnalyticsHubAction extends Component {
       this.state.coveragePayload = await this.orm.call(
         "zrn_analitics.home",
         "get_coverage_dashboard_data",
-        [this.state.coverageFilters],
+        [],
       );
     } finally {
       this.state.coverageLoading = false;
     }
-  }
-
-  async loadChannelPayload(force = false) {
-    if (this.state.channelPayload && !force) {
-      return;
-    }
-    this.state.channelLoading = true;
-    try {
-      this.state.channelPayload = await this.orm.call(
-        "zrn_analitics.home",
-        "get_channel_dashboard_data",
-        [this.state.channelFilters],
-      );
-    } finally {
-      this.state.channelLoading = false;
-    }
-  }
-
-  updateChannelFilter(fieldName, value) {
-    this.state.channelFilters = {
-      ...this.state.channelFilters,
-      [fieldName]: value,
-    };
-  }
-
-  updateOverviewFilter(fieldName, value) {
-    this.state.overviewFilters = {
-      ...this.state.overviewFilters,
-      [fieldName]: value,
-    };
-  }
-
-  updatePortfolioFilter(fieldName, value) {
-    this.state.portfolioFilters = {
-      ...this.state.portfolioFilters,
-      [fieldName]: value,
-    };
-  }
-
-  updateCoverageFilter(fieldName, value) {
-    this.state.coverageFilters = {
-      ...this.state.coverageFilters,
-      [fieldName]: value,
-    };
-  }
-
-  async applyOverviewFilters() {
-    this.state.commercialPayload = null;
-    await this.loadCommercialPayload(true);
-  }
-
-  async clearOverviewFilters() {
-    this.state.overviewFilters = {
-      period_key: "ytd",
-      channel: "",
-      brand: "",
-      category: "",
-      search: "",
-    };
-    this.state.commercialPayload = null;
-    await this.loadCommercialPayload(true);
-  }
-
-  async applyPortfolioFilters() {
-    this.state.commercialPayload = null;
-    await this.loadCommercialPayload(true);
-  }
-
-  async clearPortfolioFilters() {
-    this.state.portfolioFilters = {
-      period_key: "ytd",
-      channel: "",
-      brand: "",
-      category: "",
-      search: "",
-    };
-    this.state.commercialPayload = null;
-    await this.loadCommercialPayload(true);
-  }
-
-  async applyCoverageFilters() {
-    this.state.coveragePayload = null;
-    await this.loadCoveragePayload(true);
-  }
-
-  async clearCoverageFilters() {
-    this.state.coverageFilters = {
-      period_key: "ytd",
-      channel: "",
-      brand: "",
-      category: "",
-      search: "",
-    };
-    this.state.coveragePayload = null;
-    await this.loadCoveragePayload(true);
-  }
-
-  onOverviewSearchKeydown(ev) {
-    if (ev.key === "Enter") {
-      ev.preventDefault();
-      this.applyOverviewFilters();
-    }
-  }
-
-  onPortfolioSearchKeydown(ev) {
-    if (ev.key === "Enter") {
-      ev.preventDefault();
-      this.applyPortfolioFilters();
-    }
-  }
-
-  onCoverageSearchKeydown(ev) {
-    if (ev.key === "Enter") {
-      ev.preventDefault();
-      this.applyCoverageFilters();
-    }
-  }
-
-  async applyChannelFilters() {
-    this.state.channelModalRow = null;
-    this.state.channelPayload = null;
-    await this.loadChannelPayload(true);
-  }
-
-  async clearChannelFilters() {
-    this.state.channelFilters = {
-      period_key: "ytd",
-      channel: "",
-      brand: "",
-      category: "",
-      search: "",
-    };
-    this.state.channelModalRow = null;
-    this.state.channelPayload = null;
-    await this.loadChannelPayload(true);
-  }
-
-  onChannelSearchKeydown(ev) {
-    if (ev.key === "Enter") {
-      ev.preventDefault();
-      this.applyChannelFilters();
-    }
-  }
-
-  openChannelModal(row) {
-    this.state.channelModalRow = row;
-  }
-
-  closeChannelModal() {
-    this.state.channelModalRow = null;
   }
 
   openHome() {
@@ -468,7 +272,6 @@ class ZrnAnalyticsHubAction extends Component {
         top_customers: [],
         top_channels: [],
         top_products: [],
-        portfolio_rows: [],
       }
     );
   }
@@ -483,24 +286,6 @@ class ZrnAnalyticsHubAction extends Component {
   get coveragePayload() {
     return (
       this.state.coveragePayload || {
-        summary: {
-          sync_label: "",
-          period_label: "",
-          currency_symbol: "$",
-        },
-        active_filters: {
-          period_key: "ytd",
-          channel: "",
-          brand: "",
-          category: "",
-          search: "",
-        },
-        filter_options: {
-          periods: [],
-          channels: [],
-          brands: [],
-          categories: [],
-        },
         summary_cards: [],
         coverage_by_channel: [],
         pdv_universe: { total: 0, by_channel: {}, by_municipio: {} },
@@ -513,44 +298,6 @@ class ZrnAnalyticsHubAction extends Component {
     );
   }
 
-  get channelPayload() {
-    return (
-      this.state.channelPayload || {
-        summary: {
-          sync_label: "",
-          period_label: "",
-          currency_symbol: "$",
-        },
-        active_filters: {
-          period_key: "ytd",
-          channel: "",
-          brand: "",
-          category: "",
-          search: "",
-        },
-        filter_options: {
-          periods: [],
-          channels: [],
-          brands: [],
-          categories: [],
-        },
-        summary_cards: [],
-        rows: [],
-        empty_message: "",
-      }
-    );
-  }
-
-  get activeHubSummary() {
-    if (this.state.commercialTab === "cobertura") {
-      return this.coveragePayload.summary;
-    }
-    if (this.state.commercialTab === "canal") {
-      return this.channelPayload.summary;
-    }
-    return this.commercialPayload.summary;
-  }
-
   get hasCommercialRevenueSeries() {
     return Boolean((this.commercialPayload.revenue_series || []).length);
   }
@@ -561,10 +308,6 @@ class ZrnAnalyticsHubAction extends Component {
 
   get hasCommercialTopCustomers() {
     return Boolean((this.commercialPayload.top_customers || []).length);
-  }
-
-  get hasChannelRows() {
-    return Boolean((this.channelPayload.rows || []).length);
   }
 
   get hasEchartsLibrary() {
@@ -643,18 +386,27 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   buildCommercialPortfolio() {
-    const brandRows = this.commercialPayload.portfolio_rows || [];
+    const brandMix = this.commercialPayload.brand_mix || [];
+    const brandCatalog = this.commercialPayload.brand_catalog || [];
+    const productRows = this.commercialPayload.top_products || [];
     const currencySymbol =
       this.commercialPayload.summary?.currency_symbol || "$";
-    const palette = [
-      "#bd1730",
-      "#f18f01",
-      "#1f4e8c",
-      "#2f855a",
-      "#6b7280",
-      "#0f766e",
+    const businessUnits = [
+      { key: "grab_go", name: "Grab and Go", color: "#bd1730" },
+      { key: "food_service", name: "Food Service", color: "#f18f01" },
+      { key: "sin_un", name: "Sin UN", color: "#9aa4b2" },
     ];
-    if (!brandRows.length) {
+    const baseBrands = (brandMix.length ? brandMix : brandCatalog).map(
+      (brand, index) => ({
+        key: `brand_${index + 1}`,
+        resId: brand.id,
+        name: brand.name,
+        revenue: Number(brand.value || 0),
+        percentage: Number(brand.percentage || 0),
+        product_count: Number(brand.product_count || 0),
+      }),
+    );
+    if (!baseBrands.length) {
       return {
         hasBrands: false,
         hasRevenue: false,
@@ -664,57 +416,120 @@ class ZrnAnalyticsHubAction extends Component {
         drillRows: [],
       };
     }
-    const totalRevenue = brandRows.reduce(
-      (sum, brand) => sum + Number(brand.revenue || 0),
+
+    const brandProducts = new Map(baseBrands.map((brand) => [brand.key, []]));
+    productRows.forEach((product, index) => {
+      const targetBrand = baseBrands[index % baseBrands.length];
+      brandProducts.get(targetBrand.key).push({
+        product_id: product.product_id,
+        name: product.name,
+        category_name: product.category_name,
+        quantity_sold: Number(product.quantity_sold || 0),
+        sales_amount: Number(product.sales_amount || 0),
+      });
+    });
+
+    const totalRevenue = baseBrands.reduce(
+      (sum, brand) => sum + brand.revenue,
       0,
     );
-    const units = brandRows.map((brand, index) => ({
-      key: brand.key || `brand_${index + 1}`,
-      name: brand.name,
-      color: palette[index % palette.length],
-      brands: (brand.categories || []).map((category, categoryIndex) => ({
-        key: category.key || `${brand.key}_category_${categoryIndex + 1}`,
-        name: category.name,
-        revenue: Number(category.revenue || 0),
-        lines: [
-          {
-            key: `${category.key || `${brand.key}_category_${categoryIndex + 1}`}_skus`,
-            name: "SKUs",
-            revenue: Number(category.revenue || 0),
-            mix_percentage: totalRevenue
-              ? (Number(category.revenue || 0) / totalRevenue) * 100
-              : 0,
-            units_sold: Number(category.quantity_sold || 0),
-            billed_lines: 0,
-            sku_count: Number(category.product_count || 0),
-            margin_amount: 0,
-            margin_pct: 0,
-            skus: (category.products || []).map((product, productIndex) => ({
-              key: product.key || `${category.key}_sku_${productIndex + 1}`,
-              name: product.name,
-              revenue: Number(product.revenue || 0),
-              mix_percentage: totalRevenue
-                ? (Number(product.revenue || 0) / totalRevenue) * 100
-                : 0,
-              units_sold: Number(product.quantity_sold || 0),
-            })),
-          },
-        ],
-        billed_lines: 0,
-        sku_count: Number(category.product_count || 0),
-        margin_amount: 0,
-        margin_pct: 0,
-      })),
-      revenue: Number(brand.revenue || 0),
-      mix_percentage: totalRevenue
-        ? (Number(brand.revenue || 0) / totalRevenue) * 100
-        : 0,
-      sku_count: Number(brand.product_count || 0),
-      brand_count: (brand.categories || []).length,
-      billed_lines: 0,
-      margin_amount: 0,
-      margin_pct: 0,
-    }));
+    const lineNames = ["Fresco", "Snacks", "Base", "Food Prep", "Servicios"];
+    const units = businessUnits
+      .map((definition, unitIndex) => {
+        const assignedBrands = baseBrands
+          .filter(
+            (_brand, brandIndex) =>
+              brandIndex % businessUnits.length === unitIndex,
+          )
+          .map((brand, brandIndex) => {
+            const products = brandProducts.get(brand.key) || [];
+            const lineCount = Math.min(2, Math.max(products.length ? 2 : 1, 1));
+            const lineShares = lineCount === 1 ? [1] : [0.62, 0.38];
+            const lines = lineShares.map((share, lineIndex) => {
+              const productSubset = products.filter(
+                (_, productIndex) => productIndex % lineCount === lineIndex,
+              );
+              const revenue = Number((brand.revenue * share).toFixed(2));
+              const unitsSold = productSubset.reduce(
+                (sum, product) => sum + product.quantity_sold,
+                0,
+              );
+              const marginPct =
+                0.16 + ((unitIndex + brandIndex + lineIndex) % 4) * 0.035;
+              return {
+                key: `${brand.key}_line_${lineIndex + 1}`,
+                name: lineNames[
+                  (unitIndex + brandIndex + lineIndex) % lineNames.length
+                ],
+                revenue,
+                mix_percentage: totalRevenue
+                  ? (revenue / totalRevenue) * 100
+                  : 0,
+                units_sold: unitsSold,
+                billed_lines: Math.max(productSubset.length, 1),
+                sku_count: Math.max(
+                  productSubset.length,
+                  brand.product_count ? 1 : 0,
+                ),
+                margin_amount: Number((revenue * marginPct).toFixed(2)),
+                margin_pct: marginPct * 100,
+                skus: productSubset.map((product) => ({
+                  key: `${brand.key}_sku_${product.name}`,
+                  resId: product.product_id,
+                  name: product.name,
+                  revenue: product.sales_amount,
+                  mix_percentage: totalRevenue
+                    ? (product.sales_amount / totalRevenue) * 100
+                    : 0,
+                  units_sold: product.quantity_sold,
+                })),
+              };
+            });
+            const revenue = lines.reduce((sum, line) => sum + line.revenue, 0);
+            const marginAmount = lines.reduce(
+              (sum, line) => sum + line.margin_amount,
+              0,
+            );
+            return {
+              ...brand,
+              lines,
+              billed_lines: lines.reduce(
+                (sum, line) => sum + line.billed_lines,
+                0,
+              ),
+              sku_count: lines.reduce((sum, line) => sum + line.sku_count, 0),
+              margin_amount: Number(marginAmount.toFixed(2)),
+              margin_pct: revenue ? (marginAmount / revenue) * 100 : 0,
+            };
+          });
+
+        const revenue = assignedBrands.reduce(
+          (sum, brand) => sum + brand.revenue,
+          0,
+        );
+        const marginAmount = assignedBrands.reduce(
+          (sum, brand) => sum + brand.margin_amount,
+          0,
+        );
+        return {
+          ...definition,
+          brands: assignedBrands,
+          revenue: Number(revenue.toFixed(2)),
+          mix_percentage: totalRevenue ? (revenue / totalRevenue) * 100 : 0,
+          sku_count: assignedBrands.reduce(
+            (sum, brand) => sum + brand.sku_count,
+            0,
+          ),
+          brand_count: assignedBrands.length,
+          billed_lines: assignedBrands.reduce(
+            (sum, brand) => sum + brand.billed_lines,
+            0,
+          ),
+          margin_amount: Number(marginAmount.toFixed(2)),
+          margin_pct: revenue ? (marginAmount / revenue) * 100 : 0,
+        };
+      })
+      .filter((unit) => unit.brands.length);
 
     const drillRows = [];
     units.forEach((unit) => {
@@ -793,33 +608,20 @@ class ZrnAnalyticsHubAction extends Component {
     };
   }
 
-  getSelectChoices(options, emptyLabel) {
-    return [
-      { value: "", label: emptyLabel },
-      ...(options || []).map((option) => ({ value: option, label: option })),
-    ];
-  }
-
-  getPeriodChoices(options) {
-    return options || [];
-  }
-
   queueChartRender() {
     if (this._chartRenderFrame) {
       cancelAnimationFrame(this._chartRenderFrame);
     }
     this._chartRenderTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
     this._chartRenderTimeouts = [];
-    const renderAndResize = () => {
-      this.renderCharts();
-      this.resizeCharts();
-    };
     this._chartRenderFrame = requestAnimationFrame(() => {
       this._chartRenderFrame = 0;
-      renderAndResize();
-      this._chartRenderTimeouts.push(setTimeout(() => renderAndResize(), 80));
-      this._chartRenderTimeouts.push(setTimeout(() => renderAndResize(), 220));
-      this._chartRenderTimeouts.push(setTimeout(() => renderAndResize(), 480));
+      this.renderCharts();
+      this.resizeCharts();
+      this._chartRenderTimeouts.push(setTimeout(() => this.resizeCharts(), 80));
+      this._chartRenderTimeouts.push(
+        setTimeout(() => this.resizeCharts(), 220),
+      );
     });
   }
 
@@ -831,46 +633,20 @@ class ZrnAnalyticsHubAction extends Component {
     ) {
       return;
     }
-    if (this.state.commercialTab === "overview") {
-      try {
-        this.renderOverviewLineChart();
-      } catch (error) {
-        console.error("ZRN overview line chart error", error);
-      }
-      try {
-        this.renderOverviewDonutChart();
-      } catch (error) {
-        console.error("ZRN overview donut chart error", error);
-      }
-      try {
-        this.renderOverviewCustomersChart();
-      } catch (error) {
-        console.error("ZRN overview customers chart error", error);
-      }
+    try {
+      this.renderOverviewLineChart();
+    } catch (error) {
+      console.error("ZRN overview line chart error", error);
     }
-    if (this.state.commercialTab === "portafolio") {
-      try {
-        this.renderPortfolioUnitsChart();
-      } catch (error) {
-        console.error("ZRN portfolio units chart error", error);
-      }
-      try {
-        this.renderPortfolioBrandsChart();
-      } catch (error) {
-        console.error("ZRN portfolio brands chart error", error);
-      }
+    try {
+      this.renderOverviewDonutChart();
+    } catch (error) {
+      console.error("ZRN overview donut chart error", error);
     }
-    if (this.state.commercialTab === "cobertura") {
-      try {
-        this.renderCoverageChannelChart();
-      } catch (error) {
-        console.error("ZRN coverage channel chart error", error);
-      }
-      try {
-        this.renderCoverageSkuChart();
-      } catch (error) {
-        console.error("ZRN coverage sku chart error", error);
-      }
+    try {
+      this.renderOverviewCustomersChart();
+    } catch (error) {
+      console.error("ZRN overview customers chart error", error);
     }
   }
 
@@ -1093,323 +869,6 @@ class ZrnAnalyticsHubAction extends Component {
     );
   }
 
-  renderPortfolioUnitsChart() {
-    if (this.state.commercialTab !== "portafolio") {
-      return;
-    }
-    const units = this.commercialPortfolio.units || [];
-    if (!units.length || !this.commercialPortfolio.hasRevenue) {
-      return;
-    }
-    const chart = this.getChart("portfolio-units");
-    if (!chart) {
-      return;
-    }
-    const reversed = [...units].reverse();
-    chart.setOption(
-      {
-        animationDuration: 700,
-        animationEasing: "cubicOut",
-        grid: {
-          top: 10,
-          right: 20,
-          bottom: 12,
-          left: 120,
-          containLabel: false,
-        },
-        tooltip: {
-          trigger: "axis",
-          axisPointer: { type: "shadow" },
-          formatter: (params) => {
-            const item = reversed[params[0].dataIndex];
-            return [
-              `<strong>${item.name}</strong>`,
-              `${this.commercialPortfolio.currencySymbol} ${this.formatMoney(item.revenue)}`,
-              `${this.formatPercent(item.mix_percentage)} del mix`,
-              `${this.formatCount(item.sku_count)} SKU`,
-            ].join("<br/>");
-          },
-        },
-        xAxis: {
-          type: "value",
-          splitLine: { lineStyle: { color: "#edf2f8" } },
-          axisLabel: {
-            color: "#5f6b7a",
-            fontSize: 11,
-            formatter: (value) => this.formatMoney(value),
-          },
-        },
-        yAxis: {
-          type: "category",
-          data: reversed.map((item) => item.name),
-          axisTick: { show: false },
-          axisLine: { show: false },
-          axisLabel: { color: "#334155", fontSize: 11 },
-        },
-        series: [
-          {
-            type: "bar",
-            data: reversed.map((item) => ({
-              value: Number(item.revenue || 0),
-              itemStyle: {
-                color: item.color || "#bd1730",
-                borderRadius: [0, 6, 6, 0],
-              },
-            })),
-            barWidth: 18,
-            emphasis: { focus: "series" },
-          },
-        ],
-      },
-      true,
-    );
-  }
-
-  renderPortfolioBrandsChart() {
-    if (this.state.commercialTab !== "portafolio") {
-      return;
-    }
-    const unit = this.activePortfolioUnit;
-    const brands = unit?.brands || [];
-    if (!brands.length || !this.commercialPortfolio.hasRevenue) {
-      return;
-    }
-    const chart = this.getChart("portfolio-brands");
-    if (!chart) {
-      return;
-    }
-    const reversed = [...brands].sort(
-      (left, right) => left.revenue - right.revenue,
-    );
-    chart.setOption(
-      {
-        animationDuration: 700,
-        animationEasing: "cubicOut",
-        grid: {
-          top: 10,
-          right: 20,
-          bottom: 12,
-          left: 130,
-          containLabel: false,
-        },
-        tooltip: {
-          trigger: "axis",
-          axisPointer: { type: "shadow" },
-          formatter: (params) => {
-            const item = reversed[params[0].dataIndex];
-            const share = unit?.revenue
-              ? (item.revenue / unit.revenue) * 100
-              : 0;
-            return [
-              `<strong>${item.name}</strong>`,
-              `${this.commercialPortfolio.currencySymbol} ${this.formatMoney(item.revenue)}`,
-              `${this.formatPercent(share)} de la marca`,
-              `${this.formatCount(item.sku_count)} SKU`,
-            ].join("<br/>");
-          },
-        },
-        xAxis: {
-          type: "value",
-          splitLine: { lineStyle: { color: "#edf2f8" } },
-          axisLabel: {
-            color: "#5f6b7a",
-            fontSize: 11,
-            formatter: (value) => this.formatMoney(value),
-          },
-        },
-        yAxis: {
-          type: "category",
-          data: reversed.map((item) => item.name),
-          axisTick: { show: false },
-          axisLine: { show: false },
-          axisLabel: {
-            color: "#334155",
-            fontSize: 11,
-            width: 120,
-            overflow: "truncate",
-          },
-        },
-        series: [
-          {
-            type: "bar",
-            data: reversed.map((item) => Number(item.revenue || 0)),
-            barWidth: 18,
-            itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
-            emphasis: { focus: "series" },
-          },
-        ],
-      },
-      true,
-    );
-  }
-
-  renderCoverageChannelChart() {
-    if (this.state.commercialTab !== "cobertura") {
-      return;
-    }
-    const rows = this.coveragePayload.coverage_by_channel || [];
-    if (!rows.length) {
-      return;
-    }
-    const chart = this.getChart("coverage-channel");
-    if (!chart) {
-      return;
-    }
-    const reversed = [...rows].sort(
-      (left, right) => left.coverage_pct - right.coverage_pct,
-    );
-    chart.setOption(
-      {
-        animationDuration: 700,
-        animationEasing: "cubicOut",
-        grid: {
-          top: 10,
-          right: 18,
-          bottom: 12,
-          left: 110,
-          containLabel: false,
-        },
-        tooltip: {
-          trigger: "axis",
-          axisPointer: { type: "shadow" },
-          formatter: (params) => {
-            const item = reversed[params[0].dataIndex];
-            return [
-              `<strong>${item.channel}</strong>`,
-              `${this.formatPercent(item.coverage_pct)} cobertura`,
-              `${this.formatCount(item.active)} activos de ${this.formatCount(item.network_total)}`,
-              `${this.commercialPayload.summary.currency_symbol} ${this.formatMoney(item.revenue)} revenue`,
-            ].join("<br/>");
-          },
-        },
-        xAxis: {
-          type: "value",
-          max: 100,
-          splitLine: { lineStyle: { color: "#edf2f8" } },
-          axisLabel: {
-            color: "#5f6b7a",
-            fontSize: 11,
-            formatter: (value) => `${value}%`,
-          },
-        },
-        yAxis: {
-          type: "category",
-          data: reversed.map((item) => item.channel),
-          axisTick: { show: false },
-          axisLine: { show: false },
-          axisLabel: { color: "#334155", fontSize: 11 },
-        },
-        series: [
-          {
-            type: "bar",
-            data: reversed.map((item) => Number(item.coverage_pct || 0)),
-            barWidth: 18,
-            itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
-            emphasis: { focus: "series" },
-            label: {
-              show: true,
-              position: "right",
-              color: "#5f6b7a",
-              fontSize: 11,
-              formatter: ({ value }) => `${Number(value || 0).toFixed(0)}%`,
-            },
-          },
-        ],
-      },
-      true,
-    );
-  }
-
-  renderCoverageSkuChart() {
-    if (this.state.commercialTab !== "cobertura") {
-      return;
-    }
-    const rows = [...(this.coveragePayload.sku_distribution || [])]
-      .sort(
-        (left, right) => Number(right.pdv_pct || 0) - Number(left.pdv_pct || 0),
-      )
-      .slice(0, 8);
-    if (!rows.length) {
-      return;
-    }
-    const chart = this.getChart("coverage-sku");
-    if (!chart) {
-      return;
-    }
-    const reversed = [...rows].reverse();
-    chart.setOption(
-      {
-        animationDuration: 720,
-        animationEasing: "cubicOut",
-        grid: {
-          top: 10,
-          right: 18,
-          bottom: 12,
-          left: 180,
-          containLabel: false,
-        },
-        tooltip: {
-          trigger: "axis",
-          axisPointer: { type: "shadow" },
-          formatter: (params) => {
-            const item = reversed[params[0].dataIndex];
-            return [
-              `<strong>${item.sku}</strong>`,
-              `${this.formatPercent(item.pdv_pct)} penetracion`,
-              `${this.formatCount(item.pdv_count)} PDVs`,
-              `${this.commercialPayload.summary.currency_symbol} ${this.formatMoney(item.revenue)} revenue`,
-            ].join("<br/>");
-          },
-        },
-        xAxis: {
-          type: "value",
-          max: 100,
-          splitLine: { lineStyle: { color: "#edf2f8" } },
-          axisLabel: {
-            color: "#5f6b7a",
-            fontSize: 11,
-            formatter: (value) => `${value}%`,
-          },
-        },
-        yAxis: {
-          type: "category",
-          data: reversed.map((item) => item.sku),
-          axisTick: { show: false },
-          axisLine: { show: false },
-          axisLabel: {
-            color: "#334155",
-            fontSize: 11,
-            width: 170,
-            overflow: "truncate",
-          },
-        },
-        series: [
-          {
-            type: "bar",
-            data: reversed.map((item) => Number(item.pdv_pct || 0)),
-            barWidth: 18,
-            itemStyle: {
-              borderRadius: [0, 6, 6, 0],
-              color: new window.echarts.graphic.LinearGradient(1, 0, 0, 0, [
-                { offset: 0, color: "#e34c62" },
-                { offset: 1, color: "#bd1730" },
-              ]),
-            },
-            emphasis: { focus: "series" },
-            label: {
-              show: true,
-              position: "right",
-              color: "#5f6b7a",
-              fontSize: 11,
-              formatter: ({ value }) => `${Number(value || 0).toFixed(0)}%`,
-            },
-          },
-        ],
-      },
-      true,
-    );
-  }
-
   resizeCharts() {
     this._charts.forEach((chart) => chart.resize());
   }
@@ -1440,19 +899,8 @@ class ZrnAnalyticsHubAction extends Component {
   formatPercent(value) {
     return `${Number(value || 0).toFixed(1)}%`;
   }
-
-  formatChannelCardValue(card) {
-    if (!card) {
-      return "";
-    }
-    if (card.type === "currency") {
-      return `${this.channelPayload.summary.currency_symbol} ${this.formatMoney(card.value)}`;
-    }
-    return this.formatCount(card.value);
-  }
 }
 
 ZrnAnalyticsHubAction.template = "zrn_analitics.HubAction";
-ZrnAnalyticsHubAction.components = { SelectMenu };
 
 registry.category("actions").add("zrn_analitics.hubs", ZrnAnalyticsHubAction);
