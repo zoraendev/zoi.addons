@@ -122,7 +122,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             domain.append(('order_id.date_order', '>=', f'{date_from} 00:00:00'))
         if date_to:
             domain.append(('order_id.date_order', '<=', f'{date_to} 23:59:59'))
-        return self.env['sale.order.line'].search(domain, order='order_id.date_order asc, id asc')
+        order_lines = self.env['sale.order.line'].search(domain)
+        return order_lines.sorted(
+            key=lambda line: (
+                line.order_id.date_order or fields.Datetime.now(),
+                line.id,
+            )
+        )
 
     @api.model
     def _get_recent_month_labels(self, date_to, count=5):
@@ -176,6 +182,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 for label in month_labels
             ],
             'brand_mix': [],
+            'brand_catalog': [],
             'top_customers': [],
             'top_channels': [],
             'top_products': [],
@@ -199,6 +206,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             payload['summary']['product_count'] = len(product_brand_map)
             payload['has_brands'] = True
             payload['empty_message'] = 'Hay marcas creadas, pero aun no existen ventas para sus productos en el periodo.'
+            payload['brand_catalog'] = [
+                {
+                    'name': brand.name,
+                    'product_count': len(brand.product_link_ids.filtered(lambda link: link.active and link.product_id)),
+                }
+                for brand in brands
+            ]
             return payload
 
         month_starts, month_labels = self._get_recent_month_labels(date_to)
@@ -356,6 +370,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 for index, month_start in enumerate(month_starts)
             ],
             'brand_mix': brand_mix,
+            'brand_catalog': [
+                {
+                    'name': brand.name,
+                    'product_count': len(brand.product_link_ids.filtered(lambda link: link.active and link.product_id)),
+                }
+                for brand in brands
+            ],
             'top_customers': top_customers,
             'top_channels': top_channels,
             'top_products': top_products,

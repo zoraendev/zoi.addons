@@ -262,9 +262,16 @@
   flex-direction: column;
   gap: 18px;
   min-height: 100%;
+  height: 100%;
   padding: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #f5f7fa;
   color: var(--zrn-analitics-text);
+}
+
+.zrn_analitics_hub_body {
+  min-height: 0;
 }
 
 .zrn_analitics_hub_header {
@@ -662,6 +669,234 @@
   font-size: 11px;
 }
 
+.zrn_analitics_commercial_portfolio {
+  display: grid;
+  gap: 16px;
+}
+
+.zrn_analitics_commercial_portfolio_note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #f0d7a7;
+  border-radius: 8px;
+  background: #fff7ea;
+  color: #7a5a18;
+  font-size: 12px;
+}
+
+.zrn_analitics_commercial_portfolio_note strong {
+  color: #6f4a08;
+}
+
+.zrn_analitics_commercial_portfolio_cards,
+.zrn_analitics_commercial_portfolio_top,
+.zrn_analitics_commercial_portfolio_bottom {
+  display: grid;
+  gap: 16px;
+}
+
+.zrn_analitics_commercial_portfolio_cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.zrn_analitics_commercial_portfolio_top {
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
+}
+
+.zrn_analitics_commercial_portfolio_bottom {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.zrn_analitics_commercial_portfolio_card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid var(--zrn-analitics-line);
+  border-top: 3px solid var(--zrn-unit-color, var(--zrn-analitics-brand-700));
+  border-radius: 8px;
+  background: var(--zrn-analitics-surface);
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.zrn_analitics_commercial_portfolio_card.is-active {
+  border-color: var(--zrn-unit-color, var(--zrn-analitics-brand-700));
+  box-shadow: inset 0 0 0 1px var(--zrn-unit-color, var(--zrn-analitics-brand-700));
+}
+
+.zrn_analitics_commercial_portfolio_card_name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.zrn_analitics_commercial_portfolio_card_value {
+  color: var(--zrn-analitics-text);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.zrn_analitics_commercial_portfolio_card_meta {
+  color: var(--zrn-analitics-text-soft);
+  font-size: 12px;
+}
+
+.zrn_analitics_commercial_portfolio_card_footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--zrn-analitics-line);
+  color: var(--zrn-analitics-text-soft);
+  font-size: 12px;
+}
+
+.zrn_analitics_commercial_portfolio_card_footer strong {
+  color: var(--zrn-analitics-text);
+}
+
+.zrn_analitics_commercial_portfolio_chart,
+.zrn_analitics_commercial_portfolio_brand_mix,
+.zrn_analitics_commercial_portfolio_list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.zrn_analitics_commercial_portfolio_chart_row {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr) 160px;
+  gap: 12px;
+  align-items: center;
+}
+
+.zrn_analitics_commercial_portfolio_chart_label,
+.zrn_analitics_commercial_portfolio_chart_values span,
+.zrn_analitics_commercial_portfolio_brand_meta,
+.zrn_analitics_commercial_portfolio_list_row {
+  color: var(--zrn-analitics-text-soft);
+  font-size: 12px;
+}
+
+.zrn_analitics_commercial_portfolio_chart_track,
+.zrn_analitics_commercial_portfolio_brand_track {
+  height: 12px;
+  border-radius: 999px;
+  background: #eef2f8;
+  overflow: hidden;
+}
+
+.zrn_analitics_commercial_portfolio_chart_fill,
+.zrn_analitics_commercial_portfolio_brand_fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--zrn-unit-color, #bd1730);
+}
+
+.zrn_analitics_commercial_portfolio_chart_values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.zrn_analitics_commercial_portfolio_chart_values strong,
+.zrn_analitics_commercial_portfolio_brand_head strong,
+.zrn_analitics_commercial_portfolio_list_row strong {
+  color: var(--zrn-analitics-text);
+  font-size: 13px;
+}
+
+.zrn_analitics_commercial_portfolio_brand_row {
+  display: grid;
+  gap: 8px;
+}
+
+.zrn_analitics_commercial_portfolio_brand_head,
+.zrn_analitics_commercial_portfolio_brand_meta,
+.zrn_analitics_commercial_portfolio_list_row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zrn_analitics_commercial_portfolio_brand_fill {
+  background: #bd1730;
+}
+
+.zrn_analitics_commercial_portfolio_table_wrap {
+  max-height: none;
+}
+
+.zrn_analitics_commercial_portfolio_row.is-unit {
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.zrn_analitics_commercial_portfolio_row.is-brand {
+  background: #ffffff;
+}
+
+.zrn_analitics_commercial_portfolio_row.is-line {
+  background: #fcfdff;
+}
+
+.zrn_analitics_commercial_portfolio_row.is-sku td {
+  color: var(--zrn-analitics-text-soft);
+  font-size: 12px;
+}
+
+.zrn_analitics_commercial_portfolio_cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zrn_analitics_commercial_portfolio_cell.is-brand {
+  padding-left: 20px;
+}
+
+.zrn_analitics_commercial_portfolio_cell.is-line {
+  padding-left: 40px;
+}
+
+.zrn_analitics_commercial_portfolio_cell.is-sku {
+  padding-left: 60px;
+}
+
+.zrn_analitics_commercial_portfolio_toggle {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--zrn-analitics-text-soft);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.zrn_analitics_commercial_portfolio_dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.zrn_analitics_commercial_portfolio_list_row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--zrn-analitics-line);
+}
+
+.zrn_analitics_commercial_portfolio_list_row:last-child {
+  border-bottom: 0;
+}
+
 @media (max-width: 1200px) {
   .zrn_analitics_header,
   .zrn_analitics_grid,
@@ -678,12 +913,23 @@
   }
 
   .zrn_analitics_commercial_stats,
+  .zrn_analitics_commercial_portfolio_cards,
   .zrn_analitics_commercial_top_row,
-  .zrn_analitics_commercial_bottom_grid {
+  .zrn_analitics_commercial_bottom_grid,
+  .zrn_analitics_commercial_portfolio_top,
+  .zrn_analitics_commercial_portfolio_bottom {
     grid-template-columns: 1fr;
   }
 
   .zrn_analitics_commercial_bar_row {
     grid-template-columns: 1fr;
+  }
+
+  .zrn_analitics_commercial_portfolio_chart_row {
+    grid-template-columns: 1fr;
+  }
+
+  .zrn_analitics_commercial_portfolio_chart_values {
+    align-items: flex-start;
   }
 }
