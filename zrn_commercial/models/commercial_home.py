@@ -53,6 +53,13 @@ class ZrnCommercialHome(ZrnCommercialNavigationMixin, models.Model):
         self.ensure_one()
         return self._open_singleton_action('zrn_commercial.action_zrn_commercial_brands')
 
+    def action_open_channels(self):
+        """
+        Abre la vista de listado de canales comerciales.
+        """
+        self.ensure_one()
+        return self._open_singleton_action('zrn_commercial.action_zrn_commercial_channels')
+
     def action_open_portfolio(self):
         """
         Abre la vista de portafolio comercial (marcador de posición).

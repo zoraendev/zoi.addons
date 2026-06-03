@@ -20,7 +20,9 @@ Addon dedicado a la capa comercial operativa:
     'depends': ['base', 'product'],
     'data': [
         'security/ir.model.access.csv',
+        'data/commercial_channel_data.xml',
         'views/commercial_brand_views.xml',
+        'views/commercial_channel_views.xml',
         'views/commercial_home_views.xml',
         'views/commercial_hub_views.xml',
     ],

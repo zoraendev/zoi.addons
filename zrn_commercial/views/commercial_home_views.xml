@@ -39,10 +39,10 @@
                                     Centro operativo comercial para coordinar marcas, portafolio de productos y precios sugeridos.
                                 </div>
                             </div>
-                            <div class="zrn_planning_production_quickstats">
+                                <div class="zrn_planning_production_quickstats">
                                 <div class="zrn_planning_production_stat">
                                     <span class="zrn_planning_production_stat_label">Frentes</span>
-                                    <span class="zrn_planning_production_stat_value">3</span>
+                                    <span class="zrn_planning_production_stat_value">4</span>
                                 </div>
                                 <div class="zrn_planning_production_stat">
                                     <span class="zrn_planning_production_stat_label">Marcas</span>
@@ -65,6 +65,13 @@
                                         type="object"
                                         icon="fa-tags"
                                         string="Marcas comerciales"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
+                                    />
+                                    <button
+                                        name="action_open_channels"
+                                        type="object"
+                                        icon="fa-sitemap"
+                                        string="Canales"
                                         class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
                                     />
                                     <button
@@ -270,6 +277,14 @@
         parent="menu_zrn_commercial_root"
         action="action_zrn_commercial_brands"
         sequence="10"
+    />
+
+    <menuitem
+        id="menu_zrn_commercial_channels_sub"
+        name="Canales"
+        parent="menu_zrn_commercial_root"
+        action="action_zrn_commercial_channels"
+        sequence="15"
     />
 
     <menuitem

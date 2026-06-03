@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="zrn_commercial_channel_puma_super_7" model="zrn_commercial.commercial.channel">
+        <field name="name">PUMA Super 7</field>
+        <field name="code">puma_super_7</field>
+    </record>
+
+    <record id="zrn_commercial_channel_walmart_paiz" model="zrn_commercial.commercial.channel">
+        <field name="name">Walmart/Paiz</field>
+        <field name="code">walmart_paiz</field>
+    </record>
+
+    <record id="zrn_commercial_channel_la_torre" model="zrn_commercial.commercial.channel">
+        <field name="name">La Torre</field>
+        <field name="code">la_torre</field>
+    </record>
+
+    <record id="zrn_commercial_channel_b3" model="zrn_commercial.commercial.channel">
+        <field name="name">B3</field>
+        <field name="code">b3</field>
+    </record>
+
+    <record id="zrn_commercial_channel_circle_k" model="zrn_commercial.commercial.channel">
+        <field name="name">Circle K</field>
+        <field name="code">circle_k</field>
+    </record>
+
+    <record id="zrn_commercial_channel_gta_msf" model="zrn_commercial.commercial.channel">
+        <field name="name">GTA / MSF</field>
+        <field name="code">gta_msf</field>
+    </record>
+
+    <record id="zrn_commercial_channel_otros" model="zrn_commercial.commercial.channel">
+        <field name="name">Otros</field>
+        <field name="code">otros</field>
+    </record>
+
+    <function model="zrn_commercial.commercial.channel" name="_seed_default_channel_partners"/>
+</odoo>

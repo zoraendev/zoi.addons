@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <t t-name="zrn_analitics.RelationalMultiSelect">
+        <div class="zrn_analitics_relational_filter o_field_many2manytags">
+            <div class="o_field_tags d-inline-flex flex-wrap gap-1 o_tags_input o_input">
+                <TagsList tags="tags"/>
+                <div class="o_field_many2many_selection d-inline-flex w-100">
+                    <Many2XAutocomplete
+                        placeholder="tags.length ? '' : props.placeholder"
+                        resModel="props.resModel"
+                        fieldString="props.fieldString"
+                        activeActions="activeActions"
+                        update.bind="addRecords"
+                        getDomain.bind="getDomain"
+                        isToMany="true"
+                        autoSelect="true"
+                        context="props.context"
+                    />
+                </div>
+            </div>
+        </div>
+    </t>
+
     <t t-name="zrn_analitics.HubCommercial">
         <div class="zrn_analitics_commercial_hub" t-ref="hubRoot">
             <div class="zrn_analitics_commercial_hero">
@@ -54,15 +75,36 @@
                         </div>
                         <div class="zrn_analitics_commercial_field">
                             <label>Marca</label>
-                            <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.brands, 'Todas las marcas')" value="state.overviewFilters.brand" onSelect.bind="(value) => this.updateOverviewFilter('brand', value)"/>
+                            <ZrnRelationalMultiSelect
+                                records="getSelectedOptionRecords(commercialPayload.filter_options.brands, state.overviewFilters.brand_ids)"
+                                domain="getOptionDomain(commercialPayload.filter_options.brands)"
+                                resModel="'zrn_commercial.commercial.brand'"
+                                fieldString="'Marca'"
+                                placeholder="'Todas las marcas'"
+                                onChange.bind="(records) => this.updateOverviewFilter('brand_ids', records.map((record) => record.id))"
+                            />
                         </div>
                         <div class="zrn_analitics_commercial_field">
                             <label>Categoria</label>
-                            <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.categories, 'Todas las categorias')" value="state.overviewFilters.category" onSelect.bind="(value) => this.updateOverviewFilter('category', value)"/>
+                            <ZrnRelationalMultiSelect
+                                records="getSelectedOptionRecords(commercialPayload.filter_options.categories, state.overviewFilters.category_ids)"
+                                domain="getOptionDomain(commercialPayload.filter_options.categories)"
+                                resModel="'product.category'"
+                                fieldString="'Categoria'"
+                                placeholder="'Todas las categorias'"
+                                onChange.bind="(records) => this.updateOverviewFilter('category_ids', records.map((record) => record.id))"
+                            />
                         </div>
                         <div class="zrn_analitics_commercial_field">
                             <label>Canal</label>
-                            <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.channels, 'Todos los canales')" value="state.overviewFilters.channel" onSelect.bind="(value) => this.updateOverviewFilter('channel', value)"/>
+                            <ZrnRelationalMultiSelect
+                                records="getSelectedOptionRecords(commercialPayload.filter_options.channels, state.overviewFilters.channel_ids)"
+                                domain="getOptionDomain(commercialPayload.filter_options.channels)"
+                                resModel="'zrn_commercial.commercial.channel'"
+                                fieldString="'Canal'"
+                                placeholder="'Todos los canales'"
+                                onChange.bind="(records) => this.updateOverviewFilter('channel_ids', records.map((record) => record.id))"
+                            />
                         </div>
                         <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
                             <label>Buscar</label>
@@ -237,15 +279,36 @@
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Marca</label>
-                                <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.brands, 'Todas las marcas')" value="state.portfolioFilters.brand" onSelect.bind="(value) => this.updatePortfolioFilter('brand', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(commercialPayload.filter_options.brands, state.portfolioFilters.brand_ids)"
+                                    domain="getOptionDomain(commercialPayload.filter_options.brands)"
+                                    resModel="'zrn_commercial.commercial.brand'"
+                                    fieldString="'Marca'"
+                                    placeholder="'Todas las marcas'"
+                                    onChange.bind="(records) => this.updatePortfolioFilter('brand_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Categoria</label>
-                                <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.categories, 'Todas las categorias')" value="state.portfolioFilters.category" onSelect.bind="(value) => this.updatePortfolioFilter('category', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(commercialPayload.filter_options.categories, state.portfolioFilters.category_ids)"
+                                    domain="getOptionDomain(commercialPayload.filter_options.categories)"
+                                    resModel="'product.category'"
+                                    fieldString="'Categoria'"
+                                    placeholder="'Todas las categorias'"
+                                    onChange.bind="(records) => this.updatePortfolioFilter('category_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Canal</label>
-                                <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.channels, 'Todos los canales')" value="state.portfolioFilters.channel" onSelect.bind="(value) => this.updatePortfolioFilter('channel', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(commercialPayload.filter_options.channels, state.portfolioFilters.channel_ids)"
+                                    domain="getOptionDomain(commercialPayload.filter_options.channels)"
+                                    resModel="'zrn_commercial.commercial.channel'"
+                                    fieldString="'Canal'"
+                                    placeholder="'Todos los canales'"
+                                    onChange.bind="(records) => this.updatePortfolioFilter('channel_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
                                 <label>Buscar</label>
@@ -411,15 +474,36 @@
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Canal</label>
-                                <SelectMenu choices="getSelectChoices(coveragePayload.filter_options.channels, 'Todos los canales')" value="state.coverageFilters.channel" onSelect.bind="(value) => this.updateCoverageFilter('channel', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(coveragePayload.filter_options.channels, state.coverageFilters.channel_ids)"
+                                    domain="getOptionDomain(coveragePayload.filter_options.channels)"
+                                    resModel="'zrn_commercial.commercial.channel'"
+                                    fieldString="'Canal'"
+                                    placeholder="'Todos los canales'"
+                                    onChange.bind="(records) => this.updateCoverageFilter('channel_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Marca</label>
-                                <SelectMenu choices="getSelectChoices(coveragePayload.filter_options.brands, 'Todas las marcas')" value="state.coverageFilters.brand" onSelect.bind="(value) => this.updateCoverageFilter('brand', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(coveragePayload.filter_options.brands, state.coverageFilters.brand_ids)"
+                                    domain="getOptionDomain(coveragePayload.filter_options.brands)"
+                                    resModel="'zrn_commercial.commercial.brand'"
+                                    fieldString="'Marca'"
+                                    placeholder="'Todas las marcas'"
+                                    onChange.bind="(records) => this.updateCoverageFilter('brand_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Categoria</label>
-                                <SelectMenu choices="getSelectChoices(coveragePayload.filter_options.categories, 'Todas las categorias')" value="state.coverageFilters.category" onSelect.bind="(value) => this.updateCoverageFilter('category', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(coveragePayload.filter_options.categories, state.coverageFilters.category_ids)"
+                                    domain="getOptionDomain(coveragePayload.filter_options.categories)"
+                                    resModel="'product.category'"
+                                    fieldString="'Categoria'"
+                                    placeholder="'Todas las categorias'"
+                                    onChange.bind="(records) => this.updateCoverageFilter('category_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
                                 <label>Buscar</label>
@@ -443,6 +527,12 @@
                     </t>
 
                     <t t-if="!state.coverageLoading">
+                        <t t-if="coveragePayload.empty_message">
+                            <div class="zrn_analitics_commercial_empty_note">
+                                <t t-esc="coveragePayload.empty_message"/>
+                            </div>
+                        </t>
+
                         <div class="zrn_analitics_commercial_coverage_cards">
                             <t t-foreach="coveragePayload.summary_cards" t-as="card" t-key="card.label">
                                 <div class="zrn_analitics_commercial_coverage_card">
@@ -862,15 +952,36 @@
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Canal</label>
-                                <SelectMenu choices="getSelectChoices(channelPayload.filter_options.channels, 'Todos los canales')" value="state.channelFilters.channel" onSelect.bind="(value) => this.updateChannelFilter('channel', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(channelPayload.filter_options.channels, state.channelFilters.channel_ids)"
+                                    domain="getOptionDomain(channelPayload.filter_options.channels)"
+                                    resModel="'zrn_commercial.commercial.channel'"
+                                    fieldString="'Canal'"
+                                    placeholder="'Todos los canales'"
+                                    onChange.bind="(records) => this.updateChannelFilter('channel_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Marca</label>
-                                <SelectMenu choices="getSelectChoices(channelPayload.filter_options.brands, 'Todas las marcas')" value="state.channelFilters.brand" onSelect.bind="(value) => this.updateChannelFilter('brand', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(channelPayload.filter_options.brands, state.channelFilters.brand_ids)"
+                                    domain="getOptionDomain(channelPayload.filter_options.brands)"
+                                    resModel="'zrn_commercial.commercial.brand'"
+                                    fieldString="'Marca'"
+                                    placeholder="'Todas las marcas'"
+                                    onChange.bind="(records) => this.updateChannelFilter('brand_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Categoria</label>
-                                <SelectMenu choices="getSelectChoices(channelPayload.filter_options.categories, 'Todas las categorias')" value="state.channelFilters.category" onSelect.bind="(value) => this.updateChannelFilter('category', value)"/>
+                                <ZrnRelationalMultiSelect
+                                    records="getSelectedOptionRecords(channelPayload.filter_options.categories, state.channelFilters.category_ids)"
+                                    domain="getOptionDomain(channelPayload.filter_options.categories)"
+                                    resModel="'product.category'"
+                                    fieldString="'Categoria'"
+                                    placeholder="'Todas las categorias'"
+                                    onChange.bind="(records) => this.updateChannelFilter('category_ids', records.map((record) => record.id))"
+                                />
                             </div>
                             <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
                                 <label>Buscar</label>

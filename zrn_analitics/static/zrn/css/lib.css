@@ -1066,6 +1066,21 @@
   grid-column: span 2;
 }
 
+.zrn_analitics_relational_filter,
+.zrn_analitics_relational_filter .o_field_tags,
+.zrn_analitics_relational_filter .o_field_many2many_selection {
+  width: 100%;
+}
+
+.zrn_analitics_relational_filter .o_field_tags {
+  min-height: 38px;
+  align-items: center;
+}
+
+.zrn_analitics_relational_filter .o-autocomplete--input {
+  min-width: 120px;
+}
+
 .zrn_analitics_commercial_channel_actions {
   grid-template-columns: auto auto minmax(0, 1fr);
   align-items: center;

@@ -112,6 +112,49 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         return brands, product_brand_map
 
     @api.model
+    def _get_commercial_channel_records(self, channel_names=None):
+        domain = [
+            ('active', '=', True),
+            ('company_id', '=', self.env.company.id),
+        ]
+        if channel_names:
+            domain.append(('name', 'in', list(channel_names)))
+        return self.env['zrn_commercial.commercial.channel'].search(domain, order='name asc, id asc')
+
+    @api.model
+    def _get_channel_setup_status(self):
+        channels = self._get_commercial_channel_records()
+        links = self.env['zrn_commercial.commercial.channel.partner'].search([
+            ('active', '=', True),
+            ('company_id', '=', self.env.company.id),
+        ])
+        return {
+            'channels': channels,
+            'links': links,
+            'has_channels': bool(channels),
+            'has_assignments': bool(links),
+        }
+
+    @api.model
+    def _get_channel_empty_message(self, setup_status):
+        if not setup_status['has_channels']:
+            return 'No hay canales comerciales creados en Zoraen Commercial.'
+        if not setup_status['has_assignments']:
+            return 'No hay PDVs o clientes cargados en los canales comerciales.'
+        return 'No hay datos para los filtros seleccionados.'
+
+    @api.model
+    def _get_explicit_channel_name(self, partner):
+        if not partner:
+            return False
+        channel_link = self.env['zrn_commercial.commercial.channel.partner'].search([
+            ('partner_id', '=', partner.id),
+            ('active', '=', True),
+            ('company_id', '=', self.env.company.id),
+        ], limit=1)
+        return channel_link.channel_id.name if channel_link and channel_link.channel_id else False
+
+    @api.model
     def _get_commercial_sale_order_lines(self, date_from, date_to, product_ids):
         domain = [
             ('order_id.state', 'in', ['sale', 'done']),
@@ -174,8 +217,11 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             partner = order.partner_id.commercial_partner_id or order.partner_id
             if not partner or partner.id in universe_partner_ids:
                 continue
+            channel_name = self._resolve_partner_channel(partner)
+            if not channel_name:
+                continue
             universe_partner_ids.add(partner.id)
-            by_channel[self._infer_coverage_channel(partner.display_name)].add(partner.id)
+            by_channel[channel_name].add(partner.id)
             municipio = partner.city or partner.state_id.name or partner.country_id.name or 'Sin municipio'
             by_municipio[municipio].add(partner.id)
 
@@ -189,8 +235,11 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 commercial_partner = partner.commercial_partner_id or partner
                 if not commercial_partner or commercial_partner.id in universe_partner_ids:
                     continue
+                channel_name = self._resolve_partner_channel(commercial_partner)
+                if not channel_name:
+                    continue
                 universe_partner_ids.add(commercial_partner.id)
-                by_channel[self._infer_coverage_channel(commercial_partner.display_name)].add(commercial_partner.id)
+                by_channel[channel_name].add(commercial_partner.id)
                 municipio = (
                     commercial_partner.city
                     or commercial_partner.state_id.name
@@ -247,7 +296,11 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         return 'Otros'
 
     @api.model
-    def _get_empty_coverage_dashboard_data(self):
+    def _resolve_partner_channel(self, partner):
+        return self._get_explicit_channel_name(partner)
+
+    @api.model
+    def _get_empty_coverage_dashboard_data(self, empty_message=''):
         date_to = fields.Date.to_date(fields.Date.context_today(self))
         universe = self._get_coverage_universe(date_to - timedelta(days=365), date_to)
         return {
@@ -264,6 +317,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'rows': [],
             },
             'clients_at_risk': [],
+            'empty_message': empty_message,
             'notes_sources': [
                 {
                     'label': 'Odoo',
@@ -277,7 +331,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         }
 
     @api.model
-    def _get_empty_commercial_hub_payload(self):
+    def _get_empty_commercial_hub_payload(self, empty_message='No hay marcas comerciales creadas en Zoraen Commercial.'):
         date_from, date_to = self._get_commercial_hub_period()
         _month_starts, month_labels = self._get_recent_month_labels(date_to)
         return {
@@ -297,7 +351,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'currency_symbol': self.env.company.currency_id.symbol or '$',
             },
             'has_brands': False,
-            'empty_message': 'No hay marcas comerciales creadas en Zoraen Commercial.',
+            'empty_message': empty_message,
             'revenue_series': [
                 {'label': label, 'value': 0.0}
                 for label in month_labels
@@ -341,30 +395,101 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             'period_key': period_key,
             'date_from': date_from,
             'date_to': date_to,
-            'channel': (filters.get('channel') or '').strip(),
-            'brand': (filters.get('brand') or '').strip(),
-            'category': (filters.get('category') or '').strip(),
+            'channel_ids': self._normalize_channel_ids(filters),
+            'brand_ids': self._normalize_filter_ids(filters.get('brand_ids') or filters.get('brand')),
+            'category_ids': self._normalize_filter_ids(filters.get('category_ids') or filters.get('category')),
             'search': (filters.get('search') or '').strip(),
+        }
+
+    @api.model
+    def _normalize_filter_ids(self, values):
+        if not values:
+            return []
+        if not isinstance(values, (list, tuple, set)):
+            values = [values]
+        normalized = []
+        for value in values:
+            if isinstance(value, dict):
+                value = value.get('id')
+            try:
+                record_id = int(value)
+            except (TypeError, ValueError):
+                continue
+            if record_id > 0 and record_id not in normalized:
+                normalized.append(record_id)
+        return normalized
+
+    @api.model
+    def _normalize_channel_ids(self, filters=None):
+        filters = filters or {}
+        channel_ids = self._normalize_filter_ids(filters.get('channel_ids'))
+        if channel_ids:
+            return channel_ids
+        channel_name = (filters.get('channel') or '').strip()
+        if not channel_name:
+            return []
+        return self._get_commercial_channel_records([channel_name]).ids
+
+    @api.model
+    def _get_brand_filter_options(self, brands):
+        return [
+            {
+                'id': brand.id,
+                'name': brand.name,
+            }
+            for brand in brands
+        ]
+
+    @api.model
+    def _get_channel_filter_options(self, channel_names=None):
+        return [
+            {
+                'id': channel.id,
+                'name': channel.name,
+            }
+            for channel in self._get_commercial_channel_records(channel_names)
+        ]
+
+    @api.model
+    def _get_selected_channel_names(self, normalized_filters):
+        channel_ids = normalized_filters.get('channel_ids') or []
+        if not channel_ids:
+            return set()
+        return set(self.env['zrn_commercial.commercial.channel'].browse(channel_ids).mapped('name'))
+
+    @api.model
+    def _serialize_active_filters(self, normalized_filters):
+        return {
+            'period_key': normalized_filters['period_key'],
+            'channel_ids': normalized_filters['channel_ids'],
+            'brand_ids': normalized_filters['brand_ids'],
+            'category_ids': normalized_filters['category_ids'],
+            'search': normalized_filters['search'],
         }
 
     @api.model
     def _build_filter_options(self, order_lines, brands=None, include_channels=True):
         brands = brands or self._get_commercial_brand_records()
-        categories = set()
-        channels = set()
+        categories = {}
         for line in order_lines:
             order = line.order_id
             partner = order.partner_id if order else False
             product = line.product_id
             if product:
-                categories.add(product.categ_id.display_name or 'Sin categoria')
-            if include_channels and partner:
-                channels.add(self._infer_coverage_channel(partner.display_name))
+                category = product.categ_id
+                if category and category.id:
+                    categories[category.id] = category.display_name or category.name or 'Sin categoria'
         return {
             'periods': self._get_channel_period_options(),
-            'channels': sorted(channels),
-            'brands': sorted([brand.name for brand in brands]),
-            'categories': sorted(categories),
+            'channels': self._get_channel_filter_options() if include_channels else [],
+            'brands': self._get_brand_filter_options(brands),
+            'categories': [
+                {
+                    'id': category_id,
+                    'name': name,
+                }
+                for category_id, name in sorted(categories.items(), key=lambda item: item[1])
+            ],
         }
 
     @api.model
@@ -380,13 +505,16 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         if not brand_info:
             return False
 
-        channel_name = self._infer_coverage_channel(partner.display_name)
+        channel_name = self._resolve_partner_channel(partner)
         category_name = product.categ_id.display_name or 'Sin categoria'
-        if normalized_filters['channel'] and channel_name != normalized_filters['channel']:
+        if not channel_name:
             return False
-        if normalized_filters['brand'] and brand_info['brand_name'] != normalized_filters['brand']:
+        selected_channel_names = self._get_selected_channel_names(normalized_filters)
+        if selected_channel_names and channel_name not in selected_channel_names:
             return False
-        if normalized_filters['category'] and category_name != normalized_filters['category']:
+        if normalized_filters['brand_ids'] and brand_info['brand_id'] not in normalized_filters['brand_ids']:
+            return False
+        if normalized_filters['category_ids'] and product.categ_id.id not in normalized_filters['category_ids']:
             return False
 
         search_term = normalized_filters['search'].lower()
@@ -411,8 +539,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         product_brand_map = product_brand_map if product_brand_map is not None else self._get_commercial_brand_map()[1]
         filter_options = filter_options or {
             'periods': self._get_channel_period_options(),
-            'channels': [],
-            'brands': sorted([brand.name for brand in brands]),
+            'channels': self._get_channel_filter_options(),
+            'brands': self._get_brand_filter_options(brands),
             'categories': [],
         }
         date_from = normalized_filters['date_from']
@@ -426,13 +554,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 ),
                 'currency_symbol': self.env.company.currency_id.symbol or '$',
             },
-            'active_filters': {
-                'period_key': normalized_filters['period_key'],
-                'channel': normalized_filters['channel'],
-                'brand': normalized_filters['brand'],
-                'category': normalized_filters['category'],
-                'search': normalized_filters['search'],
-            },
+            'active_filters': self._serialize_active_filters(normalized_filters),
             'filter_options': filter_options,
             'summary_cards': [
                 {'label': 'Canales activos', 'value': 0, 'type': 'count'},
@@ -454,15 +576,27 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         date_from = normalized_filters['date_from']
         date_to = normalized_filters['date_to']
         brands, product_brand_map = self._get_commercial_brand_map()
+        channel_setup = self._get_channel_setup_status()
         if not brands or not product_brand_map:
             payload = self._get_empty_commercial_hub_payload()
-            payload['active_filters'] = {
-                'period_key': normalized_filters['period_key'],
-                'channel': normalized_filters['channel'],
-                'brand': normalized_filters['brand'],
-                'category': normalized_filters['category'],
-                'search': normalized_filters['search'],
-            }
+            payload['active_filters'] = self._serialize_active_filters(normalized_filters)
+            payload['filter_options'] = self._build_filter_options([], brands)
+            return payload
+        if not channel_setup['has_channels'] or not channel_setup['has_assignments']:
+            payload = self._get_empty_commercial_hub_payload(
+                self._get_channel_empty_message(channel_setup)
+            )
+            payload['summary']['brand_count'] = len(brands)
+            payload['summary']['product_count'] = len(product_brand_map)
+            payload['has_brands'] = True
+            payload['brand_catalog'] = [
+                {
+                    'name': brand.name,
+                    'product_count': len(brand.product_link_ids.filtered(lambda link: link.active and link.product_id)),
+                }
+                for brand in brands
+            ]
+            payload['active_filters'] = self._serialize_active_filters(normalized_filters)
             payload['filter_options'] = self._build_filter_options([], brands)
             return payload
 
@@ -486,13 +620,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 }
                 for brand in brands
             ]
-            payload['active_filters'] = {
-                'period_key': normalized_filters['period_key'],
-                'channel': normalized_filters['channel'],
-                'brand': normalized_filters['brand'],
-                'category': normalized_filters['category'],
-                'search': normalized_filters['search'],
-            }
+            payload['active_filters'] = self._serialize_active_filters(normalized_filters)
             payload['filter_options'] = filter_options
             return payload
 
@@ -752,13 +880,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             'top_channels': top_channels,
             'top_products': top_products,
             'portfolio_rows': portfolio_rows,
-            'active_filters': {
-                'period_key': normalized_filters['period_key'],
-                'channel': normalized_filters['channel'],
-                'brand': normalized_filters['brand'],
-                'category': normalized_filters['category'],
-                'search': normalized_filters['search'],
-            },
+            'active_filters': self._serialize_active_filters(normalized_filters),
             'filter_options': filter_options,
         }
 
@@ -768,12 +890,21 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         date_from = normalized_filters['date_from']
         date_to = normalized_filters['date_to']
         brands, product_brand_map = self._get_commercial_brand_map()
+        channel_setup = self._get_channel_setup_status()
         if not brands or not product_brand_map:
             return self._build_empty_channel_dashboard_payload(
                 normalized_filters,
                 brands=brands,
                 product_brand_map=product_brand_map,
             )
+        if not channel_setup['has_channels'] or not channel_setup['has_assignments']:
+            payload = self._build_empty_channel_dashboard_payload(
+                normalized_filters,
+                brands=brands,
+                product_brand_map=product_brand_map,
+            )
+            payload['empty_message'] = self._get_channel_empty_message(channel_setup)
+            return payload
 
         period_lines = self._get_commercial_sale_order_lines(
             date_from,
@@ -782,21 +913,31 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         )
 
         base_channels = set()
-        base_categories = set()
+        base_categories = {}
         for line in period_lines:
             order = line.order_id
             partner = order.partner_id
             product = line.product_id
             if not order or not partner or not product:
                 continue
-            base_channels.add(self._infer_coverage_channel(partner.display_name))
-            base_categories.add(product.categ_id.display_name or 'Sin categoria')
+            channel_name = self._resolve_partner_channel(partner)
+            if channel_name:
+                base_channels.add(channel_name)
+            category = product.categ_id
+            if category and category.id:
+                base_categories[category.id] = category.display_name or category.name or 'Sin categoria'
 
         filter_options = {
             'periods': self._get_channel_period_options(),
-            'channels': sorted(base_channels),
-            'brands': sorted([brand.name for brand in brands]),
-            'categories': sorted(base_categories),
+            'channels': self._get_channel_filter_options(base_channels),
+            'brands': self._get_brand_filter_options(brands),
+            'categories': [
+                {
+                    'id': category_id,
+                    'name': name,
+                }
+                for category_id, name in sorted(base_categories.items(), key=lambda item: item[1])
+            ],
         }
         if not period_lines:
             return self._build_empty_channel_dashboard_payload(
@@ -807,6 +948,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             )
 
         search_term = normalized_filters['search'].lower()
+        selected_channel_names = self._get_selected_channel_names(normalized_filters)
         channel_rows = {}
         total_revenue = 0.0
         total_order_ids = set()
@@ -824,13 +966,15 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             if not brand_info:
                 continue
 
-            channel_name = self._infer_coverage_channel(partner.display_name)
+            channel_name = self._resolve_partner_channel(partner)
+            if not channel_name:
+                continue
             category_name = product.categ_id.display_name or 'Sin categoria'
-            if normalized_filters['channel'] and channel_name != normalized_filters['channel']:
+            if selected_channel_names and channel_name not in selected_channel_names:
                 continue
-            if normalized_filters['brand'] and brand_info['brand_name'] != normalized_filters['brand']:
+            if normalized_filters['brand_ids'] and brand_info['brand_id'] not in normalized_filters['brand_ids']:
                 continue
-            if normalized_filters['category'] and category_name != normalized_filters['category']:
+            if normalized_filters['category_ids'] and product.categ_id.id not in normalized_filters['category_ids']:
                 continue
 
             if search_term:
@@ -1042,13 +1186,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 ),
                 'currency_symbol': self.env.company.currency_id.symbol or '$',
             },
-            'active_filters': {
-                'period_key': normalized_filters['period_key'],
-                'channel': normalized_filters['channel'],
-                'brand': normalized_filters['brand'],
-                'category': normalized_filters['category'],
-                'search': normalized_filters['search'],
-            },
+            'active_filters': self._serialize_active_filters(normalized_filters),
             'filter_options': filter_options,
             'summary_cards': [
                 {'label': 'Canales activos', 'value': len(rows), 'type': 'count'},
@@ -1067,6 +1205,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         date_to = normalized_filters['date_to']
         universe = self._get_coverage_universe(date_to - timedelta(days=365), date_to)
         brands, product_brand_map = self._get_commercial_brand_map()
+        channel_setup = self._get_channel_setup_status()
         if not brands or not product_brand_map:
             payload = self._get_empty_coverage_dashboard_data()
             payload['summary'] = {
@@ -1077,13 +1216,22 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 ),
                 'currency_symbol': self.env.company.currency_id.symbol or '$',
             }
-            payload['active_filters'] = {
-                'period_key': normalized_filters['period_key'],
-                'channel': normalized_filters['channel'],
-                'brand': normalized_filters['brand'],
-                'category': normalized_filters['category'],
-                'search': normalized_filters['search'],
+            payload['active_filters'] = self._serialize_active_filters(normalized_filters)
+            payload['filter_options'] = self._build_filter_options([], brands)
+            return payload
+        if not channel_setup['has_channels'] or not channel_setup['has_assignments']:
+            payload = self._get_empty_coverage_dashboard_data(
+                self._get_channel_empty_message(channel_setup)
+            )
+            payload['summary'] = {
+                'sync_label': fields.Date.to_string(date_to),
+                'period_label': '%s al %s' % (
+                    fields.Date.to_string(date_from),
+                    fields.Date.to_string(date_to),
+                ),
+                'currency_symbol': self.env.company.currency_id.symbol or '$',
             }
+            payload['active_filters'] = self._serialize_active_filters(normalized_filters)
             payload['filter_options'] = self._build_filter_options([], brands)
             return payload
 
@@ -1104,13 +1252,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 ),
                 'currency_symbol': self.env.company.currency_id.symbol or '$',
             }
-            payload['active_filters'] = {
-                'period_key': normalized_filters['period_key'],
-                'channel': normalized_filters['channel'],
-                'brand': normalized_filters['brand'],
-                'category': normalized_filters['category'],
-                'search': normalized_filters['search'],
-            }
+            payload['active_filters'] = self._serialize_active_filters(normalized_filters)
             payload['filter_options'] = filter_options
             return payload
 
@@ -1133,7 +1275,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             amount = float(line.price_total or 0.0)
             quantity = float(line.product_uom_qty or 0.0)
             order_date = fields.Datetime.to_datetime(order.date_order).date() if order.date_order else date_to
-            channel_name = self._infer_coverage_channel(partner.display_name)
+            channel_name = self._resolve_partner_channel(partner)
             total_revenue += amount
 
             channel_entry = channel_map.setdefault(
@@ -1337,13 +1479,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 ),
                 'currency_symbol': self.env.company.currency_id.symbol or '$',
             },
-            'active_filters': {
-                'period_key': normalized_filters['period_key'],
-                'channel': normalized_filters['channel'],
-                'brand': normalized_filters['brand'],
-                'category': normalized_filters['category'],
-                'search': normalized_filters['search'],
-            },
+            'active_filters': self._serialize_active_filters(normalized_filters),
             'filter_options': filter_options,
             'summary_cards': [
                 {
