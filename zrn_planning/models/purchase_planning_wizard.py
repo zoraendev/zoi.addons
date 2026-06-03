@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
@@ -133,6 +134,17 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         string='Modo del rango del reporte',
         default='all',
         readonly=True,
+    )
+    pending_plan_state = fields.Selection(
+        [
+            ('draft', 'Borrador'),
+            ('pending_confirmation', 'Pendiente de confirmar'),
+            ('approved', 'Aprobado'),
+            ('released', 'Liberado'),
+            ('done', 'Finalizado'),
+            ('cancel', 'Cancelado'),
+        ],
+        string='Estado del plan pendiente',
     )
 
     @api.model
@@ -770,6 +782,197 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         })
         return self.action_open_report()
 
+    def action_open_create_supply_plan_modal(self):
+        """
+        Abre el modal de confirmación para crear un plan de abastecimiento.
+        Valida que existan insumos en el reporte antes de continuar.
+        """
+        self.ensure_one()
+        if not self.report_supply_line_ids:
+            raise UserError(_('No hay datos en la tabla para crear el planning.'))
+
+        # Crear el registro del wizard modal de confirmación
+        modal = self.env['zrn_planning.purchase.planning.create.plan.wizard'].create({
+            'purchase_wizard_id': self.id,
+            'plan_state': self.pending_plan_state or 'draft',
+        })
+        form_view = self.env.ref('zrn_planning.view_zrn_planning_create_supply_plan_modal_form')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Crear planning de abastecimiento'),
+            'res_model': 'zrn_planning.purchase.planning.create.plan.wizard',
+            'res_id': modal.id,
+            'view_mode': 'form',
+            'view_id': form_view.id,
+            'views': [(form_view.id, 'form')],
+            'target': 'new',
+        }
+
+    def _create_supply_plan(self, target_state='draft', notes=False, plan_name=False):
+        """
+        Genera el plan de abastecimiento (zrn_prodigyn.mfg.plan) y sus líneas/orígenes correspondientes
+        basado en los datos del reporte actual del asistente.
+        """
+        self.ensure_one()
+        if not self.report_supply_line_ids:
+            raise UserError(_('No hay datos en la tabla para crear el planning.'))
+
+        # Buscar la bodega de la compañía actual
+        warehouse = self.env['stock.warehouse'].search(
+            [('company_id', '=', self.env.company.id)],
+            limit=1,
+        )
+
+        # Calcular el rango de fechas basado en las líneas de requerimiento
+        date_start = self.fecha_desde or min(
+            self.report_requirement_line_ids.mapped('schedule_date') or [False]
+        )
+        date_end = self.fecha_hasta or max(
+            self.report_requirement_line_ids.mapped('schedule_date') or [False]
+        )
+
+        # Crear el registro principal del plan maestro
+        plan = self.env['zrn_prodigyn.mfg.plan'].create({
+            'name': plan_name or (_('Planning de abastecimiento %s') % fields.Date.today().strftime('%d/%m/%Y')),
+            'company_id': self.env.company.id,
+            'warehouse_id': warehouse.id if warehouse else False,
+            'planning_basis': 'mixed',  # Abastecimiento involucra tanto OFs como OVs (Mixto)
+            'state': target_state,
+            'date_start': date_start,
+            'date_end': date_end,
+            'notes': notes or _('Planning generado desde Planeacion de abastecimiento.'),
+        })
+
+        bom_model = self.env['mrp.bom']
+        line_values = []
+
+        # Crear las líneas del plan maestro (productos terminados a producir / abastecer)
+        for sequence, report_line in enumerate(
+            self.report_product_line_ids.sorted(
+                key=lambda line: (
+                    line.first_required_date or fields.Date.today(),
+                    line.product_id.display_name or '',
+                    line.id,
+                )
+            ),
+            start=1,
+        ):
+            bom = bom_model.search([('product_id', '=', report_line.product_id.id)], limit=1)
+            if not bom:
+                bom = bom_model.search(
+                    [('product_tmpl_id', '=', report_line.product_id.product_tmpl_id.id)],
+                    limit=1,
+                )
+            planned_qty = report_line.planned_qty
+
+            line_values.append({
+                'plan_id': plan.id,
+                'sequence': sequence * 10,
+                'warehouse_id': warehouse.id if warehouse else False,
+                'product_id': report_line.product_id.id,
+                'bom_id': bom.id if bom else False,
+                'production_date': report_line.first_required_date or fields.Date.today(),
+                'delivery_date': report_line.last_required_date or report_line.first_required_date,
+                'qty_planned': planned_qty,
+                'state': 'draft',
+            })
+
+        # Crear líneas de planificación en la base de datos
+        created_lines = self.env['zrn_prodigyn.mfg.plan.line'].create(line_values)
+        product_to_line_id = {line.product_id.id: line.id for line in created_lines}
+
+        # Agrupar requerimientos de insumos por producto terminado e insumo para crear líneas de supply
+        supply_vals = []
+        grouped_requirements = {}
+        for req in self.report_requirement_line_ids:
+            key = (req.finished_product_id.id, req.component_id.id)
+            if key not in grouped_requirements:
+                grouped_requirements[key] = {
+                    'required_qty': 0.0,
+                    'stock_initial': req.stock_initial,
+                    'stock_free': req.stock_free,
+                    'suggested_purchase_qty': 0.0,
+                }
+            grouped_requirements[key]['required_qty'] += req.required_qty
+            grouped_requirements[key]['suggested_purchase_qty'] += req.suggested_purchase_qty
+
+        for (finished_product_id, component_id), req_data in grouped_requirements.items():
+            line_id = product_to_line_id.get(finished_product_id)
+            if not line_id:
+                continue
+
+            qty_required = req_data['required_qty']
+            qty_to_buy = req_data['suggested_purchase_qty']
+            qty_free = req_data['stock_free']
+
+            # Definir estado de abastecimiento del insumo
+            if qty_to_buy <= 0:
+                status = 'covered_stock'
+            elif qty_to_buy >= qty_required:
+                status = 'to_buy'
+            else:
+                status = 'mixed'
+
+            plan_line = self.env['zrn_prodigyn.mfg.plan.line'].browse(line_id)
+            qty_planned = plan_line.qty_planned or 1.0
+            qty_per_unit = qty_required / qty_planned if qty_planned else 0.0
+
+            supply_vals.append({
+                'plan_line_id': line_id,
+                'component_id': component_id,
+                'qty_per_unit': qty_per_unit,
+                'qty_required': qty_required,
+                'qty_on_hand': req_data['stock_initial'],
+                'qty_forecast': qty_free,
+                'qty_to_buy': qty_to_buy,
+                'supply_status': status,
+            })
+
+        if supply_vals:
+            self.env['zrn_prodigyn.mfg.plan.supply'].create(supply_vals)
+
+        # Registrar los documentos origen (OFs y OVs) en el plan maestro
+        source_values = []
+        for doc_line in self.report_document_line_ids.sorted(
+            key=lambda line: (
+                line.first_required_date or fields.Date.today(),
+                line.source_reference or '',
+                line.id,
+            )
+        ):
+            source_values.append({
+                'plan_id': plan.id,
+                'source_model': doc_line.source_model,
+                'source_id': doc_line.source_record_id,
+                'source_ref': doc_line.source_reference or '',
+                'customer_id': doc_line.customer_id.id if doc_line.customer_id else False,
+                'source_date': doc_line.first_required_date or doc_line.last_required_date,
+                'source_state': doc_line.state_label or doc_line.state or '',
+            })
+        if source_values:
+            self.env['zrn_prodigyn.mfg.plan.source'].create(source_values)
+
+        # Actualizar el estado en el wizard
+        self.pending_plan_state = target_state
+
+        # Si el estado objetivo es 'approved', confirmamos el plan para que genere
+        # automáticamente las órdenes de producción en borrador (comportamiento nativo de Prodigyn)
+        if target_state == 'approved':
+            plan.action_confirm_plan()
+
+        # Retornar acción para abrir el plan recién creado
+        form_view = self.env.ref('zrn_planning.view_zrn_planning_mfg_plan_form')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Planning de abastecimiento'),
+            'res_model': 'zrn_prodigyn.mfg.plan',
+            'res_id': plan.id,
+            'view_mode': 'form',
+            'view_id': form_view.id,
+            'views': [(form_view.id, 'form')],
+            'target': 'main',
+        }
+
 
 class ZrnPlanningPurchasePlanningWizardReportRequirementLine(models.TransientModel):
     _name = 'zrn_planning.purchase.planning.wizard.report.requirement.line'
@@ -1014,3 +1217,92 @@ class ZrnPlanningPurchasePlanningWizardReportDocumentLine(models.TransientModel)
     def action_return_to_report(self):
         self.ensure_one()
         return self.wizard_id.action_open_report()
+
+
+class ZrnPlanningPurchasePlanningCreatePlanWizard(models.TransientModel):
+    _name = 'zrn_planning.purchase.planning.create.plan.wizard'
+    _description = 'Confirmacion para crear planning de abastecimiento'
+
+    purchase_wizard_id = fields.Many2one(
+        'zrn_planning.purchase.planning.wizard',
+        string='Wizard de abastecimiento',
+        required=True,
+        ondelete='cascade',
+    )
+    plan_name = fields.Char(
+        string='Nombre del planning',
+        default=lambda self: _('Planning de abastecimiento %s') % fields.Date.today().strftime('%d/%m/%Y'),
+        required=True,
+    )
+    plan_state = fields.Selection(
+        [
+            ('draft', 'Borrador'),
+            ('pending_confirmation', 'Pendiente de confirmar'),
+            ('approved', 'Confirmado'),
+        ],
+        string='Estado inicial',
+        required=True,
+        default='draft',
+    )
+    notes = fields.Text(string='Notas')
+    report_date_range_label = fields.Char(
+        string='Rango consultado',
+        related='purchase_wizard_id.report_date_range_label',
+        readonly=True,
+    )
+    report_date_from_label = fields.Char(
+        string='Fecha inicial',
+        related='purchase_wizard_id.report_date_from_label',
+        readonly=True,
+    )
+    report_date_to_label = fields.Char(
+        string='Fecha final',
+        related='purchase_wizard_id.report_date_to_label',
+        readonly=True,
+    )
+    report_date_range_mode = fields.Selection(
+        related='purchase_wizard_id.report_date_range_mode',
+        readonly=True,
+    )
+    report_supply_count = fields.Integer(
+        string='Insumos',
+        related='purchase_wizard_id.report_supply_count',
+        readonly=True,
+    )
+    report_product_count = fields.Integer(
+        string='Productos',
+        related='purchase_wizard_id.report_product_count',
+        readonly=True,
+    )
+    report_document_count = fields.Integer(
+        string='Ordenes',
+        related='purchase_wizard_id.report_document_count',
+        readonly=True,
+    )
+    report_row_count = fields.Integer(
+        string='Lineas',
+        related='purchase_wizard_id.report_row_count',
+        readonly=True,
+    )
+    report_supply_line_ids = fields.Many2many(
+        'zrn_planning.purchase.planning.wizard.report.supply.line',
+        string='Insumos del planning',
+        compute='_compute_report_supply_line_ids',
+        readonly=True,
+    )
+
+    @api.depends('purchase_wizard_id', 'purchase_wizard_id.report_supply_line_ids')
+    def _compute_report_supply_line_ids(self):
+        for wizard in self:
+            wizard.report_supply_line_ids = [(6, 0, wizard.purchase_wizard_id.report_supply_line_ids.ids)]
+
+    def action_save_plan(self):
+        """
+        Guarda el plan llamando al método del asistente principal.
+        """
+        self.ensure_one()
+        return self.purchase_wizard_id._create_supply_plan(
+            target_state=self.plan_state,
+            notes=self.notes or False,
+            plan_name=self.plan_name or False,
+        )

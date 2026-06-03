@@ -232,6 +232,11 @@
                                     <i class="fa fa-check-square-o" style='margin-right:4px;'/>
                                     <span>Seleccionar y exportar</span>
                                 </button>
+                                <button name="action_open_create_supply_plan_modal" type="object"
+                                        class="btn zrn_planning_production_report_table_toolbar_btn zrn_planning_production_report_table_toolbar_btn_primary">
+                                    <i class="fa fa-plus-circle" style="margin-right: 4px;"/>
+                                    <span>Crear planning</span>
+                                </button>
                             </div>
                             <div class="zrn_planning_production_report_table_placeholder">
                                 <div class="zrn_planning_production_report_table_placeholder_title" invisible="report_active_tab != 'overview'">Espacio reservado para la tabla del reporte</div>
@@ -652,6 +657,77 @@
         <field name="view_id" ref="view_zrn_planning_purchase_planning_form"/>
         <field name="res_id" ref="zrn_planning_purchase_planning_default"/>
         <field name="target">current</field>
+    </record>
+
+    <!-- Modal para confirmacion y resumen previo a la creacion del planning de abastecimiento -->
+    <record id="view_zrn_planning_create_supply_plan_modal_form" model="ir.ui.view">
+        <field name="name">zrn_planning.purchase.planning.create.plan.wizard.form</field>
+        <field name="model">zrn_planning.purchase.planning.create.plan.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Crear planning de abastecimiento" create="0" delete="0" edit="1" class="zrn_planning_create_plan_modal_form">
+                <sheet>
+                    <group invisible="1">
+                        <field name="purchase_wizard_id"/>
+                        <field name="report_supply_line_ids"/>
+                        <field name="report_date_range_mode"/>
+                        <field name="report_date_from_label"/>
+                        <field name="report_date_to_label"/>
+                    </group>
+                    <div class="zrn_planning_create_plan_modal">
+                        <div class="zrn_planning_create_plan_modal_head">
+                            <h2>Resumen previo del planning</h2>
+                            <p>El planning se crea solo cuando presionas guardar en esta ventana.</p>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="plan_name"/>
+                                <field name="plan_state" widget="radio"/>
+                            </group>
+                            <group>
+                                <field name="notes" placeholder="Notas internas del planning"/>
+                            </group>
+                        </group>
+                        <div class="zrn_planning_create_plan_modal_stats">
+                            <div class="zrn_planning_create_plan_modal_stat">
+                                <span>Rango consultado</span>
+                                <strong invisible="report_date_range_mode == 'all'"><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
+                                <strong invisible="report_date_range_mode != 'all'"><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_planning_create_plan_modal_stat">
+                                <span>Insumos</span>
+                                <strong><field name="report_supply_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_planning_create_plan_modal_stat">
+                                <span>Productos</span>
+                                <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_planning_create_plan_modal_stat">
+                                <span>Ordenes</span>
+                                <strong><field name="report_document_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_planning_create_plan_modal_stat">
+                                <span>Lineas</span>
+                                <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                        </div>
+                        <div class="zrn_planning_create_plan_modal_table">
+                            <field name="report_supply_line_ids" readonly="1" nolabel="1">
+                                <tree create="0" edit="0" delete="0">
+                                    <field name="component_id" string="Insumo"/>
+                                    <field name="total_required_qty" sum="Requerido total"/>
+                                    <field name="stock_free" sum="Stock libre"/>
+                                    <field name="suggested_purchase_qty" sum="Compra sugerida"/>
+                                </tree>
+                            </field>
+                        </div>
+                    </div>
+                </sheet>
+                <footer>
+                    <button string="Cancelar" special="cancel" class="btn btn-secondary"/>
+                    <button name="action_save_plan" type="object" string="Guardar" class="btn btn-primary"/>
+                </footer>
+            </form>
+        </field>
     </record>
 
 </odoo>

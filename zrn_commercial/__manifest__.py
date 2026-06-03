@@ -21,6 +21,7 @@ Addon dedicado a la capa comercial operativa:
     'data': [
         'security/ir.model.access.csv',
         'views/commercial_brand_views.xml',
+        'views/commercial_home_views.xml',
         'views/commercial_hub_views.xml',
     ],
     'installable': True,

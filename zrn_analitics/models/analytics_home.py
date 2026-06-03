@@ -602,6 +602,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             product_entry = product_map.setdefault(
                 product.id,
                 {
+                    'product_id': product.id,
                     'name': product.display_name,
                     'default_code': product.default_code or '',
                     'category_name': product.categ_id.display_name or '',
@@ -616,11 +617,12 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         top_customers = sorted(
             [
                 {
+                    'partner_id': partner_id,
                     'name': item['name'],
                     'order_count': len(item['order_ids']),
                     'total_amount': round(item['total_amount'], 2),
                 }
-                for item in customer_map.values()
+                for partner_id, item in customer_map.items()
             ],
             key=lambda item: item['total_amount'],
             reverse=True,
@@ -640,6 +642,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         top_products = sorted(
             [
                 {
+                    'product_id': item['product_id'],
                     'name': item['name'],
                     'default_code': item['default_code'],
                     'category_name': item['category_name'],
@@ -651,9 +654,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             key=lambda item: item['sales_amount'],
             reverse=True,
         )[:8]
+
+        # Map brand names to their commercial brand database IDs
+        brand_ids_map = {brand.name: brand.id for brand in brands}
         brand_mix = sorted(
             [
                 {
+                    'id': brand_ids_map.get(brand_name),
                     'name': brand_name,
                     'value': round(amount, 2),
                     'percentage': round((amount / total_amount) * 100, 2) if total_amount else 0.0,
@@ -735,6 +742,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             'brand_mix': brand_mix,
             'brand_catalog': [
                 {
+                    'id': brand.id,
                     'name': brand.name,
                     'product_count': len(brand.product_link_ids.filtered(lambda link: link.active and link.product_id)),
                 }
@@ -1169,6 +1177,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             sku_entry = sku_map.setdefault(
                 product.id,
                 {
+                    'product_id': product.id,
                     'sku': product.display_name,
                     'brand': brand_info['brand_name'],
                     'revenue': 0.0,
@@ -1241,6 +1250,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         sku_distribution = sorted(
             [
                 {
+                    'product_id': sku_data['product_id'],
                     'sku': sku_data['sku'],
                     'brand': sku_data['brand'],
                     'revenue': round(sku_data['revenue'], 2),
@@ -1279,6 +1289,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     key=lambda item: item[1],
                 )[0]
             portfolio_holes_rows.append({
+                'partner_id': customer_id,
                 'name': customer_data['name'],
                 'channel': customer_data['channel'],
                 'abc': abc_map.get(customer_id, 'C'),
@@ -1302,6 +1313,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     segment = 'Atender'
                     action = 'Cerrar huecos de portafolio en próxima gestión.'
                 clients_at_risk.append({
+                    'partner_id': customer_id,
                     'name': customer_data['name'],
                     'channel': customer_data['channel'],
                     'abc': abc_map.get(customer_id, 'C'),

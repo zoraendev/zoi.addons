@@ -169,23 +169,43 @@
                             <span>Top productos</span>
                             <span>Base por marca</span>
                         </div>
-                        <div class="zrn_analitics_commercial_table_wrap">
-                            <t t-if="commercialPayload.top_products.length">
-                                <table class="zrn_analitics_commercial_table">
+                        <div class="table-responsive">
+                            <t t-if="sortedTopProducts.length">
+                                <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                     <thead>
                                         <tr>
-                                            <th>Producto</th>
-                                            <th>Categoria</th>
-                                            <th>Unidades</th>
-                                            <th>Venta</th>
+                                            <th t-on-click="() => this.toggleSort('top_products', 'name')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                Producto
+                                                <t t-if="state.sorts.top_products.column === 'name'">
+                                                    <i class="fa" t-att-class="state.sorts.top_products.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
+                                            <th t-on-click="() => this.toggleSort('top_products', 'category_name')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                Categoria
+                                                <t t-if="state.sorts.top_products.column === 'category_name'">
+                                                    <i class="fa" t-att-class="state.sorts.top_products.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
+                                            <th t-on-click="() => this.toggleSort('top_products', 'quantity_sold')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                Unidades
+                                                <t t-if="state.sorts.top_products.column === 'quantity_sold'">
+                                                    <i class="fa" t-att-class="state.sorts.top_products.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
+                                            <th t-on-click="() => this.toggleSort('top_products', 'sales_amount')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                Venta
+                                                <t t-if="state.sorts.top_products.column === 'sales_amount'">
+                                                    <i class="fa" t-att-class="state.sorts.top_products.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <t t-foreach="commercialPayload.top_products" t-as="product" t-key="product.name">
-                                            <tr>
+                                        <t t-foreach="sortedTopProducts" t-as="product" t-key="product.product_id">
+                                            <tr t-on-click="() => this.openRecordModal('product.product', product.product_id)" style="cursor: pointer;">
                                                 <td>
                                                     <strong><t t-esc="product.name"/></strong>
-                                                    <div t-if="product.default_code" class="zrn_analitics_commercial_table_sub"><t t-esc="product.default_code"/></div>
+                                                    <div t-if="product.default_code" class="text-muted small"><t t-esc="product.default_code"/></div>
                                                 </td>
                                                 <td><t t-esc="product.category_name"/></td>
                                                 <td><t t-esc="formatCount(product.quantity_sold)"/></td>
@@ -321,8 +341,8 @@
                                 <span>Drill UN → Marca → Línea → SKU</span>
                                 <span>Base preparada para jerarquía real</span>
                             </div>
-                            <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_portfolio_table_wrap">
-                                <table class="zrn_analitics_commercial_table zrn_analitics_commercial_portfolio_table">
+                            <div class="table-responsive">
+                                <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                     <thead>
                                         <tr>
                                             <th>Nivel</th>
@@ -341,18 +361,21 @@
                                                 t-if="isPortfolioRowVisible(row)"
                                                 class="zrn_analitics_commercial_portfolio_row"
                                                 t-att-class="'is-' + row.level"
+                                                t-on-click="() => this.onPortfolioRowClick(row)"
+                                                t-att-style="row.level === 'brand' || row.level === 'sku' ? 'cursor: pointer;' : ''"
                                             >
                                                 <td>
-                                                    <div class="zrn_analitics_commercial_portfolio_cell" t-att-class="'is-' + row.level">
+                                                    <div class="zrn_analitics_commercial_portfolio_cell d-flex align-items-center" t-att-class="'is-' + row.level">
                                                         <button
                                                             t-if="row.level !== 'sku'"
                                                             type="button"
-                                                            class="zrn_analitics_commercial_portfolio_toggle"
-                                                            t-on-click="() => this.togglePortfolioRow(row.key)"
+                                                            class="btn btn-link p-0 me-1 zrn_analitics_commercial_portfolio_toggle text-decoration-none text-reset"
+                                                            t-on-click.stop="() => this.togglePortfolioRow(row.key)"
+                                                            style="width: 1.5rem; height: 1.5rem;"
                                                         >
                                                             <t t-esc="isPortfolioRowExpanded(row.key) ? '▾' : '▸'"/>
                                                         </button>
-                                                        <span t-if="row.level === 'unit'" class="zrn_analitics_commercial_portfolio_dot" t-att-style="'background:' + row.color"></span>
+                                                        <span t-if="row.level === 'unit'" class="zrn_analitics_commercial_portfolio_dot rounded-circle me-1" t-att-style="'background:' + row.color + '; width: 8px; height: 8px; display: inline-block;'"></span>
                                                         <span><t t-esc="row.label"/></span>
                                                     </div>
                                                 </td>
@@ -436,10 +459,59 @@
                                     <span>Cobertura por canal</span>
                                     <span>Activos vs red total</span>
                                 </div>
-                                <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
-                                    <table class="zrn_analitics_commercial_table">
+                                <div class="table-responsive">
+                                    <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                         <thead>
                                             <tr>
+                                                <th t-on-click="() => this.toggleSort('coverage_by_channel', 'channel')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Canal
+                                                    <t t-if="state.sorts.coverage_by_channel.column === 'channel'">
+                                                        <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('coverage_by_channel', 'active')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Activos
+                                                    <t t-if="state.sorts.coverage_by_channel.column === 'active'">
+                                                        <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('coverage_by_channel', 'network_total')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Red total
+                                                    <t t-if="state.sorts.coverage_by_channel.column === 'network_total'">
+                                                        <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('coverage_by_channel', 'coverage_pct')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    % Cobertura
+                                                    <t t-if="state.sorts.coverage_by_channel.column === 'coverage_pct'">
+                                                        <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('coverage_by_channel', 'white_space')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    White space
+                                                    <t t-if="state.sorts.coverage_by_channel.column === 'white_space'">
+                                                        <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('coverage_by_channel', 'revenue')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Revenue
+                                                    <t t-if="state.sorts.coverage_by_channel.column === 'revenue'">
+                                                        <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('coverage_by_channel', 'mix_pct')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    % Mix
+                                                    <t t-if="state.sorts.coverage_by_channel.column === 'mix_pct'">
+                                                        <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('coverage_by_channel', 'avg_ticket')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Ticket / PDV
+                                                    <t t-if="state.sorts.coverage_by_channel.column === 'avg_ticket'">
+                                                        <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th>Penetración</th>
                                                 <th>Canal</th>
                                                 <th>Activos</th>
                                                 <th>Red total</th>
@@ -451,7 +523,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <t t-foreach="coveragePayload.coverage_by_channel" t-as="row" t-key="row.channel">
+                                            <t t-foreach="sortedCoverageByChannel" t-as="row" t-key="row.channel">
                                                 <tr>
                                                     <td><strong><t t-esc="row.channel"/></strong></td>
                                                     <td><t t-esc="formatCount(row.active)"/></td>
@@ -509,8 +581,8 @@
                                 <span>Matriz canal × sub-marca</span>
                                 <span>Revenue por presencia</span>
                             </div>
-                            <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
-                                <table class="zrn_analitics_commercial_table zrn_analitics_commercial_coverage_matrix">
+                            <div class="table-responsive">
+                                <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped zrn_analitics_commercial_coverage_matrix">
                                     <thead>
                                         <tr>
                                             <th>Canal</th>
@@ -542,10 +614,47 @@
                                 <span>Distribución por SKU</span>
                                 <span>Penetración sobre PDVs activos</span>
                             </div>
-                            <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
-                                <table class="zrn_analitics_commercial_table">
+                            <div class="table-responsive">
+                                <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                     <thead>
                                         <tr>
+                                            <th t-on-click="() => this.toggleSort('sku_distribution', 'sku')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                SKU
+                                                <t t-if="state.sorts.sku_distribution.column === 'sku'">
+                                                    <i class="fa" t-att-class="state.sorts.sku_distribution.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
+                                            <th t-on-click="() => this.toggleSort('sku_distribution', 'brand')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                Sub-marca
+                                                <t t-if="state.sorts.sku_distribution.column === 'brand'">
+                                                    <i class="fa" t-att-class="state.sorts.sku_distribution.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
+                                            <th t-on-click="() => this.toggleSort('sku_distribution', 'revenue')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                Revenue
+                                                <t t-if="state.sorts.sku_distribution.column === 'revenue'">
+                                                    <i class="fa" t-att-class="state.sorts.sku_distribution.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
+                                            <th t-on-click="() => this.toggleSort('sku_distribution', 'pdv_count')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                # PDVs
+                                                <t t-if="state.sorts.sku_distribution.column === 'pdv_count'">
+                                                    <i class="fa" t-att-class="state.sorts.sku_distribution.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
+                                            <th t-on-click="() => this.toggleSort('sku_distribution', 'pdv_pct')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                % PDVs
+                                                <t t-if="state.sorts.sku_distribution.column === 'pdv_pct'">
+                                                    <i class="fa" t-att-class="state.sorts.sku_distribution.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
+                                            <th>Penetración</th>
+                                            <th t-on-click="() => this.toggleSort('sku_distribution', 'channels')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                Canales
+                                                <t t-if="state.sorts.sku_distribution.column === 'channels'">
+                                                    <i class="fa" t-att-class="state.sorts.sku_distribution.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                </t>
+                                            </th>
                                             <th>SKU</th>
                                             <th>Sub-marca</th>
                                             <th>Revenue</th>
@@ -555,8 +664,8 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <t t-foreach="coveragePayload.sku_distribution" t-as="row" t-key="row.sku">
-                                            <tr>
+                                        <t t-foreach="sortedSkuDistribution" t-as="row" t-key="row.product_id">
+                                            <tr t-on-click="() => this.openRecordModal('product.product', row.product_id)" style="cursor: pointer;">
                                                 <td><strong><t t-esc="row.sku"/></strong></td>
                                                 <td><t t-esc="row.brand"/></td>
                                                 <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
@@ -589,20 +698,45 @@
                                         <span class="zrn_analitics_commercial_coverage_tag"><t t-esc="sku"/></span>
                                     </t>
                                 </div>
-                                <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
-                                    <table class="zrn_analitics_commercial_table">
+                                <div class="table-responsive">
+                                    <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                         <thead>
                                             <tr>
-                                                <th>Cliente / PDV</th>
-                                                <th>Canal</th>
-                                                <th>ABC</th>
-                                                <th>Revenue</th>
-                                                <th>Gaps</th>
+                                                <th t-on-click="() => this.toggleSort('portfolio_holes', 'name')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Cliente / PDV
+                                                    <t t-if="state.sorts.portfolio_holes.column === 'name'">
+                                                        <i class="fa" t-att-class="state.sorts.portfolio_holes.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('portfolio_holes', 'channel')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Canal
+                                                    <t t-if="state.sorts.portfolio_holes.column === 'channel'">
+                                                        <i class="fa" t-att-class="state.sorts.portfolio_holes.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('portfolio_holes', 'abc')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    ABC
+                                                    <t t-if="state.sorts.portfolio_holes.column === 'abc'">
+                                                        <i class="fa" t-att-class="state.sorts.portfolio_holes.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('portfolio_holes', 'revenue')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Revenue
+                                                    <t t-if="state.sorts.portfolio_holes.column === 'revenue'">
+                                                        <i class="fa" t-att-class="state.sorts.portfolio_holes.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('portfolio_holes', 'gap_count')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Gaps
+                                                    <t t-if="state.sorts.portfolio_holes.column === 'gap_count'">
+                                                        <i class="fa" t-att-class="state.sorts.portfolio_holes.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <t t-foreach="coveragePayload.portfolio_holes.rows" t-as="row" t-key="row.name">
-                                                <tr>
+                                            <t t-foreach="sortedPortfolioHoles" t-as="row" t-key="row.partner_id">
+                                                <tr t-on-click="() => this.openRecordModal('res.partner', row.partner_id)" style="cursor: pointer;">
                                                     <td><strong><t t-esc="row.name"/></strong></td>
                                                     <td><t t-esc="row.channel"/></td>
                                                     <td><t t-esc="row.abc"/></td>
@@ -620,26 +754,66 @@
                                     <span>Clientes A/B en riesgo</span>
                                     <span>Recencia y cobertura</span>
                                 </div>
-                                <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
-                                    <table class="zrn_analitics_commercial_table">
+                                <div class="table-responsive">
+                                    <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                         <thead>
                                             <tr>
-                                                <th>Cliente / PDV</th>
-                                                <th>Canal</th>
-                                                <th>ABC</th>
-                                                <th>Segmento</th>
-                                                <th>Revenue YTD</th>
-                                                <th>Recencia</th>
-                                                <th>Meses activo</th>
-                                                <th>Producto principal</th>
+                                                <th t-on-click="() => this.toggleSort('clients_at_risk', 'name')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Cliente / PDV
+                                                    <t t-if="state.sorts.clients_at_risk.column === 'name'">
+                                                        <i class="fa" t-att-class="state.sorts.clients_at_risk.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('clients_at_risk', 'channel')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Canal
+                                                    <t t-if="state.sorts.clients_at_risk.column === 'channel'">
+                                                        <i class="fa" t-att-class="state.sorts.clients_at_risk.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('clients_at_risk', 'abc')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    ABC
+                                                    <t t-if="state.sorts.clients_at_risk.column === 'abc'">
+                                                        <i class="fa" t-att-class="state.sorts.clients_at_risk.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('clients_at_risk', 'segment')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Segmento
+                                                    <t t-if="state.sorts.clients_at_risk.column === 'segment'">
+                                                        <i class="fa" t-att-class="state.sorts.clients_at_risk.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('clients_at_risk', 'revenue')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Revenue YTD
+                                                    <t t-if="state.sorts.clients_at_risk.column === 'revenue'">
+                                                        <i class="fa" t-att-class="state.sorts.clients_at_risk.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('clients_at_risk', 'days_since_last')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Recencia
+                                                    <t t-if="state.sorts.clients_at_risk.column === 'days_since_last'">
+                                                        <i class="fa" t-att-class="state.sorts.clients_at_risk.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('clients_at_risk', 'months_active')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Meses activo
+                                                    <t t-if="state.sorts.clients_at_risk.column === 'months_active'">
+                                                        <i class="fa" t-att-class="state.sorts.clients_at_risk.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
+                                                <th t-on-click="() => this.toggleSort('clients_at_risk', 'top_product')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
+                                                    Producto principal
+                                                    <t t-if="state.sorts.clients_at_risk.column === 'top_product'">
+                                                        <i class="fa" t-att-class="state.sorts.clients_at_risk.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
+                                                    </t>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <t t-foreach="coveragePayload.clients_at_risk" t-as="row" t-key="row.name">
-                                                <tr>
+                                            <t t-foreach="sortedClientsAtRisk" t-as="row" t-key="row.partner_id">
+                                                <tr t-on-click="() => this.openRecordModal('res.partner', row.partner_id)" style="cursor: pointer;">
                                                     <td>
                                                         <strong><t t-esc="row.name"/></strong>
-                                                        <div class="zrn_analitics_commercial_table_sub"><t t-esc="row.action"/></div>
+                                                        <div class="text-muted small"><t t-esc="row.action"/></div>
                                                     </td>
                                                     <td><t t-esc="row.channel"/></td>
                                                     <td><t t-esc="row.abc"/></td>
