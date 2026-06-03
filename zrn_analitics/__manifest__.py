@@ -29,6 +29,7 @@ Addon base para la capa analitica:
     ],
     'assets': {
         'web.assets_backend': [
+            'zrn_analitics/static/lib/echarts/echarts.min.js',
             'zrn_analitics/static/src/js/analytics_form_view.js',
             'zrn_analitics/static/src/js/analytics_hub_action.js',
             'zrn_analitics/static/src/xml/analytics_form_view.xml',

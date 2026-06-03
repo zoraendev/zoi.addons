@@ -2,7 +2,7 @@
 
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, onPatched, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 
 const HUBS = [
   { key: "direction", label: "Direccion" },
@@ -37,28 +37,52 @@ class ZrnAnalyticsHubAction extends Component {
     this.orm = useService("orm");
     this.hubs = HUBS;
     this.commercialTabs = COMMERCIAL_TABS;
+    this._charts = new Map();
+    this._chartResizeHandler = () => this.resizeCharts();
     this.state = useState({
       activeHub: "direction",
       commercialTab: "overview",
       commercialPayload: null,
       commercialLoading: false,
+      coveragePayload: null,
+      coverageLoading: false,
       selectedPortfolioUnit: "",
       portfolioExpanded: {},
     });
     onWillStart(async () => {
-      await this.loadCommercialPayload();
+      await Promise.all([
+        this.loadCommercialPayload(),
+        this.loadCoveragePayload(),
+      ]);
+    });
+    onMounted(() => {
+      window.addEventListener("resize", this._chartResizeHandler);
+      this.renderCharts();
+    });
+    onPatched(() => {
+      this.renderCharts();
+    });
+    onWillUnmount(() => {
+      window.removeEventListener("resize", this._chartResizeHandler);
+      this.disposeCharts();
     });
   }
 
   async setActiveHub(hubKey) {
     this.state.activeHub = hubKey;
     if (hubKey === "commercial") {
-      await this.loadCommercialPayload();
+      await Promise.all([
+        this.loadCommercialPayload(),
+        this.loadCoveragePayload(),
+      ]);
     }
   }
 
-  setCommercialTab(tabKey) {
+  async setCommercialTab(tabKey) {
     this.state.commercialTab = tabKey;
+    if (tabKey === "cobertura") {
+      await this.loadCoveragePayload();
+    }
   }
 
   async loadCommercialPayload(force = false) {
@@ -74,6 +98,22 @@ class ZrnAnalyticsHubAction extends Component {
       );
     } finally {
       this.state.commercialLoading = false;
+    }
+  }
+
+  async loadCoveragePayload(force = false) {
+    if (this.state.coveragePayload && !force) {
+      return;
+    }
+    this.state.coverageLoading = true;
+    try {
+      this.state.coveragePayload = await this.orm.call(
+        "zrn_analitics.home",
+        "get_coverage_dashboard_data",
+        []
+      );
+    } finally {
+      this.state.coverageLoading = false;
     }
   }
 
@@ -117,14 +157,54 @@ class ZrnAnalyticsHubAction extends Component {
     );
   }
 
-  get commercialSeriesMax() {
-    const values = (this.commercialPayload.revenue_series || []).map((item) => item.value || 0);
+  get coveragePayload() {
+    return this.state.coveragePayload || {
+      summary_cards: [],
+      coverage_by_channel: [],
+      pdv_universe: { total: 0, by_channel: {}, by_municipio: {} },
+      channel_brand_matrix: { brands: [], rows: [] },
+      sku_distribution: [],
+      portfolio_holes: { core_skus: [], rows: [] },
+      clients_at_risk: [],
+      notes_sources: [],
+    };
+  }
+
+  get hasCommercialRevenueSeries() {
+    return Boolean((this.commercialPayload.revenue_series || []).length);
+  }
+
+  get hasCommercialBrandMix() {
+    return Boolean((this.commercialPayload.brand_mix || []).length);
+  }
+
+  get hasCommercialTopCustomers() {
+    return Boolean((this.commercialPayload.top_customers || []).length);
+  }
+
+  get hasEchartsLibrary() {
+    return Boolean(window.echarts);
+  }
+
+  get coverageMatrixMax() {
+    const values = [];
+    (this.coveragePayload.channel_brand_matrix.rows || []).forEach((row) => {
+      (row.cells || []).forEach((cell) => values.push(Number(cell.revenue || 0)));
+    });
     return Math.max(...values, 0);
   }
 
-  get commercialCustomerMax() {
-    const values = (this.commercialPayload.top_customers || []).map((item) => item.total_amount || 0);
-    return Math.max(...values, 0);
+  getCoverageBarStyle(value, total) {
+    const base = total || 1;
+    const width = Math.max((Number(value || 0) / base) * 100, 4);
+    return `width: ${width}%;`;
+  }
+
+  getCoverageMatrixCellStyle(value) {
+    const max = this.coverageMatrixMax || 1;
+    const ratio = Number(value || 0) / max;
+    const opacity = Math.min(0.9, Math.max(0.08, ratio));
+    return `background: rgba(31, 78, 140, ${opacity});`;
   }
 
   get commercialPortfolio() {
@@ -198,8 +278,6 @@ class ZrnAnalyticsHubAction extends Component {
         totalRevenue: 0,
         units: [],
         drillRows: [],
-        services: [],
-        legacy: [],
       };
     }
 
@@ -337,9 +415,6 @@ class ZrnAnalyticsHubAction extends Component {
       });
     });
 
-    const serviceBase = Number((totalRevenue * 0.075).toFixed(2));
-    const legacyBase = Number((totalRevenue * 0.043).toFixed(2));
-
     return {
       hasBrands: true,
       hasRevenue: totalRevenue > 0,
@@ -347,66 +422,199 @@ class ZrnAnalyticsHubAction extends Component {
       totalRevenue,
       units,
       drillRows,
-      services: [
-        { name: "Refacturaciones", revenue: Number((serviceBase * 0.42).toFixed(2)) },
-        { name: "Permisos comerciales", revenue: Number((serviceBase * 0.31).toFixed(2)) },
-        { name: "Empaques y otros", revenue: Number((serviceBase * 0.27).toFixed(2)) },
-      ],
-      legacy: [
-        { name: "Legacy con venta residual", revenue: Number((legacyBase * 0.58).toFixed(2)) },
-        { name: "SKU sin clasificacion", revenue: Number((legacyBase * 0.42).toFixed(2)) },
-      ],
     };
   }
 
-  getCommercialPolylinePoints() {
+  renderCharts() {
+    if (!window.echarts || !this.el || this.state.activeHub !== "commercial") {
+      return;
+    }
+    this.renderOverviewLineChart();
+    this.renderOverviewDonutChart();
+    this.renderOverviewCustomersChart();
+  }
+
+  getChart(themeKey) {
+    const element = this.el?.querySelector(`[data-zrn-chart="${themeKey}"]`);
+    if (!element || !element.offsetParent) {
+      return null;
+    }
+    const existing = this._charts.get(themeKey);
+    if (existing && existing.getDom() === element) {
+      return existing;
+    }
+    if (existing) {
+      existing.dispose();
+    }
+    const chart = window.echarts.getInstanceByDom(element) || window.echarts.init(element);
+    this._charts.set(themeKey, chart);
+    return chart;
+  }
+
+  renderOverviewLineChart() {
+    if (this.state.commercialTab !== "overview") {
+      return;
+    }
     const series = this.commercialPayload.revenue_series || [];
     if (!series.length) {
-      return "";
+      return;
     }
-    const maxValue = this.commercialSeriesMax || 1;
-    const width = 440;
-    const height = 210;
-    const xStep = series.length > 1 ? width / (series.length - 1) : width / 2;
-    return series
-      .map((item, index) => {
-        const x = series.length > 1 ? index * xStep : width / 2;
-        const y = height - (item.value / maxValue) * 170 - 20;
-        return `${x},${y}`;
-      })
-      .join(" ");
+    const chart = this.getChart("overview-line");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      animationEasing: "cubicOut",
+      grid: { top: 16, right: 20, bottom: 26, left: 24, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "line" },
+        valueFormatter: (value) => `${this.commercialPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      xAxis: {
+        type: "category",
+        data: series.map((item) => item.label),
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisTick: { show: false },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: {
+          color: "#5f6b7a",
+          fontSize: 11,
+          formatter: (value) => this.formatMoney(value),
+        },
+      },
+      series: [{
+        type: "line",
+        smooth: 0.25,
+        symbol: "circle",
+        symbolSize: 8,
+        data: series.map((item) => Number(item.value || 0)),
+        lineStyle: { color: "#bd1730", width: 3 },
+        itemStyle: { color: "#bd1730", borderColor: "#ffffff", borderWidth: 2 },
+        areaStyle: {
+          color: new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: "rgba(31, 78, 140, 0.22)" },
+            { offset: 1, color: "rgba(31, 78, 140, 0.04)" },
+          ]),
+        },
+      }],
+    }, true);
   }
 
-  getCommercialAreaPoints() {
-    const linePoints = this.getCommercialPolylinePoints();
-    if (!linePoints) {
-      return "";
+  renderOverviewDonutChart() {
+    if (this.state.commercialTab !== "overview") {
+      return;
     }
-    return `0,210 ${linePoints} 440,210`;
-  }
-
-  getCommercialDonutStyle() {
-    const mix = this.commercialPayload.brand_mix || [];
+    const mix = (this.commercialPayload.brand_mix || []).slice(0, 5);
     if (!mix.length) {
-      return '';
+      return;
     }
-    let current = 0;
-    const segments = mix
-      .slice(0, 5)
-      .map((item, index) => {
-        const start = current;
-        current += item.percentage;
-        const colors = ["#1f4e8c", "#2f65ad", "#78a7df", "#a9c7eb", "#d6e6f8"];
-        return `${colors[index % colors.length]} ${start}% ${current}%`;
-      })
-      .join(", ");
-    return `background: conic-gradient(${segments});`;
+    const chart = this.getChart("overview-donut");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 700,
+      animationEasing: "cubicOut",
+      color: ["#1f4e8c", "#2f65ad", "#78a7df", "#a9c7eb", "#d6e6f8"],
+      tooltip: {
+        trigger: "item",
+        formatter: ({ name, value, percent }) =>
+          `${name}<br/>${this.commercialPayload.summary.currency_symbol} ${this.formatMoney(value)}<br/>${percent}% del mix`,
+      },
+      legend: {
+        orient: "vertical",
+        right: 0,
+        top: "middle",
+        icon: "roundRect",
+        itemWidth: 14,
+        itemHeight: 10,
+        textStyle: { color: "#5f6b7a", fontSize: 11 },
+      },
+      series: [{
+        type: "pie",
+        radius: ["48%", "72%"],
+        center: ["32%", "50%"],
+        avoidLabelOverlap: true,
+        itemStyle: { borderColor: "#ffffff", borderWidth: 2 },
+        label: { show: false },
+        emphasis: { scale: true, scaleSize: 7 },
+        data: mix.map((item) => ({
+          name: item.name,
+          value: Number(item.value || 0),
+        })),
+      }],
+    }, true);
   }
 
-  getCommercialBarStyle(value) {
-    const max = this.commercialCustomerMax || 1;
-    const width = Math.max((value / max) * 100, 4);
-    return `width: ${width}%;`;
+  renderOverviewCustomersChart() {
+    if (this.state.commercialTab !== "overview") {
+      return;
+    }
+    const customers = this.commercialPayload.top_customers || [];
+    if (!customers.length) {
+      return;
+    }
+    const chart = this.getChart("overview-customers");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...customers].reverse();
+    chart.setOption({
+      animationDuration: 700,
+      animationEasing: "cubicOut",
+      grid: { top: 8, right: 16, bottom: 8, left: 120, containLabel: false },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        valueFormatter: (value) => `${this.commercialPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((item) => item.name),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: {
+          color: "#334155",
+          fontSize: 11,
+          width: 110,
+          overflow: "truncate",
+        },
+      },
+      series: [{
+        type: "bar",
+        data: reversed.map((item) => Number(item.total_amount || 0)),
+        barWidth: 18,
+        itemStyle: {
+          borderRadius: [0, 6, 6, 0],
+          color: new window.echarts.graphic.LinearGradient(1, 0, 0, 0, [
+            { offset: 0, color: "#e34c62" },
+            { offset: 1, color: "#bd1730" },
+          ]),
+        },
+        emphasis: { focus: "series" },
+      }],
+    }, true);
+  }
+
+  resizeCharts() {
+    this._charts.forEach((chart) => chart.resize());
+  }
+
+  disposeCharts() {
+    this._charts.forEach((chart) => chart.dispose());
+    this._charts.clear();
   }
 
   formatMoney(value) {

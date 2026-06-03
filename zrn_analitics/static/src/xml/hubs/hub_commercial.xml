@@ -82,16 +82,11 @@
                             <span>Se calcula solo con productos ligados a marcas activas de Zoraen Commercial.</span>
                         </div>
                         <div class="zrn_analitics_commercial_line_chart">
-                            <t t-if="commercialSeriesMax">
-                                <svg viewBox="0 0 440 220" preserveAspectRatio="none" class="zrn_analitics_commercial_line_svg">
-                                    <polygon t-att-points="getCommercialAreaPoints()" class="zrn_analitics_commercial_area"/>
-                                    <polyline t-att-points="getCommercialPolylinePoints()" class="zrn_analitics_commercial_line"/>
-                                </svg>
-                                <div class="zrn_analitics_commercial_axis_labels">
-                                    <t t-foreach="commercialPayload.revenue_series" t-as="point" t-key="point.label">
-                                        <span><t t-esc="point.label"/></span>
-                                    </t>
-                                </div>
+                            <t t-if="hasCommercialRevenueSeries and hasEchartsLibrary">
+                                <div class="zrn_analitics_commercial_echart" data-zrn-chart="overview-line"></div>
+                            </t>
+                            <t t-elif="hasCommercialRevenueSeries">
+                                <div class="zrn_analitics_commercial_chart_empty">Hay datos de venta, pero la librería ECharts aún no está cargada en assets.</div>
                             </t>
                             <t t-else="">
                                 <div class="zrn_analitics_commercial_chart_empty">Sin datos de venta para graficar.</div>
@@ -105,16 +100,11 @@
                             <span>Participacion del periodo</span>
                         </div>
                         <div class="zrn_analitics_commercial_donut_wrap">
-                            <t t-if="commercialPayload.brand_mix.length">
-                                <div class="zrn_analitics_commercial_donut_ring" t-att-style="getCommercialDonutStyle()"></div>
-                                <div class="zrn_analitics_commercial_donut_legend">
-                                    <t t-foreach="commercialPayload.brand_mix.slice(0, 5)" t-as="brand" t-key="brand.name">
-                                        <div class="zrn_analitics_commercial_donut_legend_item">
-                                            <strong><t t-esc="brand.name"/></strong>
-                                            <span><t t-esc="brand.percentage"/>%</span>
-                                        </div>
-                                    </t>
-                                </div>
+                            <t t-if="hasCommercialBrandMix and hasEchartsLibrary">
+                                <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_donut" data-zrn-chart="overview-donut"></div>
+                            </t>
+                            <t t-elif="hasCommercialBrandMix">
+                                <div class="zrn_analitics_commercial_chart_empty">Hay mix por marca, pero la librería ECharts aún no está cargada en assets.</div>
                             </t>
                             <t t-else="">
                                 <div class="zrn_analitics_commercial_chart_empty">Sin marcas con venta en el periodo.</div>
@@ -130,16 +120,11 @@
                             <span>Venta acumulada</span>
                         </div>
                         <div class="zrn_analitics_commercial_bar_list">
-                            <t t-if="commercialPayload.top_customers.length">
-                                <t t-foreach="commercialPayload.top_customers" t-as="customer" t-key="customer.name">
-                                    <div class="zrn_analitics_commercial_bar_row">
-                                        <div class="zrn_analitics_commercial_bar_label"><t t-esc="customer.name"/></div>
-                                        <div class="zrn_analitics_commercial_bar_track">
-                                            <div class="zrn_analitics_commercial_bar_fill" t-att-style="getCommercialBarStyle(customer.total_amount)"></div>
-                                        </div>
-                                        <div class="zrn_analitics_commercial_bar_value"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(customer.total_amount)"/></div>
-                                    </div>
-                                </t>
+                            <t t-if="hasCommercialTopCustomers and hasEchartsLibrary">
+                                <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="overview-customers"></div>
+                            </t>
+                            <t t-elif="hasCommercialTopCustomers">
+                                <div class="zrn_analitics_commercial_chart_empty">Hay clientes con venta, pero la librería ECharts aún no está cargada en assets.</div>
                             </t>
                             <t t-else="">
                                 <div class="zrn_analitics_commercial_chart_empty">Sin clientes para mostrar.</div>
@@ -190,7 +175,7 @@
                 <div class="zrn_analitics_commercial_portfolio">
                     <div class="zrn_analitics_commercial_portfolio_note">
                         <strong>Portafolio oficial</strong>
-                        <span>UN → Marca Comercial → Línea → SKU. Servicios y legacy quedan separados del mix principal.</span>
+                        <span>UN → Marca Comercial → Línea → SKU.</span>
                     </div>
 
                     <t t-if="!commercialPortfolio.hasBrands">
@@ -340,42 +325,275 @@
                             </div>
                         </section>
 
-                        <div class="zrn_analitics_commercial_portfolio_bottom">
-                            <section class="zrn_analitics_hub_panel">
-                                <div class="zrn_analitics_commercial_panel_head">
-                                    <span>Servicios y ajustes</span>
-                                    <span>Fuera del mix</span>
-                                </div>
-                                <div class="zrn_analitics_commercial_portfolio_list">
-                                    <t t-foreach="commercialPortfolio.services" t-as="item" t-key="item.name">
-                                        <div class="zrn_analitics_commercial_portfolio_list_row">
-                                            <span><t t-esc="item.name"/></span>
-                                            <strong><t t-esc="commercialPortfolio.currencySymbol"/> <t t-esc="formatMoney(item.revenue)"/></strong>
-                                        </div>
-                                    </t>
-                                </div>
-                            </section>
-
-                            <section class="zrn_analitics_hub_panel">
-                                <div class="zrn_analitics_commercial_panel_head">
-                                    <span>Legacy / descontinuados</span>
-                                    <span>Revisión comercial</span>
-                                </div>
-                                <div class="zrn_analitics_commercial_portfolio_list">
-                                    <t t-foreach="commercialPortfolio.legacy" t-as="item" t-key="item.name">
-                                        <div class="zrn_analitics_commercial_portfolio_list_row">
-                                            <span><t t-esc="item.name"/></span>
-                                            <strong><t t-esc="commercialPortfolio.currencySymbol"/> <t t-esc="formatMoney(item.revenue)"/></strong>
-                                        </div>
-                                    </t>
-                                </div>
-                            </section>
-                        </div>
                     </t>
                 </div>
             </t>
 
-            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab !== 'overview' &amp;&amp; state.commercialTab !== 'portafolio'">
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'cobertura'">
+                <div class="zrn_analitics_commercial_coverage">
+                    <div class="zrn_analitics_commercial_coverage_note">
+                        <strong>Cobertura y distribución</strong>
+                        <span>Universo PDV, cobertura por canal, white space, marcas por canal, holes de portafolio y clientes A/B en riesgo.</span>
+                    </div>
+
+                    <t t-if="state.coverageLoading">
+                        <div class="zrn_analitics_hub_panel">
+                            <div class="zrn_analitics_hub_panel_text">Cargando tablero de cobertura...</div>
+                        </div>
+                    </t>
+
+                    <t t-if="!state.coverageLoading">
+                        <div class="zrn_analitics_commercial_coverage_cards">
+                            <t t-foreach="coveragePayload.summary_cards" t-as="card" t-key="card.label">
+                                <div class="zrn_analitics_commercial_coverage_card">
+                                    <span><t t-esc="card.label"/></span>
+                                    <strong><t t-esc="formatCount(card.value)"/></strong>
+                                    <small><t t-esc="card.note"/></small>
+                                </div>
+                            </t>
+                        </div>
+
+                        <div class="zrn_analitics_commercial_coverage_top">
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Cobertura por canal</span>
+                                    <span>Activos vs red total</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
+                                    <table class="zrn_analitics_commercial_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Canal</th>
+                                                <th>Activos</th>
+                                                <th>Red total</th>
+                                                <th>% Cobertura</th>
+                                                <th>White space</th>
+                                                <th>Revenue</th>
+                                                <th>% Mix</th>
+                                                <th>Ticket / PDV</th>
+                                                <th>Penetración</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="coveragePayload.coverage_by_channel" t-as="row" t-key="row.channel">
+                                                <tr>
+                                                    <td><strong><t t-esc="row.channel"/></strong></td>
+                                                    <td><t t-esc="formatCount(row.active)"/></td>
+                                                    <td><t t-esc="row.network_total ? formatCount(row.network_total) : '—'"/></td>
+                                                    <td><t t-esc="row.network_total ? formatPercent(row.coverage_pct) : '—'"/></td>
+                                                    <td><t t-esc="row.network_total ? formatCount(row.white_space) : '—'"/></td>
+                                                    <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                    <td><t t-esc="formatPercent(row.mix_pct)"/></td>
+                                                    <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.avg_ticket)"/></td>
+                                                    <td>
+                                                        <div class="zrn_analitics_commercial_coverage_track">
+                                                            <div class="zrn_analitics_commercial_coverage_fill" t-att-style="getCoverageBarStyle(row.coverage_pct, 100)"></div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Universo PDV</span>
+                                    <span><t t-esc="formatCount(coveragePayload.pdv_universe.total)"/> PDVs</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_coverage_universe">
+                                    <div class="zrn_analitics_commercial_coverage_universe_group">
+                                        <strong>Por canal</strong>
+                                        <t t-foreach="coveragePayload.pdv_universe.channel_rows || []" t-as="item" t-key="item.name">
+                                            <div class="zrn_analitics_commercial_coverage_universe_row">
+                                                <span><t t-esc="item.name"/></span>
+                                                <strong><t t-esc="formatCount(item.value)"/></strong>
+                                            </div>
+                                        </t>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_coverage_universe_group">
+                                        <strong>Top municipios</strong>
+                                        <t t-foreach="coveragePayload.pdv_universe.municipio_rows || []" t-as="item" t-key="item.name">
+                                            <div class="zrn_analitics_commercial_coverage_universe_row">
+                                                <span><t t-esc="item.name"/></span>
+                                                <strong><t t-esc="formatCount(item.value)"/></strong>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <section class="zrn_analitics_hub_panel">
+                            <div class="zrn_analitics_commercial_panel_head">
+                                <span>Matriz canal × sub-marca</span>
+                                <span>Revenue por presencia</span>
+                            </div>
+                            <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
+                                <table class="zrn_analitics_commercial_table zrn_analitics_commercial_coverage_matrix">
+                                    <thead>
+                                        <tr>
+                                            <th>Canal</th>
+                                            <t t-foreach="coveragePayload.channel_brand_matrix.brands" t-as="brand" t-key="brand">
+                                                <th><t t-esc="brand"/></th>
+                                            </t>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="coveragePayload.channel_brand_matrix.rows" t-as="row" t-key="row.channel">
+                                            <tr>
+                                                <td><strong><t t-esc="row.channel"/></strong></td>
+                                                <t t-foreach="row.cells" t-as="cell" t-key="cell.brand">
+                                                    <td t-att-style="cell.revenue ? getCoverageMatrixCellStyle(cell.revenue) : ''">
+                                                        <t t-esc="cell.revenue ? commercialPayload.summary.currency_symbol + ' ' + formatMoney(cell.revenue) : '·'"/>
+                                                    </td>
+                                                </t>
+                                                <td><strong><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.total_revenue)"/></strong></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section class="zrn_analitics_hub_panel">
+                            <div class="zrn_analitics_commercial_panel_head">
+                                <span>Distribución por SKU</span>
+                                <span>Penetración sobre PDVs activos</span>
+                            </div>
+                            <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
+                                <table class="zrn_analitics_commercial_table">
+                                    <thead>
+                                        <tr>
+                                            <th>SKU</th>
+                                            <th>Sub-marca</th>
+                                            <th>Revenue</th>
+                                            <th># PDVs</th>
+                                            <th>% PDVs</th>
+                                            <th>Penetración</th>
+                                            <th>Canales</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="coveragePayload.sku_distribution" t-as="row" t-key="row.sku">
+                                            <tr>
+                                                <td><strong><t t-esc="row.sku"/></strong></td>
+                                                <td><t t-esc="row.brand"/></td>
+                                                <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                <td><t t-esc="formatCount(row.pdv_count)"/></td>
+                                                <td><t t-esc="formatPercent(row.pdv_pct)"/></td>
+                                                <td>
+                                                    <div class="zrn_analitics_commercial_coverage_track">
+                                                        <div class="zrn_analitics_commercial_coverage_fill" t-att-style="getCoverageBarStyle(row.pdv_pct, 100)"></div>
+                                                    </div>
+                                                </td>
+                                                <td><t t-esc="formatCount(row.channels)"/></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <div class="zrn_analitics_commercial_coverage_bottom">
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Holes de portafolio</span>
+                                    <span><t t-esc="coveragePayload.portfolio_holes.core_skus.length"/> SKUs core</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_coverage_tags">
+                                    <t t-foreach="coveragePayload.portfolio_holes.core_skus" t-as="sku" t-key="sku">
+                                        <span class="zrn_analitics_commercial_coverage_tag"><t t-esc="sku"/></span>
+                                    </t>
+                                </div>
+                                <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
+                                    <table class="zrn_analitics_commercial_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Cliente / PDV</th>
+                                                <th>Canal</th>
+                                                <th>ABC</th>
+                                                <th>Revenue</th>
+                                                <th>Gaps</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="coveragePayload.portfolio_holes.rows" t-as="row" t-key="row.name">
+                                                <tr>
+                                                    <td><strong><t t-esc="row.name"/></strong></td>
+                                                    <td><t t-esc="row.channel"/></td>
+                                                    <td><t t-esc="row.abc"/></td>
+                                                    <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                    <td><t t-esc="formatCount(row.gap_count)"/></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Clientes A/B en riesgo</span>
+                                    <span>Recencia y cobertura</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_coverage_table_wrap">
+                                    <table class="zrn_analitics_commercial_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Cliente / PDV</th>
+                                                <th>Canal</th>
+                                                <th>ABC</th>
+                                                <th>Segmento</th>
+                                                <th>Revenue YTD</th>
+                                                <th>Recencia</th>
+                                                <th>Meses activo</th>
+                                                <th>Producto principal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="coveragePayload.clients_at_risk" t-as="row" t-key="row.name">
+                                                <tr>
+                                                    <td>
+                                                        <strong><t t-esc="row.name"/></strong>
+                                                        <div class="zrn_analitics_commercial_table_sub"><t t-esc="row.action"/></div>
+                                                    </td>
+                                                    <td><t t-esc="row.channel"/></td>
+                                                    <td><t t-esc="row.abc"/></td>
+                                                    <td><t t-esc="row.segment"/></td>
+                                                    <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                    <td><t t-esc="formatCount(row.days_since_last)"/> días</td>
+                                                    <td><t t-esc="formatCount(row.months_active)"/></td>
+                                                    <td><t t-esc="row.top_product"/></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                        </div>
+
+                        <section class="zrn_analitics_hub_panel">
+                            <div class="zrn_analitics_commercial_panel_head">
+                                <span>Notas y fuentes</span>
+                                <span>Trazabilidad del dato</span>
+                            </div>
+                            <div class="zrn_analitics_commercial_coverage_notes">
+                                <t t-foreach="coveragePayload.notes_sources" t-as="note" t-key="note.label">
+                                    <div class="zrn_analitics_commercial_coverage_note_row">
+                                        <strong><t t-esc="note.label"/></strong>
+                                        <span><t t-esc="note.detail"/></span>
+                                    </div>
+                                </t>
+                            </div>
+                        </section>
+                    </t>
+                </div>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab !== 'overview' &amp;&amp; state.commercialTab !== 'portafolio' &amp;&amp; state.commercialTab !== 'cobertura'">
                 <div class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_hub_panel_title">
                         <t t-esc="activeCommercialTab.label"/>
