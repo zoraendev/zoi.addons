@@ -104,20 +104,5 @@
             </p>
         </field>
     </record>
-
-    <menuitem
-        id="menu_zrn_commercial_root"
-        name="Zoraen Commercial"
-        sequence="70"
-        web_icon="zrn_commercial,static/description/icon.png"
-    />
-
-    <menuitem
-        id="menu_zrn_commercial_brands"
-        name="Marcas comerciales"
-        parent="menu_zrn_commercial_root"
-        action="action_zrn_commercial_brands"
-        sequence="10"
-    />
-
 </odoo>
+

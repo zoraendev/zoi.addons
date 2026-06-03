@@ -52,6 +52,13 @@ class ZrnAnalyticsHubAction extends Component {
       coverageLoading: false,
       selectedPortfolioUnit: "",
       portfolioExpanded: {},
+      sorts: {
+        top_products: { column: "sales_amount", order: "desc" },
+        coverage_by_channel: { column: "revenue", order: "desc" },
+        sku_distribution: { column: "revenue", order: "desc" },
+        portfolio_holes: { column: "gap_count", order: "desc" },
+        clients_at_risk: { column: "days_since_last", order: "desc" },
+      },
     });
     onWillStart(async () => {
       await Promise.all([
@@ -81,6 +88,90 @@ class ZrnAnalyticsHubAction extends Component {
       this._chartRenderTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
       this.disposeCharts();
     });
+  }
+
+  toggleSort(tableName, columnName) {
+    const sort = this.state.sorts[tableName];
+    if (!sort) return;
+    if (sort.column === columnName) {
+      sort.order = sort.order === "asc" ? "desc" : "asc";
+    } else {
+      sort.column = columnName;
+      sort.order = "desc";
+    }
+  }
+
+  sortData(list, col, order) {
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      let valA = a[col];
+      let valB = b[col];
+      
+      // Handle null/undefined values safely
+      if (valA === undefined || valA === null) valA = "";
+      if (valB === undefined || valB === null) valB = "";
+      
+      // If either value is a string, compare as strings
+      if (typeof valA === "string" || typeof valB === "string") {
+        const strA = String(valA);
+        const strB = String(valB);
+        return order === "asc" ? strA.localeCompare(strB) : strB.localeCompare(strA);
+      }
+      
+      // Otherwise, compare as numbers
+      return order === "asc" ? valA - valB : valB - valA;
+    });
+    return sorted;
+  }
+
+  get sortedTopProducts() {
+    const products = this.commercialPayload.top_products || [];
+    const sort = this.state.sorts.top_products;
+    return this.sortData(products, sort.column, sort.order);
+  }
+
+  get sortedCoverageByChannel() {
+    const rows = this.coveragePayload.coverage_by_channel || [];
+    const sort = this.state.sorts.coverage_by_channel;
+    return this.sortData(rows, sort.column, sort.order);
+  }
+
+  get sortedSkuDistribution() {
+    const skus = this.coveragePayload.sku_distribution || [];
+    const sort = this.state.sorts.sku_distribution;
+    return this.sortData(skus, sort.column, sort.order);
+  }
+
+  get sortedPortfolioHoles() {
+    const holes = this.coveragePayload.portfolio_holes?.rows || [];
+    const sort = this.state.sorts.portfolio_holes;
+    return this.sortData(holes, sort.column, sort.order);
+  }
+
+  get sortedClientsAtRisk() {
+    const clients = this.coveragePayload.clients_at_risk || [];
+    const sort = this.state.sorts.clients_at_risk;
+    return this.sortData(clients, sort.column, sort.order);
+  }
+
+  openRecordModal(model, resId) {
+    if (!resId) return;
+    this.actionService.doAction({
+      type: "ir.actions.act_window",
+      res_model: model,
+      res_id: resId,
+      views: [[false, "form"]],
+      target: "new",
+      context: {},
+    });
+  }
+
+  onPortfolioRowClick(row) {
+    if (row.level === "brand") {
+      this.openRecordModal("zrn_commercial.commercial.brand", row.resId);
+    } else if (row.level === "sku") {
+      this.openRecordModal("product.product", row.resId);
+    }
   }
 
   async setActiveHub(hubKey) {
@@ -282,6 +373,7 @@ class ZrnAnalyticsHubAction extends Component {
     ];
     const baseBrands = (brandMix.length ? brandMix : brandCatalog).map((brand, index) => ({
       key: `brand_${index + 1}`,
+      resId: brand.id,
       name: brand.name,
       revenue: Number(brand.value || 0),
       percentage: Number(brand.percentage || 0),
@@ -302,6 +394,7 @@ class ZrnAnalyticsHubAction extends Component {
     productRows.forEach((product, index) => {
       const targetBrand = baseBrands[index % baseBrands.length];
       brandProducts.get(targetBrand.key).push({
+        product_id: product.product_id,
         name: product.name,
         category_name: product.category_name,
         quantity_sold: Number(product.quantity_sold || 0),
@@ -335,6 +428,7 @@ class ZrnAnalyticsHubAction extends Component {
               margin_pct: marginPct * 100,
               skus: productSubset.map((product) => ({
                 key: `${brand.key}_sku_${product.name}`,
+                resId: product.product_id,
                 name: product.name,
                 revenue: product.sales_amount,
                 mix_percentage: totalRevenue ? (product.sales_amount / totalRevenue) * 100 : 0,
@@ -388,6 +482,7 @@ class ZrnAnalyticsHubAction extends Component {
       unit.brands.forEach((brand) => {
         drillRows.push({
           key: brand.key,
+          resId: brand.resId,
           ancestor_keys: [unit.key],
           level: "brand",
           label: brand.name,
@@ -416,6 +511,7 @@ class ZrnAnalyticsHubAction extends Component {
           line.skus.forEach((sku) => {
             drillRows.push({
               key: sku.key,
+              resId: sku.resId,
               ancestor_keys: [unit.key, brand.key, line.key],
               level: "sku",
               label: sku.name,
