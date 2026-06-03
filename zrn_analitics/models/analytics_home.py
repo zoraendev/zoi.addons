@@ -310,6 +310,88 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         }
 
     @api.model
+    def _get_channel_period_range(self, period_key):
+        date_to = fields.Date.to_date(fields.Date.context_today(self))
+        normalized_key = period_key or 'ytd'
+        if normalized_key == 'current_month':
+            date_from = date_to.replace(day=1)
+        elif normalized_key == 'rolling_90':
+            date_from = date_to - timedelta(days=89)
+        elif normalized_key == 'rolling_12':
+            date_from = date_to - timedelta(days=364)
+        else:
+            normalized_key = 'ytd'
+            date_from = date_to.replace(month=1, day=1)
+        return normalized_key, date_from, date_to
+
+    @api.model
+    def _get_channel_period_options(self):
+        return [
+            {'value': 'ytd', 'label': 'YTD'},
+            {'value': 'current_month', 'label': 'Mes actual'},
+            {'value': 'rolling_90', 'label': 'Ultimos 90 dias'},
+            {'value': 'rolling_12', 'label': 'Ultimos 12 meses'},
+        ]
+
+    @api.model
+    def _normalize_channel_filters(self, filters=None):
+        filters = filters or {}
+        period_key, date_from, date_to = self._get_channel_period_range(filters.get('period_key'))
+        return {
+            'period_key': period_key,
+            'date_from': date_from,
+            'date_to': date_to,
+            'channel': (filters.get('channel') or '').strip(),
+            'brand': (filters.get('brand') or '').strip(),
+            'category': (filters.get('category') or '').strip(),
+            'search': (filters.get('search') or '').strip(),
+        }
+
+    @api.model
+    def _build_empty_channel_dashboard_payload(self, filters=None, filter_options=None, brands=None, product_brand_map=None):
+        normalized_filters = self._normalize_channel_filters(filters)
+        brands = brands if brands is not None else self._get_commercial_brand_records()
+        product_brand_map = product_brand_map if product_brand_map is not None else self._get_commercial_brand_map()[1]
+        filter_options = filter_options or {
+            'periods': self._get_channel_period_options(),
+            'channels': [],
+            'brands': sorted([brand.name for brand in brands]),
+            'categories': [],
+        }
+        date_from = normalized_filters['date_from']
+        date_to = normalized_filters['date_to']
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(date_to),
+                'period_label': '%s al %s' % (
+                    fields.Date.to_string(date_from),
+                    fields.Date.to_string(date_to),
+                ),
+                'currency_symbol': self.env.company.currency_id.symbol or '$',
+            },
+            'active_filters': {
+                'period_key': normalized_filters['period_key'],
+                'channel': normalized_filters['channel'],
+                'brand': normalized_filters['brand'],
+                'category': normalized_filters['category'],
+                'search': normalized_filters['search'],
+            },
+            'filter_options': filter_options,
+            'summary_cards': [
+                {'label': 'Canales activos', 'value': 0, 'type': 'count'},
+                {'label': 'Revenue filtrado', 'value': 0.0, 'type': 'currency'},
+                {'label': 'PDVs filtrados', 'value': 0, 'type': 'count'},
+                {'label': 'Ticket promedio', 'value': 0.0, 'type': 'currency'},
+            ],
+            'rows': [],
+            'empty_message': (
+                'No hay marcas comerciales activas para construir la vista.'
+                if not product_brand_map
+                else 'No hay datos para los filtros seleccionados.'
+            ),
+        }
+
+    @api.model
     def get_commercial_hub_payload(self):
         date_from, date_to = self._get_commercial_hub_period()
         brands, product_brand_map = self._get_commercial_brand_map()
@@ -501,6 +583,304 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             'top_customers': top_customers,
             'top_channels': top_channels,
             'top_products': top_products,
+        }
+
+    @api.model
+    def get_channel_dashboard_data(self, filters=None):
+        normalized_filters = self._normalize_channel_filters(filters)
+        date_from = normalized_filters['date_from']
+        date_to = normalized_filters['date_to']
+        brands, product_brand_map = self._get_commercial_brand_map()
+        if not brands or not product_brand_map:
+            return self._build_empty_channel_dashboard_payload(
+                normalized_filters,
+                brands=brands,
+                product_brand_map=product_brand_map,
+            )
+
+        period_lines = self._get_commercial_sale_order_lines(
+            date_from,
+            date_to,
+            list(product_brand_map.keys()),
+        )
+
+        base_channels = set()
+        base_categories = set()
+        for line in period_lines:
+            order = line.order_id
+            partner = order.partner_id
+            product = line.product_id
+            if not order or not partner or not product:
+                continue
+            base_channels.add(self._infer_coverage_channel(partner.display_name))
+            base_categories.add(product.categ_id.display_name or 'Sin categoria')
+
+        filter_options = {
+            'periods': self._get_channel_period_options(),
+            'channels': sorted(base_channels),
+            'brands': sorted([brand.name for brand in brands]),
+            'categories': sorted(base_categories),
+        }
+        if not period_lines:
+            return self._build_empty_channel_dashboard_payload(
+                normalized_filters,
+                filter_options=filter_options,
+                brands=brands,
+                product_brand_map=product_brand_map,
+            )
+
+        search_term = normalized_filters['search'].lower()
+        channel_rows = {}
+        total_revenue = 0.0
+        total_order_ids = set()
+        total_point_ids = set()
+
+        for line in period_lines:
+            order = line.order_id
+            partner = order.partner_id
+            commercial_partner = partner.commercial_partner_id or partner
+            product = line.product_id
+            if not order or not partner or not product or not commercial_partner:
+                continue
+
+            brand_info = product_brand_map.get(product.id)
+            if not brand_info:
+                continue
+
+            channel_name = self._infer_coverage_channel(partner.display_name)
+            category_name = product.categ_id.display_name or 'Sin categoria'
+            if normalized_filters['channel'] and channel_name != normalized_filters['channel']:
+                continue
+            if normalized_filters['brand'] and brand_info['brand_name'] != normalized_filters['brand']:
+                continue
+            if normalized_filters['category'] and category_name != normalized_filters['category']:
+                continue
+
+            if search_term:
+                search_haystack = ' '.join([
+                    partner.display_name or '',
+                    commercial_partner.display_name or '',
+                    product.display_name or '',
+                    product.default_code or '',
+                    brand_info['brand_name'],
+                    category_name,
+                    channel_name,
+                ]).lower()
+                if search_term not in search_haystack:
+                    continue
+
+            amount = float(line.price_total or 0.0)
+            quantity = float(line.product_uom_qty or 0.0)
+            order_date = fields.Datetime.to_datetime(order.date_order).date() if order.date_order else date_to
+
+            row = channel_rows.setdefault(
+                channel_name,
+                {
+                    'channel': channel_name,
+                    'revenue': 0.0,
+                    'units': 0.0,
+                    'order_ids': set(),
+                    'customer_ids': set(),
+                    'point_ids': set(),
+                    'brand_amounts': defaultdict(float),
+                    'category_amounts': defaultdict(float),
+                    'customer_rows': {},
+                    'point_rows': {},
+                    'product_rows': {},
+                    'last_order_date': order_date,
+                },
+            )
+            row['revenue'] += amount
+            row['units'] += quantity
+            row['order_ids'].add(order.id)
+            row['customer_ids'].add(commercial_partner.id)
+            row['point_ids'].add(partner.id)
+            row['brand_amounts'][brand_info['brand_name']] += amount
+            row['category_amounts'][category_name] += amount
+            if order_date > row['last_order_date']:
+                row['last_order_date'] = order_date
+
+            customer_row = row['customer_rows'].setdefault(
+                commercial_partner.id,
+                {
+                    'name': commercial_partner.display_name,
+                    'revenue': 0.0,
+                    'order_ids': set(),
+                    'last_order_date': order_date,
+                },
+            )
+            customer_row['revenue'] += amount
+            customer_row['order_ids'].add(order.id)
+            if order_date > customer_row['last_order_date']:
+                customer_row['last_order_date'] = order_date
+
+            point_row = row['point_rows'].setdefault(
+                partner.id,
+                {
+                    'name': partner.display_name,
+                    'revenue': 0.0,
+                    'order_ids': set(),
+                },
+            )
+            point_row['revenue'] += amount
+            point_row['order_ids'].add(order.id)
+
+            product_row = row['product_rows'].setdefault(
+                product.id,
+                {
+                    'name': product.display_name,
+                    'default_code': product.default_code or '',
+                    'brand': brand_info['brand_name'],
+                    'category': category_name,
+                    'units': 0.0,
+                    'revenue': 0.0,
+                },
+            )
+            product_row['units'] += quantity
+            product_row['revenue'] += amount
+
+            total_revenue += amount
+            total_order_ids.add(order.id)
+            total_point_ids.add(partner.id)
+
+        if not channel_rows:
+            return self._build_empty_channel_dashboard_payload(
+                normalized_filters,
+                filter_options=filter_options,
+                brands=brands,
+                product_brand_map=product_brand_map,
+            )
+
+        rows = []
+        for channel_name, row in sorted(
+            channel_rows.items(),
+            key=lambda item: item[1]['revenue'],
+            reverse=True,
+        ):
+            order_count = len(row['order_ids'])
+            point_count = len(row['point_ids'])
+            revenue = round(row['revenue'], 2)
+            top_brands = sorted(
+                [
+                    {
+                        'name': brand_name,
+                        'revenue': round(amount, 2),
+                        'mix_pct': round((amount / revenue) * 100, 1) if revenue else 0.0,
+                    }
+                    for brand_name, amount in row['brand_amounts'].items()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:6]
+            top_customers = sorted(
+                [
+                    {
+                        'name': customer['name'],
+                        'revenue': round(customer['revenue'], 2),
+                        'order_count': len(customer['order_ids']),
+                        'last_order_label': fields.Date.to_string(customer['last_order_date']) if customer['last_order_date'] else '',
+                    }
+                    for customer in row['customer_rows'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+            top_points = sorted(
+                [
+                    {
+                        'name': point['name'],
+                        'revenue': round(point['revenue'], 2),
+                        'order_count': len(point['order_ids']),
+                    }
+                    for point in row['point_rows'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+            top_products = sorted(
+                [
+                    {
+                        'name': product['name'],
+                        'default_code': product['default_code'],
+                        'brand': product['brand'],
+                        'category': product['category'],
+                        'units': round(product['units'], 2),
+                        'revenue': round(product['revenue'], 2),
+                    }
+                    for product in row['product_rows'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+            top_categories = sorted(
+                [
+                    {
+                        'name': category_name,
+                        'revenue': round(amount, 2),
+                        'mix_pct': round((amount / revenue) * 100, 1) if revenue else 0.0,
+                    }
+                    for category_name, amount in row['category_amounts'].items()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:5]
+            rows.append({
+                'key': channel_name.lower().replace(' ', '_').replace('/', '_'),
+                'channel': channel_name,
+                'customer_count': len(row['customer_ids']),
+                'point_count': point_count,
+                'order_count': order_count,
+                'units': round(row['units'], 2),
+                'revenue': revenue,
+                'mix_pct': round((revenue / total_revenue) * 100, 1) if total_revenue else 0.0,
+                'average_ticket': round(revenue / order_count, 2) if order_count else 0.0,
+                'brand_count': len(row['brand_amounts']),
+                'last_order_label': fields.Date.to_string(row['last_order_date']) if row['last_order_date'] else '',
+                'detail': {
+                    'summary': {
+                        'revenue': revenue,
+                        'units': round(row['units'], 2),
+                        'order_count': order_count,
+                        'customer_count': len(row['customer_ids']),
+                        'point_count': point_count,
+                        'average_ticket': round(revenue / order_count, 2) if order_count else 0.0,
+                        'brand_count': len(row['brand_amounts']),
+                        'last_order_label': fields.Date.to_string(row['last_order_date']) if row['last_order_date'] else '',
+                    },
+                    'top_brands': top_brands,
+                    'top_categories': top_categories,
+                    'top_customers': top_customers,
+                    'top_points': top_points,
+                    'top_products': top_products,
+                },
+            })
+
+        order_count = len(total_order_ids)
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(date_to),
+                'period_label': '%s al %s' % (
+                    fields.Date.to_string(date_from),
+                    fields.Date.to_string(date_to),
+                ),
+                'currency_symbol': self.env.company.currency_id.symbol or '$',
+            },
+            'active_filters': {
+                'period_key': normalized_filters['period_key'],
+                'channel': normalized_filters['channel'],
+                'brand': normalized_filters['brand'],
+                'category': normalized_filters['category'],
+                'search': normalized_filters['search'],
+            },
+            'filter_options': filter_options,
+            'summary_cards': [
+                {'label': 'Canales activos', 'value': len(rows), 'type': 'count'},
+                {'label': 'Revenue filtrado', 'value': round(total_revenue, 2), 'type': 'currency'},
+                {'label': 'PDVs filtrados', 'value': len(total_point_ids), 'type': 'count'},
+                {'label': 'Ticket promedio', 'value': round(total_revenue / order_count, 2) if order_count else 0.0, 'type': 'currency'},
+            ],
+            'rows': rows,
+            'empty_message': '',
         }
 
     @api.model

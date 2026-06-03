@@ -48,6 +48,16 @@ class ZrnAnalyticsHubAction extends Component {
       commercialTab: "overview",
       commercialPayload: null,
       commercialLoading: false,
+      channelPayload: null,
+      channelLoading: false,
+      channelFilters: {
+        period_key: "ytd",
+        channel: "",
+        brand: "",
+        category: "",
+        search: "",
+      },
+      channelModalRow: null,
       coveragePayload: null,
       coverageLoading: false,
       selectedPortfolioUnit: "",
@@ -88,6 +98,7 @@ class ZrnAnalyticsHubAction extends Component {
     if (hubKey === "commercial") {
       await Promise.all([
         this.loadCommercialPayload(),
+        this.loadChannelPayload(),
         this.loadCoveragePayload(),
       ]);
       this.queueChartRender();
@@ -96,6 +107,9 @@ class ZrnAnalyticsHubAction extends Component {
 
   async setCommercialTab(tabKey) {
     this.state.commercialTab = tabKey;
+    if (tabKey === "canal") {
+      await this.loadChannelPayload();
+    }
     if (tabKey === "cobertura") {
       await this.loadCoveragePayload();
     }
@@ -132,6 +146,63 @@ class ZrnAnalyticsHubAction extends Component {
     } finally {
       this.state.coverageLoading = false;
     }
+  }
+
+  async loadChannelPayload(force = false) {
+    if (this.state.channelPayload && !force) {
+      return;
+    }
+    this.state.channelLoading = true;
+    try {
+      this.state.channelPayload = await this.orm.call(
+        "zrn_analitics.home",
+        "get_channel_dashboard_data",
+        [this.state.channelFilters]
+      );
+    } finally {
+      this.state.channelLoading = false;
+    }
+  }
+
+  updateChannelFilter(fieldName, value) {
+    this.state.channelFilters = {
+      ...this.state.channelFilters,
+      [fieldName]: value,
+    };
+  }
+
+  async applyChannelFilters() {
+    this.state.channelModalRow = null;
+    this.state.channelPayload = null;
+    await this.loadChannelPayload(true);
+  }
+
+  async clearChannelFilters() {
+    this.state.channelFilters = {
+      period_key: "ytd",
+      channel: "",
+      brand: "",
+      category: "",
+      search: "",
+    };
+    this.state.channelModalRow = null;
+    this.state.channelPayload = null;
+    await this.loadChannelPayload(true);
+  }
+
+  onChannelSearchKeydown(ev) {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      this.applyChannelFilters();
+    }
+  }
+
+  openChannelModal(row) {
+    this.state.channelModalRow = row;
+  }
+
+  closeChannelModal() {
+    this.state.channelModalRow = null;
   }
 
   openHome() {
@@ -187,6 +258,32 @@ class ZrnAnalyticsHubAction extends Component {
     };
   }
 
+  get channelPayload() {
+    return this.state.channelPayload || {
+      summary: {
+        sync_label: "",
+        period_label: "",
+        currency_symbol: "$",
+      },
+      active_filters: {
+        period_key: "ytd",
+        channel: "",
+        brand: "",
+        category: "",
+        search: "",
+      },
+      filter_options: {
+        periods: [],
+        channels: [],
+        brands: [],
+        categories: [],
+      },
+      summary_cards: [],
+      rows: [],
+      empty_message: "",
+    };
+  }
+
   get hasCommercialRevenueSeries() {
     return Boolean((this.commercialPayload.revenue_series || []).length);
   }
@@ -197,6 +294,10 @@ class ZrnAnalyticsHubAction extends Component {
 
   get hasCommercialTopCustomers() {
     return Boolean((this.commercialPayload.top_customers || []).length);
+  }
+
+  get hasChannelRows() {
+    return Boolean((this.channelPayload.rows || []).length);
   }
 
   get hasEchartsLibrary() {
@@ -448,12 +549,16 @@ class ZrnAnalyticsHubAction extends Component {
     }
     this._chartRenderTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
     this._chartRenderTimeouts = [];
-    this._chartRenderFrame = requestAnimationFrame(() => {
-      this._chartRenderFrame = 0;
+    const renderAndResize = () => {
       this.renderCharts();
       this.resizeCharts();
-      this._chartRenderTimeouts.push(setTimeout(() => this.resizeCharts(), 80));
-      this._chartRenderTimeouts.push(setTimeout(() => this.resizeCharts(), 220));
+    };
+    this._chartRenderFrame = requestAnimationFrame(() => {
+      this._chartRenderFrame = 0;
+      renderAndResize();
+      this._chartRenderTimeouts.push(setTimeout(() => renderAndResize(), 80));
+      this._chartRenderTimeouts.push(setTimeout(() => renderAndResize(), 220));
+      this._chartRenderTimeouts.push(setTimeout(() => renderAndResize(), 480));
     });
   }
 
@@ -461,20 +566,46 @@ class ZrnAnalyticsHubAction extends Component {
     if (!window.echarts || !this.rootElement || this.state.activeHub !== "commercial") {
       return;
     }
-    try {
-      this.renderOverviewLineChart();
-    } catch (error) {
-      console.error("ZRN overview line chart error", error);
+    if (this.state.commercialTab === "overview") {
+      try {
+        this.renderOverviewLineChart();
+      } catch (error) {
+        console.error("ZRN overview line chart error", error);
+      }
+      try {
+        this.renderOverviewDonutChart();
+      } catch (error) {
+        console.error("ZRN overview donut chart error", error);
+      }
+      try {
+        this.renderOverviewCustomersChart();
+      } catch (error) {
+        console.error("ZRN overview customers chart error", error);
+      }
     }
-    try {
-      this.renderOverviewDonutChart();
-    } catch (error) {
-      console.error("ZRN overview donut chart error", error);
+    if (this.state.commercialTab === "portafolio") {
+      try {
+        this.renderPortfolioUnitsChart();
+      } catch (error) {
+        console.error("ZRN portfolio units chart error", error);
+      }
+      try {
+        this.renderPortfolioBrandsChart();
+      } catch (error) {
+        console.error("ZRN portfolio brands chart error", error);
+      }
     }
-    try {
-      this.renderOverviewCustomersChart();
-    } catch (error) {
-      console.error("ZRN overview customers chart error", error);
+    if (this.state.commercialTab === "cobertura") {
+      try {
+        this.renderCoverageChannelChart();
+      } catch (error) {
+        console.error("ZRN coverage channel chart error", error);
+      }
+      try {
+        this.renderCoverageSkuChart();
+      } catch (error) {
+        console.error("ZRN coverage sku chart error", error);
+      }
     }
   }
 
@@ -665,6 +796,252 @@ class ZrnAnalyticsHubAction extends Component {
     }, true);
   }
 
+  renderPortfolioUnitsChart() {
+    if (this.state.commercialTab !== "portafolio") {
+      return;
+    }
+    const units = this.commercialPortfolio.units || [];
+    if (!units.length || !this.commercialPortfolio.hasRevenue) {
+      return;
+    }
+    const chart = this.getChart("portfolio-units");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...units].reverse();
+    chart.setOption({
+      animationDuration: 700,
+      animationEasing: "cubicOut",
+      grid: { top: 10, right: 20, bottom: 12, left: 120, containLabel: false },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params) => {
+          const item = reversed[params[0].dataIndex];
+          return [
+            `<strong>${item.name}</strong>`,
+            `${this.commercialPortfolio.currencySymbol} ${this.formatMoney(item.revenue)}`,
+            `${this.formatPercent(item.mix_percentage)} del mix`,
+            `${this.formatPercent(item.margin_pct)} margen`,
+          ].join("<br/>");
+        },
+      },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((item) => item.name),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { color: "#334155", fontSize: 11 },
+      },
+      series: [{
+        type: "bar",
+        data: reversed.map((item) => ({
+          value: Number(item.revenue || 0),
+          itemStyle: { color: item.color || "#bd1730", borderRadius: [0, 6, 6, 0] },
+        })),
+        barWidth: 18,
+        emphasis: { focus: "series" },
+      }],
+    }, true);
+  }
+
+  renderPortfolioBrandsChart() {
+    if (this.state.commercialTab !== "portafolio") {
+      return;
+    }
+    const unit = this.activePortfolioUnit;
+    const brands = unit?.brands || [];
+    if (!brands.length || !this.commercialPortfolio.hasRevenue) {
+      return;
+    }
+    const chart = this.getChart("portfolio-brands");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...brands].sort((left, right) => left.revenue - right.revenue);
+    chart.setOption({
+      animationDuration: 700,
+      animationEasing: "cubicOut",
+      grid: { top: 10, right: 20, bottom: 12, left: 130, containLabel: false },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params) => {
+          const item = reversed[params[0].dataIndex];
+          const share = unit?.revenue ? (item.revenue / unit.revenue) * 100 : 0;
+          return [
+            `<strong>${item.name}</strong>`,
+            `${this.commercialPortfolio.currencySymbol} ${this.formatMoney(item.revenue)}`,
+            `${this.formatPercent(share)} de la unidad`,
+            `${this.formatCount(item.sku_count)} SKU`,
+          ].join("<br/>");
+        },
+      },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((item) => item.name),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: {
+          color: "#334155",
+          fontSize: 11,
+          width: 120,
+          overflow: "truncate",
+        },
+      },
+      series: [{
+        type: "bar",
+        data: reversed.map((item) => Number(item.revenue || 0)),
+        barWidth: 18,
+        itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
+        emphasis: { focus: "series" },
+      }],
+    }, true);
+  }
+
+  renderCoverageChannelChart() {
+    if (this.state.commercialTab !== "cobertura") {
+      return;
+    }
+    const rows = this.coveragePayload.coverage_by_channel || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("coverage-channel");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].sort((left, right) => left.coverage_pct - right.coverage_pct);
+    chart.setOption({
+      animationDuration: 700,
+      animationEasing: "cubicOut",
+      grid: { top: 10, right: 18, bottom: 12, left: 110, containLabel: false },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params) => {
+          const item = reversed[params[0].dataIndex];
+          return [
+            `<strong>${item.channel}</strong>`,
+            `${this.formatPercent(item.coverage_pct)} cobertura`,
+            `${this.formatCount(item.active)} activos de ${this.formatCount(item.network_total)}`,
+            `${this.commercialPayload.summary.currency_symbol} ${this.formatMoney(item.revenue)} revenue`,
+          ].join("<br/>");
+        },
+      },
+      xAxis: {
+        type: "value",
+        max: 100,
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => `${value}%` },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((item) => item.channel),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { color: "#334155", fontSize: 11 },
+      },
+      series: [{
+        type: "bar",
+        data: reversed.map((item) => Number(item.coverage_pct || 0)),
+        barWidth: 18,
+        itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
+        emphasis: { focus: "series" },
+        label: {
+          show: true,
+          position: "right",
+          color: "#5f6b7a",
+          fontSize: 11,
+          formatter: ({ value }) => `${Number(value || 0).toFixed(0)}%`,
+        },
+      }],
+    }, true);
+  }
+
+  renderCoverageSkuChart() {
+    if (this.state.commercialTab !== "cobertura") {
+      return;
+    }
+    const rows = [...(this.coveragePayload.sku_distribution || [])]
+      .sort((left, right) => Number(right.pdv_pct || 0) - Number(left.pdv_pct || 0))
+      .slice(0, 8);
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("coverage-sku");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].reverse();
+    chart.setOption({
+      animationDuration: 720,
+      animationEasing: "cubicOut",
+      grid: { top: 10, right: 18, bottom: 12, left: 180, containLabel: false },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params) => {
+          const item = reversed[params[0].dataIndex];
+          return [
+            `<strong>${item.sku}</strong>`,
+            `${this.formatPercent(item.pdv_pct)} penetracion`,
+            `${this.formatCount(item.pdv_count)} PDVs`,
+            `${this.commercialPayload.summary.currency_symbol} ${this.formatMoney(item.revenue)} revenue`,
+          ].join("<br/>");
+        },
+      },
+      xAxis: {
+        type: "value",
+        max: 100,
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => `${value}%` },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((item) => item.sku),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: {
+          color: "#334155",
+          fontSize: 11,
+          width: 170,
+          overflow: "truncate",
+        },
+      },
+      series: [{
+        type: "bar",
+        data: reversed.map((item) => Number(item.pdv_pct || 0)),
+        barWidth: 18,
+        itemStyle: {
+          borderRadius: [0, 6, 6, 0],
+          color: new window.echarts.graphic.LinearGradient(1, 0, 0, 0, [
+            { offset: 0, color: "#e34c62" },
+            { offset: 1, color: "#bd1730" },
+          ]),
+        },
+        emphasis: { focus: "series" },
+        label: {
+          show: true,
+          position: "right",
+          color: "#5f6b7a",
+          fontSize: 11,
+          formatter: ({ value }) => `${Number(value || 0).toFixed(0)}%`,
+        },
+      }],
+    }, true);
+  }
+
   resizeCharts() {
     this._charts.forEach((chart) => chart.resize());
   }
@@ -694,6 +1071,16 @@ class ZrnAnalyticsHubAction extends Component {
 
   formatPercent(value) {
     return `${Number(value || 0).toFixed(1)}%`;
+  }
+
+  formatChannelCardValue(card) {
+    if (!card) {
+      return "";
+    }
+    if (card.type === "currency") {
+      return `${this.channelPayload.summary.currency_symbol} ${this.formatMoney(card.value)}`;
+    }
+    return this.formatCount(card.value);
   }
 }
 

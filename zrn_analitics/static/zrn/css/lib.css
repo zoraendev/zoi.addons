@@ -511,7 +511,8 @@
 .zrn_analitics_commercial_line_chart,
 .zrn_analitics_commercial_donut_wrap,
 .zrn_analitics_commercial_bar_list,
-.zrn_analitics_commercial_table_wrap {
+.zrn_analitics_commercial_table_wrap,
+.zrn_analitics_commercial_coverage_chart {
   margin-top: 14px;
 }
 
@@ -719,6 +720,12 @@
   display: grid;
   gap: 12px;
   margin-top: 14px;
+}
+
+.zrn_analitics_commercial_portfolio_chart .zrn_analitics_commercial_echart,
+.zrn_analitics_commercial_portfolio_brand_mix .zrn_analitics_commercial_echart,
+.zrn_analitics_commercial_coverage_chart .zrn_analitics_commercial_echart {
+  min-height: 280px;
 }
 
 .zrn_analitics_commercial_portfolio_chart_row {
@@ -1019,6 +1026,93 @@
   border-bottom: 0;
 }
 
+.zrn_analitics_commercial_channel {
+  display: grid;
+  gap: 16px;
+}
+
+.zrn_analitics_commercial_channel_filters,
+.zrn_analitics_commercial_channel_actions,
+.zrn_analitics_commercial_channel_cards,
+.zrn_analitics_commercial_channel_modal_cards,
+.zrn_analitics_commercial_channel_modal_grid {
+  display: grid;
+  gap: 12px;
+}
+
+.zrn_analitics_commercial_channel_filters {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.zrn_analitics_commercial_field {
+  display: grid;
+  gap: 6px;
+}
+
+.zrn_analitics_commercial_field label {
+  color: var(--zrn-analitics-brand-700);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.zrn_analitics_commercial_field_search {
+  grid-column: span 2;
+}
+
+.zrn_analitics_commercial_channel_actions {
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  margin-top: 12px;
+}
+
+.zrn_analitics_commercial_channel_period {
+  justify-self: end;
+  color: var(--zrn-analitics-text-soft);
+  font-size: 12px;
+}
+
+.zrn_analitics_commercial_channel_period strong {
+  color: var(--zrn-analitics-text);
+}
+
+.zrn_analitics_commercial_channel_cards,
+.zrn_analitics_commercial_channel_modal_cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.zrn_analitics_commercial_channel_table_wrap {
+  margin-top: 14px;
+}
+
+.zrn_analitics_commercial_channel_row {
+  cursor: pointer;
+}
+
+.zrn_analitics_commercial_channel_row:hover td {
+  background: #f8fbff;
+}
+
+.zrn_analitics_commercial_modal_backdrop {
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.zrn_analitics_commercial_modal_shell {
+  background: rgba(0, 0, 0, 0);
+}
+
+.zrn_analitics_commercial_modal {
+  border-radius: 8px;
+  border: 1px solid var(--zrn-analitics-line);
+}
+
+.zrn_analitics_commercial_channel_modal_grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
 @media (max-width: 1200px) {
   .zrn_analitics_header,
   .zrn_analitics_grid,
@@ -1043,7 +1137,11 @@
   .zrn_analitics_commercial_portfolio_bottom,
   .zrn_analitics_commercial_coverage_top,
   .zrn_analitics_commercial_coverage_bottom,
-  .zrn_analitics_commercial_coverage_universe {
+  .zrn_analitics_commercial_coverage_universe,
+  .zrn_analitics_commercial_channel_filters,
+  .zrn_analitics_commercial_channel_cards,
+  .zrn_analitics_commercial_channel_modal_cards,
+  .zrn_analitics_commercial_channel_modal_grid {
     grid-template-columns: 1fr;
   }
 
@@ -1057,5 +1155,17 @@
 
   .zrn_analitics_commercial_portfolio_chart_values {
     align-items: flex-start;
+  }
+
+  .zrn_analitics_commercial_field_search {
+    grid-column: span 1;
+  }
+
+  .zrn_analitics_commercial_channel_actions {
+    grid-template-columns: 1fr;
+  }
+
+  .zrn_analitics_commercial_channel_period {
+    justify-self: start;
   }
 }

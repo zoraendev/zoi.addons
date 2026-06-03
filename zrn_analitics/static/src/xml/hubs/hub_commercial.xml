@@ -221,19 +221,11 @@
                                     <span>Vista inicial</span>
                                 </div>
                                 <div class="zrn_analitics_commercial_portfolio_chart">
-                                    <t t-if="commercialPortfolio.hasRevenue">
-                                        <t t-foreach="commercialPortfolio.units" t-as="unit" t-key="unit.key">
-                                            <div class="zrn_analitics_commercial_portfolio_chart_row">
-                                                <div class="zrn_analitics_commercial_portfolio_chart_label"><t t-esc="unit.name"/></div>
-                                                <div class="zrn_analitics_commercial_portfolio_chart_track">
-                                                    <div class="zrn_analitics_commercial_portfolio_chart_fill" t-att-style="'--zrn-unit-color: ' + unit.color + '; ' + getPortfolioUnitRevenueStyle(unit)"></div>
-                                                </div>
-                                                <div class="zrn_analitics_commercial_portfolio_chart_values">
-                                                    <strong><t t-esc="commercialPortfolio.currencySymbol"/> <t t-esc="formatMoney(unit.revenue)"/></strong>
-                                                    <span><t t-esc="formatPercent(unit.margin_pct)"/> margen</span>
-                                                </div>
-                                            </div>
-                                        </t>
+                                    <t t-if="commercialPortfolio.hasRevenue and hasEchartsLibrary">
+                                        <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="portfolio-units"></div>
+                                    </t>
+                                    <t t-elif="commercialPortfolio.hasRevenue">
+                                        <div class="zrn_analitics_commercial_chart_empty">Hay datos de portafolio, pero la libreria ECharts aun no esta cargada en assets.</div>
                                     </t>
                                     <t t-else="">
                                         <div class="zrn_analitics_commercial_chart_empty">Sin ventas ligadas a marcas en el periodo.</div>
@@ -247,22 +239,11 @@
                                     <span><t t-esc="activePortfolioUnit ? activePortfolioUnit.name : ''"/></span>
                                 </div>
                                 <div class="zrn_analitics_commercial_portfolio_brand_mix">
-                                    <t t-if="activePortfolioUnit and activePortfolioUnit.brands.length and commercialPortfolio.hasRevenue">
-                                        <t t-foreach="activePortfolioUnit.brands" t-as="brand" t-key="brand.key">
-                                            <div class="zrn_analitics_commercial_portfolio_brand_row">
-                                                <div class="zrn_analitics_commercial_portfolio_brand_head">
-                                                    <strong><t t-esc="brand.name"/></strong>
-                                                    <span><t t-esc="commercialPortfolio.currencySymbol"/> <t t-esc="formatMoney(brand.revenue)"/></span>
-                                                </div>
-                                                <div class="zrn_analitics_commercial_portfolio_brand_track">
-                                                    <div class="zrn_analitics_commercial_portfolio_brand_fill" t-att-style="getPortfolioBrandShareStyle(brand)"></div>
-                                                </div>
-                                                <div class="zrn_analitics_commercial_portfolio_brand_meta">
-                                                    <span><t t-esc="formatPercent(brand.revenue and activePortfolioUnit.revenue ? (brand.revenue / activePortfolioUnit.revenue) * 100 : 0)"/> de la unidad</span>
-                                                    <span><t t-esc="formatCount(brand.sku_count)"/> SKU</span>
-                                                </div>
-                                            </div>
-                                        </t>
+                                    <t t-if="activePortfolioUnit and activePortfolioUnit.brands.length and commercialPortfolio.hasRevenue and hasEchartsLibrary">
+                                        <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="portfolio-brands"></div>
+                                    </t>
+                                    <t t-elif="activePortfolioUnit and activePortfolioUnit.brands.length and commercialPortfolio.hasRevenue">
+                                        <div class="zrn_analitics_commercial_chart_empty">Hay marcas con revenue, pero la libreria ECharts aun no esta cargada en assets.</div>
                                     </t>
                                     <t t-else="">
                                         <div class="zrn_analitics_commercial_chart_empty">Sin marcas con revenue asignado para esta unidad.</div>
@@ -371,7 +352,6 @@
                                                 <th>Revenue</th>
                                                 <th>% Mix</th>
                                                 <th>Ticket / PDV</th>
-                                                <th>Penetración</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -385,15 +365,18 @@
                                                     <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
                                                     <td><t t-esc="formatPercent(row.mix_pct)"/></td>
                                                     <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.avg_ticket)"/></td>
-                                                    <td>
-                                                        <div class="zrn_analitics_commercial_coverage_track">
-                                                            <div class="zrn_analitics_commercial_coverage_fill" t-att-style="getCoverageBarStyle(row.coverage_pct, 100)"></div>
-                                                        </div>
-                                                    </td>
                                                 </tr>
                                             </t>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="zrn_analitics_commercial_coverage_chart">
+                                    <t t-if="coveragePayload.coverage_by_channel.length and hasEchartsLibrary">
+                                        <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="coverage-channel"></div>
+                                    </t>
+                                    <t t-elif="coveragePayload.coverage_by_channel.length">
+                                        <div class="zrn_analitics_commercial_chart_empty">Hay cobertura por canal, pero la libreria ECharts aun no esta cargada en assets.</div>
+                                    </t>
                                 </div>
                             </section>
 
@@ -472,7 +455,6 @@
                                             <th>Revenue</th>
                                             <th># PDVs</th>
                                             <th>% PDVs</th>
-                                            <th>Penetración</th>
                                             <th>Canales</th>
                                         </tr>
                                     </thead>
@@ -484,16 +466,19 @@
                                                 <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
                                                 <td><t t-esc="formatCount(row.pdv_count)"/></td>
                                                 <td><t t-esc="formatPercent(row.pdv_pct)"/></td>
-                                                <td>
-                                                    <div class="zrn_analitics_commercial_coverage_track">
-                                                        <div class="zrn_analitics_commercial_coverage_fill" t-att-style="getCoverageBarStyle(row.pdv_pct, 100)"></div>
-                                                    </div>
-                                                </td>
                                                 <td><t t-esc="formatCount(row.channels)"/></td>
                                             </tr>
                                         </t>
                                     </tbody>
                                 </table>
+                            </div>
+                            <div class="zrn_analitics_commercial_coverage_chart">
+                                <t t-if="coveragePayload.sku_distribution.length and hasEchartsLibrary">
+                                    <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="coverage-sku"></div>
+                                </t>
+                                <t t-elif="coveragePayload.sku_distribution.length">
+                                    <div class="zrn_analitics_commercial_chart_empty">Hay distribucion por SKU, pero la libreria ECharts aun no esta cargada en assets.</div>
+                                </t>
                             </div>
                         </section>
 
@@ -593,13 +578,326 @@
                 </div>
             </t>
 
-            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab !== 'overview' &amp;&amp; state.commercialTab !== 'portafolio' &amp;&amp; state.commercialTab !== 'cobertura'">
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'canal'">
+                <div class="zrn_analitics_commercial_channel">
+                    <section class="zrn_analitics_hub_panel">
+                        <div class="zrn_analitics_commercial_panel_head">
+                            <span>Filtros del tab</span>
+                            <span>Por canal trabaja mejor con filtros propios</span>
+                        </div>
+                        <div class="zrn_analitics_commercial_channel_filters">
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Periodo</label>
+                                <select
+                                    class="form-select"
+                                    t-att-value="state.channelFilters.period_key"
+                                    t-on-change="(ev) => this.updateChannelFilter('period_key', ev.target.value)"
+                                >
+                                    <t t-foreach="channelPayload.filter_options.periods" t-as="option" t-key="option.value">
+                                        <option t-att-value="option.value"><t t-esc="option.label"/></option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Canal</label>
+                                <select
+                                    class="form-select"
+                                    t-att-value="state.channelFilters.channel"
+                                    t-on-change="(ev) => this.updateChannelFilter('channel', ev.target.value)"
+                                >
+                                    <option value="">Todos los canales</option>
+                                    <t t-foreach="channelPayload.filter_options.channels" t-as="option" t-key="option">
+                                        <option t-att-value="option"><t t-esc="option"/></option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Marca</label>
+                                <select
+                                    class="form-select"
+                                    t-att-value="state.channelFilters.brand"
+                                    t-on-change="(ev) => this.updateChannelFilter('brand', ev.target.value)"
+                                >
+                                    <option value="">Todas las marcas</option>
+                                    <t t-foreach="channelPayload.filter_options.brands" t-as="option" t-key="option">
+                                        <option t-att-value="option"><t t-esc="option"/></option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Categoria</label>
+                                <select
+                                    class="form-select"
+                                    t-att-value="state.channelFilters.category"
+                                    t-on-change="(ev) => this.updateChannelFilter('category', ev.target.value)"
+                                >
+                                    <option value="">Todas las categorias</option>
+                                    <t t-foreach="channelPayload.filter_options.categories" t-as="option" t-key="option">
+                                        <option t-att-value="option"><t t-esc="option"/></option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
+                                <label>Buscar</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Cliente, PDV, producto o codigo"
+                                    t-att-value="state.channelFilters.search"
+                                    t-on-input="(ev) => this.updateChannelFilter('search', ev.target.value)"
+                                    t-on-keydown="onChannelSearchKeydown"
+                                />
+                            </div>
+                        </div>
+                        <div class="zrn_analitics_commercial_channel_actions">
+                            <button type="button" class="btn btn-primary" t-on-click="applyChannelFilters">Aplicar</button>
+                            <button type="button" class="btn btn-secondary" t-on-click="clearChannelFilters">Limpiar</button>
+                            <div class="zrn_analitics_commercial_channel_period">
+                                <strong>Periodo:</strong>
+                                <span><t t-esc="channelPayload.summary.period_label"/></span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <t t-if="state.channelLoading">
+                        <div class="zrn_analitics_hub_panel">
+                            <div class="zrn_analitics_hub_panel_text">Cargando resumen por canal...</div>
+                        </div>
+                    </t>
+
+                    <t t-if="!state.channelLoading">
+                        <div class="zrn_analitics_commercial_channel_cards">
+                            <t t-foreach="channelPayload.summary_cards" t-as="card" t-key="card.label">
+                                <div class="zrn_analitics_commercial_coverage_card">
+                                    <span><t t-esc="card.label"/></span>
+                                    <strong><t t-esc="formatChannelCardValue(card)"/></strong>
+                                </div>
+                            </t>
+                        </div>
+
+                        <section class="zrn_analitics_hub_panel">
+                            <div class="zrn_analitics_commercial_panel_head">
+                                <span>Canales comerciales</span>
+                                <span>Click en la fila para abrir detalle</span>
+                            </div>
+
+                            <t t-if="hasChannelRows">
+                                <div class="zrn_analitics_commercial_table_wrap zrn_analitics_commercial_channel_table_wrap">
+                                    <div class="o_list_renderer o_list_view">
+                                        <table class="o_list_table table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Canal</th>
+                                                    <th>Clientes</th>
+                                                    <th>PDVs</th>
+                                                    <th>Pedidos</th>
+                                                    <th>Unidades</th>
+                                                    <th>Revenue</th>
+                                                    <th>% Mix</th>
+                                                    <th>Ticket</th>
+                                                    <th>Marcas</th>
+                                                    <th>Ultima venta</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="channelPayload.rows" t-as="row" t-key="row.key">
+                                                    <tr class="zrn_analitics_commercial_channel_row" t-on-click="() => this.openChannelModal(row)">
+                                                        <td><strong><t t-esc="row.channel"/></strong></td>
+                                                        <td><t t-esc="formatCount(row.customer_count)"/></td>
+                                                        <td><t t-esc="formatCount(row.point_count)"/></td>
+                                                        <td><t t-esc="formatCount(row.order_count)"/></td>
+                                                        <td><t t-esc="formatCount(row.units)"/></td>
+                                                        <td><t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                        <td><t t-esc="formatPercent(row.mix_pct)"/></td>
+                                                        <td><t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.average_ticket)"/></td>
+                                                        <td><t t-esc="formatCount(row.brand_count)"/></td>
+                                                        <td><t t-esc="row.last_order_label"/></td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="zrn_analitics_commercial_empty_note">
+                                    <t t-esc="channelPayload.empty_message"/>
+                                </div>
+                            </t>
+                        </section>
+                    </t>
+                </div>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab !== 'overview' &amp;&amp; state.commercialTab !== 'portafolio' &amp;&amp; state.commercialTab !== 'cobertura' &amp;&amp; state.commercialTab !== 'canal'">
                 <div class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_hub_panel_title">
                         <t t-esc="activeCommercialTab.label"/>
                     </div>
                     <div class="zrn_analitics_hub_panel_text">
                         Esta vista queda reservada para el siguiente bloque del hub comercial.
+                    </div>
+                </div>
+            </t>
+
+            <t t-if="state.channelModalRow">
+                <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeChannelModal"></div>
+                <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+                        <div class="modal-content zrn_analitics_commercial_modal">
+                            <div class="modal-header">
+                                <div>
+                                    <h4 class="modal-title"><t t-esc="state.channelModalRow.channel"/></h4>
+                                    <div class="zrn_analitics_commercial_table_sub">
+                                        Revenue <t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(state.channelModalRow.detail.summary.revenue)"/>
+                                        · <t t-esc="formatCount(state.channelModalRow.detail.summary.point_count)"/> PDVs
+                                        · <t t-esc="formatCount(state.channelModalRow.detail.summary.order_count)"/> pedidos
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" aria-label="Close" t-on-click="closeChannelModal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="zrn_analitics_commercial_channel_modal_cards">
+                                    <div class="zrn_analitics_commercial_coverage_card">
+                                        <span>Clientes</span>
+                                        <strong><t t-esc="formatCount(state.channelModalRow.detail.summary.customer_count)"/></strong>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_coverage_card">
+                                        <span>Ticket promedio</span>
+                                        <strong><t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(state.channelModalRow.detail.summary.average_ticket)"/></strong>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_coverage_card">
+                                        <span>Marcas activas</span>
+                                        <strong><t t-esc="formatCount(state.channelModalRow.detail.summary.brand_count)"/></strong>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_coverage_card">
+                                        <span>Ultima venta</span>
+                                        <strong><t t-esc="state.channelModalRow.detail.summary.last_order_label"/></strong>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_analitics_commercial_channel_modal_grid">
+                                    <section class="zrn_analitics_hub_panel">
+                                        <div class="zrn_analitics_commercial_panel_head">
+                                            <span>Marcas</span>
+                                            <span>Mix del canal</span>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_table_wrap">
+                                            <table class="zrn_analitics_commercial_table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Marca</th>
+                                                        <th>Revenue</th>
+                                                        <th>% Mix</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="state.channelModalRow.detail.top_brands" t-as="item" t-key="item.name">
+                                                        <tr>
+                                                            <td><strong><t t-esc="item.name"/></strong></td>
+                                                            <td><t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.revenue)"/></td>
+                                                            <td><t t-esc="formatPercent(item.mix_pct)"/></td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+
+                                    <section class="zrn_analitics_hub_panel">
+                                        <div class="zrn_analitics_commercial_panel_head">
+                                            <span>Categorias</span>
+                                            <span>Participacion</span>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_table_wrap">
+                                            <table class="zrn_analitics_commercial_table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Categoria</th>
+                                                        <th>Revenue</th>
+                                                        <th>% Mix</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="state.channelModalRow.detail.top_categories" t-as="item" t-key="item.name">
+                                                        <tr>
+                                                            <td><strong><t t-esc="item.name"/></strong></td>
+                                                            <td><t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.revenue)"/></td>
+                                                            <td><t t-esc="formatPercent(item.mix_pct)"/></td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                </div>
+
+                                <div class="zrn_analitics_commercial_channel_modal_grid">
+                                    <section class="zrn_analitics_hub_panel">
+                                        <div class="zrn_analitics_commercial_panel_head">
+                                            <span>Top clientes</span>
+                                            <span>Cuentas comerciales</span>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_table_wrap">
+                                            <table class="zrn_analitics_commercial_table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Cliente</th>
+                                                        <th>Pedidos</th>
+                                                        <th>Revenue</th>
+                                                        <th>Ultima venta</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="state.channelModalRow.detail.top_customers" t-as="item" t-key="item.name">
+                                                        <tr>
+                                                            <td><strong><t t-esc="item.name"/></strong></td>
+                                                            <td><t t-esc="formatCount(item.order_count)"/></td>
+                                                            <td><t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.revenue)"/></td>
+                                                            <td><t t-esc="item.last_order_label"/></td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+
+                                    <section class="zrn_analitics_hub_panel">
+                                        <div class="zrn_analitics_commercial_panel_head">
+                                            <span>Top productos</span>
+                                            <span>Dentro del canal</span>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_table_wrap">
+                                            <table class="zrn_analitics_commercial_table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Producto</th>
+                                                        <th>Marca</th>
+                                                        <th>Categoria</th>
+                                                        <th>Unidades</th>
+                                                        <th>Revenue</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="state.channelModalRow.detail.top_products" t-as="item" t-key="item.name">
+                                                        <tr>
+                                                            <td>
+                                                                <strong><t t-esc="item.name"/></strong>
+                                                                <div t-if="item.default_code" class="zrn_analitics_commercial_table_sub"><t t-esc="item.default_code"/></div>
+                                                            </td>
+                                                            <td><t t-esc="item.brand"/></td>
+                                                            <td><t t-esc="item.category"/></td>
+                                                            <td><t t-esc="formatCount(item.units)"/></td>
+                                                            <td><t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.revenue)"/></td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </t>
