@@ -2,7 +2,7 @@
 
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { Component, onMounted, onPatched, onWillStart, onWillUnmount, useState } from "@odoo/owl";
+import { Component, onMounted, onPatched, onWillStart, onWillUnmount, useRef, useState } from "@odoo/owl";
 
 const HUBS = [
   { key: "direction", label: "Direccion" },
@@ -35,9 +35,13 @@ class ZrnAnalyticsHubAction extends Component {
   setup() {
     this.actionService = useService("action");
     this.orm = useService("orm");
+    this.rootRef = useRef("hubRoot");
     this.hubs = HUBS;
     this.commercialTabs = COMMERCIAL_TABS;
     this._charts = new Map();
+    this._chartRenderTimeouts = [];
+    this._chartRenderFrame = 0;
+    this._resizeObserver = null;
     this._chartResizeHandler = () => this.resizeCharts();
     this.state = useState({
       activeHub: "direction",
@@ -57,13 +61,24 @@ class ZrnAnalyticsHubAction extends Component {
     });
     onMounted(() => {
       window.addEventListener("resize", this._chartResizeHandler);
-      this.renderCharts();
+      if (window.ResizeObserver && this.rootElement) {
+        this._resizeObserver = new window.ResizeObserver(() => this.resizeCharts());
+        this._resizeObserver.observe(this.rootElement);
+      }
+      this.queueChartRender();
     });
     onPatched(() => {
-      this.renderCharts();
+      this.queueChartRender();
     });
     onWillUnmount(() => {
       window.removeEventListener("resize", this._chartResizeHandler);
+      if (this._resizeObserver) {
+        this._resizeObserver.disconnect();
+      }
+      if (this._chartRenderFrame) {
+        cancelAnimationFrame(this._chartRenderFrame);
+      }
+      this._chartRenderTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
       this.disposeCharts();
     });
   }
@@ -75,6 +90,7 @@ class ZrnAnalyticsHubAction extends Component {
         this.loadCommercialPayload(),
         this.loadCoveragePayload(),
       ]);
+      this.queueChartRender();
     }
   }
 
@@ -83,6 +99,7 @@ class ZrnAnalyticsHubAction extends Component {
     if (tabKey === "cobertura") {
       await this.loadCoveragePayload();
     }
+    this.queueChartRender();
   }
 
   async loadCommercialPayload(force = false) {
@@ -425,28 +442,68 @@ class ZrnAnalyticsHubAction extends Component {
     };
   }
 
+  queueChartRender() {
+    if (this._chartRenderFrame) {
+      cancelAnimationFrame(this._chartRenderFrame);
+    }
+    this._chartRenderTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+    this._chartRenderTimeouts = [];
+    this._chartRenderFrame = requestAnimationFrame(() => {
+      this._chartRenderFrame = 0;
+      this.renderCharts();
+      this.resizeCharts();
+      this._chartRenderTimeouts.push(setTimeout(() => this.resizeCharts(), 80));
+      this._chartRenderTimeouts.push(setTimeout(() => this.resizeCharts(), 220));
+    });
+  }
+
   renderCharts() {
-    if (!window.echarts || !this.el || this.state.activeHub !== "commercial") {
+    if (!window.echarts || !this.rootElement || this.state.activeHub !== "commercial") {
       return;
     }
-    this.renderOverviewLineChart();
-    this.renderOverviewDonutChart();
-    this.renderOverviewCustomersChart();
+    try {
+      this.renderOverviewLineChart();
+    } catch (error) {
+      console.error("ZRN overview line chart error", error);
+    }
+    try {
+      this.renderOverviewDonutChart();
+    } catch (error) {
+      console.error("ZRN overview donut chart error", error);
+    }
+    try {
+      this.renderOverviewCustomersChart();
+    } catch (error) {
+      console.error("ZRN overview customers chart error", error);
+    }
   }
 
   getChart(themeKey) {
-    const element = this.el?.querySelector(`[data-zrn-chart="${themeKey}"]`);
-    if (!element || !element.offsetParent) {
+    const element = this.rootElement?.querySelector(`[data-zrn-chart="${themeKey}"]`);
+    if (!element) {
+      return null;
+    }
+    const rect = element.getBoundingClientRect();
+    const parentRect = element.parentElement?.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const width = Math.round(rect.width || parentRect.width || 0);
+    const height = Math.round(rect.height || parentRect.height || 0);
+    if (width < 80 || height < 80) {
       return null;
     }
     const existing = this._charts.get(themeKey);
     if (existing && existing.getDom() === element) {
+      existing.resize({ width, height });
       return existing;
     }
     if (existing) {
       existing.dispose();
     }
-    const chart = window.echarts.getInstanceByDom(element) || window.echarts.init(element);
+    const chart = window.echarts.getInstanceByDom(element) || window.echarts.init(element, null, {
+      renderer: "canvas",
+      width,
+      height,
+    });
+    chart.resize({ width, height });
     this._charts.set(themeKey, chart);
     return chart;
   }
@@ -615,6 +672,10 @@ class ZrnAnalyticsHubAction extends Component {
   disposeCharts() {
     this._charts.forEach((chart) => chart.dispose());
     this._charts.clear();
+  }
+
+  get rootElement() {
+    return this.rootRef?.el instanceof Element ? this.rootRef.el : null;
   }
 
   formatMoney(value) {

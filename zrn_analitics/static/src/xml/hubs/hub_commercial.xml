@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="zrn_analitics.HubCommercial">
-        <div class="zrn_analitics_commercial_hub">
+        <div class="zrn_analitics_commercial_hub" t-ref="hubRoot">
             <div class="zrn_analitics_commercial_hero">
                 <div>
                     <div class="zrn_analitics_commercial_title_row">
