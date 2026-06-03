@@ -199,6 +199,7 @@ class ZrnAnalyticsHubAction extends Component {
       coverageFilters: cloneDefaultFilters(),
       channelFilters: cloneDefaultFilters(),
       channelModalRow: null,
+      analyticsDetailModal: null,
       sorts: {
         top_products: { column: "sales_amount", order: "desc" },
         coverage_by_channel: { column: "revenue", order: "desc" },
@@ -324,6 +325,7 @@ class ZrnAnalyticsHubAction extends Component {
   async setCommercialTab(tabKey) {
     this.state.commercialTab = tabKey;
     this.state.channelModalRow = null;
+    this.state.analyticsDetailModal = null;
     if (tabKey === "overview" || tabKey === "portafolio") {
       await this.loadCommercialPayload();
     } else if (tabKey === "cobertura") {
@@ -576,11 +578,33 @@ class ZrnAnalyticsHubAction extends Component {
     });
   }
 
+  openAnalyticsDetailModal(detail) {
+    if (!detail) {
+      return;
+    }
+    this.state.analyticsDetailModal = detail;
+  }
+
+  closeAnalyticsDetailModal() {
+    this.state.analyticsDetailModal = null;
+  }
+
+  formatDetailCard(detail, card) {
+    if (!card) {
+      return "";
+    }
+    if (card.format === "money") {
+      return `${detail.currency_symbol || "$"} ${this.formatMoney(card.value)}`;
+    }
+    if (card.format === "text") {
+      return String(card.value || "");
+    }
+    return this.formatCount(card.value);
+  }
+
   onPortfolioRowClick(row) {
-    if (row.level === "brand") {
-      this.openRecordModal("zrn_commercial.commercial.brand", row.resId);
-    } else if (row.level === "sku") {
-      this.openRecordModal("product.product", row.resId);
+    if (row.level === "brand" || row.level === "line" || row.level === "sku") {
+      this.openAnalyticsDetailModal(row.detail);
     }
   }
 
@@ -783,6 +807,7 @@ class ZrnAnalyticsHubAction extends Component {
             ? (Number(product.revenue || 0) / totalRevenue) * 100
             : 0,
           units_sold: Number(product.quantity_sold || 0),
+          detail: product.detail || null,
         }));
         return {
           key: category.key,
@@ -797,6 +822,7 @@ class ZrnAnalyticsHubAction extends Component {
           margin_amount: 0,
           margin_pct: 0,
           skus: products,
+          detail: category.detail || null,
         };
       });
       return {
@@ -813,6 +839,7 @@ class ZrnAnalyticsHubAction extends Component {
         margin_amount: 0,
         margin_pct: 0,
         lines: categories,
+        detail: brand.detail || null,
       };
     });
 
@@ -844,6 +871,7 @@ class ZrnAnalyticsHubAction extends Component {
         margin_amount: 0,
         margin_pct: 0,
         color: unit.color,
+        detail: null,
       },
     ];
 
@@ -861,6 +889,7 @@ class ZrnAnalyticsHubAction extends Component {
         sku_count: brand.sku_count,
         margin_amount: 0,
         margin_pct: 0,
+        detail: brand.detail,
       });
       (brand.lines || []).forEach((line) => {
         drillRows.push({
@@ -875,6 +904,7 @@ class ZrnAnalyticsHubAction extends Component {
           sku_count: line.sku_count,
           margin_amount: 0,
           margin_pct: 0,
+          detail: line.detail,
         });
         (line.skus || []).forEach((sku) => {
           drillRows.push({
@@ -890,6 +920,7 @@ class ZrnAnalyticsHubAction extends Component {
             sku_count: 1,
             margin_amount: 0,
             margin_pct: 0,
+            detail: sku.detail,
           });
         });
       });

@@ -211,7 +211,8 @@
                             <span>Top productos</span>
                             <span>Base por marca</span>
                         </div>
-                        <div class="table-responsive">
+                        <div class="zrn_analitics_commercial_table_wrap">
+                            <div class="o_list_renderer o_list_view table-responsive">
                             <t t-if="sortedTopProducts.length">
                                 <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                     <thead>
@@ -244,7 +245,7 @@
                                     </thead>
                                     <tbody>
                                         <t t-foreach="sortedTopProducts" t-as="product" t-key="product.product_id">
-                                            <tr t-on-click="() => this.openRecordModal('product.product', product.product_id)" style="cursor: pointer;">
+                                            <tr t-on-click="() => this.openAnalyticsDetailModal(product.detail)" style="cursor: pointer;">
                                                 <td>
                                                     <strong><t t-esc="product.name"/></strong>
                                                     <div t-if="product.default_code" class="text-muted small"><t t-esc="product.default_code"/></div>
@@ -260,6 +261,7 @@
                             <t t-else="">
                                 <div class="zrn_analitics_commercial_chart_empty">Sin productos para mostrar.</div>
                             </t>
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -404,7 +406,8 @@
                                 <span>Drill UN → Marca → Línea → SKU</span>
                                 <span>Base preparada para jerarquía real</span>
                             </div>
-                            <div class="table-responsive">
+                            <div class="zrn_analitics_commercial_portfolio_table_wrap">
+                                <div class="o_list_renderer o_list_view table-responsive">
                                 <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                     <thead>
                                         <tr>
@@ -425,7 +428,7 @@
                                                 class="zrn_analitics_commercial_portfolio_row"
                                                 t-att-class="'is-' + row.level"
                                                 t-on-click="() => this.onPortfolioRowClick(row)"
-                                                t-att-style="row.level === 'brand' || row.level === 'sku' ? 'cursor: pointer;' : ''"
+                                                t-att-style="row.level === 'brand' || row.level === 'line' || row.level === 'sku' ? 'cursor: pointer;' : ''"
                                             >
                                                 <td>
                                                     <div class="zrn_analitics_commercial_portfolio_cell d-flex align-items-center" t-att-class="'is-' + row.level">
@@ -453,6 +456,7 @@
                                         </t>
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
                         </section>
 
@@ -601,15 +605,6 @@
                                                         <i class="fa" t-att-class="state.sorts.coverage_by_channel.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
                                                     </t>
                                                 </th>
-                                                <th>Penetración</th>
-                                                <th>Canal</th>
-                                                <th>Activos</th>
-                                                <th>Red total</th>
-                                                <th>% Cobertura</th>
-                                                <th>White space</th>
-                                                <th>Revenue</th>
-                                                <th>% Mix</th>
-                                                <th>Ticket / PDV</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -738,24 +733,17 @@
                                                     <i class="fa" t-att-class="state.sorts.sku_distribution.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
                                                 </t>
                                             </th>
-                                            <th>Penetración</th>
                                             <th t-on-click="() => this.toggleSort('sku_distribution', 'channels')" class="o_column_sortable" style="cursor: pointer; user-select: none;">
                                                 Canales
                                                 <t t-if="state.sorts.sku_distribution.column === 'channels'">
                                                     <i class="fa" t-att-class="state.sorts.sku_distribution.order === 'asc' ? 'fa-caret-up ms-1' : 'fa-caret-down ms-1'"/>
                                                 </t>
                                             </th>
-                                            <th>SKU</th>
-                                            <th>Sub-marca</th>
-                                            <th>Revenue</th>
-                                            <th># PDVs</th>
-                                            <th>% PDVs</th>
-                                            <th>Canales</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <t t-foreach="sortedSkuDistribution" t-as="row" t-key="row.product_id">
-                                            <tr t-on-click="() => this.openRecordModal('product.product', row.product_id)" style="cursor: pointer;">
+                                            <tr t-on-click="() => this.openAnalyticsDetailModal(row.detail)" style="cursor: pointer;">
                                                 <td><strong><t t-esc="row.sku"/></strong></td>
                                                 <td><t t-esc="row.brand"/></td>
                                                 <td><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
@@ -826,7 +814,7 @@
                                         </thead>
                                         <tbody>
                                             <t t-foreach="sortedPortfolioHoles" t-as="row" t-key="row.partner_id">
-                                                <tr t-on-click="() => this.openRecordModal('res.partner', row.partner_id)" style="cursor: pointer;">
+                                                <tr t-on-click="() => this.openAnalyticsDetailModal(row.detail)" style="cursor: pointer;">
                                                     <td><strong><t t-esc="row.name"/></strong></td>
                                                     <td><t t-esc="row.channel"/></td>
                                                     <td><t t-esc="row.abc"/></td>
@@ -1235,6 +1223,99 @@
                                                             <td><t t-esc="item.category"/></td>
                                                             <td><t t-esc="formatCount(item.units)"/></td>
                                                             <td><t t-esc="channelPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.revenue)"/></td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <t t-if="state.analyticsDetailModal">
+                <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeAnalyticsDetailModal"></div>
+                <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+                        <div class="modal-content zrn_analitics_commercial_modal">
+                            <div class="modal-header">
+                                <div>
+                                    <h4 class="modal-title"><t t-esc="state.analyticsDetailModal.title"/></h4>
+                                    <div class="zrn_analitics_commercial_table_sub">
+                                        <t t-esc="state.analyticsDetailModal.subtitle"/>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close" aria-label="Close" t-on-click="closeAnalyticsDetailModal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="zrn_analitics_commercial_channel_modal_cards">
+                                    <t t-foreach="state.analyticsDetailModal.summary_cards || []" t-as="card" t-key="card.label">
+                                        <div class="zrn_analitics_commercial_coverage_card">
+                                            <span><t t-esc="card.label"/></span>
+                                            <strong><t t-esc="formatDetailCard(state.analyticsDetailModal, card)"/></strong>
+                                        </div>
+                                    </t>
+                                </div>
+
+                                <div class="zrn_analitics_commercial_channel_modal_grid">
+                                    <section class="zrn_analitics_hub_panel">
+                                        <div class="zrn_analitics_commercial_panel_head">
+                                            <span>Por canal</span>
+                                            <span>Base analitica</span>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_table_wrap">
+                                            <table class="zrn_analitics_commercial_table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Canal</th>
+                                                        <th>PDVs</th>
+                                                        <th>Pedidos</th>
+                                                        <th>Unidades</th>
+                                                        <th>Venta</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="state.analyticsDetailModal.channel_rows || []" t-as="row" t-key="row.name">
+                                                        <tr>
+                                                            <td><strong><t t-esc="row.name"/></strong></td>
+                                                            <td><t t-esc="formatCount(row.pdv_count)"/></td>
+                                                            <td><t t-esc="formatCount(row.order_count)"/></td>
+                                                            <td><t t-esc="formatCount(row.units)"/></td>
+                                                            <td><t t-esc="state.analyticsDetailModal.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+
+                                    <section class="zrn_analitics_hub_panel">
+                                        <div class="zrn_analitics_commercial_panel_head">
+                                            <span><t t-esc="state.analyticsDetailModal.secondary_title || 'Top PDVs'"/></span>
+                                            <span>Detalle del calculo</span>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_table_wrap">
+                                            <table class="zrn_analitics_commercial_table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Nombre</th>
+                                                        <th t-if="state.analyticsDetailModal.secondary_title === 'Lineas de portafolio'">SKUs</th>
+                                                        <th>Unidades</th>
+                                                        <th t-if="!state.analyticsDetailModal.secondary_title || state.analyticsDetailModal.secondary_title === 'Top PDVs'">Pedidos</th>
+                                                        <th>Venta</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="(state.analyticsDetailModal.secondary_rows || state.analyticsDetailModal.customer_rows || [])" t-as="row" t-key="row.name">
+                                                        <tr>
+                                                            <td><strong><t t-esc="row.name"/></strong></td>
+                                                            <td t-if="state.analyticsDetailModal.secondary_title === 'Lineas de portafolio'"><t t-esc="formatCount(row.sku_count)"/></td>
+                                                            <td><t t-esc="formatCount(row.units)"/></td>
+                                                            <td t-if="!state.analyticsDetailModal.secondary_title || state.analyticsDetailModal.secondary_title === 'Top PDVs'"><t t-esc="formatCount(row.order_count)"/></td>
+                                                            <td><t t-esc="state.analyticsDetailModal.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
                                                         </tr>
                                                     </t>
                                                 </tbody>

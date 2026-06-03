@@ -575,6 +575,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         normalized_filters = self._normalize_channel_filters(filters)
         date_from = normalized_filters['date_from']
         date_to = normalized_filters['date_to']
+        currency_symbol = self.env.company.currency_id.symbol or '$'
         brands, product_brand_map = self._get_commercial_brand_map()
         channel_setup = self._get_channel_setup_status()
         if not brands or not product_brand_map:
@@ -637,6 +638,95 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         customer_map = {}
         product_map = {}
 
+        def _init_detail_bucket():
+            return {
+                'revenue': 0.0,
+                'units': 0.0,
+                'order_ids': set(),
+                'partner_ids': set(),
+                'channels': defaultdict(lambda: {
+                    'name': '',
+                    'revenue': 0.0,
+                    'units': 0.0,
+                    'order_ids': set(),
+                    'partner_ids': set(),
+                }),
+                'customers': defaultdict(lambda: {
+                    'name': '',
+                    'revenue': 0.0,
+                    'units': 0.0,
+                    'order_ids': set(),
+                }),
+            }
+
+        def _accumulate_detail(bucket, channel_name, partner, order, amount, quantity):
+            bucket['revenue'] += amount
+            bucket['units'] += quantity
+            bucket['order_ids'].add(order.id)
+            if partner:
+                bucket['partner_ids'].add(partner.id)
+                customer_entry = bucket['customers'][partner.id]
+                customer_entry['name'] = partner.display_name
+                customer_entry['revenue'] += amount
+                customer_entry['units'] += quantity
+                customer_entry['order_ids'].add(order.id)
+            channel_key = channel_name or 'Sin canal'
+            channel_entry = bucket['channels'][channel_key]
+            channel_entry['name'] = channel_key
+            channel_entry['revenue'] += amount
+            channel_entry['units'] += quantity
+            channel_entry['order_ids'].add(order.id)
+            if partner:
+                channel_entry['partner_ids'].add(partner.id)
+
+        def _serialize_channel_rows(bucket):
+            return sorted(
+                [
+                    {
+                        'name': item['name'],
+                        'pdv_count': len(item['partner_ids']),
+                        'order_count': len(item['order_ids']),
+                        'units': round(item['units'], 2),
+                        'revenue': round(item['revenue'], 2),
+                    }
+                    for item in bucket['channels'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+
+        def _serialize_customer_rows(bucket):
+            return sorted(
+                [
+                    {
+                        'name': item['name'],
+                        'order_count': len(item['order_ids']),
+                        'units': round(item['units'], 2),
+                        'revenue': round(item['revenue'], 2),
+                    }
+                    for item in bucket['customers'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+
+        def _build_detail_payload(title, subtitle, bucket, secondary_title='', secondary_rows=None):
+            return {
+                'title': title,
+                'subtitle': subtitle,
+                'currency_symbol': currency_symbol,
+                'summary_cards': [
+                    {'label': 'Venta', 'value': round(bucket['revenue'], 2), 'format': 'money'},
+                    {'label': 'Unidades', 'value': round(bucket['units'], 2), 'format': 'count'},
+                    {'label': 'Pedidos', 'value': len(bucket['order_ids']), 'format': 'count'},
+                    {'label': 'PDVs', 'value': len(bucket['partner_ids']), 'format': 'count'},
+                ],
+                'channel_rows': _serialize_channel_rows(bucket),
+                'secondary_title': secondary_title,
+                'secondary_rows': secondary_rows or [],
+                'customer_rows': _serialize_customer_rows(bucket),
+            }
+
         for line in filtered_lines:
             order = line.order_id
             partner = order.partner_id
@@ -652,6 +742,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             amount = float(line.price_total or 0.0)
             quantity = float(line.product_uom_qty or 0.0)
             order_ids.add(order.id)
+            channel_name = self._resolve_partner_channel(commercial_partner)
 
             if order.date_order:
                 order_date = fields.Datetime.to_datetime(order.date_order).date()
@@ -672,11 +763,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'quantity_sold': 0.0,
                     'product_ids': set(),
                     'categories': {},
+                    '_detail': _init_detail_bucket(),
                 },
             )
             portfolio_brand['revenue'] += amount
             portfolio_brand['quantity_sold'] += quantity
             portfolio_brand['product_ids'].add(product.id)
+            _accumulate_detail(portfolio_brand['_detail'], channel_name, partner, order, amount, quantity)
             category_key = product.categ_id.display_name or 'Sin categoria'
             portfolio_category = portfolio_brand['categories'].setdefault(
                 category_key,
@@ -686,11 +779,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'quantity_sold': 0.0,
                     'product_ids': set(),
                     'products': {},
+                    '_detail': _init_detail_bucket(),
                 },
             )
             portfolio_category['revenue'] += amount
             portfolio_category['quantity_sold'] += quantity
             portfolio_category['product_ids'].add(product.id)
+            _accumulate_detail(portfolio_category['_detail'], channel_name, partner, order, amount, quantity)
             portfolio_product = portfolio_category['products'].setdefault(
                 product.id,
                 {
@@ -698,10 +793,12 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'default_code': product.default_code or '',
                     'revenue': 0.0,
                     'quantity_sold': 0.0,
+                    '_detail': _init_detail_bucket(),
                 },
             )
             portfolio_product['revenue'] += amount
             portfolio_product['quantity_sold'] += quantity
+            _accumulate_detail(portfolio_product['_detail'], channel_name, partner, order, amount, quantity)
 
             if commercial_partner:
                 channel_entry = channel_map.setdefault(
@@ -736,10 +833,12 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'category_name': product.categ_id.display_name or '',
                     'quantity_sold': 0.0,
                     'sales_amount': 0.0,
+                    '_detail': _init_detail_bucket(),
                 },
             )
             product_entry['quantity_sold'] += quantity
             product_entry['sales_amount'] += amount
+            _accumulate_detail(product_entry['_detail'], channel_name, partner, order, amount, quantity)
 
         total_amount = round(sum(item['sales_amount'] for item in product_map.values()), 2)
         top_customers = sorted(
@@ -776,6 +875,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'category_name': item['category_name'],
                     'quantity_sold': round(item['quantity_sold'], 2),
                     'sales_amount': round(item['sales_amount'], 2),
+                    'detail': _build_detail_payload(
+                        item['name'],
+                        item['category_name'] or 'Producto',
+                        item['_detail'],
+                        secondary_title='Top PDVs',
+                        secondary_rows=_serialize_customer_rows(item['_detail']),
+                    ),
                 }
                 for item in product_map.values()
             ],
@@ -819,12 +925,27 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                             'default_code': product_row['default_code'],
                             'revenue': round(product_row['revenue'], 2),
                             'quantity_sold': round(product_row['quantity_sold'], 2),
+                            'detail': _build_detail_payload(
+                                product_row['name'],
+                                category_name,
+                                product_row['_detail'],
+                                secondary_title='Top PDVs',
+                                secondary_rows=_serialize_customer_rows(product_row['_detail']),
+                            ),
                         }
                         for product_id, product_row in category_row['products'].items()
                     ],
                     key=lambda item: item['revenue'],
                     reverse=True,
                 )
+                category_secondary_rows = [
+                    {
+                        'name': item['name'],
+                        'units': item['quantity_sold'],
+                        'revenue': item['revenue'],
+                    }
+                    for item in products[:8]
+                ]
                 categories.append({
                     'key': f"category_{brand_name}_{category_name}",
                     'name': category_name,
@@ -832,7 +953,23 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'quantity_sold': round(category_row['quantity_sold'], 2),
                     'product_count': len(category_row['product_ids']),
                     'products': products,
+                    'detail': _build_detail_payload(
+                        category_name,
+                        brand_name,
+                        category_row['_detail'],
+                        secondary_title='SKUs de la linea',
+                        secondary_rows=category_secondary_rows,
+                    ),
                 })
+            brand_secondary_rows = [
+                {
+                    'name': item['name'],
+                    'sku_count': item['product_count'],
+                    'units': item['quantity_sold'],
+                    'revenue': item['revenue'],
+                }
+                for item in categories[:8]
+            ]
             portfolio_rows.append({
                 'key': f"brand_{brand_name}",
                 'name': brand_name,
@@ -840,6 +977,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'quantity_sold': round(brand_row['quantity_sold'], 2),
                 'product_count': len(brand_row['product_ids']),
                 'categories': categories,
+                'detail': _build_detail_payload(
+                    brand_name,
+                    'Marca comercial',
+                    brand_row['_detail'],
+                    secondary_title='Lineas de portafolio',
+                    secondary_rows=brand_secondary_rows,
+                ),
             })
 
         return {
@@ -1203,6 +1347,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         normalized_filters = self._normalize_channel_filters(filters)
         date_from = normalized_filters['date_from']
         date_to = normalized_filters['date_to']
+        currency_symbol = self.env.company.currency_id.symbol or '$'
         universe = self._get_coverage_universe(date_to - timedelta(days=365), date_to)
         brands, product_brand_map = self._get_commercial_brand_map()
         channel_setup = self._get_channel_setup_status()
@@ -1214,7 +1359,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     fields.Date.to_string(date_from),
                     fields.Date.to_string(date_to),
                 ),
-                'currency_symbol': self.env.company.currency_id.symbol or '$',
+                'currency_symbol': currency_symbol,
             }
             payload['active_filters'] = self._serialize_active_filters(normalized_filters)
             payload['filter_options'] = self._build_filter_options([], brands)
@@ -1229,7 +1374,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     fields.Date.to_string(date_from),
                     fields.Date.to_string(date_to),
                 ),
-                'currency_symbol': self.env.company.currency_id.symbol or '$',
+                'currency_symbol': currency_symbol,
             }
             payload['active_filters'] = self._serialize_active_filters(normalized_filters)
             payload['filter_options'] = self._build_filter_options([], brands)
@@ -1250,7 +1395,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     fields.Date.to_string(date_from),
                     fields.Date.to_string(date_to),
                 ),
-                'currency_symbol': self.env.company.currency_id.symbol or '$',
+                'currency_symbol': currency_symbol,
             }
             payload['active_filters'] = self._serialize_active_filters(normalized_filters)
             payload['filter_options'] = filter_options
@@ -1260,6 +1405,75 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         customer_map = {}
         sku_map = {}
         total_revenue = 0.0
+
+        def _init_sku_detail_bucket():
+            return {
+                'revenue': 0.0,
+                'units': 0.0,
+                'order_ids': set(),
+                'partner_ids': set(),
+                'channel_rows': defaultdict(lambda: {
+                    'name': '',
+                    'partner_ids': set(),
+                    'order_ids': set(),
+                    'units': 0.0,
+                    'revenue': 0.0,
+                }),
+                'pdv_rows': defaultdict(lambda: {
+                    'name': '',
+                    'order_ids': set(),
+                    'units': 0.0,
+                    'revenue': 0.0,
+                }),
+            }
+
+        def _accumulate_sku_detail(bucket, channel_name, partner, order, amount, quantity):
+            bucket['revenue'] += amount
+            bucket['units'] += quantity
+            bucket['order_ids'].add(order.id)
+            bucket['partner_ids'].add(partner.id)
+            channel_entry = bucket['channel_rows'][channel_name]
+            channel_entry['name'] = channel_name
+            channel_entry['partner_ids'].add(partner.id)
+            channel_entry['order_ids'].add(order.id)
+            channel_entry['units'] += quantity
+            channel_entry['revenue'] += amount
+            pdv_entry = bucket['pdv_rows'][partner.id]
+            pdv_entry['name'] = partner.display_name
+            pdv_entry['order_ids'].add(order.id)
+            pdv_entry['units'] += quantity
+            pdv_entry['revenue'] += amount
+
+        def _serialize_sku_channel_rows(bucket):
+            return sorted(
+                [
+                    {
+                        'name': item['name'],
+                        'pdv_count': len(item['partner_ids']),
+                        'order_count': len(item['order_ids']),
+                        'units': round(item['units'], 2),
+                        'revenue': round(item['revenue'], 2),
+                    }
+                    for item in bucket['channel_rows'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+
+        def _serialize_sku_pdv_rows(bucket):
+            return sorted(
+                [
+                    {
+                        'name': item['name'],
+                        'order_count': len(item['order_ids']),
+                        'units': round(item['units'], 2),
+                        'revenue': round(item['revenue'], 2),
+                    }
+                    for item in bucket['pdv_rows'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
 
         for line in filtered_lines:
             order = line.order_id
@@ -1326,12 +1540,14 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'customer_ids': set(),
                     'channels': set(),
                     'quantity': 0.0,
+                    'detail_bucket': _init_sku_detail_bucket(),
                 },
             )
             sku_entry['revenue'] += amount
             sku_entry['customer_ids'].add(partner.id)
             sku_entry['channels'].add(channel_name)
             sku_entry['quantity'] += quantity
+            _accumulate_sku_detail(sku_entry['detail_bucket'], channel_name, partner, order, amount, quantity)
 
         if not total_revenue:
             return self._get_empty_coverage_dashboard_data()
@@ -1399,6 +1615,21 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'pdv_count': len(sku_data['customer_ids']),
                     'pdv_pct': round((len(sku_data['customer_ids']) / active_customer_total) * 100, 1) if active_customer_total else 0.0,
                     'channels': len(sku_data['channels']),
+                    'detail': {
+                        'title': sku_data['sku'],
+                        'subtitle': sku_data['brand'],
+                        'currency_symbol': currency_symbol,
+                        'summary_cards': [
+                            {'label': 'Venta', 'value': round(sku_data['detail_bucket']['revenue'], 2), 'format': 'money'},
+                            {'label': 'Unidades', 'value': round(sku_data['detail_bucket']['units'], 2), 'format': 'count'},
+                            {'label': 'Pedidos', 'value': len(sku_data['detail_bucket']['order_ids']), 'format': 'count'},
+                            {'label': 'PDVs', 'value': len(sku_data['detail_bucket']['partner_ids']), 'format': 'count'},
+                        ],
+                        'channel_rows': _serialize_sku_channel_rows(sku_data['detail_bucket']),
+                        'secondary_title': 'Top PDVs',
+                        'secondary_rows': _serialize_sku_pdv_rows(sku_data['detail_bucket']),
+                        'customer_rows': _serialize_sku_pdv_rows(sku_data['detail_bucket']),
+                    },
                 }
                 for sku_data in sku_map.values()
             ],
@@ -1439,6 +1670,47 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'present': present_skus,
                 'missing': missing_skus,
                 'gap_count': len(missing_skus),
+                'detail': {
+                    'title': customer_data['name'],
+                    'subtitle': 'Holes de portafolio',
+                    'currency_symbol': currency_symbol,
+                    'summary_cards': [
+                        {'label': 'Venta', 'value': round(customer_data['revenue'], 2), 'format': 'money'},
+                        {'label': 'SKUs presentes', 'value': len(present_skus), 'format': 'count'},
+                        {'label': 'SKUs faltantes', 'value': len(missing_skus), 'format': 'count'},
+                        {'label': 'ABC', 'value': abc_map.get(customer_id, 'C'), 'format': 'text'},
+                    ],
+                    'channel_rows': [
+                        {
+                            'name': customer_data['channel'],
+                            'pdv_count': 1,
+                            'order_count': len(customer_data['order_ids']),
+                            'units': 0.0,
+                            'revenue': round(customer_data['revenue'], 2),
+                        }
+                    ],
+                    'secondary_title': 'Estado del portafolio core',
+                    'secondary_rows': [
+                        {
+                            'name': sku_name,
+                            'units': 0.0,
+                            'order_count': 0,
+                            'revenue': round(customer_data['product_amounts'].get(sku_name, 0.0), 2),
+                            'status': 'Presente',
+                        }
+                        for sku_name in present_skus
+                    ] + [
+                        {
+                            'name': sku_name,
+                            'units': 0.0,
+                            'order_count': 0,
+                            'revenue': 0.0,
+                            'status': 'Faltante',
+                        }
+                        for sku_name in missing_skus
+                    ],
+                    'customer_rows': [],
+                },
             })
 
             if days_since_last >= 20 or len(missing_skus) >= 2:
