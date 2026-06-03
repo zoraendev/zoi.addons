@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
+import { SelectMenu } from "@web/core/select_menu/select_menu";
 import { useService } from "@web/core/utils/hooks";
 import { Component, onMounted, onPatched, onWillStart, onWillUnmount, useRef, useState } from "@odoo/owl";
 
@@ -48,6 +49,20 @@ class ZrnAnalyticsHubAction extends Component {
       commercialTab: "overview",
       commercialPayload: null,
       commercialLoading: false,
+      overviewFilters: {
+        period_key: "ytd",
+        channel: "",
+        brand: "",
+        category: "",
+        search: "",
+      },
+      portfolioFilters: {
+        period_key: "ytd",
+        channel: "",
+        brand: "",
+        category: "",
+        search: "",
+      },
       channelPayload: null,
       channelLoading: false,
       channelFilters: {
@@ -60,6 +75,13 @@ class ZrnAnalyticsHubAction extends Component {
       channelModalRow: null,
       coveragePayload: null,
       coverageLoading: false,
+      coverageFilters: {
+        period_key: "ytd",
+        channel: "",
+        brand: "",
+        category: "",
+        search: "",
+      },
       selectedPortfolioUnit: "",
       portfolioExpanded: {},
     });
@@ -67,6 +89,7 @@ class ZrnAnalyticsHubAction extends Component {
       await Promise.all([
         this.loadCommercialPayload(),
         this.loadCoveragePayload(),
+        this.loadChannelPayload(),
       ]);
     });
     onMounted(() => {
@@ -107,13 +130,22 @@ class ZrnAnalyticsHubAction extends Component {
 
   async setCommercialTab(tabKey) {
     this.state.commercialTab = tabKey;
+    if (tabKey === "overview" || tabKey === "portafolio") {
+      await this.loadCommercialPayload(true);
+    }
     if (tabKey === "canal") {
-      await this.loadChannelPayload();
+      await this.loadChannelPayload(true);
     }
     if (tabKey === "cobertura") {
-      await this.loadCoveragePayload();
+      await this.loadCoveragePayload(true);
     }
     this.queueChartRender();
+  }
+
+  getCurrentCommercialFilters() {
+    return this.state.commercialTab === "portafolio"
+      ? this.state.portfolioFilters
+      : this.state.overviewFilters;
   }
 
   async loadCommercialPayload(force = false) {
@@ -125,7 +157,7 @@ class ZrnAnalyticsHubAction extends Component {
       this.state.commercialPayload = await this.orm.call(
         "zrn_analitics.home",
         "get_commercial_hub_payload",
-        []
+        [this.getCurrentCommercialFilters()]
       );
     } finally {
       this.state.commercialLoading = false;
@@ -141,7 +173,7 @@ class ZrnAnalyticsHubAction extends Component {
       this.state.coveragePayload = await this.orm.call(
         "zrn_analitics.home",
         "get_coverage_dashboard_data",
-        []
+        [this.state.coverageFilters]
       );
     } finally {
       this.state.coverageLoading = false;
@@ -169,6 +201,81 @@ class ZrnAnalyticsHubAction extends Component {
       ...this.state.channelFilters,
       [fieldName]: value,
     };
+  }
+
+  updateOverviewFilter(fieldName, value) {
+    this.state.overviewFilters = {
+      ...this.state.overviewFilters,
+      [fieldName]: value,
+    };
+  }
+
+  updatePortfolioFilter(fieldName, value) {
+    this.state.portfolioFilters = {
+      ...this.state.portfolioFilters,
+      [fieldName]: value,
+    };
+  }
+
+  updateCoverageFilter(fieldName, value) {
+    this.state.coverageFilters = {
+      ...this.state.coverageFilters,
+      [fieldName]: value,
+    };
+  }
+
+  async applyOverviewFilters() {
+    this.state.commercialPayload = null;
+    await this.loadCommercialPayload(true);
+  }
+
+  async clearOverviewFilters() {
+    this.state.overviewFilters = { period_key: "ytd", channel: "", brand: "", category: "", search: "" };
+    this.state.commercialPayload = null;
+    await this.loadCommercialPayload(true);
+  }
+
+  async applyPortfolioFilters() {
+    this.state.commercialPayload = null;
+    await this.loadCommercialPayload(true);
+  }
+
+  async clearPortfolioFilters() {
+    this.state.portfolioFilters = { period_key: "ytd", channel: "", brand: "", category: "", search: "" };
+    this.state.commercialPayload = null;
+    await this.loadCommercialPayload(true);
+  }
+
+  async applyCoverageFilters() {
+    this.state.coveragePayload = null;
+    await this.loadCoveragePayload(true);
+  }
+
+  async clearCoverageFilters() {
+    this.state.coverageFilters = { period_key: "ytd", channel: "", brand: "", category: "", search: "" };
+    this.state.coveragePayload = null;
+    await this.loadCoveragePayload(true);
+  }
+
+  onOverviewSearchKeydown(ev) {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      this.applyOverviewFilters();
+    }
+  }
+
+  onPortfolioSearchKeydown(ev) {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      this.applyPortfolioFilters();
+    }
+  }
+
+  onCoverageSearchKeydown(ev) {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      this.applyCoverageFilters();
+    }
   }
 
   async applyChannelFilters() {
@@ -235,6 +342,7 @@ class ZrnAnalyticsHubAction extends Component {
       top_customers: [],
       top_channels: [],
       top_products: [],
+      portfolio_rows: [],
     };
   }
 
@@ -247,6 +355,24 @@ class ZrnAnalyticsHubAction extends Component {
 
   get coveragePayload() {
     return this.state.coveragePayload || {
+      summary: {
+        sync_label: "",
+        period_label: "",
+        currency_symbol: "$",
+      },
+      active_filters: {
+        period_key: "ytd",
+        channel: "",
+        brand: "",
+        category: "",
+        search: "",
+      },
+      filter_options: {
+        periods: [],
+        channels: [],
+        brands: [],
+        categories: [],
+      },
       summary_cards: [],
       coverage_by_channel: [],
       pdv_universe: { total: 0, by_channel: {}, by_municipio: {} },
@@ -282,6 +408,16 @@ class ZrnAnalyticsHubAction extends Component {
       rows: [],
       empty_message: "",
     };
+  }
+
+  get activeHubSummary() {
+    if (this.state.commercialTab === "cobertura") {
+      return this.coveragePayload.summary;
+    }
+    if (this.state.commercialTab === "canal") {
+      return this.channelPayload.summary;
+    }
+    return this.commercialPayload.summary;
   }
 
   get hasCommercialRevenueSeries() {
@@ -372,23 +508,10 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   buildCommercialPortfolio() {
-    const brandMix = this.commercialPayload.brand_mix || [];
-    const brandCatalog = this.commercialPayload.brand_catalog || [];
-    const productRows = this.commercialPayload.top_products || [];
+    const brandRows = this.commercialPayload.portfolio_rows || [];
     const currencySymbol = this.commercialPayload.summary?.currency_symbol || "$";
-    const businessUnits = [
-      { key: "grab_go", name: "Grab and Go", color: "#bd1730" },
-      { key: "food_service", name: "Food Service", color: "#f18f01" },
-      { key: "sin_un", name: "Sin UN", color: "#9aa4b2" },
-    ];
-    const baseBrands = (brandMix.length ? brandMix : brandCatalog).map((brand, index) => ({
-      key: `brand_${index + 1}`,
-      name: brand.name,
-      revenue: Number(brand.value || 0),
-      percentage: Number(brand.percentage || 0),
-      product_count: Number(brand.product_count || 0),
-    }));
-    if (!baseBrands.length) {
+    const palette = ["#bd1730", "#f18f01", "#1f4e8c", "#2f855a", "#6b7280", "#0f766e"];
+    if (!brandRows.length) {
       return {
         hasBrands: false,
         hasRevenue: false,
@@ -398,77 +521,46 @@ class ZrnAnalyticsHubAction extends Component {
         drillRows: [],
       };
     }
-
-    const brandProducts = new Map(baseBrands.map((brand) => [brand.key, []]));
-    productRows.forEach((product, index) => {
-      const targetBrand = baseBrands[index % baseBrands.length];
-      brandProducts.get(targetBrand.key).push({
-        name: product.name,
-        category_name: product.category_name,
-        quantity_sold: Number(product.quantity_sold || 0),
-        sales_amount: Number(product.sales_amount || 0),
-      });
-    });
-
-    const totalRevenue = baseBrands.reduce((sum, brand) => sum + brand.revenue, 0);
-    const lineNames = ["Fresco", "Snacks", "Base", "Food Prep", "Servicios"];
-    const units = businessUnits.map((definition, unitIndex) => {
-      const assignedBrands = baseBrands
-        .filter((_brand, brandIndex) => brandIndex % businessUnits.length === unitIndex)
-        .map((brand, brandIndex) => {
-          const products = brandProducts.get(brand.key) || [];
-          const lineCount = Math.min(2, Math.max(products.length ? 2 : 1, 1));
-          const lineShares = lineCount === 1 ? [1] : [0.62, 0.38];
-          const lines = lineShares.map((share, lineIndex) => {
-            const productSubset = products.filter((_, productIndex) => productIndex % lineCount === lineIndex);
-            const revenue = Number((brand.revenue * share).toFixed(2));
-            const unitsSold = productSubset.reduce((sum, product) => sum + product.quantity_sold, 0);
-            const marginPct = 0.16 + ((unitIndex + brandIndex + lineIndex) % 4) * 0.035;
-            return {
-              key: `${brand.key}_line_${lineIndex + 1}`,
-              name: lineNames[(unitIndex + brandIndex + lineIndex) % lineNames.length],
-              revenue,
-              mix_percentage: totalRevenue ? (revenue / totalRevenue) * 100 : 0,
-              units_sold: unitsSold,
-              billed_lines: Math.max(productSubset.length, 1),
-              sku_count: Math.max(productSubset.length, brand.product_count ? 1 : 0),
-              margin_amount: Number((revenue * marginPct).toFixed(2)),
-              margin_pct: marginPct * 100,
-              skus: productSubset.map((product) => ({
-                key: `${brand.key}_sku_${product.name}`,
-                name: product.name,
-                revenue: product.sales_amount,
-                mix_percentage: totalRevenue ? (product.sales_amount / totalRevenue) * 100 : 0,
-                units_sold: product.quantity_sold,
-              })),
-            };
-          });
-          const revenue = lines.reduce((sum, line) => sum + line.revenue, 0);
-          const marginAmount = lines.reduce((sum, line) => sum + line.margin_amount, 0);
-          return {
-            ...brand,
-            lines,
-            billed_lines: lines.reduce((sum, line) => sum + line.billed_lines, 0),
-            sku_count: lines.reduce((sum, line) => sum + line.sku_count, 0),
-            margin_amount: Number(marginAmount.toFixed(2)),
-            margin_pct: revenue ? (marginAmount / revenue) * 100 : 0,
-          };
-        });
-
-      const revenue = assignedBrands.reduce((sum, brand) => sum + brand.revenue, 0);
-      const marginAmount = assignedBrands.reduce((sum, brand) => sum + brand.margin_amount, 0);
-      return {
-        ...definition,
-        brands: assignedBrands,
-        revenue: Number(revenue.toFixed(2)),
-        mix_percentage: totalRevenue ? (revenue / totalRevenue) * 100 : 0,
-        sku_count: assignedBrands.reduce((sum, brand) => sum + brand.sku_count, 0),
-        brand_count: assignedBrands.length,
-        billed_lines: assignedBrands.reduce((sum, brand) => sum + brand.billed_lines, 0),
-        margin_amount: Number(marginAmount.toFixed(2)),
-        margin_pct: revenue ? (marginAmount / revenue) * 100 : 0,
-      };
-    }).filter((unit) => unit.brands.length);
+    const totalRevenue = brandRows.reduce((sum, brand) => sum + Number(brand.revenue || 0), 0);
+    const units = brandRows.map((brand, index) => ({
+      key: brand.key || `brand_${index + 1}`,
+      name: brand.name,
+      color: palette[index % palette.length],
+      brands: (brand.categories || []).map((category, categoryIndex) => ({
+        key: category.key || `${brand.key}_category_${categoryIndex + 1}`,
+        name: category.name,
+        revenue: Number(category.revenue || 0),
+        lines: [{
+          key: `${category.key || `${brand.key}_category_${categoryIndex + 1}`}_skus`,
+          name: "SKUs",
+          revenue: Number(category.revenue || 0),
+          mix_percentage: totalRevenue ? (Number(category.revenue || 0) / totalRevenue) * 100 : 0,
+          units_sold: Number(category.quantity_sold || 0),
+          billed_lines: 0,
+          sku_count: Number(category.product_count || 0),
+          margin_amount: 0,
+          margin_pct: 0,
+          skus: (category.products || []).map((product, productIndex) => ({
+            key: product.key || `${category.key}_sku_${productIndex + 1}`,
+            name: product.name,
+            revenue: Number(product.revenue || 0),
+            mix_percentage: totalRevenue ? (Number(product.revenue || 0) / totalRevenue) * 100 : 0,
+            units_sold: Number(product.quantity_sold || 0),
+          })),
+        }],
+        billed_lines: 0,
+        sku_count: Number(category.product_count || 0),
+        margin_amount: 0,
+        margin_pct: 0,
+      })),
+      revenue: Number(brand.revenue || 0),
+      mix_percentage: totalRevenue ? (Number(brand.revenue || 0) / totalRevenue) * 100 : 0,
+      sku_count: Number(brand.product_count || 0),
+      brand_count: (brand.categories || []).length,
+      billed_lines: 0,
+      margin_amount: 0,
+      margin_pct: 0,
+    }));
 
     const drillRows = [];
     units.forEach((unit) => {
@@ -541,6 +633,14 @@ class ZrnAnalyticsHubAction extends Component {
       units,
       drillRows,
     };
+  }
+
+  getSelectChoices(options, emptyLabel) {
+    return [{ value: "", label: emptyLabel }, ...(options || []).map((option) => ({ value: option, label: option }))];
+  }
+
+  getPeriodChoices(options) {
+    return options || [];
   }
 
   queueChartRender() {
@@ -822,7 +922,7 @@ class ZrnAnalyticsHubAction extends Component {
             `<strong>${item.name}</strong>`,
             `${this.commercialPortfolio.currencySymbol} ${this.formatMoney(item.revenue)}`,
             `${this.formatPercent(item.mix_percentage)} del mix`,
-            `${this.formatPercent(item.margin_pct)} margen`,
+            `${this.formatCount(item.sku_count)} SKU`,
           ].join("<br/>");
         },
       },
@@ -877,7 +977,7 @@ class ZrnAnalyticsHubAction extends Component {
           return [
             `<strong>${item.name}</strong>`,
             `${this.commercialPortfolio.currencySymbol} ${this.formatMoney(item.revenue)}`,
-            `${this.formatPercent(share)} de la unidad`,
+            `${this.formatPercent(share)} de la marca`,
             `${this.formatCount(item.sku_count)} SKU`,
           ].join("<br/>");
         },
@@ -1085,5 +1185,6 @@ class ZrnAnalyticsHubAction extends Component {
 }
 
 ZrnAnalyticsHubAction.template = "zrn_analitics.HubAction";
+ZrnAnalyticsHubAction.components = { SelectMenu };
 
 registry.category("actions").add("zrn_analitics.hubs", ZrnAnalyticsHubAction);

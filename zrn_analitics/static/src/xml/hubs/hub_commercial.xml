@@ -9,10 +9,10 @@
                     </div>
                     <div class="zrn_analitics_commercial_badges">
                         <span class="zrn_analitics_commercial_badge zrn_analitics_commercial_badge_sync">
-                            Sync con Odoo: <t t-esc="commercialPayload.summary.sync_label"/>
+                            Sync con Odoo: <t t-esc="activeHubSummary.sync_label"/>
                         </span>
                         <span class="zrn_analitics_commercial_badge">
-                            <t t-esc="commercialPayload.summary.period_label"/>
+                            <t t-esc="activeHubSummary.period_label"/>
                         </span>
                         <span class="zrn_analitics_commercial_badge">
                             <t t-esc="formatCount(commercialPayload.summary.brand_count)"/> marcas / <t t-esc="formatCount(commercialPayload.summary.product_count)"/> productos
@@ -42,6 +42,38 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'overview'">
+                <section class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_commercial_panel_head">
+                        <span>Filtros del tab</span>
+                        <span>Overview comercial</span>
+                    </div>
+                    <div class="zrn_analitics_commercial_channel_filters">
+                        <div class="zrn_analitics_commercial_field">
+                            <label>Periodo</label>
+                            <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.overviewFilters.period_key" onSelect.bind="(value) => this.updateOverviewFilter('period_key', value)"/>
+                        </div>
+                        <div class="zrn_analitics_commercial_field">
+                            <label>Marca</label>
+                            <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.brands, 'Todas las marcas')" value="state.overviewFilters.brand" onSelect.bind="(value) => this.updateOverviewFilter('brand', value)"/>
+                        </div>
+                        <div class="zrn_analitics_commercial_field">
+                            <label>Categoria</label>
+                            <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.categories, 'Todas las categorias')" value="state.overviewFilters.category" onSelect.bind="(value) => this.updateOverviewFilter('category', value)"/>
+                        </div>
+                        <div class="zrn_analitics_commercial_field">
+                            <label>Canal</label>
+                            <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.channels, 'Todos los canales')" value="state.overviewFilters.channel" onSelect.bind="(value) => this.updateOverviewFilter('channel', value)"/>
+                        </div>
+                        <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
+                            <label>Buscar</label>
+                            <input type="text" class="form-control" placeholder="Cliente, PDV, producto o codigo" t-att-value="state.overviewFilters.search" t-on-input="(ev) => this.updateOverviewFilter('search', ev.target.value)" t-on-keydown="onOverviewSearchKeydown"/>
+                        </div>
+                    </div>
+                    <div class="zrn_analitics_commercial_channel_actions">
+                        <button type="button" class="btn btn-primary" t-on-click="applyOverviewFilters">Aplicar</button>
+                        <button type="button" class="btn btn-secondary" t-on-click="clearOverviewFilters">Limpiar</button>
+                    </div>
+                </section>
                 <div class="zrn_analitics_commercial_stats">
                     <div class="zrn_analitics_commercial_stat_box">
                         <span>Venta total</span>
@@ -173,6 +205,38 @@
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'portafolio'">
                 <div class="zrn_analitics_commercial_portfolio">
+                    <section class="zrn_analitics_hub_panel">
+                        <div class="zrn_analitics_commercial_panel_head">
+                            <span>Filtros del tab</span>
+                            <span>Portafolio real por marca</span>
+                        </div>
+                        <div class="zrn_analitics_commercial_channel_filters">
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Periodo</label>
+                                <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.portfolioFilters.period_key" onSelect.bind="(value) => this.updatePortfolioFilter('period_key', value)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Marca</label>
+                                <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.brands, 'Todas las marcas')" value="state.portfolioFilters.brand" onSelect.bind="(value) => this.updatePortfolioFilter('brand', value)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Categoria</label>
+                                <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.categories, 'Todas las categorias')" value="state.portfolioFilters.category" onSelect.bind="(value) => this.updatePortfolioFilter('category', value)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Canal</label>
+                                <SelectMenu choices="getSelectChoices(commercialPayload.filter_options.channels, 'Todos los canales')" value="state.portfolioFilters.channel" onSelect.bind="(value) => this.updatePortfolioFilter('channel', value)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
+                                <label>Buscar</label>
+                                <input type="text" class="form-control" placeholder="Marca, categoria o SKU" t-att-value="state.portfolioFilters.search" t-on-input="(ev) => this.updatePortfolioFilter('search', ev.target.value)" t-on-keydown="onPortfolioSearchKeydown"/>
+                            </div>
+                        </div>
+                        <div class="zrn_analitics_commercial_channel_actions">
+                            <button type="button" class="btn btn-primary" t-on-click="applyPortfolioFilters">Aplicar</button>
+                            <button type="button" class="btn btn-secondary" t-on-click="clearPortfolioFilters">Limpiar</button>
+                        </div>
+                    </section>
                     <div class="zrn_analitics_commercial_portfolio_note">
                         <strong>Portafolio oficial</strong>
                         <span>UN → Marca Comercial → Línea → SKU.</span>
@@ -312,6 +376,38 @@
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'cobertura'">
                 <div class="zrn_analitics_commercial_coverage">
+                    <section class="zrn_analitics_hub_panel">
+                        <div class="zrn_analitics_commercial_panel_head">
+                            <span>Filtros del tab</span>
+                            <span>Cobertura y distribucion</span>
+                        </div>
+                        <div class="zrn_analitics_commercial_channel_filters">
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Periodo</label>
+                                <SelectMenu choices="getPeriodChoices(coveragePayload.filter_options.periods)" value="state.coverageFilters.period_key" onSelect.bind="(value) => this.updateCoverageFilter('period_key', value)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Canal</label>
+                                <SelectMenu choices="getSelectChoices(coveragePayload.filter_options.channels, 'Todos los canales')" value="state.coverageFilters.channel" onSelect.bind="(value) => this.updateCoverageFilter('channel', value)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Marca</label>
+                                <SelectMenu choices="getSelectChoices(coveragePayload.filter_options.brands, 'Todas las marcas')" value="state.coverageFilters.brand" onSelect.bind="(value) => this.updateCoverageFilter('brand', value)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Categoria</label>
+                                <SelectMenu choices="getSelectChoices(coveragePayload.filter_options.categories, 'Todas las categorias')" value="state.coverageFilters.category" onSelect.bind="(value) => this.updateCoverageFilter('category', value)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
+                                <label>Buscar</label>
+                                <input type="text" class="form-control" placeholder="Cliente, PDV, producto o codigo" t-att-value="state.coverageFilters.search" t-on-input="(ev) => this.updateCoverageFilter('search', ev.target.value)" t-on-keydown="onCoverageSearchKeydown"/>
+                            </div>
+                        </div>
+                        <div class="zrn_analitics_commercial_channel_actions">
+                            <button type="button" class="btn btn-primary" t-on-click="applyCoverageFilters">Aplicar</button>
+                            <button type="button" class="btn btn-secondary" t-on-click="clearCoverageFilters">Limpiar</button>
+                        </div>
+                    </section>
                     <div class="zrn_analitics_commercial_coverage_note">
                         <strong>Cobertura y distribución</strong>
                         <span>Universo PDV, cobertura por canal, white space, marcas por canal, holes de portafolio y clientes A/B en riesgo.</span>
@@ -588,54 +684,19 @@
                         <div class="zrn_analitics_commercial_channel_filters">
                             <div class="zrn_analitics_commercial_field">
                                 <label>Periodo</label>
-                                <select
-                                    class="form-select"
-                                    t-att-value="state.channelFilters.period_key"
-                                    t-on-change="(ev) => this.updateChannelFilter('period_key', ev.target.value)"
-                                >
-                                    <t t-foreach="channelPayload.filter_options.periods" t-as="option" t-key="option.value">
-                                        <option t-att-value="option.value"><t t-esc="option.label"/></option>
-                                    </t>
-                                </select>
+                                <SelectMenu choices="getPeriodChoices(channelPayload.filter_options.periods)" value="state.channelFilters.period_key" onSelect.bind="(value) => this.updateChannelFilter('period_key', value)"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Canal</label>
-                                <select
-                                    class="form-select"
-                                    t-att-value="state.channelFilters.channel"
-                                    t-on-change="(ev) => this.updateChannelFilter('channel', ev.target.value)"
-                                >
-                                    <option value="">Todos los canales</option>
-                                    <t t-foreach="channelPayload.filter_options.channels" t-as="option" t-key="option">
-                                        <option t-att-value="option"><t t-esc="option"/></option>
-                                    </t>
-                                </select>
+                                <SelectMenu choices="getSelectChoices(channelPayload.filter_options.channels, 'Todos los canales')" value="state.channelFilters.channel" onSelect.bind="(value) => this.updateChannelFilter('channel', value)"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Marca</label>
-                                <select
-                                    class="form-select"
-                                    t-att-value="state.channelFilters.brand"
-                                    t-on-change="(ev) => this.updateChannelFilter('brand', ev.target.value)"
-                                >
-                                    <option value="">Todas las marcas</option>
-                                    <t t-foreach="channelPayload.filter_options.brands" t-as="option" t-key="option">
-                                        <option t-att-value="option"><t t-esc="option"/></option>
-                                    </t>
-                                </select>
+                                <SelectMenu choices="getSelectChoices(channelPayload.filter_options.brands, 'Todas las marcas')" value="state.channelFilters.brand" onSelect.bind="(value) => this.updateChannelFilter('brand', value)"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Categoria</label>
-                                <select
-                                    class="form-select"
-                                    t-att-value="state.channelFilters.category"
-                                    t-on-change="(ev) => this.updateChannelFilter('category', ev.target.value)"
-                                >
-                                    <option value="">Todas las categorias</option>
-                                    <t t-foreach="channelPayload.filter_options.categories" t-as="option" t-key="option">
-                                        <option t-att-value="option"><t t-esc="option"/></option>
-                                    </t>
-                                </select>
+                                <SelectMenu choices="getSelectChoices(channelPayload.filter_options.categories, 'Todas las categorias')" value="state.channelFilters.category" onSelect.bind="(value) => this.updateChannelFilter('category', value)"/>
                             </div>
                             <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
                                 <label>Buscar</label>

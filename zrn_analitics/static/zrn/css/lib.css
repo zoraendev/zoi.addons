@@ -710,6 +710,10 @@
   font-size: 12px;
 }
 
+.zrn_analitics_commercial_portfolio_card_footer {
+  display: none;
+}
+
 .zrn_analitics_commercial_portfolio_card_footer strong {
   color: var(--zrn-analitics-text);
 }
