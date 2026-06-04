@@ -448,6 +448,7 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   updateOverviewFilter(key, value) {
+    console.log("[ZRN DEBUG] updateOverviewFilter", key, value);
     this.state.overviewFilters = {
       ...this.state.overviewFilters,
       [key]:
@@ -455,6 +456,7 @@ class ZrnAnalyticsHubAction extends Component {
           ? normalizeFilterIds(value)
           : value ?? "",
     };
+    console.log("[ZRN DEBUG] overviewFilters now:", JSON.stringify(this.state.overviewFilters));
   }
 
   updatePortfolioFilter(key, value) {
@@ -485,6 +487,71 @@ class ZrnAnalyticsHubAction extends Component {
           ? normalizeFilterIds(value)
           : value ?? "",
     };
+  }
+
+  onOverviewPeriodSelect(value) {
+    console.log("[ZRN DEBUG] onOverviewPeriodSelect called with:", value);
+    this.updateOverviewFilter("period_key", value);
+  }
+
+  onOverviewBrandsChange(records) {
+    this.updateOverviewFilter("brand_ids", records.map((r) => r.id));
+  }
+
+  onOverviewCategoriesChange(records) {
+    this.updateOverviewFilter("category_ids", records.map((r) => r.id));
+  }
+
+  onOverviewChannelsChange(records) {
+    this.updateOverviewFilter("channel_ids", records.map((r) => r.id));
+  }
+
+  onPortfolioPeriodSelect(value) {
+    this.updatePortfolioFilter("period_key", value);
+  }
+
+  onPortfolioBrandsChange(records) {
+    this.updatePortfolioFilter("brand_ids", records.map((r) => r.id));
+  }
+
+  onPortfolioCategoriesChange(records) {
+    this.updatePortfolioFilter("category_ids", records.map((r) => r.id));
+  }
+
+  onPortfolioChannelsChange(records) {
+    this.updatePortfolioFilter("channel_ids", records.map((r) => r.id));
+  }
+
+  onCoveragePeriodSelect(value) {
+    this.updateCoverageFilter("period_key", value);
+  }
+
+  onCoverageChannelsChange(records) {
+    this.updateCoverageFilter("channel_ids", records.map((r) => r.id));
+  }
+
+  onCoverageBrandsChange(records) {
+    this.updateCoverageFilter("brand_ids", records.map((r) => r.id));
+  }
+
+  onCoverageCategoriesChange(records) {
+    this.updateCoverageFilter("category_ids", records.map((r) => r.id));
+  }
+
+  onChannelPeriodSelect(value) {
+    this.updateChannelFilter("period_key", value);
+  }
+
+  onChannelChannelsChange(records) {
+    this.updateChannelFilter("channel_ids", records.map((r) => r.id));
+  }
+
+  onChannelBrandsChange(records) {
+    this.updateChannelFilter("brand_ids", records.map((r) => r.id));
+  }
+
+  onChannelCategoriesChange(records) {
+    this.updateChannelFilter("category_ids", records.map((r) => r.id));
   }
 
   getOptionDomain(options) {
@@ -980,8 +1047,10 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   getPeriodChoices(options) {
+    // FIX: El backend en Python envía las opciones de periodo usando la estructura {'value': ..., 'label': ...}.
+    // Se mapea con option.value y se mantiene fallback a option.key para compatibilidad.
     return (options || []).map((option) => ({
-      value: option.key,
+      value: option.value || option.key,
       label: option.label,
     }));
   }
