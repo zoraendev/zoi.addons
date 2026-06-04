@@ -701,7 +701,9 @@
                             <div class="zrn_planning_production_report_table_toolbar">
                             </div>
                             <div class="zrn_planning_production_report_table_placeholder">
-                                <field name="report_html" widget="html" nolabel="1" readonly="1" invisible="report_active_tab != 'overview'"/>
+                                <div class="zrn_planning_production_report_html_wrap" invisible="report_active_tab != 'overview'">
+                                    <field name="report_html" widget="html" nolabel="1" readonly="1"/>
+                                </div>
                                 <div invisible="report_active_tab != 'customers'">
                                     <div class="zrn_planning_production_report_list_shell">
                                         <button name="action_open_report_customers_list" type="object"

@@ -1767,6 +1767,7 @@
     max-width: none !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
+    overflow: hidden;
   }
 
   .o_form_view.zrn_planning_production_report_form .o_form_sheet {
@@ -1776,14 +1777,18 @@
     padding: 0;
     border: 0;
     box-shadow: none;
+    height: calc(100vh - 138px);
+    overflow: hidden;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_screen {
     display: flex;
-    min-height: calc(100vh - 180px);
+    height: 100%;
+    min-height: 0;
     flex-direction: column;
     gap: 6px;
+    overflow: hidden;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -1796,21 +1801,22 @@
         var(--z-color-border) 82%,
         var(--z-color-brand-200) 18%
       );
-    border-radius: 10px;
+    border-radius: 0;
     background: var(--z-color-surface-raised, #ffffff);
   }
 
-    .zrn_planning_production_report_header_shell {
-    position: sticky;
-    top: 0;
-    z-index: 120;
+  .zrn_planning_production_report_header_shell {
+    position: static;
+    top: auto;
+    z-index: auto;
     padding: 10px 16px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
-    border: 1px solid rgba(99, 102, 241, 0.14) !important;
-    border-radius: 14px;
-    box-shadow: 0 10px 30px -15px rgba(99, 102, 241, 0.12);
-    backdrop-filter: blur(12px);
-    margin-bottom: 0px;
+    background: var(--z-color-surface-raised, #ffffff) !important;
+    border-color: var(--z-color-border, #d6dae1) !important;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    margin-bottom: 0;
+    flex: 0 0 auto;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -1837,36 +1843,39 @@
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_report_back_inline {
     flex: 0 0 auto;
-    border-radius: 50px !important;
-    padding: 8px 18px !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
     font-weight: 600 !important;
-    background: rgba(99, 102, 241, 0.08) !important;
-    border: 1px solid rgba(99, 102, 241, 0.18) !important;
-    color: #6366f1 !important;
-    transition: all 0.2s ease !important;
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--z-color-brand-700, #4862c9) !important;
+    transition: color 0.2s ease !important;
+    box-shadow: none !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_report_back_inline:hover {
-    background: #6366f1 !important;
-    color: #ffffff !important;
-    transform: translateX(-2px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    background: transparent !important;
+    color: var(--z-color-brand-800, #3d53ad) !important;
+    transform: none;
+    box-shadow: none;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab {
-    padding: 0;
+    padding: 0 0 8px;
     border: 0;
-    background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    background: transparent !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    color: var(--z-color-text-strong, #1f2937) !important;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0;
     text-decoration: none !important;
     box-shadow: none;
     position: relative;
+    border-radius: 0;
   }
   
   .o_form_view.zrn_planning_production_report_form
@@ -1875,18 +1884,19 @@
     position: absolute;
     bottom: -6px;
     left: 0;
-    width: 40px;
-    height: 3px;
-    background: linear-gradient(90deg, #4f46e5, #10b981);
-    border-radius: 99px;
+    width: 32px;
+    height: 2px;
+    background: var(--z-color-brand-600, #4f75ff);
+    border-radius: 0;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab_inactive {
-    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    font-weight: 700;
+    background: transparent !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    color: var(--z-color-text-muted, #6b7280) !important;
+    font-weight: 600;
   }
   
   .o_form_view.zrn_planning_production_report_form
@@ -1896,9 +1906,10 @@
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab_inactive:hover {
-    background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
+    background: transparent !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    color: var(--z-color-text-strong, #1f2937) !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -1911,21 +1922,21 @@
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
-    background: rgba(99, 102, 241, 0.05);
-    border: 1px solid rgba(99, 102, 241, 0.12);
-    padding: 6px 18px;
-    border-radius: 99px;
-    box-shadow: inset 0 1px 2px rgba(99, 102, 241, 0.03);
+    background: transparent;
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_header_range
     span {
-    color: #64748b;
-    font-size: 0.88rem;
+    color: var(--z-color-text-muted, #6b7280);
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -1943,8 +1954,8 @@
     .zrn_planning_production_report_header_range
     strong
     span {
-    color: #4f46e5;
-    font-size: 0.94rem;
+    color: var(--z-color-text-strong, #1f2937);
+    font-size: 0.88rem;
     font-weight: 700;
   }
 
@@ -1963,82 +1974,95 @@
     align-items: center;
     gap: 6px;
     background: transparent !important;
-    border: none !important;
+    border: 0 !important;
     box-shadow: none !important;
-    color: #64748b !important;
-    font-size: 0.88rem !important;
+    color: var(--z-color-text-muted, #6b7280) !important;
+    font-size: 0.82rem !important;
     font-weight: 600 !important;
-    padding: 6px 12px !important;
+    padding: 0 !important;
     min-height: auto !important;
     cursor: default !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat i {
-    color: #4f46e5;
-    font-size: 0.94rem;
+    color: var(--z-color-brand-700, #4862c9);
+    font-size: 0.86rem;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat strong {
-    color: #0f172a;
+    color: var(--z-color-text-strong, #1f2937);
     font-weight: 700;
-    font-size: 1.0rem;
+    font-size: 0.96rem;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn {
-    display: flex;
-    min-height: 38px;
+    display: inline-flex !important;
+    min-height: 32px;
     align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    border: 1.5px solid rgba(124, 58, 237, 0.25);
-    border-radius: 999px;
-    background: #ffffff;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--z-color-brand-600, #4f75ff) !important;
+    border-color: var(--z-color-brand-600, #4f75ff) !important;
+    border-radius: 6px !important;
+    background: var(--z-color-brand-600, #4f75ff) !important;
+    background-color: var(--z-color-brand-600, #4f75ff) !important;
+    background-image: none !important;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.88rem;
+    font-family: inherit;
+    font-size: 0.82rem;
     font-weight: 600;
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.22) !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn {
-    color: #7c3aed !important;
+    color: #ffffff !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn_inactive {
-    border-color: rgba(226, 232, 240, 0.8);
-    background: #f8fafc;
-    color: #64748b !important;
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.08) !important;
+    border-color: var(--z-color-brand-600, #4f75ff) !important;
+    background: var(--z-color-brand-600, #4f75ff) !important;
+    background-color: var(--z-color-brand-600, #4f75ff) !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn:hover {
-    transform: translateY(-2px);
-    border-color: #7c3aed;
-    background: #7c3aed;
+    transform: none;
+    border-color: var(--z-color-brand-700, #4862c9) !important;
+    background: var(--z-color-brand-700, #4862c9) !important;
+    background-color: var(--z-color-brand-700, #4862c9) !important;
+    background-image: none !important;
     color: #ffffff !important;
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45) !important;
+    box-shadow: none !important;
   }
   
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn_inactive:hover {
-    border-color: rgba(124, 58, 237, 0.45);
-    background: rgba(124, 58, 237, 0.06);
-    color: #7c3aed !important;
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25) !important;
+    border-color: var(--z-color-brand-700, #4862c9) !important;
+    background: var(--z-color-brand-700, #4862c9) !important;
+    background-color: var(--z-color-brand-700, #4862c9) !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn:not(
       .zrn_planning_production_report_action_btn_inactive
     ) {
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.22) !important;
+    background: var(--z-color-brand-800, #3d53ad) !important;
+    background-color: var(--z-color-brand-800, #3d53ad) !important;
+    background-image: none !important;
+    border-color: var(--z-color-brand-800, #3d53ad) !important;
+    box-shadow: none !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2047,17 +2071,17 @@
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat
     i {
-    color: var(--z-color-brand-700);
-    font-size: 0.95rem;
+    color: #ffffff;
+    font-size: 0.84rem;
     flex: 0 0 auto;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn
     span {
-    color: var(--z-color-text-muted, #6c757d);
-    font-size: 0.78rem;
-    font-weight: 700;
+    color: #ffffff !important;
+    font-size: 0.76rem;
+    font-weight: 600;
     letter-spacing: normal;
     text-transform: none;
     white-space: nowrap;
@@ -2069,16 +2093,46 @@
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat
     strong {
-    color: var(--z-color-text-strong, var(--o-main-text-color, #212529));
-    font-size: 1rem;
+    color: #ffffff;
+    font-size: 0.9rem;
     line-height: 1;
     white-space: nowrap;
   }
 
   .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn:not(
+      .zrn_planning_production_report_action_btn_inactive
+    )
+    span,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn:not(
+      .zrn_planning_production_report_action_btn_inactive
+    )
+    strong,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn:not(
+      .zrn_planning_production_report_action_btn_inactive
+    )
+    i {
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn_inactive
+    span,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn_inactive
+    strong,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn_inactive
+    i {
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat {
     position: relative;
-    min-width: 126px;
+    min-width: 0;
     justify-content: center;
     white-space: nowrap;
     z-index: 4;
@@ -2124,8 +2178,9 @@
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    min-height: 520px;
-    padding: 10px;
+    min-height: 0;
+    padding: 8px;
+    overflow: hidden;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2233,9 +2288,41 @@
     .zrn_planning_production_report_table_placeholder {
     display: flex;
     width: 100%;
-    min-height: 100%;
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap
+    > .o_field_widget,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap
+    > .o_field_html,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap
+    .note-editable,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap
+    .note-editor {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    background: transparent;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -3192,6 +3279,7 @@
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
   width: 100%;
   min-width: 100%;
 }
@@ -3199,17 +3287,17 @@
 .zrn_am_report_matrix_wrap {
   display: block;
   flex: 1 1 auto;
-  min-height: 520px;
-  height: 100%;
+  min-height: 0;
+  height: calc(100vh - 245px);
   max-height: 100%;
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: auto;
   border: 1px solid var(--am-border, #e2e8f0);
-  border-radius: 10px;
-  background: #fbfbfd;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: auto;
@@ -3235,7 +3323,7 @@
 
 .zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb {
   background: #8a7897;
-  border-radius: 999px;
+  border-radius: 0;
   border: 2px solid #ece7f1;
 }
 
@@ -3252,6 +3340,8 @@
 }
 
 .zrn_am_report_matrix thead th {
+  position: static !important;
+  z-index: auto;
   text-align: center;
   font-size: 0.78rem;
   font-weight: 700;
@@ -3481,26 +3571,9 @@
 }
 
 /* Sticky vertical table header */
-.zrn_am_report_matrix thead th {
-  position: sticky !important;
-  z-index: 10;
-}
-.zrn_am_report_matrix thead tr:nth-child(1) th {
-  top: 0 !important;
-  z-index: 12;
-}
-.zrn_am_report_matrix thead tr:nth-child(2) th {
-  top: 36px !important;
-  z-index: 12;
-}
-.zrn_am_report_matrix thead tr:nth-child(3) th {
-  top: 72px !important;
-  z-index: 11;
-}
-
-/* Sticky left columns top positioning override when header is sticky */
 .zrn_am_report_matrix thead th.zrn_am_sticky_col,
 .zrn_am_report_matrix thead th.zrn_am_sticky_col_2,
 .zrn_am_report_matrix thead th.zrn_am_sticky_col_3 {
-  z-index: 25 !important;
+  position: sticky !important;
+  z-index: 20 !important;
 }
