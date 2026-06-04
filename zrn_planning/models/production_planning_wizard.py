@@ -228,12 +228,14 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
         self._compute_filter_data()
 
     def _compute_planning_record_ids(self):
-        plans = self.env['zrn_prodigyn.mfg.plan'].search(
-            [('company_id', '=', self.env.company.id)],
-            order='date_start desc, id desc',
-        )
         for wizard in self:
-            wizard.planning_record_count = len(plans)
+            domain = [('company_id', '=', self.env.company.id)]
+            plans = self.env['zrn_prodigyn.mfg.plan'].search(
+                domain,
+                order='create_date desc, id desc',
+                limit=15,
+            )
+            wizard.planning_record_count = self.env['zrn_prodigyn.mfg.plan'].search_count(domain)
             wizard.planning_record_ids = [(6, 0, plans.ids)]
 
     def action_open_existing_plans(self):

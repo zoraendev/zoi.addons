@@ -1343,11 +1343,16 @@
     --formView-sheet-max-width: 100% !important;
   }
 
+  .o_form_view.zrn_planning_filter_form,
+  .o_form_view .zrn_planning_filter_form {
+    height: 100%;
+  }
+
   .o_form_view.zrn_planning_filter_form header,
   .o_form_view .zrn_planning_filter_form header {
     display: block;
     width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 
   .o_form_view.zrn_planning_filter_form .o_form_statusbar,
@@ -1378,7 +1383,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer_start,
@@ -1388,7 +1393,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer_end,
@@ -1397,239 +1402,225 @@
     margin-left: auto;
   }
 
-  /* Banner de cabecera moderno y premium */
-  .zrn_planning_filter_header_banner {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--z-color-brand-800, #4862c9) 82%, #131212) 0%, color-mix(in srgb, var(--z-color-brand-600, #4862c9) 92%, #ffffff) 100%);
-    padding: 24px;
-    border-radius: 12px;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 20px -4px rgba(72, 98, 201, 0.15);
-    border: 1px solid color-mix(in srgb, var(--z-color-brand-700) 30%, transparent 70%);
-  }
-
-  .zrn_planning_filter_header_banner h1 {
-    color: #ffffff !important;
-    font-size: 1.75rem !important;
-    font-weight: 800 !important;
-    margin: 4px 0 6px 0 !important;
-    letter-spacing: -0.02em !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  .zrn_planning_filter_header_left .zrn_planning_filter_kicker {
-    color: color-mix(in srgb, var(--z-color-brand-100) 80%, white) !important;
-    font-size: 0.72rem !important;
-    font-weight: 800 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.1em !important;
-    display: inline-block !important;
-  }
-
-  .zrn_planning_filter_subtitle {
-    color: color-mix(in srgb, var(--z-color-brand-50) 84%, #ffffff) !important;
-    font-size: 0.9rem !important;
-    margin: 0 !important;
-    opacity: 0.95;
-    font-weight: 500;
-  }
-
-  /* Grid principal de dos columnas responsivo */
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_page,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_page {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     width: 100%;
+    min-height: calc(100vh - 210px);
   }
 
-  @media (min-width: 992px) {
-    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_page,
-    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_page {
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-      gap: 24px;
-      align-items: start;
-    }
-  }
-
-  /* Tarjetas/Paneles flotantes con estilo premium */
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel {
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_bar,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px 18px;
+    flex-wrap: nowrap;
     width: 100%;
-    padding: 24px;
+    padding: 14px 16px;
     border: 1px solid var(--z-color-border, #d7dce5);
-    border-radius: 12px;
-    background: var(--z-color-surface-raised, #ffffff);
-    box-shadow: 0 4px 20px -4px rgba(72, 98, 201, 0.06);
-    transition: box-shadow 0.25s ease, border-color 0.25s ease;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel:hover,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel:hover,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel:hover,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel:hover {
-    box-shadow: 0 8px 30px -4px rgba(72, 98, 201, 0.12);
-    border-color: color-mix(in srgb, var(--z-color-brand-300) 40%, var(--z-color-border) 60%);
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel_head,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel_head,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head {
-    display: block;
-    margin-bottom: 18px;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_kicker,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_kicker {
-    color: color-mix(
-      in srgb,
-      var(--z-color-text-muted) 68%,
-      var(--z-color-brand-1000) 32%
-    );
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel_head h2,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head h2,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel_head h2,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head h2 {
-    margin: 0;
-    color: var(--z-color-brand-800, #4862c9);
-    font-size: 1.3rem;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    position: relative;
-    padding-bottom: 8px;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel_head h2::after,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head h2::after,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel_head h2::after,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head h2::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 32px;
-    height: 3px;
-    background: var(--z-color-brand-600, #4f75ff);
-    border-radius: 99px;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_intro,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_intro {
-    display: none;
+    border-radius: 8px;
+    background: var(--o-view-background-color, #f6f7f9);
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_fields,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_fields {
+    display: flex;
+    align-items: center;
+    gap: 10px 14px;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
     margin-bottom: 0;
+    min-width: 0;
   }
 
-  /* KPI Badges y Resumenes Optimizados */
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot {
-    margin-top: 18px;
-    padding-top: 16px;
-    border-top: 1px dashed color-mix(in srgb, var(--z-color-border) 70%, transparent 30%);
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    min-width: 0;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_title,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_title {
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_wide,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_wide {
+    flex: 1 1 0;
+    min-width: 260px;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_label,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_label {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0;
+    color: var(--z-color-text-muted, #71717b);
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_widget,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_widget {
+    margin-bottom: 0 !important;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o-autocomplete--input,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o-autocomplete--input,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input_dropdown,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input_dropdown {
+    min-height: 34px;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_inline,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    padding-top: 19px;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--z-color-text-muted, #71717b);
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_sep,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_sep {
+    color: var(--z-color-text-muted, #71717b);
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item span,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item span {
+    font-weight: 600;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item .o_field_widget,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item .o_field_widget {
+    color: var(--z-color-text-strong, #1f2937) !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2manytags,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2manytags,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2one,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2one,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_date,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_date {
+    width: 100%;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input {
+    width: 100%;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head h2,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head h2 {
+    margin: 0;
+    color: var(--z-color-text-strong, #1f2937);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head_main,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head_main {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 12px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     color: var(--z-color-text-muted);
     font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 10px;
+    font-weight: 600;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 12px;
-    margin-bottom: 0;
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta strong,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta strong,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta .o_field_widget,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta .o_field_widget {
+    color: var(--z-color-text-strong, #1f2937) !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0 !important;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    margin-bottom: 0;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_inner_group,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_inner_group,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_inner_group,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_inner_group {
-    display: block !important;
-    width: 100% !important;
-    padding: 12px 8px !important;
-    border-radius: 8px !important;
-    background: color-mix(in srgb, var(--z-color-brand-50, #eff3fa) 50%, var(--z-color-surface-raised, #ffffff) 50%) !important;
-    border: 1px solid color-mix(in srgb, var(--z-color-brand-100) 40%, var(--z-color-border) 60%) !important;
-    text-align: center !important;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_cell,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_cell,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_cell,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_cell {
-    padding: 0 !important;
-    display: flex !important;
-    flex-direction: column-reverse !important;
-    align-items: center !important;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid label,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single label,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid label,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single label {
-    font-size: 0.68rem !important;
-    font-weight: 800 !important;
-    color: var(--z-color-text-muted, #71717b) !important;
-    margin-top: 4px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.02em !important;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_field_widget,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_field_widget {
-    font-size: 1.45rem !important;
-    font-weight: 800 !important;
-    color: var(--z-color-brand-800, #355eff) !important;
-  }
-
-  /* Listado integrado de Planes creados */
   .zrn_planning_plans_list_container {
-    margin-top: 14px;
+    margin-top: 0;
     border: 1px solid var(--z-color-border, #d7dce5);
-    border-radius: 8px;
-    overflow: hidden;
-    background: #ffffff;
-    max-height: 240px;
-    overflow-y: auto;
+    border-radius: 0;
+    overflow: auto;
+    background: var(--o-view-background-color, #ffffff);
+    min-height: 0;
+    flex: 1 1 auto;
   }
 
   .zrn_planning_plans_list_container .o_list_renderer {
     border: 0 !important;
+    background: var(--o-view-background-color, #ffffff);
+  }
+
+  .zrn_planning_plans_list_container .o_renderer {
+    border-radius: 0 !important;
   }
 
   .zrn_planning_plans_list_container .o_list_table {
     margin-bottom: 0 !important;
   }
 
+  .zrn_planning_plans_list_container .table-responsive,
+  .zrn_planning_plans_list_container .o_list_table_ungrouped {
+    background: var(--o-view-background-color, #ffffff);
+  }
+
   .zrn_planning_plans_list_container th {
-    background-color: color-mix(in srgb, var(--z-color-brand-50) 64%, #ffffff) !important;
+    background-color: var(--o-view-background-color, #ffffff) !important;
     color: var(--z-color-brand-900) !important;
     font-weight: 700 !important;
     font-size: 0.76rem !important;
@@ -1643,18 +1634,12 @@
     font-size: 0.8rem !important;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_actions_bottom,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_actions_bottom {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px dashed color-mix(in srgb, var(--z-color-border) 70%, transparent 30%);
+  .zrn_planning_plans_list_container tbody tr {
+    cursor: pointer;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_actions_bottom .btn,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_actions_bottom .btn {
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer .btn,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_footer .btn {
     min-height: 36px;
     border-radius: 6px;
     font-weight: 700;
@@ -1713,6 +1698,47 @@
     color: var(--z-color-text-strong, #1f2937) !important;
   }
 
+  @media (max-width: 991.98px) {
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_page,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_page {
+      min-height: auto;
+    }
+
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_bar,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_bar {
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_footer,
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer_start,
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer_end,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_footer_start,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_footer_end,
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_inline,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_inline {
+      flex-wrap: wrap;
+    }
+
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_fields,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_fields {
+      flex-wrap: wrap;
+    }
+
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item,
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_wide,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_wide {
+      flex-basis: 100%;
+      min-width: 0;
+    }
+
+    .zrn_planning_plans_list_container {
+      max-height: 340px;
+    }
+  }
+
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_widget,
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
@@ -1723,6 +1749,13 @@
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_view {
     width: 100%;
     max-width: 100%;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
