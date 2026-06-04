@@ -71,7 +71,7 @@
                     <div class="zrn_analitics_commercial_channel_filters">
                         <div class="zrn_analitics_commercial_field">
                             <label>Periodo</label>
-                            <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.overviewFilters.period_key" onSelect.bind="(value) => this.updateOverviewFilter('period_key', value)"/>
+                            <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.overviewFilters.period_key" onSelect.bind="this.onOverviewPeriodSelect"/>
                         </div>
                         <div class="zrn_analitics_commercial_field">
                             <label>Marca</label>
@@ -81,7 +81,7 @@
                                 resModel="'zrn_commercial.commercial.brand'"
                                 fieldString="'Marca'"
                                 placeholder="'Todas las marcas'"
-                                onChange.bind="(records) => this.updateOverviewFilter('brand_ids', records.map((record) => record.id))"
+                                onChange.bind="this.onOverviewBrandsChange"
                             />
                         </div>
                         <div class="zrn_analitics_commercial_field">
@@ -92,7 +92,7 @@
                                 resModel="'product.category'"
                                 fieldString="'Categoria'"
                                 placeholder="'Todas las categorias'"
-                                onChange.bind="(records) => this.updateOverviewFilter('category_ids', records.map((record) => record.id))"
+                                onChange.bind="this.onOverviewCategoriesChange"
                             />
                         </div>
                         <div class="zrn_analitics_commercial_field">
@@ -103,7 +103,7 @@
                                 resModel="'zrn_commercial.commercial.channel'"
                                 fieldString="'Canal'"
                                 placeholder="'Todos los canales'"
-                                onChange.bind="(records) => this.updateOverviewFilter('channel_ids', records.map((record) => record.id))"
+                                onChange.bind="this.onOverviewChannelsChange"
                             />
                         </div>
                         <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
@@ -277,7 +277,7 @@
                         <div class="zrn_analitics_commercial_channel_filters">
                             <div class="zrn_analitics_commercial_field">
                                 <label>Periodo</label>
-                                <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.portfolioFilters.period_key" onSelect.bind="(value) => this.updatePortfolioFilter('period_key', value)"/>
+                                <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.portfolioFilters.period_key" onSelect.bind="this.onPortfolioPeriodSelect"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Marca</label>
@@ -287,7 +287,7 @@
                                     resModel="'zrn_commercial.commercial.brand'"
                                     fieldString="'Marca'"
                                     placeholder="'Todas las marcas'"
-                                    onChange.bind="(records) => this.updatePortfolioFilter('brand_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onPortfolioBrandsChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field">
@@ -298,7 +298,7 @@
                                     resModel="'product.category'"
                                     fieldString="'Categoria'"
                                     placeholder="'Todas las categorias'"
-                                    onChange.bind="(records) => this.updatePortfolioFilter('category_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onPortfolioCategoriesChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field">
@@ -309,7 +309,7 @@
                                     resModel="'zrn_commercial.commercial.channel'"
                                     fieldString="'Canal'"
                                     placeholder="'Todos los canales'"
-                                    onChange.bind="(records) => this.updatePortfolioFilter('channel_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onPortfolioChannelsChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
@@ -474,7 +474,7 @@
                         <div class="zrn_analitics_commercial_channel_filters">
                             <div class="zrn_analitics_commercial_field">
                                 <label>Periodo</label>
-                                <SelectMenu choices="getPeriodChoices(coveragePayload.filter_options.periods)" value="state.coverageFilters.period_key" onSelect.bind="(value) => this.updateCoverageFilter('period_key', value)"/>
+                                <SelectMenu choices="getPeriodChoices(coveragePayload.filter_options.periods)" value="state.coverageFilters.period_key" onSelect.bind="this.onCoveragePeriodSelect"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Canal</label>
@@ -484,7 +484,7 @@
                                     resModel="'zrn_commercial.commercial.channel'"
                                     fieldString="'Canal'"
                                     placeholder="'Todos los canales'"
-                                    onChange.bind="(records) => this.updateCoverageFilter('channel_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onCoverageChannelsChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field">
@@ -495,7 +495,7 @@
                                     resModel="'zrn_commercial.commercial.brand'"
                                     fieldString="'Marca'"
                                     placeholder="'Todas las marcas'"
-                                    onChange.bind="(records) => this.updateCoverageFilter('brand_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onCoverageBrandsChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field">
@@ -506,7 +506,7 @@
                                     resModel="'product.category'"
                                     fieldString="'Categoria'"
                                     placeholder="'Todas las categorias'"
-                                    onChange.bind="(records) => this.updateCoverageFilter('category_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onCoverageCategoriesChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
@@ -936,7 +936,7 @@
                         <div class="zrn_analitics_commercial_channel_filters">
                             <div class="zrn_analitics_commercial_field">
                                 <label>Periodo</label>
-                                <SelectMenu choices="getPeriodChoices(channelPayload.filter_options.periods)" value="state.channelFilters.period_key" onSelect.bind="(value) => this.updateChannelFilter('period_key', value)"/>
+                                <SelectMenu choices="getPeriodChoices(channelPayload.filter_options.periods)" value="state.channelFilters.period_key" onSelect.bind="this.onChannelPeriodSelect"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Canal</label>
@@ -946,7 +946,7 @@
                                     resModel="'zrn_commercial.commercial.channel'"
                                     fieldString="'Canal'"
                                     placeholder="'Todos los canales'"
-                                    onChange.bind="(records) => this.updateChannelFilter('channel_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onChannelChannelsChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field">
@@ -957,7 +957,7 @@
                                     resModel="'zrn_commercial.commercial.brand'"
                                     fieldString="'Marca'"
                                     placeholder="'Todas las marcas'"
-                                    onChange.bind="(records) => this.updateChannelFilter('brand_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onChannelBrandsChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field">
@@ -968,7 +968,7 @@
                                     resModel="'product.category'"
                                     fieldString="'Categoria'"
                                     placeholder="'Todas las categorias'"
-                                    onChange.bind="(records) => this.updateChannelFilter('category_ids', records.map((record) => record.id))"
+                                    onChange.bind="this.onChannelCategoriesChange"
                                 />
                             </div>
                             <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
