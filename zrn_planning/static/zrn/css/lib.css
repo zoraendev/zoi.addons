@@ -1343,11 +1343,16 @@
     --formView-sheet-max-width: 100% !important;
   }
 
+  .o_form_view.zrn_planning_filter_form,
+  .o_form_view .zrn_planning_filter_form {
+    height: 100%;
+  }
+
   .o_form_view.zrn_planning_filter_form header,
   .o_form_view .zrn_planning_filter_form header {
     display: block;
     width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 
   .o_form_view.zrn_planning_filter_form .o_form_statusbar,
@@ -1378,7 +1383,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer_start,
@@ -1388,7 +1393,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer_end,
@@ -1397,239 +1402,225 @@
     margin-left: auto;
   }
 
-  /* Banner de cabecera moderno y premium */
-  .zrn_planning_filter_header_banner {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--z-color-brand-800, #4862c9) 82%, #131212) 0%, color-mix(in srgb, var(--z-color-brand-600, #4862c9) 92%, #ffffff) 100%);
-    padding: 24px;
-    border-radius: 12px;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 20px -4px rgba(72, 98, 201, 0.15);
-    border: 1px solid color-mix(in srgb, var(--z-color-brand-700) 30%, transparent 70%);
-  }
-
-  .zrn_planning_filter_header_banner h1 {
-    color: #ffffff !important;
-    font-size: 1.75rem !important;
-    font-weight: 800 !important;
-    margin: 4px 0 6px 0 !important;
-    letter-spacing: -0.02em !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  .zrn_planning_filter_header_left .zrn_planning_filter_kicker {
-    color: color-mix(in srgb, var(--z-color-brand-100) 80%, white) !important;
-    font-size: 0.72rem !important;
-    font-weight: 800 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.1em !important;
-    display: inline-block !important;
-  }
-
-  .zrn_planning_filter_subtitle {
-    color: color-mix(in srgb, var(--z-color-brand-50) 84%, #ffffff) !important;
-    font-size: 0.9rem !important;
-    margin: 0 !important;
-    opacity: 0.95;
-    font-weight: 500;
-  }
-
-  /* Grid principal de dos columnas responsivo */
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_page,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_page {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     width: 100%;
+    min-height: calc(100vh - 210px);
   }
 
-  @media (min-width: 992px) {
-    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_page,
-    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_page {
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-      gap: 24px;
-      align-items: start;
-    }
-  }
-
-  /* Tarjetas/Paneles flotantes con estilo premium */
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel {
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_bar,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px 18px;
+    flex-wrap: nowrap;
     width: 100%;
-    padding: 24px;
+    padding: 14px 16px;
     border: 1px solid var(--z-color-border, #d7dce5);
-    border-radius: 12px;
-    background: var(--z-color-surface-raised, #ffffff);
-    box-shadow: 0 4px 20px -4px rgba(72, 98, 201, 0.06);
-    transition: box-shadow 0.25s ease, border-color 0.25s ease;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel:hover,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel:hover,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel:hover,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel:hover {
-    box-shadow: 0 8px 30px -4px rgba(72, 98, 201, 0.12);
-    border-color: color-mix(in srgb, var(--z-color-brand-300) 40%, var(--z-color-border) 60%);
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel_head,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel_head,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head {
-    display: block;
-    margin-bottom: 18px;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_kicker,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_kicker {
-    color: color-mix(
-      in srgb,
-      var(--z-color-text-muted) 68%,
-      var(--z-color-brand-1000) 32%
-    );
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel_head h2,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head h2,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel_head h2,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head h2 {
-    margin: 0;
-    color: var(--z-color-brand-800, #4862c9);
-    font-size: 1.3rem;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    position: relative;
-    padding-bottom: 8px;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_panel_head h2::after,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head h2::after,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_panel_head h2::after,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head h2::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 32px;
-    height: 3px;
-    background: var(--z-color-brand-600, #4f75ff);
-    border-radius: 99px;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_intro,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_intro {
-    display: none;
+    border-radius: 8px;
+    background: var(--o-view-background-color, #f6f7f9);
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_fields,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_fields {
+    display: flex;
+    align-items: center;
+    gap: 10px 14px;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
     margin-bottom: 0;
+    min-width: 0;
   }
 
-  /* KPI Badges y Resumenes Optimizados */
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot {
-    margin-top: 18px;
-    padding-top: 16px;
-    border-top: 1px dashed color-mix(in srgb, var(--z-color-border) 70%, transparent 30%);
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    min-width: 0;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_title,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_title {
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_wide,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_wide {
+    flex: 1 1 0;
+    min-width: 260px;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_label,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_label {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0;
+    color: var(--z-color-text-muted, #71717b);
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_widget,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_widget {
+    margin-bottom: 0 !important;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o-autocomplete--input,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o-autocomplete--input,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input_dropdown,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input_dropdown {
+    min-height: 34px;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_inline,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    padding-top: 19px;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--z-color-text-muted, #71717b);
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_sep,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_sep {
+    color: var(--z-color-text-muted, #71717b);
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item span,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item span {
+    font-weight: 600;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item .o_field_widget,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item .o_field_widget {
+    color: var(--z-color-text-strong, #1f2937) !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2manytags,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2manytags,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2one,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2one,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_date,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_date {
+    width: 100%;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input {
+    width: 100%;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head h2,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head h2 {
+    margin: 0;
+    color: var(--z-color-text-strong, #1f2937);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_head_main,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_head_main {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 12px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     color: var(--z-color-text-muted);
     font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 10px;
+    font-weight: 600;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 12px;
-    margin-bottom: 0;
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta strong,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta strong,
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta .o_field_widget,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta .o_field_widget {
+    color: var(--z-color-text-strong, #1f2937) !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0 !important;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    margin-bottom: 0;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_inner_group,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_inner_group,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_inner_group,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_inner_group {
-    display: block !important;
-    width: 100% !important;
-    padding: 12px 8px !important;
-    border-radius: 8px !important;
-    background: color-mix(in srgb, var(--z-color-brand-50, #eff3fa) 50%, var(--z-color-surface-raised, #ffffff) 50%) !important;
-    border: 1px solid color-mix(in srgb, var(--z-color-brand-100) 40%, var(--z-color-border) 60%) !important;
-    text-align: center !important;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_cell,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_cell,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_cell,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_cell {
-    padding: 0 !important;
-    display: flex !important;
-    flex-direction: column-reverse !important;
-    align-items: center !important;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid label,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single label,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid label,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single label {
-    font-size: 0.68rem !important;
-    font-weight: 800 !important;
-    color: var(--z-color-text-muted, #71717b) !important;
-    margin-top: 4px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.02em !important;
-  }
-
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_field_widget,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_snapshot_grid_single .o_field_widget {
-    font-size: 1.45rem !important;
-    font-weight: 800 !important;
-    color: var(--z-color-brand-800, #355eff) !important;
-  }
-
-  /* Listado integrado de Planes creados */
   .zrn_planning_plans_list_container {
-    margin-top: 14px;
+    margin-top: 0;
     border: 1px solid var(--z-color-border, #d7dce5);
-    border-radius: 8px;
-    overflow: hidden;
-    background: #ffffff;
-    max-height: 240px;
-    overflow-y: auto;
+    border-radius: 0;
+    overflow: auto;
+    background: var(--o-view-background-color, #ffffff);
+    min-height: 0;
+    flex: 1 1 auto;
   }
 
   .zrn_planning_plans_list_container .o_list_renderer {
     border: 0 !important;
+    background: var(--o-view-background-color, #ffffff);
+  }
+
+  .zrn_planning_plans_list_container .o_renderer {
+    border-radius: 0 !important;
   }
 
   .zrn_planning_plans_list_container .o_list_table {
     margin-bottom: 0 !important;
   }
 
+  .zrn_planning_plans_list_container .table-responsive,
+  .zrn_planning_plans_list_container .o_list_table_ungrouped {
+    background: var(--o-view-background-color, #ffffff);
+  }
+
   .zrn_planning_plans_list_container th {
-    background-color: color-mix(in srgb, var(--z-color-brand-50) 64%, #ffffff) !important;
+    background-color: var(--o-view-background-color, #ffffff) !important;
     color: var(--z-color-brand-900) !important;
     font-weight: 700 !important;
     font-size: 0.76rem !important;
@@ -1643,18 +1634,12 @@
     font-size: 0.8rem !important;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_actions_bottom,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_actions_bottom {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px dashed color-mix(in srgb, var(--z-color-border) 70%, transparent 30%);
+  .zrn_planning_plans_list_container tbody tr {
+    cursor: pointer;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_actions_bottom .btn,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_actions_bottom .btn {
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer .btn,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_footer .btn {
     min-height: 36px;
     border-radius: 6px;
     font-weight: 700;
@@ -1713,6 +1698,47 @@
     color: var(--z-color-text-strong, #1f2937) !important;
   }
 
+  @media (max-width: 991.98px) {
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_page,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_page {
+      min-height: auto;
+    }
+
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_bar,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_bar {
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_footer,
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer_start,
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_footer_end,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_footer_start,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_footer_end,
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_inline,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_inline {
+      flex-wrap: wrap;
+    }
+
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_fields,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_fields {
+      flex-wrap: wrap;
+    }
+
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item,
+    .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_wide,
+    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_wide {
+      flex-basis: 100%;
+      min-width: 0;
+    }
+
+    .zrn_planning_plans_list_container {
+      max-height: 340px;
+    }
+  }
+
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_widget,
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
@@ -1725,6 +1751,13 @@
     max-width: 100%;
   }
 
+  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
+  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer {
     overflow-x: auto;
@@ -1734,6 +1767,7 @@
     max-width: none !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
+    overflow: hidden;
   }
 
   .o_form_view.zrn_planning_production_report_form .o_form_sheet {
@@ -1743,14 +1777,18 @@
     padding: 0;
     border: 0;
     box-shadow: none;
+    height: calc(100vh - 138px);
+    overflow: hidden;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_screen {
     display: flex;
-    min-height: calc(100vh - 180px);
+    height: 100%;
+    min-height: 0;
     flex-direction: column;
     gap: 6px;
+    overflow: hidden;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -1763,21 +1801,22 @@
         var(--z-color-border) 82%,
         var(--z-color-brand-200) 18%
       );
-    border-radius: 10px;
+    border-radius: 0;
     background: var(--z-color-surface-raised, #ffffff);
   }
 
-    .zrn_planning_production_report_header_shell {
-    position: sticky;
-    top: 0;
-    z-index: 120;
+  .zrn_planning_production_report_header_shell {
+    position: static;
+    top: auto;
+    z-index: auto;
     padding: 10px 16px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
-    border: 1px solid rgba(99, 102, 241, 0.14) !important;
-    border-radius: 14px;
-    box-shadow: 0 10px 30px -15px rgba(99, 102, 241, 0.12);
-    backdrop-filter: blur(12px);
-    margin-bottom: 0px;
+    background: var(--z-color-surface-raised, #ffffff) !important;
+    border-color: var(--z-color-border, #d6dae1) !important;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    margin-bottom: 0;
+    flex: 0 0 auto;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -1804,36 +1843,39 @@
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_report_back_inline {
     flex: 0 0 auto;
-    border-radius: 50px !important;
-    padding: 8px 18px !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
     font-weight: 600 !important;
-    background: rgba(99, 102, 241, 0.08) !important;
-    border: 1px solid rgba(99, 102, 241, 0.18) !important;
-    color: #6366f1 !important;
-    transition: all 0.2s ease !important;
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--z-color-brand-700, #4862c9) !important;
+    transition: color 0.2s ease !important;
+    box-shadow: none !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_report_back_inline:hover {
-    background: #6366f1 !important;
-    color: #ffffff !important;
-    transform: translateX(-2px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    background: transparent !important;
+    color: var(--z-color-brand-800, #3d53ad) !important;
+    transform: none;
+    box-shadow: none;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab {
-    padding: 0;
+    padding: 0 0 8px;
     border: 0;
-    background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    background: transparent !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    color: var(--z-color-text-strong, #1f2937) !important;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0;
     text-decoration: none !important;
     box-shadow: none;
     position: relative;
+    border-radius: 0;
   }
   
   .o_form_view.zrn_planning_production_report_form
@@ -1842,18 +1884,19 @@
     position: absolute;
     bottom: -6px;
     left: 0;
-    width: 40px;
-    height: 3px;
-    background: linear-gradient(90deg, #4f46e5, #10b981);
-    border-radius: 99px;
+    width: 32px;
+    height: 2px;
+    background: var(--z-color-brand-600, #4f75ff);
+    border-radius: 0;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab_inactive {
-    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    font-weight: 700;
+    background: transparent !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    color: var(--z-color-text-muted, #6b7280) !important;
+    font-weight: 600;
   }
   
   .o_form_view.zrn_planning_production_report_form
@@ -1863,9 +1906,10 @@
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab_inactive:hover {
-    background: linear-gradient(135deg, #4f46e5 0%, #10b981 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
+    background: transparent !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    color: var(--z-color-text-strong, #1f2937) !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -1878,21 +1922,21 @@
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
-    background: rgba(99, 102, 241, 0.05);
-    border: 1px solid rgba(99, 102, 241, 0.12);
-    padding: 6px 18px;
-    border-radius: 99px;
-    box-shadow: inset 0 1px 2px rgba(99, 102, 241, 0.03);
+    background: transparent;
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_header_range
     span {
-    color: #64748b;
-    font-size: 0.88rem;
+    color: var(--z-color-text-muted, #6b7280);
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -1910,8 +1954,8 @@
     .zrn_planning_production_report_header_range
     strong
     span {
-    color: #4f46e5;
-    font-size: 0.94rem;
+    color: var(--z-color-text-strong, #1f2937);
+    font-size: 0.88rem;
     font-weight: 700;
   }
 
@@ -1930,82 +1974,95 @@
     align-items: center;
     gap: 6px;
     background: transparent !important;
-    border: none !important;
+    border: 0 !important;
     box-shadow: none !important;
-    color: #64748b !important;
-    font-size: 0.88rem !important;
+    color: var(--z-color-text-muted, #6b7280) !important;
+    font-size: 0.82rem !important;
     font-weight: 600 !important;
-    padding: 6px 12px !important;
+    padding: 0 !important;
     min-height: auto !important;
     cursor: default !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat i {
-    color: #4f46e5;
-    font-size: 0.94rem;
+    color: var(--z-color-brand-700, #4862c9);
+    font-size: 0.86rem;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat strong {
-    color: #0f172a;
+    color: var(--z-color-text-strong, #1f2937);
     font-weight: 700;
-    font-size: 1.0rem;
+    font-size: 0.96rem;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn {
-    display: flex;
-    min-height: 38px;
+    display: inline-flex !important;
+    min-height: 32px;
     align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    border: 1.5px solid rgba(124, 58, 237, 0.25);
-    border-radius: 999px;
-    background: #ffffff;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--z-color-brand-600, #4f75ff) !important;
+    border-color: var(--z-color-brand-600, #4f75ff) !important;
+    border-radius: 6px !important;
+    background: var(--z-color-brand-600, #4f75ff) !important;
+    background-color: var(--z-color-brand-600, #4f75ff) !important;
+    background-image: none !important;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.88rem;
+    font-family: inherit;
+    font-size: 0.82rem;
     font-weight: 600;
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.22) !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn {
-    color: #7c3aed !important;
+    color: #ffffff !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn_inactive {
-    border-color: rgba(226, 232, 240, 0.8);
-    background: #f8fafc;
-    color: #64748b !important;
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.08) !important;
+    border-color: var(--z-color-brand-600, #4f75ff) !important;
+    background: var(--z-color-brand-600, #4f75ff) !important;
+    background-color: var(--z-color-brand-600, #4f75ff) !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn:hover {
-    transform: translateY(-2px);
-    border-color: #7c3aed;
-    background: #7c3aed;
+    transform: none;
+    border-color: var(--z-color-brand-700, #4862c9) !important;
+    background: var(--z-color-brand-700, #4862c9) !important;
+    background-color: var(--z-color-brand-700, #4862c9) !important;
+    background-image: none !important;
     color: #ffffff !important;
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45) !important;
+    box-shadow: none !important;
   }
   
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn_inactive:hover {
-    border-color: rgba(124, 58, 237, 0.45);
-    background: rgba(124, 58, 237, 0.06);
-    color: #7c3aed !important;
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25) !important;
+    border-color: var(--z-color-brand-700, #4862c9) !important;
+    background: var(--z-color-brand-700, #4862c9) !important;
+    background-color: var(--z-color-brand-700, #4862c9) !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn:not(
       .zrn_planning_production_report_action_btn_inactive
     ) {
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.22) !important;
+    background: var(--z-color-brand-800, #3d53ad) !important;
+    background-color: var(--z-color-brand-800, #3d53ad) !important;
+    background-image: none !important;
+    border-color: var(--z-color-brand-800, #3d53ad) !important;
+    box-shadow: none !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2014,17 +2071,17 @@
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat
     i {
-    color: var(--z-color-brand-700);
-    font-size: 0.95rem;
+    color: #ffffff;
+    font-size: 0.84rem;
     flex: 0 0 auto;
   }
 
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn
     span {
-    color: var(--z-color-text-muted, #6c757d);
-    font-size: 0.78rem;
-    font-weight: 700;
+    color: #ffffff !important;
+    font-size: 0.76rem;
+    font-weight: 600;
     letter-spacing: normal;
     text-transform: none;
     white-space: nowrap;
@@ -2036,16 +2093,46 @@
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat
     strong {
-    color: var(--z-color-text-strong, var(--o-main-text-color, #212529));
-    font-size: 1rem;
+    color: #ffffff;
+    font-size: 0.9rem;
     line-height: 1;
     white-space: nowrap;
   }
 
   .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn:not(
+      .zrn_planning_production_report_action_btn_inactive
+    )
+    span,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn:not(
+      .zrn_planning_production_report_action_btn_inactive
+    )
+    strong,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn:not(
+      .zrn_planning_production_report_action_btn_inactive
+    )
+    i {
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn_inactive
+    span,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn_inactive
+    strong,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_action_btn_inactive
+    i {
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_inline_stat {
     position: relative;
-    min-width: 126px;
+    min-width: 0;
     justify-content: center;
     white-space: nowrap;
     z-index: 4;
@@ -2091,8 +2178,9 @@
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-    min-height: 520px;
-    padding: 10px;
+    min-height: 0;
+    padding: 8px;
+    overflow: hidden;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2200,9 +2288,41 @@
     .zrn_planning_production_report_table_placeholder {
     display: flex;
     width: 100%;
-    min-height: 100%;
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap
+    > .o_field_widget,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap
+    > .o_field_html,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap
+    .note-editable,
+  .o_form_view.zrn_planning_production_report_form
+    .zrn_planning_production_report_html_wrap
+    .note-editor {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    background: transparent;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -3159,6 +3279,7 @@
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
   width: 100%;
   min-width: 100%;
 }
@@ -3166,17 +3287,17 @@
 .zrn_am_report_matrix_wrap {
   display: block;
   flex: 1 1 auto;
-  min-height: 520px;
-  height: 100%;
+  min-height: 0;
+  height: calc(100vh - 245px);
   max-height: 100%;
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: auto;
   border: 1px solid var(--am-border, #e2e8f0);
-  border-radius: 10px;
-  background: #fbfbfd;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: auto;
@@ -3202,7 +3323,7 @@
 
 .zrn_am_report_matrix_wrap::-webkit-scrollbar-thumb {
   background: #8a7897;
-  border-radius: 999px;
+  border-radius: 0;
   border: 2px solid #ece7f1;
 }
 
@@ -3219,6 +3340,8 @@
 }
 
 .zrn_am_report_matrix thead th {
+  position: static !important;
+  z-index: auto;
   text-align: center;
   font-size: 0.78rem;
   font-weight: 700;
@@ -3448,26 +3571,9 @@
 }
 
 /* Sticky vertical table header */
-.zrn_am_report_matrix thead th {
-  position: sticky !important;
-  z-index: 10;
-}
-.zrn_am_report_matrix thead tr:nth-child(1) th {
-  top: 0 !important;
-  z-index: 12;
-}
-.zrn_am_report_matrix thead tr:nth-child(2) th {
-  top: 36px !important;
-  z-index: 12;
-}
-.zrn_am_report_matrix thead tr:nth-child(3) th {
-  top: 72px !important;
-  z-index: 11;
-}
-
-/* Sticky left columns top positioning override when header is sticky */
 .zrn_am_report_matrix thead th.zrn_am_sticky_col,
 .zrn_am_report_matrix thead th.zrn_am_sticky_col_2,
 .zrn_am_report_matrix thead th.zrn_am_sticky_col_3 {
-  z-index: 25 !important;
+  position: sticky !important;
+  z-index: 20 !important;
 }
