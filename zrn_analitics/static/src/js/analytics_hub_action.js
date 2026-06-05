@@ -200,12 +200,28 @@ class ZrnAnalyticsHubAction extends Component {
       channelFilters: cloneDefaultFilters(),
       channelModalRow: null,
       analyticsDetailModal: null,
+      sellinChain: "walmart",
+      rfmFilterSegment: "",
+      rfmFilterAbc: "",
+      rfmFilterSearch: "",
+      bcgFilter: "all",
       sorts: {
         top_products: { column: "sales_amount", order: "desc" },
         coverage_by_channel: { column: "revenue", order: "desc" },
         sku_distribution: { column: "revenue", order: "desc" },
         portfolio_holes: { column: "gap_count", order: "desc" },
         clients_at_risk: { column: "days_since_last", order: "desc" },
+        all_clients: { column: "rev", order: "desc" },
+        rfm_clients: { column: "rev", order: "desc" },
+        market_basket: { column: "lift", order: "desc" },
+        cadence: { column: "rev", order: "desc" },
+        ltv_forecast: { column: "forecast_total_3m", order: "desc" },
+        all_products: { column: "rev", order: "desc" },
+        growers: { column: "trend", order: "desc" },
+        decliners: { column: "trend", order: "asc" },
+        bcg_skus: { column: "r", order: "desc" },
+        sellin_pdv: { column: "sellin_q", order: "desc" },
+        sellin_sku: { column: "sellin_q", order: "desc" },
       },
     });
     onWillStart(async () => {
@@ -307,6 +323,80 @@ class ZrnAnalyticsHubAction extends Component {
     return this.sortData(this.coveragePayload.clients_at_risk || [], sort.column, sort.order);
   }
 
+  get sortedAllClients() {
+    const sort = this.state.sorts.all_clients;
+    return this.sortData(this.commercialPayload?.all_clients || [], sort.column, sort.order);
+  }
+
+  get sortedRfmClients() {
+    const sort = this.state.sorts.rfm_clients;
+    let list = this.commercialPayload?.clients_rfm?.clients || [];
+    if (this.state.rfmFilterSegment) {
+      list = list.filter((c) => c.segment_key === this.state.rfmFilterSegment);
+    }
+    if (this.state.rfmFilterAbc) {
+      list = list.filter((c) => c.abc === this.state.rfmFilterAbc);
+    }
+    if (this.state.rfmFilterSearch) {
+      const q = this.state.rfmFilterSearch.toLowerCase();
+      list = list.filter((c) => c.name.toLowerCase().includes(q));
+    }
+    return this.sortData(list, sort.column, sort.order);
+  }
+
+  get sortedMarketBasket() {
+    const sort = this.state.sorts.market_basket;
+    return this.sortData(this.commercialPayload?.market_basket?.pairs || [], sort.column, sort.order);
+  }
+
+  get sortedCadence() {
+    const sort = this.state.sorts.cadence;
+    return this.sortData(this.commercialPayload?.cadence?.clients || [], sort.column, sort.order);
+  }
+
+  get sortedLtvForecast() {
+    const sort = this.state.sorts.ltv_forecast;
+    return this.sortData(this.commercialPayload?.ltv_forecast?.clients || [], sort.column, sort.order);
+  }
+
+  get sortedAllProducts() {
+    const sort = this.state.sorts.all_products;
+    return this.sortData(this.commercialPayload?.all_products || [], sort.column, sort.order);
+  }
+
+  get sortedGrowers() {
+    const sort = this.state.sorts.growers;
+    return this.sortData(this.commercialPayload?.growers || [], sort.column, sort.order);
+  }
+
+  get sortedDecliners() {
+    const sort = this.state.sorts.decliners;
+    return this.sortData(this.commercialPayload?.decliners || [], sort.column, sort.order);
+  }
+
+  get sortedBcgSkus() {
+    const sort = this.state.sorts.bcg_skus;
+    let list = this.commercialPayload?.bcg_data?.skus || [];
+    if (this.state.bcgFilter && this.state.bcgFilter !== "all") {
+      list = list.filter((s) => s.q === this.state.bcgFilter);
+    }
+    return this.sortData(list, sort.column, sort.order);
+  }
+
+  get sortedSellinPdv() {
+    const sort = this.state.sorts.sellin_pdv;
+    const chain = this.state.sellinChain || "walmart";
+    const data = this.commercialPayload?.sellin_vs_sellout?.[chain] || {};
+    return this.sortData(data.by_pdv || [], sort.column, sort.order);
+  }
+
+  get sortedSellinSku() {
+    const sort = this.state.sorts.sellin_sku;
+    const chain = this.state.sellinChain || "walmart";
+    const data = this.commercialPayload?.sellin_vs_sellout?.[chain] || {};
+    return this.sortData(data.by_sku || [], sort.column, sort.order);
+  }
+
   async setActiveHub(hubKey) {
     this.state.activeHub = hubKey;
     if (hubKey !== "commercial") {
@@ -326,12 +416,12 @@ class ZrnAnalyticsHubAction extends Component {
     this.state.commercialTab = tabKey;
     this.state.channelModalRow = null;
     this.state.analyticsDetailModal = null;
-    if (tabKey === "overview" || tabKey === "portafolio") {
-      await this.loadCommercialPayload();
-    } else if (tabKey === "cobertura") {
+    if (tabKey === "cobertura") {
       await this.loadCoveragePayload();
     } else if (tabKey === "canal") {
       await this.loadChannelPayload();
+    } else {
+      await this.loadCommercialPayload();
     }
     this.queueChartRender();
   }
@@ -1093,6 +1183,9 @@ class ZrnAnalyticsHubAction extends Component {
       this.renderPortfolioBrandsChart();
       this.renderCoverageChannelChart();
       this.renderCoverageSkuChart();
+      this.renderRfmParetoChart();
+      this.renderInsightsCadenceChart();
+      this.renderSellinSelloutChart();
     } catch (error) {
       console.error("ZRN commercial chart error", error);
     }
@@ -1573,6 +1666,198 @@ class ZrnAnalyticsHubAction extends Component {
       return `${this.channelPayload.summary.currency_symbol} ${this.formatMoney(card.value)}`;
     }
     return this.formatCount(card?.value);
+  }
+
+  onRfmFilterSegmentSelect(ev) {
+    this.state.rfmFilterSegment = ev.target.value;
+  }
+
+  onRfmFilterAbcSelect(ev) {
+    this.state.rfmFilterAbc = ev.target.value;
+  }
+
+  onRfmFilterSearchInput(ev) {
+    this.state.rfmFilterSearch = ev.target.value;
+  }
+
+  setBcgFilter(q) {
+    this.state.bcgFilter = q;
+  }
+
+  setSellinChain(chain) {
+    this.state.sellinChain = chain;
+    this.queueChartRender();
+  }
+
+  renderRfmParetoChart() {
+    if (this.state.commercialTab !== "rfm") {
+      return;
+    }
+    const rfm = this.commercialPayload?.clients_rfm || {};
+    const pareto = rfm.pareto || [];
+    if (!pareto.length) {
+      return;
+    }
+    const chart = this.getChart("rfm-pareto");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 600,
+      grid: { top: 30, right: 30, bottom: 40, left: 45, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        formatter: (params) => {
+          const idx = params[0].dataIndex;
+          const pt = pareto[idx];
+          return `Top ${pt.x} clientes (${pt.x_pct}%)<br/>% Rev acum: <b>${pt.cum_pct}%</b>`;
+        }
+      },
+      xAxis: {
+        type: "category",
+        name: "% Clientes",
+        nameLocation: "middle",
+        nameGap: 24,
+        data: pareto.map((p) => `${Math.round(p.x_pct)}%`),
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 10 },
+      },
+      yAxis: {
+        type: "value",
+        min: 0,
+        max: 100,
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", formatter: "{value}%" },
+      },
+      series: [
+        {
+          type: "line",
+          smooth: true,
+          symbol: "none",
+          data: pareto.map((p) => p.cum_pct),
+          lineStyle: { color: "#22c55e", width: 2.5 },
+          areaStyle: {
+            color: new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(34, 197, 94, 0.25)" },
+              { offset: 1, color: "rgba(34, 197, 94, 0.03)" },
+            ]),
+          },
+        }
+      ]
+    });
+  }
+
+  renderInsightsCadenceChart() {
+    if (this.state.commercialTab !== "insights") {
+      return;
+    }
+    const cadence = this.commercialPayload?.cadence || {};
+    const segments = cadence.segments || {};
+    const chart = this.getChart("insights-cadence");
+    if (!chart) {
+      return;
+    }
+    const data = [
+      { value: segments.regular?.count || 0, name: "Regular" },
+      { value: segments.bimensual?.count || 0, name: "Bimensual" },
+      { value: segments.esporádico?.count || 0, name: "Esporádico" },
+      { value: segments.único?.count || 0, name: "Único" },
+    ];
+    chart.setOption({
+      animationDuration: 600,
+      tooltip: {
+        trigger: "item",
+        formatter: "{b}: <b>{c} clientes</b> ({d}%)"
+      },
+      legend: {
+        orient: "horizontal",
+        bottom: 0,
+        left: "center",
+        textStyle: { color: "#5f6b7a", fontSize: 11 }
+      },
+      series: [
+        {
+          type: "pie",
+          radius: ["40%", "70%"],
+          center: ["50%", "45%"],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 6,
+            borderColor: "#fff",
+            borderWidth: 2
+          },
+          label: {
+            show: false,
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: 12,
+              fontWeight: "bold"
+            }
+          },
+          data: data,
+          color: ["#16a34a", "#2563eb", "#eab308", "#64748b"]
+        }
+      ]
+    });
+  }
+
+  renderSellinSelloutChart() {
+    if (this.state.commercialTab !== "gap") {
+      return;
+    }
+    const chain = this.state.sellinChain || "walmart";
+    const data = this.commercialPayload?.sellin_vs_sellout?.[chain] || {};
+    const byMonth = data.by_month || [];
+    if (!byMonth.length) {
+      return;
+    }
+    const chart = this.getChart("sellin-sellout");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 600,
+      grid: { top: 35, right: 20, bottom: 25, left: 35, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        valueFormatter: (value) =>
+          `${this.commercialPayload.summary.currency_symbol} ${this.formatMoney(value)}`
+      },
+      legend: {
+        data: ["Sell-in (Facturado)", "Sell-out (Simulado)"],
+        textStyle: { color: "#5f6b7a" }
+      },
+      xAxis: {
+        type: "category",
+        data: byMonth.map((m) => m.label),
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a" },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", formatter: (val) => this.formatMoney(val) },
+      },
+      series: [
+        {
+          name: "Sell-in (Facturado)",
+          type: "bar",
+          data: byMonth.map((m) => m.sellin_q),
+          color: "#2563eb",
+          barMaxWidth: 24,
+        },
+        {
+          name: "Sell-out (Simulado)",
+          type: "bar",
+          data: byMonth.map((m) => m.sellout_q),
+          color: "#16a34a",
+          barMaxWidth: 24,
+        }
+      ]
+    });
   }
 }
 
