@@ -29,4 +29,19 @@
             </t>
         </xpath>
     </t>
+
+    <t t-name="zrn_planning.PurchaseReportFormView" t-inherit="web.FormView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="inside">
+            <t t-set-slot="control-panel-navigation-additional">
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    t-on-click="createSupplyPlan"
+                >
+                    <i class="fa fa-shopping-cart me-1"/>
+                    Comprar
+                </button>
+            </t>
+        </xpath>
+    </t>
 </templates>

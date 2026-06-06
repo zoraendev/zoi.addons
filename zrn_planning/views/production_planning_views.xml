@@ -290,8 +290,8 @@
     </record>
 
     <record id="view_zrn_planning_mfg_plan_tree" model="ir.ui.view">
-        <field name="name">zrn_prodigyn.mfg.plan.tree</field>
-        <field name="model">zrn_prodigyn.mfg.plan</field>
+        <field name="name">zrn_planning.mfg.plan.tree</field>
+        <field name="model">zrn_planning.mfg.plan</field>
         <field name="arch" type="xml">
             <tree string="Planings de fabricacion" create="0" delete="0" import="0">
                 <field name="name"/>
@@ -325,8 +325,8 @@
     </record>
 
     <record id="view_zrn_planning_mfg_plan_line_form_modal" model="ir.ui.view">
-        <field name="name">zrn_prodigyn.mfg.plan.line.form.modal</field>
-        <field name="model">zrn_prodigyn.mfg.plan.line</field>
+        <field name="name">zrn_planning.mfg.plan.line.form.modal</field>
+        <field name="model">zrn_planning.mfg.plan.line</field>
         <field name="arch" type="xml">
             <form string="Lineas del plan" create="0" edit="0" delete="0" duplicate="0" class="zrn_planning_mfg_plan_line_modal">
                 <sheet>
@@ -391,17 +391,50 @@
     </record>
 
     <record id="view_zrn_planning_mfg_plan_form" model="ir.ui.view">
-        <field name="name">zrn_prodigyn.mfg.plan.form</field>
-        <field name="model">zrn_prodigyn.mfg.plan</field>
+        <field name="name">zrn_planning.mfg.plan.form</field>
+        <field name="model">zrn_planning.mfg.plan</field>
         <field name="arch" type="xml">
             <form string="Planning de fabricacion" create="0" duplicate="0">
                 <header>
                     <button
+                        name="action_set_pending_plan"
+                        type="object"
+                        string="Pendiente"
+                        icon="fa-hourglass-half"
+                        class="btn btn-primary"
+                        invisible="state != 'draft'"
+                    />
+                    <button
                         name="action_confirm_plan"
                         type="object"
-                        string="Confirmar planning"
+                        string="Confirmar"
+                        icon="fa-check-circle"
                         class="btn btn-primary"
-                        invisible="state not in ('draft', 'pending_confirmation')"
+                        invisible="state != 'pending_confirmation'"
+                    />
+                    <button
+                        name="action_release_plan"
+                        type="object"
+                        string="Liberar"
+                        icon="fa-play-circle"
+                        class="btn btn-primary"
+                        invisible="state != 'approved'"
+                    />
+                    <button
+                        name="action_done_plan"
+                        type="object"
+                        string="Finalizar"
+                        icon="fa-flag-checkered"
+                        class="btn btn-primary"
+                        invisible="state != 'released'"
+                    />
+                    <button
+                        name="action_cancel_plan"
+                        type="object"
+                        string="Cancelar"
+                        icon="fa-times-circle"
+                        class="btn btn-danger"
+                        invisible="state not in ('pending_confirmation', 'approved')"
                     />
                     <field name="state" widget="statusbar" statusbar_visible="draft,pending_confirmation,approved,released,done,cancel"/>
                 </header>
@@ -900,7 +933,7 @@
                     </group>
                     <div class="zrn_planning_create_plan_modal">
                         <div class="zrn_planning_create_plan_modal_summary">
-                            <div class="zrn_planning_create_plan_modal_summary_item">
+                            <div class="zrn_planning_create_plan_modal_summary_item zrn_planning_create_plan_modal_summary_item_range">
                                 <span>Rango:</span>
                                 <strong><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
                             </div>

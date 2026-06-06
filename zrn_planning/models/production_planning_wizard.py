@@ -66,7 +66,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
         readonly=True,
     )
     planning_record_ids = fields.Many2many(
-        'zrn_prodigyn.mfg.plan',
+        'zrn_planning.mfg.plan',
         string='Planings creados',
         compute='_compute_planning_record_ids',
         readonly=True,
@@ -229,26 +229,33 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
 
     def _compute_planning_record_ids(self):
         for wizard in self:
-            domain = [('company_id', '=', self.env.company.id)]
-            plans = self.env['zrn_prodigyn.mfg.plan'].search(
+            domain = [
+                ('company_id', '=', self.env.company.id),
+                ('line_ids.supply_ids', '=', False),
+            ]
+            plans = self.env['zrn_planning.mfg.plan'].search(
                 domain,
                 order='create_date desc, id desc',
                 limit=15,
             )
-            wizard.planning_record_count = self.env['zrn_prodigyn.mfg.plan'].search_count(domain)
+            wizard.planning_record_count = self.env['zrn_planning.mfg.plan'].search_count(domain)
             wizard.planning_record_ids = [(6, 0, plans.ids)]
 
     def action_open_existing_plans(self):
         self.ensure_one()
         tree_view = self.env.ref('zrn_planning.view_zrn_planning_mfg_plan_tree')
         form_view = self.env.ref('zrn_planning.view_zrn_planning_mfg_plan_form')
+        domain = [
+            ('company_id', '=', self.env.company.id),
+            ('line_ids.supply_ids', '=', False),
+        ]
         return {
             'type': 'ir.actions.act_window',
             'name': 'Planings de fabricacion creados',
-            'res_model': 'zrn_prodigyn.mfg.plan',
+            'res_model': 'zrn_planning.mfg.plan',
             'view_mode': 'tree,form',
             'views': [(tree_view.id, 'tree'), (form_view.id, 'form')],
-            'domain': [('company_id', '=', self.env.company.id)],
+            'domain': domain,
             'context': {
                 'search_default_active': 1,
                 'create': False,
@@ -572,7 +579,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
         date_end = self.fecha_entrega_hasta or max(
             self.report_product_line_ids.mapped('last_delivery_date') or [False]
         )
-        plan = self.env['zrn_prodigyn.mfg.plan'].create({
+        plan = self.env['zrn_planning.mfg.plan'].create({
             'name': plan_name or (_('Planning de fabricacion %s') % fields.Date.today().strftime('%d/%m/%Y')),
             'company_id': self.env.company.id,
             'warehouse_id': warehouse.id if warehouse else False,
@@ -614,7 +621,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
                 'state': 'draft',
             })
         if line_values:
-            self.env['zrn_prodigyn.mfg.plan.line'].create(line_values)
+            self.env['zrn_planning.mfg.plan.line'].create(line_values)
 
         source_values = []
         for order_line in self.report_order_line_ids.sorted(
@@ -634,7 +641,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
                 'source_state': order_line.state_label or order_line.state or '',
             })
         if source_values:
-            self.env['zrn_prodigyn.mfg.plan.source'].create(source_values)
+            self.env['zrn_planning.mfg.plan.source'].create(source_values)
 
         self.pending_plan_state = target_state
 
@@ -645,7 +652,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
         return {
             'type': 'ir.actions.act_window',
             'name': _('Planning de fabricacion'),
-            'res_model': 'zrn_prodigyn.mfg.plan',
+            'res_model': 'zrn_planning.mfg.plan',
             'res_id': plan.id,
             'view_mode': 'form',
             'view_id': form_view.id,

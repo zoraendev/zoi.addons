@@ -4,10 +4,11 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
-class ZrnProdigynMfgPlan(models.Model):
-    _name = 'zrn_prodigyn.mfg.plan'
+class ZrnPlanningMfgPlan(models.Model):
+    _name = 'zrn_planning.mfg.plan'
     _description = 'Plan maestro de fabricacion y abastecimiento'
     _order = 'date_start desc, id desc'
+    _table = 'zrn_prodigyn_mfg_plan'
 
     name = fields.Char(
         string='Nombre',
@@ -60,12 +61,12 @@ class ZrnProdigynMfgPlan(models.Model):
     released_at = fields.Datetime(string='Liberado el')
     released_by = fields.Many2one('res.users', string='Liberado por')
     line_ids = fields.One2many(
-        'zrn_prodigyn.mfg.plan.line',
+        'zrn_planning.mfg.plan.line',
         'plan_id',
         string='Lineas del plan',
     )
     source_ids = fields.One2many(
-        'zrn_prodigyn.mfg.plan.source',
+        'zrn_planning.mfg.plan.source',
         'plan_id',
         string='Origenes del plan',
     )
@@ -111,9 +112,7 @@ class ZrnProdigynMfgPlan(models.Model):
 
         for plan in self:
             for line in plan.line_ids:
-                if line.production_ids:
-                    continue
-                if not line.product_id:
+                if line.production_ids or not line.product_id:
                     continue
 
                 bom = line.bom_id
@@ -236,13 +235,14 @@ class ZrnProdigynMfgPlan(models.Model):
         return True
 
 
-class ZrnProdigynMfgPlanLine(models.Model):
-    _name = 'zrn_prodigyn.mfg.plan.line'
+class ZrnPlanningMfgPlanLine(models.Model):
+    _name = 'zrn_planning.mfg.plan.line'
     _description = 'Linea del plan maestro de fabricacion'
     _order = 'production_date asc, sequence asc, id asc'
+    _table = 'zrn_prodigyn_mfg_plan_line'
 
     plan_id = fields.Many2one(
-        'zrn_prodigyn.mfg.plan',
+        'zrn_planning.mfg.plan',
         string='Plan',
         required=True,
         ondelete='cascade',
@@ -294,7 +294,7 @@ class ZrnProdigynMfgPlanLine(models.Model):
     )
     notes = fields.Text(string='Notas')
     supply_ids = fields.One2many(
-        'zrn_prodigyn.mfg.plan.supply',
+        'zrn_planning.mfg.plan.supply',
         'plan_line_id',
         string='Insumos',
     )
@@ -322,13 +322,14 @@ class ZrnProdigynMfgPlanLine(models.Model):
             line.production_count = len(line.production_ids)
 
 
-class ZrnProdigynMfgPlanSupply(models.Model):
-    _name = 'zrn_prodigyn.mfg.plan.supply'
+class ZrnPlanningMfgPlanSupply(models.Model):
+    _name = 'zrn_planning.mfg.plan.supply'
     _description = 'Insumo requerido por una linea de plan maestro'
     _order = 'component_id, id'
+    _table = 'zrn_prodigyn_mfg_plan_supply'
 
     plan_line_id = fields.Many2one(
-        'zrn_prodigyn.mfg.plan.line',
+        'zrn_planning.mfg.plan.line',
         string='Linea del plan',
         required=True,
         ondelete='cascade',
@@ -365,13 +366,14 @@ class ZrnProdigynMfgPlanSupply(models.Model):
     )
 
 
-class ZrnProdigynMfgPlanSource(models.Model):
-    _name = 'zrn_prodigyn.mfg.plan.source'
+class ZrnPlanningMfgPlanSource(models.Model):
+    _name = 'zrn_planning.mfg.plan.source'
     _description = 'Documento origen del plan maestro'
     _order = 'source_date asc, id asc'
+    _table = 'zrn_prodigyn_mfg_plan_source'
 
     plan_id = fields.Many2one(
-        'zrn_prodigyn.mfg.plan',
+        'zrn_planning.mfg.plan',
         string='Plan',
         required=True,
         ondelete='cascade',
@@ -388,14 +390,14 @@ class MrpProduction(models.Model):
     _inherit = 'mrp.production'
 
     zrn_prodigyn_plan_id = fields.Many2one(
-        'zrn_prodigyn.mfg.plan',
-        string='Planning Prodigyn',
+        'zrn_planning.mfg.plan',
+        string='Planning Zoraen',
         readonly=True,
         copy=False,
     )
     zrn_prodigyn_plan_line_id = fields.Many2one(
-        'zrn_prodigyn.mfg.plan.line',
-        string='Linea de planning Prodigyn',
+        'zrn_planning.mfg.plan.line',
+        string='Linea de planning Zoraen',
         readonly=True,
         copy=False,
     )

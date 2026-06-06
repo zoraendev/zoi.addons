@@ -24,6 +24,16 @@ class ZrnProdigynNavigationMixin:
         action_data['target'] = 'main'
         return action_data
 
+    def _open_first_available_action(self, *action_xmlids):
+        self.ensure_one()
+        for action_xmlid in action_xmlids:
+            action = self.env.ref(action_xmlid, raise_if_not_found=False)
+            if action:
+                action_data = action.read()[0]
+                action_data['target'] = 'main'
+                return action_data
+        raise UserError('No se encontro la accion configurada para esta pantalla.')
+
     def action_open_home(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_inicio')
 
@@ -34,13 +44,22 @@ class ZrnProdigynNavigationMixin:
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_commercial_planning')
 
     def action_open_button_3(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_production_planning')
+        return self._open_first_available_action(
+            'zrn_planning.action_zrn_planning_production_planning',
+            'zrn_prodigyn.action_zrn_prodigyn_production_planning',
+        )
 
     def action_open_button_4(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_purchase_planning')
+        return self._open_first_available_action(
+            'zrn_planning.action_zrn_planning_purchase_planning',
+            'zrn_prodigyn.action_zrn_prodigyn_purchase_planning',
+        )
 
     def action_open_button_5(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_delivery_planning')
+        return self._open_first_available_action(
+            'zrn_planning.action_zrn_planning_delivery_planning',
+            'zrn_prodigyn.action_zrn_prodigyn_delivery_planning',
+        )
 
     def action_open_reporting_center(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_reporting_analysis')
@@ -309,13 +328,22 @@ class ZrnProdigynInicio(ZrnProdigynNavigationMixin, models.Model):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_commercial_planning')
 
     def action_open_production_planning(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_production_planning')
+        return self._open_first_available_action(
+            'zrn_planning.action_zrn_planning_production_planning',
+            'zrn_prodigyn.action_zrn_prodigyn_production_planning',
+        )
 
     def action_open_supply_planning(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_purchase_planning')
+        return self._open_first_available_action(
+            'zrn_planning.action_zrn_planning_purchase_planning',
+            'zrn_prodigyn.action_zrn_prodigyn_purchase_planning',
+        )
 
     def action_open_logistics_planning(self):
-        return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_delivery_planning')
+        return self._open_first_available_action(
+            'zrn_planning.action_zrn_planning_delivery_planning',
+            'zrn_prodigyn.action_zrn_prodigyn_delivery_planning',
+        )
 
     def action_open_resource_planning(self):
         return self._open_singleton_action('zrn_prodigyn.action_zrn_prodigyn_resource_planning')
@@ -345,12 +373,18 @@ class ZrnProdigynProductionPlanning(ZrnProdigynNavigationMixin, models.Model):
 
     def action_open_sale_order_filters(self):
         self.ensure_one()
-        wizard = self.env['zrn_prodigyn.production.planning.wizard'].create({})
+        wizard_model = 'zrn_planning.production.planning.wizard'
+        if wizard_model not in self.env:
+            wizard_model = 'zrn_prodigyn.production.planning.wizard'
+        wizard = self.env[wizard_model].create({})
         return wizard.action_open_filters()
 
     def action_open_supply_filters(self):
         self.ensure_one()
-        wizard = self.env['zrn_prodigyn.purchase.planning.wizard'].create({})
+        wizard_model = 'zrn_planning.purchase.planning.wizard'
+        if wizard_model not in self.env:
+            wizard_model = 'zrn_prodigyn.purchase.planning.wizard'
+        wizard = self.env[wizard_model].create({})
         return wizard.action_open_filters()
 
 

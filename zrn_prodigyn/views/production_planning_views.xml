@@ -406,11 +406,44 @@
             <form string="Planning de fabricacion" create="0" duplicate="0">
                 <header>
                     <button
+                        name="action_set_pending_plan"
+                        type="object"
+                        string="Pendiente"
+                        icon="fa-hourglass-half"
+                        class="btn btn-primary"
+                        invisible="state != 'draft'"
+                    />
+                    <button
                         name="action_confirm_plan"
                         type="object"
-                        string="Confirmar planning"
+                        string="Confirmar"
+                        icon="fa-check-circle"
                         class="btn btn-primary"
-                        invisible="state not in ('draft', 'pending_confirmation')"
+                        invisible="state != 'pending_confirmation'"
+                    />
+                    <button
+                        name="action_release_plan"
+                        type="object"
+                        string="Liberar"
+                        icon="fa-play-circle"
+                        class="btn btn-primary"
+                        invisible="state != 'approved'"
+                    />
+                    <button
+                        name="action_done_plan"
+                        type="object"
+                        string="Finalizar"
+                        icon="fa-flag-checkered"
+                        class="btn btn-primary"
+                        invisible="state != 'released'"
+                    />
+                    <button
+                        name="action_cancel_plan"
+                        type="object"
+                        string="Cancelar"
+                        icon="fa-times-circle"
+                        class="btn btn-danger"
+                        invisible="state not in ('pending_confirmation', 'approved')"
                     />
                     <field name="state" widget="statusbar" statusbar_visible="draft,pending_confirmation,approved,released,done,cancel"/>
                 </header>

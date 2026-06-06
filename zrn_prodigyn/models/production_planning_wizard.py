@@ -228,8 +228,12 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         self._compute_filter_data()
 
     def _compute_planning_record_ids(self):
+        domain = [
+            ('company_id', '=', self.env.company.id),
+            ('planning_basis', '!=', 'mixed'),
+        ]
         plans = self.env['zrn_prodigyn.mfg.plan'].search(
-            [('company_id', '=', self.env.company.id)],
+            domain,
             order='date_start desc, id desc',
         )
         for wizard in self:
@@ -240,13 +244,17 @@ class ZrnProdigynProductionPlanningWizard(models.TransientModel):
         self.ensure_one()
         tree_view = self.env.ref('zrn_prodigyn.view_zrn_prodigyn_mfg_plan_tree')
         form_view = self.env.ref('zrn_prodigyn.view_zrn_prodigyn_mfg_plan_form')
+        domain = [
+            ('company_id', '=', self.env.company.id),
+            ('planning_basis', '!=', 'mixed'),
+        ]
         return {
             'type': 'ir.actions.act_window',
             'name': 'Planings de fabricacion creados',
             'res_model': 'zrn_prodigyn.mfg.plan',
             'view_mode': 'tree,form',
             'views': [(tree_view.id, 'tree'), (form_view.id, 'form')],
-            'domain': [('company_id', '=', self.env.company.id)],
+            'domain': domain,
             'context': {
                 'search_default_active': 1,
                 'create': False,

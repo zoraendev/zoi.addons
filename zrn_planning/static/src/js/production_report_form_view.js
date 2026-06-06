@@ -43,10 +43,31 @@ class ZrnPlanningProductionManufactureFormController extends FormController {
   }
 }
 
+class ZrnPlanningPurchaseReportFormController extends FormController {
+  setup() {
+    super.setup();
+    this.orm = useService("orm");
+  }
+
+  async createSupplyPlan() {
+    if (!this.model.root.resId) {
+      return;
+    }
+    const action = await this.orm.call(
+      this.props.resModel,
+      "action_open_create_supply_plan_modal",
+      [[this.model.root.resId]],
+    );
+    await this.actionService.doAction(action);
+  }
+}
+
 ZrnPlanningProductionReportFormController.template =
   "zrn_planning.ProductionReportFormView";
 ZrnPlanningProductionManufactureFormController.template =
   "zrn_planning.ProductionManufactureFormView";
+ZrnPlanningPurchaseReportFormController.template =
+  "zrn_planning.PurchaseReportFormView";
 
 registry.category("views").add("zrn_planning_production_report_form", {
   ...formView,
@@ -56,4 +77,9 @@ registry.category("views").add("zrn_planning_production_report_form", {
 registry.category("views").add("zrn_planning_production_manufacture_form", {
   ...formView,
   Controller: ZrnPlanningProductionManufactureFormController,
+});
+
+registry.category("views").add("zrn_planning_purchase_report_form", {
+  ...formView,
+  Controller: ZrnPlanningPurchaseReportFormController,
 });

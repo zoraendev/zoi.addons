@@ -80,7 +80,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         readonly=True,
     )
     planning_record_ids = fields.Many2many(
-        'zrn_prodigyn.mfg.plan',
+        'zrn_planning.mfg.plan',
         string='Planings creados',
         compute='_compute_planning_record_ids',
         readonly=True,
@@ -424,8 +424,12 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         self._compute_filter_data()
 
     def _compute_planning_record_ids(self):
-        plans = self.env['zrn_prodigyn.mfg.plan'].search(
-            [('company_id', '=', self.env.company.id)],
+        domain = [
+            ('company_id', '=', self.env.company.id),
+            ('line_ids.supply_ids', '!=', False),
+        ]
+        plans = self.env['zrn_planning.mfg.plan'].search(
+            domain,
             order='date_start desc, id desc',
         )
         for wizard in self:
@@ -436,13 +440,17 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         self.ensure_one()
         tree_view = self.env.ref('zrn_planning.view_zrn_planning_mfg_plan_tree')
         form_view = self.env.ref('zrn_planning.view_zrn_planning_mfg_plan_form')
+        domain = [
+            ('company_id', '=', self.env.company.id),
+            ('line_ids.supply_ids', '!=', False),
+        ]
         return {
             'type': 'ir.actions.act_window',
             'name': 'Planings de abastecimiento creados',
-            'res_model': 'zrn_prodigyn.mfg.plan',
+            'res_model': 'zrn_planning.mfg.plan',
             'view_mode': 'tree,form',
             'views': [(tree_view.id, 'tree'), (form_view.id, 'form')],
-            'domain': [('company_id', '=', self.env.company.id)],
+            'domain': domain,
             'context': {'search_default_active': 1},
             'target': 'current',
         }
@@ -810,7 +818,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
 
     def _create_supply_plan(self, target_state='draft', notes=False, plan_name=False):
         """
-        Genera el plan de abastecimiento (zrn_prodigyn.mfg.plan) y sus líneas/orígenes correspondientes
+        Genera el plan de abastecimiento (zrn_planning.mfg.plan) y sus líneas/orígenes correspondientes
         basado en los datos del reporte actual del asistente.
         """
         self.ensure_one()
@@ -832,7 +840,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         )
 
         # Crear el registro principal del plan maestro
-        plan = self.env['zrn_prodigyn.mfg.plan'].create({
+        plan = self.env['zrn_planning.mfg.plan'].create({
             'name': plan_name or (_('Planning de abastecimiento %s') % fields.Date.today().strftime('%d/%m/%Y')),
             'company_id': self.env.company.id,
             'warehouse_id': warehouse.id if warehouse else False,
@@ -878,7 +886,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
             })
 
         # Crear líneas de planificación en la base de datos
-        created_lines = self.env['zrn_prodigyn.mfg.plan.line'].create(line_values)
+        created_lines = self.env['zrn_planning.mfg.plan.line'].create(line_values)
         product_to_line_id = {line.product_id.id: line.id for line in created_lines}
 
         # Agrupar requerimientos de insumos por producto terminado e insumo para crear líneas de supply
@@ -913,7 +921,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
             else:
                 status = 'mixed'
 
-            plan_line = self.env['zrn_prodigyn.mfg.plan.line'].browse(line_id)
+            plan_line = self.env['zrn_planning.mfg.plan.line'].browse(line_id)
             qty_planned = plan_line.qty_planned or 1.0
             qty_per_unit = qty_required / qty_planned if qty_planned else 0.0
 
@@ -929,7 +937,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
             })
 
         if supply_vals:
-            self.env['zrn_prodigyn.mfg.plan.supply'].create(supply_vals)
+            self.env['zrn_planning.mfg.plan.supply'].create(supply_vals)
 
         # Registrar los documentos origen (OFs y OVs) en el plan maestro
         source_values = []
@@ -950,7 +958,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
                 'source_state': doc_line.state_label or doc_line.state or '',
             })
         if source_values:
-            self.env['zrn_prodigyn.mfg.plan.source'].create(source_values)
+            self.env['zrn_planning.mfg.plan.source'].create(source_values)
 
         # Actualizar el estado en el wizard
         self.pending_plan_state = target_state
@@ -965,7 +973,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         return {
             'type': 'ir.actions.act_window',
             'name': _('Planning de abastecimiento'),
-            'res_model': 'zrn_prodigyn.mfg.plan',
+            'res_model': 'zrn_planning.mfg.plan',
             'res_id': plan.id,
             'view_mode': 'form',
             'view_id': form_view.id,

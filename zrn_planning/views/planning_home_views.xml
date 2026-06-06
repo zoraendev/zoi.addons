@@ -148,6 +148,16 @@ action = wizard.action_open_filters()
         </field>
     </record>
 
+    <record id="action_server_open_purchase_wizard" model="ir.actions.server">
+        <field name="name">Abrir planeacion de abastecimiento</field>
+        <field name="model_id" ref="model_zrn_planning_purchase_planning_wizard"/>
+        <field name="state">code</field>
+        <field name="code">
+wizard = env['zrn_planning.purchase.planning.wizard'].create({})
+action = wizard.action_open_filters()
+        </field>
+    </record>
+
     <menuitem
         id="menu_zrn_planning_production"
         name="Produccion"
@@ -161,7 +171,7 @@ action = wizard.action_open_filters()
         name="Abastecimiento"
         parent="menu_zrn_planning_root"
         sequence="30"
-        action="action_zrn_planning_purchase_planning"
+        action="action_server_open_purchase_wizard"
     />
 
     <menuitem
