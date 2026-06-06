@@ -1236,6 +1236,812 @@
                 </div>
             </t>
 
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'cliente'">
+                <section class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_commercial_panel_head">
+                        <span>Ranking completo de clientes / PDVs</span>
+                        <span>Total: <t t-esc="formatCount(commercialPayload.all_clients.length)"/> clientes</span>
+                    </div>
+                    <div class="zrn_analitics_commercial_table_wrap" style="max-height: 600px; overflow-y: auto;">
+                        <table class="zrn_analitics_commercial_table">
+                            <thead>
+                                <tr>
+                                    <th t-on-click="() => this.toggleSort('all_clients', 'name')" style="cursor:pointer">Cliente / PDV <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th t-on-click="() => this.toggleSort('all_clients', 'channel')" style="cursor:pointer">Canal <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th t-on-click="() => this.toggleSort('all_clients', 'rev')" style="cursor:pointer; text-align:right">Facturado <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th t-on-click="() => this.toggleSort('all_clients', 'units')" style="cursor:pointer; text-align:right">Unidades <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th t-on-click="() => this.toggleSort('all_clients', 'invoices')" style="cursor:pointer; text-align:right">Facturas <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th style="text-align:right">Ticket prom.</th>
+                                    <th>Primera compra</th>
+                                    <th>Última compra</th>
+                                    <th t-on-click="() => this.toggleSort('all_clients', 'days_since')" style="cursor:pointer; text-align:right">Días sin facturar <i class="fa fa-sort ms-1 text-muted"/></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="sortedAllClients" t-as="item" t-key="item.id">
+                                    <tr>
+                                        <td><strong><t t-esc="item.name"/></strong></td>
+                                        <td><span class="badge bg-light text-dark"><t t-esc="item.channel"/></span></td>
+                                        <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.rev)"/></td>
+                                        <td style="text-align:right"><t t-esc="formatCount(item.units)"/></td>
+                                        <td style="text-align:right"><t t-esc="formatCount(item.invoices)"/></td>
+                                        <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.rev / item.invoices)"/></td>
+                                        <td><t t-esc="item.first"/></td>
+                                        <td><t t-esc="item.last"/></td>
+                                        <td style="text-align:right; font-weight:600;" t-att-class="item.days_since >= 30 ? 'text-danger' : (item.days_since >= 14 ? 'text-warning' : 'text-success')">
+                                            <t t-esc="item.days_since"/> días
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'rfm'">
+                <style>
+                    .zrn_rfm_heatmap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+                    .zrn_rfm_cell { border-radius: 6px; padding: 10px; border: 1px solid #e2e8f0; text-align: center; }
+                    .zrn_rfm_cell_title { font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; }
+                    .zrn_rfm_cell_count { font-size: 16px; font-weight: 800; color: #1e293b; margin: 2px 0; }
+                    .zrn_rfm_cell_rev { font-size: 11px; color: #64748b; }
+                    
+                    .zrn_rfm_segments_grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 14px; }
+                    .zrn_rfm_segment_card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #fff; }
+                    .zrn_rfm_segment_head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 8px; }
+                    .zrn_rfm_segment_title { font-weight: bold; font-size: 13px; color: #1e293b; }
+                    .zrn_rfm_segment_count { font-size: 11px; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 12px; }
+                    .zrn_rfm_segment_item { display: flex; justify-content: space-between; font-size: 11px; color: #475569; padding: 2px 0; }
+                </style>
+                <section class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_commercial_panel_head">
+                        <span>Matriz RFM + Pareto ABC</span>
+                        <span>Periodo comercial YTD</span>
+                    </div>
+
+                    <!-- KPIs -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-2">
+                            <div class="border rounded p-3 text-center bg-light">
+                                <div class="text-muted small uppercase">Clientes totales</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.clients_rfm.meta.n_clients)"/></h4>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="border rounded p-3 text-center bg-light">
+                                <div class="text-muted small uppercase">Clase A (Pareto)</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.clients_rfm.abc.a_count)"/></h4>
+                                <span class="small text-success"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(commercialPayload.clients_rfm.abc.a_rev)"/></span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="border rounded p-3 text-center bg-light">
+                                <div class="text-muted small uppercase">Champions + Leales</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.clients_rfm.exec.champions_loyal_count)"/></h4>
+                                <span class="small text-muted"><t t-esc="commercialPayload.clients_rfm.exec.champions_loyal_pct"/>% del total</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <div class="border rounded p-3 text-center bg-light">
+                                <div class="text-muted small uppercase">En riesgo</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold text-danger"><t t-esc="formatCount(commercialPayload.clients_rfm.exec.at_risk_count)"/></h4>
+                                <span class="small text-danger"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(commercialPayload.clients_rfm.exec.at_risk_rev)"/></span>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="text-muted small text-center uppercase">Concentración de Ventas</div>
+                                <div class="d-flex justify-content-around mt-2 text-center">
+                                    <div>
+                                        <strong>Top 5</strong>
+                                        <div class="text-dark font-weight-bold"><t t-esc="commercialPayload.clients_rfm.concentration.top5_pct"/>%</div>
+                                    </div>
+                                    <div>
+                                        <strong>Top 10</strong>
+                                        <div class="text-dark font-weight-bold"><t t-esc="commercialPayload.clients_rfm.concentration.top10_pct"/>%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <!-- Heatmap R x F -->
+                        <div class="col-12 col-md-7">
+                            <div class="border rounded p-3 bg-white h-100">
+                                <h6 class="font-weight-bold mb-2">Matriz Recencia × Frecuencia · 4 × 4</h6>
+                                <div class="zrn_rfm_heatmap">
+                                    <t t-foreach="[4,3,2,1]" t-as="r" t-key="r">
+                                        <t t-foreach="[1,2,3,4]" t-as="f" t-key="f">
+                                            <t t-set="cell_key" t-value="r + '-' + f"/>
+                                            <t t-set="cell_data" t-value="commercialPayload.clients_rfm.rf_matrix[cell_key] || {'count':0, 'rev':0.0}"/>
+                                            <div class="zrn_rfm_cell" t-att-style="cell_data.count > 10 ? 'background: #dcfce7; border-color: #86efac;' : (cell_data.count > 0 ? 'background: #f0fdf4; border-color: #bbf7d0;' : 'background: #fafafa; border-color: #f1f5f9;')">
+                                                <div class="zrn_rfm_cell_title">R<t t-esc="r"/>-F<t t-esc="f"/></div>
+                                                <div class="zrn_rfm_cell_count"><t t-esc="formatCount(cell_data.count)"/></div>
+                                                <div class="zrn_rfm_cell_rev"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(cell_data.rev)"/></div>
+                                            </div>
+                                        </t>
+                                    </t>
+                                </div>
+                                <div class="text-muted small mt-2">
+                                    <strong>Recencia:</strong> 4 = compró este mes, 1 = hace >= 3 meses. <strong>Frecuencia:</strong> 4 = 4+ meses activo, 1 = un solo mes con compra.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pareto Curve -->
+                        <div class="col-12 col-md-5">
+                            <div class="border rounded p-3 bg-white h-100">
+                                <h6 class="font-weight-bold mb-2">Curva de Concentración de Pareto ABC</h6>
+                                <div class="zrn_commercial_chart_container" style="height: 200px;">
+                                    <div class="w-100 h-100" data-zrn-chart="rfm-pareto"></div>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-4">
+                                        <div class="border rounded p-2 text-center" style="background: #f0fdf4; border-left: 3px solid #16a34a;">
+                                            <div class="text-muted small">Clase A (80%)</div>
+                                            <strong class="font-weight-bold"><t t-esc="commercialPayload.clients_rfm.abc.a_count"/> pdvs</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="border rounded p-2 text-center" style="background: #fffbeb; border-left: 3px solid #d97706;">
+                                            <div class="text-muted small">Clase B (15%)</div>
+                                            <strong class="font-weight-bold"><t t-esc="commercialPayload.clients_rfm.abc.b_count"/> pdvs</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="border rounded p-2 text-center" style="background: #f8fafc; border-left: 3px solid #64748b;">
+                                            <div class="text-muted small">Clase C (5%)</div>
+                                            <strong class="font-weight-bold"><t t-esc="commercialPayload.clients_rfm.abc.c_count"/> pdvs</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RFM Segments Cards -->
+                    <div class="border rounded p-3 bg-white mb-4">
+                        <h6 class="font-weight-bold mb-3">Segmentación Estratégica RFM (Top 3 clientes por segmento)</h6>
+                        <div class="zrn_rfm_segments_grid">
+                            <t t-foreach="commercialPayload.clients_rfm.segments_order" t-as="seg" t-key="seg.key">
+                                <t t-set="seg_data" t-value="commercialPayload.clients_rfm.segments[seg.key]"/>
+                                <div class="zrn_rfm_segment_card">
+                                    <div class="zrn_rfm_segment_head">
+                                        <span class="zrn_rfm_segment_title"><t t-esc="seg.emoji"/> <t t-esc="seg.name"/></span>
+                                        <span class="zrn_rfm_segment_count"><t t-esc="formatCount(seg_data.count)"/> pdvs (Q<t t-esc="formatMoney(seg_data.rev)"/>)</span>
+                                    </div>
+                                    <div class="zrn_rfm_segment_body">
+                                        <t t-foreach="seg_data.top_clients" t-as="tc" t-key="tc.name">
+                                            <div class="zrn_rfm_segment_item">
+                                                <span class="text-truncate" style="max-width:180px;"><t t-esc="tc.name"/></span>
+                                                <span class="font-weight-bold"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(tc.rev)"/></span>
+                                            </div>
+                                        </t>
+                                        <t t-if="!seg_data.top_clients.length">
+                                            <div class="text-muted small text-center py-2">Sin clientes en este segmento</div>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Client List Table -->
+                    <div class="border rounded p-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="font-weight-bold mb-0">Listado Completo de Segmentación y Pareto</h6>
+                            <div class="d-flex gap-2">
+                                <select class="form-select form-select-sm" style="width: auto;" t-on-change="onRfmFilterSegmentSelect">
+                                    <option value="">Todos los segmentos</option>
+                                    <t t-foreach="commercialPayload.clients_rfm.segments_order" t-as="seg" t-key="seg.key">
+                                        <option t-att-value="seg.key"><t t-esc="seg.name"/></option>
+                                    </t>
+                                </select>
+                                <select class="form-select form-select-sm" style="width: auto;" t-on-change="onRfmFilterAbcSelect">
+                                    <option value="">Todas las clases (ABC)</option>
+                                    <option value="A">Clase A (Venta 80%)</option>
+                                    <option value="B">Clase B (Venta 15%)</option>
+                                    <option value="C">Clase C (Venta 5%)</option>
+                                </select>
+                                <input type="text" class="form-control form-control-sm" placeholder="Buscar cliente..." style="width: 200px;" t-on-input="onRfmFilterSearchInput"/>
+                            </div>
+                        </div>
+                        <div class="zrn_analitics_commercial_table_wrap" style="max-height: 480px; overflow-y: auto;">
+                            <table class="zrn_analitics_commercial_table">
+                                <thead>
+                                    <tr>
+                                        <th t-on-click="() => this.toggleSort('rfm_clients', 'name')" style="cursor:pointer">Cliente / PDV <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('rfm_clients', 'primary_channel')" style="cursor:pointer">Canal <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('rfm_clients', 'rev')" style="cursor:pointer; text-align:right">Venta YTD <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th style="text-align:right">% Participación</th>
+                                        <th t-on-click="() => this.toggleSort('rfm_clients', 'abc')" style="cursor:pointer; text-align:center">Clase ABC <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th style="text-align:center">R</th>
+                                        <th style="text-align:center">F</th>
+                                        <th style="text-align:center">M</th>
+                                        <th>Segmento RFM</th>
+                                        <th>Última Compra</th>
+                                        <th style="text-align:right">Ticket Promedio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="sortedRfmClients" t-as="item" t-key="item.id">
+                                        <tr>
+                                            <td><strong><t t-esc="item.name"/></strong></td>
+                                            <td><span class="badge bg-light text-dark"><t t-esc="item.primary_channel"/></span></td>
+                                            <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.rev)"/></td>
+                                            <td style="text-align:right"><t t-esc="item.share_pct"/>%</td>
+                                            <td style="text-align:center">
+                                                <span t-att-class="item.abc === 'A' ? 'badge bg-success' : (item.abc === 'B' ? 'badge bg-warning' : 'badge bg-secondary')">
+                                                    Clase <t t-esc="item.abc"/>
+                                                </span>
+                                            </td>
+                                            <td style="text-align:center"><t t-esc="item.r_score"/></td>
+                                            <td style="text-align:center"><t t-esc="item.f_score"/></td>
+                                            <td style="text-align:center"><t t-esc="item.m_score"/></td>
+                                            <td><t t-esc="item.segment_emoji"/> <t t-esc="item.segment"/></td>
+                                            <td><t t-esc="item.last_month_label"/></td>
+                                            <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.ticket_avg)"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'insights'">
+                <style>
+                    .zrn_retention_cell { padding: 8px 12px; text-align: center; font-weight: 600; font-size: 11px; border-radius: 4px; }
+                </style>
+                <section class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_commercial_panel_head">
+                        <span>Análisis de Comportamiento del Cliente</span>
+                        <span>Cohortes, Asociación, Recompra y LTV</span>
+                    </div>
+
+                    <!-- 1. COHORT RETENTION -->
+                    <div class="border rounded p-3 bg-white mb-4">
+                        <h6 class="font-weight-bold mb-2">Cohort Retention · % de clientes activos por mes</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mt-2">
+                                <thead>
+                                    <tr class="bg-light text-center">
+                                        <th>Cohorte (1ra Compra)</th>
+                                        <th>Clientes Iniciales</th>
+                                        <t t-foreach="commercialPayload.cohort_retention.months" t-as="m" t-key="m">
+                                            <th>Mes <t t-esc="m_index"/></th>
+                                        </t>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="commercialPayload.cohort_retention.matrix" t-as="cohort" t-key="cohort.cohort">
+                                        <tr class="text-center">
+                                            <td class="bg-light font-weight-bold"><t t-esc="cohort.cohort"/></td>
+                                            <td><strong><t t-esc="formatCount(cohort.size)"/> pdvs</strong></td>
+                                            <t t-foreach="commercialPayload.cohort_retention.months" t-as="m" t-key="m">
+                                                <t t-set="offset_val" t-value="m_index - cohort_index"/>
+                                                <td>
+                                                    <t t-if="offset_val &gt;= 0">
+                                                        <t t-set="cell" t-value="cohort.cells[offset_val]"/>
+                                                        <t t-if="cell">
+                                                            <div class="zrn_retention_cell" t-att-style="cell.retention_pct &gt;= 0.8 ? 'background:#dcfce7; color:#15803d;' : (cell.retention_pct &gt;= 0.5 ? 'background:#fef9c3; color:#a16207;' : 'background:#fee2e2; color:#b91c1c;')">
+                                                                <t t-esc="Math.round(cell.retention_pct * 100)"/>%
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="text-muted">—</span>
+                                                    </t>
+                                                </td>
+                                            </t>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 2. MARKET BASKET -->
+                    <div class="border rounded p-3 bg-white mb-4">
+                        <h6 class="font-weight-bold mb-2">Asociación Market Basket · Productos que se compran juntos</h6>
+                        <div class="zrn_analitics_commercial_table_wrap" style="max-height: 280px; overflow-y: auto;">
+                            <table class="zrn_analitics_commercial_table">
+                                <thead>
+                                    <tr>
+                                        <th t-on-click="() => this.toggleSort('market_basket', 'a')" style="cursor:pointer">Producto A <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('market_basket', 'b')" style="cursor:pointer">Producto B <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('market_basket', 'count')" style="cursor:pointer; text-align:right">Pedidos Co-ocurentes <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th style="text-align:right">Soporte</th>
+                                        <th style="text-align:right">Confianza A → B</th>
+                                        <th style="text-align:right">Confianza B → A</th>
+                                        <th t-on-click="() => this.toggleSort('market_basket', 'lift')" style="cursor:pointer; text-align:right">Correlación (Lift) <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="sortedMarketBasket" t-as="item" t-key="item.a + '-' + item.b">
+                                        <tr>
+                                            <td><strong><t t-esc="item.a"/></strong></td>
+                                            <td><strong><t t-esc="item.b"/></strong></td>
+                                            <td style="text-align:right; font-weight:600;"><t t-esc="formatCount(item.count)"/> facturas</td>
+                                            <td style="text-align:right"><t t-esc="Math.round(item.support * 1000)/10"/>%</td>
+                                            <td style="text-align:right"><t t-esc="Math.round(item.conf_ab * 100)"/>%</td>
+                                            <td style="text-align:right"><t t-esc="Math.round(item.conf_ba * 100)"/>%</td>
+                                            <td style="text-align:right; font-weight:600;" t-att-class="item.lift &gt; 1.2 ? 'text-success' : 'text-muted'">
+                                                <t t-esc="item.lift"/>x
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 3. CADENCIA & FUGADOS -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="border rounded p-3 bg-white h-100">
+                                <h6 class="font-weight-bold mb-2">Cadencia de Recompra</h6>
+                                <div class="zrn_commercial_chart_container" style="height: 180px;">
+                                    <div class="w-100 h-100" data-zrn-chart="insights-cadence"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <div class="border rounded p-3 bg-white h-100">
+                                <h6 class="font-weight-bold mb-2 text-danger">⚠️ Clientes en Riesgo de Fuga</h6>
+                                <div class="zrn_analitics_commercial_table_wrap" style="max-height: 200px; overflow-y: auto;">
+                                    <table class="zrn_analitics_commercial_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Cliente</th>
+                                                <th style="text-align:right">Compras</th>
+                                                <th style="text-align:right">Cadencia Mediana</th>
+                                                <th style="text-align:right">Días inactivo</th>
+                                                <th style="text-align:right">Revenue YTD</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="commercialPayload.cadence.fugados_top" t-as="f" t-key="f.client">
+                                                <tr class="table-danger">
+                                                    <td><strong><t t-esc="f.client"/></strong></td>
+                                                    <td style="text-align:right"><t t-esc="f.n_purchases"/></td>
+                                                    <td style="text-align:right"><t t-esc="f.median_interval"/> días</td>
+                                                    <td style="text-align:right; font-weight:700; color:#b91c1c;"><t t-esc="f.days_since_last"/> días</td>
+                                                    <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(f.rev)"/></td>
+                                                </tr>
+                                            </t>
+                                            <t t-if="!commercialPayload.cadence.fugados_top.length">
+                                                <tr>
+                                                    <td colspan="5" class="text-muted text-center py-3">No hay clientes regulares fugados en el periodo</td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. LTV FORECAST -->
+                    <div class="border rounded p-3 bg-white">
+                        <h6 class="font-weight-bold mb-1">LTV Forecast · Proyección a 3 meses (Clientes A/B)</h6>
+                        <div class="text-muted small mb-2">Proyección lineal en base a los últimos 3 meses observados: <strong><t t-esc="commercialPayload.ltv_forecast.months_observed.join(', ')"/></strong></div>
+                        <div class="zrn_analitics_commercial_table_wrap" style="max-height: 380px; overflow-y: auto;">
+                            <table class="zrn_analitics_commercial_table">
+                                <thead>
+                                    <tr>
+                                        <th t-on-click="() => this.toggleSort('ltv_forecast', 'client')" style="cursor:pointer">Cliente <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th>Clase ABC</th>
+                                        <th style="text-align:right">Promedio Histórico</th>
+                                        <th t-on-click="() => this.toggleSort('ltv_forecast', 'slope')" style="cursor:pointer; text-align:right">Tendencia (pendiente) <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th style="text-align:right"><t t-esc="commercialPayload.ltv_forecast.project_months[0]"/> (M+1)</th>
+                                        <th style="text-align:right"><t t-esc="commercialPayload.ltv_forecast.project_months[1]"/> (M+2)</th>
+                                        <th style="text-align:right"><t t-esc="commercialPayload.ltv_forecast.project_months[2]"/> (M+3)</th>
+                                        <th t-on-click="() => this.toggleSort('ltv_forecast', 'forecast_total_3m')" style="cursor:pointer; text-align:right">Total Proyectado 3m <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="sortedLtvForecast" t-as="item" t-key="item.client">
+                                        <tr>
+                                            <td><strong><t t-esc="item.client"/></strong></td>
+                                            <td style="text-align:center">
+                                                <span t-att-class="item.abc === 'A' ? 'badge bg-success' : 'badge bg-warning'">
+                                                    Clase <t t-esc="item.abc"/>
+                                                </span>
+                                            </td>
+                                            <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.avg_recent)"/></td>
+                                            <td style="text-align:right; font-weight:600;" t-att-class="item.slope &gt; 0 ? 'text-success' : (item.slope &lt; 0 ? 'text-danger' : 'text-muted')">
+                                                <t t-esc="item.slope &gt; 0 ? '+' : ''"/><t t-esc="formatMoney(item.slope)"/>
+                                            </td>
+                                            <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.forecast[0])"/></td>
+                                            <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.forecast[1])"/></td>
+                                            <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.forecast[2])"/></td>
+                                            <td style="text-align:right; font-weight:700; background: #fafafa;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.forecast_total_3m)"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'producto'">
+                <section class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_commercial_panel_head">
+                        <span>Catálogo completo de productos y marcas</span>
+                        <span>Total: <t t-esc="formatCount(commercialPayload.all_products.length)"/> SKUs</span>
+                    </div>
+                    <div class="zrn_analitics_commercial_table_wrap" style="max-height: 600px; overflow-y: auto;">
+                        <table class="zrn_analitics_commercial_table">
+                            <thead>
+                                <tr>
+                                    <th t-on-click="() => this.toggleSort('all_products', 'name')" style="cursor:pointer">Producto <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th t-on-click="() => this.toggleSort('all_products', 'brand')" style="cursor:pointer">Marca <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th>Categoría</th>
+                                    <th t-on-click="() => this.toggleSort('all_products', 'rev')" style="cursor:pointer; text-align:right">Revenue YTD <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th t-on-click="() => this.toggleSort('all_products', 'units')" style="cursor:pointer; text-align:right">Unidades <i class="fa fa-sort ms-1 text-muted"/></th>
+                                    <th style="text-align:right">% Venta</th>
+                                    <th style="text-align:right">Líneas (Pedidos)</th>
+                                    <th style="text-align:right">Canales</th>
+                                    <th style="text-align:right">Precio real prom.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="sortedAllProducts" t-as="item" t-key="item.product_id">
+                                    <tr>
+                                        <td><strong><t t-esc="item.name"/></strong></td>
+                                        <td><t t-esc="item.brand"/></td>
+                                        <td><t t-esc="item.category"/></td>
+                                        <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.rev)"/></td>
+                                        <td style="text-align:right"><t t-esc="formatCount(item.units)"/></td>
+                                        <td style="text-align:right"><t t-esc="Math.round(item.rev / commercialPayload.summary.total_amount * 1000) / 10"/>%</td>
+                                        <td style="text-align:right"><t t-esc="formatCount(item.n_lines)"/></td>
+                                        <td style="text-align:right"><t t-esc="formatCount(item.channels)"/></td>
+                                        <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.avg_unit_price_real)"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'tendencias'">
+                <section class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_commercial_panel_head">
+                        <span>Tendencia y Crecimiento de Ventas</span>
+                        <span>Último mes vs promedio de meses anteriores (unidades/día)</span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 bg-white">
+                                <h6 class="font-weight-bold mb-3 text-success">📈 Productos en Crecimiento (Growers)</h6>
+                                <div class="zrn_analitics_commercial_table_wrap" style="max-height: 480px; overflow-y: auto;">
+                                    <table class="zrn_analitics_commercial_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th style="text-align:right">Pace Histórico/Día</th>
+                                                <th style="text-align:right">Pace Reciente/Día</th>
+                                                <th t-on-click="() => this.toggleSort('growers', 'trend')" style="cursor:pointer; text-align:right">Crecimiento Δ % <i class="fa fa-sort ms-1 text-muted"/></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="sortedGrowers" t-as="g" t-key="g.name">
+                                                <tr>
+                                                    <td><strong><t t-esc="g.name"/></strong></td>
+                                                    <td style="text-align:right"><t t-esc="g.pace_q1_u"/> u/día</td>
+                                                    <td style="text-align:right"><t t-esc="g.pace_abr_u"/> u/día</td>
+                                                    <td style="text-align:right; font-weight:700; color:#16a34a;">
+                                                        +<t t-esc="g.trend"/>%
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 bg-white">
+                                <h6 class="font-weight-bold mb-3 text-danger">📉 Productos en Caída (Decliners)</h6>
+                                <div class="zrn_analitics_commercial_table_wrap" style="max-height: 480px; overflow-y: auto;">
+                                    <table class="zrn_analitics_commercial_table">
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th style="text-align:right">Pace Histórico/Día</th>
+                                                <th style="text-align:right">Pace Reciente/Día</th>
+                                                <th t-on-click="() => this.toggleSort('decliners', 'trend')" style="cursor:pointer; text-align:right">Caída Δ % <i class="fa fa-sort ms-1 text-muted"/></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="sortedDecliners" t-as="d" t-key="d.name">
+                                                <tr>
+                                                    <td><strong><t t-esc="d.name"/></strong></td>
+                                                    <td style="text-align:right"><t t-esc="d.pace_q1_u"/> u/día</td>
+                                                    <td style="text-align:right"><t t-esc="d.pace_abr_u"/> u/día</td>
+                                                    <td style="text-align:right; font-weight:700; color:#b91c1c;">
+                                                        <t t-esc="d.trend"/>%
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'gap'">
+                <section class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_commercial_panel_head">
+                        <span>Sell-in Facturado vs Sell-out Consumidor</span>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm" t-att-class="state.sellinChain === 'walmart' ? 'btn-primary' : 'btn-light'" t-on-click="() => this.setSellinChain('walmart')">Walmart / Paiz</button>
+                            <button type="button" class="btn btn-sm" t-att-class="state.sellinChain === 'puma' ? 'btn-primary' : 'btn-light'" t-on-click="() => this.setSellinChain('puma')">PUMA Super 7</button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <t t-set="chain_payload" t-value="commercialPayload.sellin_vs_sellout[state.sellinChain]"/>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center bg-light">
+                                <div class="text-muted small uppercase">Sell-in Facturado (Venta)</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(chain_payload.summary.sellin_q)"/></h4>
+                                <span class="small text-muted"><t t-esc="formatCount(chain_payload.summary.sellin_u)"/> unidades</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center bg-light">
+                                <div class="text-muted small uppercase">Sell-out Consumidor (Venta)</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(chain_payload.summary.sellout_q)"/></h4>
+                                <span class="small text-muted"><t t-esc="formatCount(chain_payload.summary.sellout_u)"/> unidades</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center bg-light">
+                                <div class="text-muted small uppercase">Sell-through (Desplazamiento)</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold text-success"><t t-esc="chain_payload.summary.sellthrough_q_pct"/>%</h4>
+                                <span class="small text-muted">Venta consumida</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center bg-light">
+                                <div class="text-muted small uppercase">PDVs Activos</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(chain_payload.summary.pdvs_with_data)"/></h4>
+                                <span class="small text-muted">En canal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="border rounded p-3 bg-white mb-4">
+                        <h6 class="font-weight-bold mb-2">Comparativa Mensual de Ventas</h6>
+                        <div class="zrn_commercial_chart_container" style="height: 220px;">
+                            <div class="w-100 h-100" data-zrn-chart="sellin-sellout"></div>
+                        </div>
+                    </div>
+
+                    <!-- Alerts & Accumulators -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 bg-white">
+                                <h6 class="font-weight-bold mb-3 text-danger">⚠️ PDVs con Mayor Acumulación de Stock (Bajo Sell-through)</h6>
+                                <div class="zrn_analitics_commercial_table_wrap" style="max-height: 320px; overflow-y: auto;">
+                                    <table class="zrn_analitics_commercial_table">
+                                        <thead>
+                                            <tr>
+                                                <th t-on-click="() => this.toggleSort('sellin_pdv', 'pdv_name')" style="cursor:pointer">PDV / Sucursal <i class="fa fa-sort ms-1 text-muted"/></th>
+                                                <th t-on-click="() => this.toggleSort('sellin_pdv', 'sellin_q')" style="cursor:pointer; text-align:right">Sell-in Q <i class="fa fa-sort ms-1 text-muted"/></th>
+                                                <th style="text-align:right">Sell-through</th>
+                                                <th style="text-align:right">Excedente (Gap Q)</th>
+                                                <th style="text-align:right">Días Cobertura</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="sortedSellinPdv" t-as="p" t-key="p.store">
+                                                <tr t-att-class="p.sellthrough_pct &lt; 50 ? 'table-warning' : ''">
+                                                    <td><strong><t t-esc="p.pdv_name"/></strong></td>
+                                                    <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(p.sellin_q)"/></td>
+                                                    <td style="text-align:right; font-weight:700;"><t t-esc="p.sellthrough_pct"/>%</td>
+                                                    <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(p.gap_q)"/></td>
+                                                    <td style="text-align:right; font-weight:700;">
+                                                        <t t-if="p.days_of_cover">
+                                                            <t t-esc="p.days_of_cover"/> días
+                                                        </t>
+                                                        <t t-else="">
+                                                            —
+                                                        </t>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 bg-white">
+                                <h6 class="font-weight-bold mb-3">Ranking de Productos por Acumulación</h6>
+                                <div class="zrn_analitics_commercial_table_wrap" style="max-height: 320px; overflow-y: auto;">
+                                    <table class="zrn_analitics_commercial_table">
+                                        <thead>
+                                            <tr>
+                                                <th t-on-click="() => this.toggleSort('sellin_sku', 'sku')" style="cursor:pointer">SKU / Producto <i class="fa fa-sort ms-1 text-muted"/></th>
+                                                <th t-on-click="() => this.toggleSort('sellin_sku', 'sellin_q')" style="cursor:pointer; text-align:right">Sell-in Q <i class="fa fa-sort ms-1 text-muted"/></th>
+                                                <th style="text-align:right">Sell-through</th>
+                                                <th style="text-align:right">Excedente (Gap Q)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="sortedSellinSku" t-as="sku" t-key="sku.sku">
+                                                <tr>
+                                                    <td><strong><t t-esc="sku.sku"/></strong></td>
+                                                    <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(sku.sellin_q)"/></td>
+                                                    <td style="text-align:right; font-weight:700;"><t t-esc="sku.sellthrough_pct"/>%</td>
+                                                    <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(sku.gap_q)"/></td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </t>
+
+            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'bcg'">
+                <style>
+                    .zrn_bcg_plot { position: relative; width: 100%; height: 380px; border-left: 2px solid #475569; border-bottom: 2px solid #475569; margin: 20px 0; background: #fff; }
+                    .zrn_bcg_quadrant { position: absolute; width: 50%; height: 50%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; }
+                    .zrn_bcg_q_star { top: 0; right: 0; background: rgba(234,179,8,0.08); }
+                    .zrn_bcg_q_question { top: 0; left: 0; background: rgba(139,92,246,0.08); }
+                    .zrn_bcg_q_cow { bottom: 0; right: 0; background: rgba(22,163,74,0.08); }
+                    .zrn_bcg_q_dog { bottom: 0; left: 0; background: rgba(239,68,68,0.08); }
+                    
+                    .zrn_bcg_dot { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; color: #fff; cursor: pointer; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+                    .zrn_bcg_dot:hover { transform: scale(1.3); z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+                    .zrn_bcg_dot_star { background: #eab308; color: #1e293b; }
+                    .zrn_bcg_dot_cow { background: #22c55e; }
+                    .zrn_bcg_dot_question { background: #8b5cf6; }
+                    .zrn_bcg_dot_dog { background: #ef4444; }
+
+                    .zrn_bcg_axis_line { position: absolute; border: 1px dashed #94a3b8; }
+                </style>
+                <section class="zrn_analitics_hub_panel">
+                    <div class="zrn_analitics_commercial_panel_head">
+                        <span>Matriz BCG (Growth-Share Matrix)</span>
+                        <span>Mediana Venta YTD: <t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(commercialPayload.bcg_data.mr)"/> · Mediana Margen: <t t-esc="commercialPayload.bcg_data.mm"/>%</span>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center bg-light" style="border-left: 4px solid #eab308 !important;">
+                                <div class="text-muted small uppercase">⭐ Estrellas</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.bcg_data.sum.S.n)"/> SKUs</h4>
+                                <span class="small text-muted">Venta: Q<t t-esc="formatMoney(commercialPayload.bcg_data.sum.S.r)"/> (Mrg <t t-esc="commercialPayload.bcg_data.sum.S.am"/>%)</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center bg-light" style="border-left: 4px solid #22c55e !important;">
+                                <div class="text-muted small uppercase">🐄 Vacas Lecheras</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.bcg_data.sum.C.n)"/> SKUs</h4>
+                                <span class="small text-muted">Venta: Q<t t-esc="formatMoney(commercialPayload.bcg_data.sum.C.r)"/> (Mrg <t t-esc="commercialPayload.bcg_data.sum.C.am"/>%)</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center bg-light" style="border-left: 4px solid #8b5cf6 !important;">
+                                <div class="text-muted small uppercase">❓ Incógnitas</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.bcg_data.sum.I.n)"/> SKUs</h4>
+                                <span class="small text-muted">Venta: Q<t t-esc="formatMoney(commercialPayload.bcg_data.sum.I.r)"/> (Mrg <t t-esc="commercialPayload.bcg_data.sum.I.am"/>%)</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded p-3 text-center bg-light" style="border-left: 4px solid #ef4444 !important;">
+                                <div class="text-muted small uppercase">🐕 Perros</div>
+                                <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.bcg_data.sum.D.n)"/> SKUs</h4>
+                                <span class="small text-muted">Venta: Q<t t-esc="formatMoney(commercialPayload.bcg_data.sum.D.r)"/> (Mrg <t t-esc="commercialPayload.bcg_data.sum.D.am"/>%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border rounded p-3 bg-white mb-4 text-center">
+                        <h6 class="font-weight-bold mb-1">Mapa Estratégico de Posicionamiento de Productos</h6>
+                        <div class="zrn_bcg_plot mx-auto" style="max-width: 900px;">
+                            <div class="zrn_bcg_quadrant zrn_bcg_q_question align-items-start">
+                                <span class="font-weight-bold text-primary">❓ Incógnitas (Alta Utilidad, Baja Participación)</span>
+                            </div>
+                            <div class="zrn_bcg_quadrant zrn_bcg_q_star align-items-end">
+                                <span class="font-weight-bold text-warning" style="color:#b45309 !important;">⭐ Estrellas (Alta Utilidad, Alta Participación)</span>
+                            </div>
+                            <div class="zrn_bcg_quadrant zrn_bcg_q_dog align-items-start justify-content-end">
+                                <span class="font-weight-bold text-danger">🐕 Perros (Baja Utilidad, Baja Participación)</span>
+                            </div>
+                            <div class="zrn_bcg_quadrant zrn_bcg_q_cow align-items-end justify-content-end">
+                                <span class="font-weight-bold text-success">🐄 Vacas (Baja Utilidad, Alta Participación)</span>
+                            </div>
+                            <div class="zrn_bcg_axis_line" style="top: 50%; left: 0; width: 100%;"></div>
+                            <div class="zrn_bcg_axis_line" style="left: 50%; top: 0; height: 100%;"></div>
+                            
+                            <t t-set="medRev" t-value="commercialPayload.bcg_data.mr"/>
+                            <t t-set="medMargin" t-value="commercialPayload.bcg_data.mm"/>
+                            <t t-foreach="commercialPayload.bcg_data.skus" t-as="s" t-key="s.n">
+                                <t t-set="hiVol" t-value="s.q === 'S' || s.q === 'C'"/>
+                                <t t-set="hiMrg" t-value="s.q === 'S' || s.q === 'I'"/>
+                                <t t-set="x_pos" t-value="hiVol ? (55 + Math.min((s.r - medRev) / (medRev * 1.5 || 1), 1) * 35) : (5 + Math.min(s.r / (medRev || 1), 1) * 40)"/>
+                                <t t-set="y_pos" t-value="hiMrg ? (45 - Math.min((s.m - medMargin) / (medMargin * 1.5 || 1), 1) * 35) : (55 + Math.min((medMargin - s.m) / (medMargin || 1), 1) * 35)"/>
+                                
+                                <div class="zrn_bcg_dot"
+                                     t-att-class="s.q === 'S' ? 'zrn_bcg_dot_star' : (s.q === 'C' ? 'zrn_bcg_dot_cow' : (s.q === 'I' ? 'zrn_bcg_dot_question' : 'zrn_bcg_dot_dog'))"
+                                     t-att-style="'left:' + x_pos + '%; top:' + y_pos + '%; width: 18px; height: 18px;'"
+                                     t-att-title="s.n + ' (Venta: Q' + formatMoney(s.r) + ' · Margen: ' + s.m + '%)'">
+                                    •
+                                </div>
+                            </t>
+                            
+                            <span class="position-absolute small text-muted font-weight-bold" style="bottom: -22px; left: 50%; transform: translateX(-50%);">Facturación (Q) →</span>
+                            <span class="position-absolute small text-muted font-weight-bold" style="left: -48px; top: 50%; transform: rotate(-90deg) translate(-50%, -50%); transform-origin: left top;">Margen Bruto (%) →</span>
+                        </div>
+                    </div>
+
+                    <div class="border rounded p-3 bg-white">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="font-weight-bold mb-0">Detalle por Producto SKU</h6>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-dark" t-att-class="state.bcgFilter === 'all' ? 'active' : ''" t-on-click="() => this.setBcgFilter('all')">Todos (<t t-esc="formatCount(commercialPayload.bcg_data.skus.length)"/>)</button>
+                                <button type="button" class="btn btn-sm btn-outline-warning" t-att-class="state.bcgFilter === 'S' ? 'active' : ''" t-on-click="() => this.setBcgFilter('S')">Estrellas (<t t-esc="formatCount(commercialPayload.bcg_data.sum.S.n)"/>)</button>
+                                <button type="button" class="btn btn-sm btn-outline-success" t-att-class="state.bcgFilter === 'C' ? 'active' : ''" t-on-click="() => this.setBcgFilter('C')">Vacas (<t t-esc="formatCount(commercialPayload.bcg_data.sum.C.n)"/>)</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" t-att-class="state.bcgFilter === 'I' ? 'active' : ''" t-on-click="() => this.setBcgFilter('I')">Incógnitas (<t t-esc="formatCount(commercialPayload.bcg_data.sum.I.n)"/>)</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" t-att-class="state.bcgFilter === 'D' ? 'active' : ''" t-on-click="() => this.setBcgFilter('D')">Perros (<t t-esc="formatCount(commercialPayload.bcg_data.sum.D.n)"/>)</button>
+                            </div>
+                        </div>
+                        <div class="zrn_analitics_commercial_table_wrap" style="max-height: 480px; overflow-y: auto;">
+                            <table class="zrn_analitics_commercial_table">
+                                <thead>
+                                    <tr>
+                                        <th t-on-click="() => this.toggleSort('bcg_skus', 'n')" style="cursor:pointer">Producto <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('bcg_skus', 'c')" style="cursor:pointer">Categoría <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('bcg_skus', 'r')" style="cursor:pointer; text-align:right">Venta YTD <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('bcg_skus', 'u')" style="cursor:pointer; text-align:right">Unidades <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('bcg_skus', 'm')" style="cursor:pointer; text-align:right">Margen Bruto % <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th t-on-click="() => this.toggleSort('bcg_skus', 'g')" style="cursor:pointer; text-align:right">Ganancia Bruta Q <i class="fa fa-sort ms-1 text-muted"/></th>
+                                        <th>Cuadrante</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="sortedBcgSkus" t-as="item" t-key="item.n">
+                                        <tr>
+                                            <td><strong><t t-esc="item.n"/></strong></td>
+                                            <td><t t-esc="item.c"/></td>
+                                            <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.r)"/></td>
+                                            <td style="text-align:right"><t t-esc="formatCount(item.u)"/></td>
+                                            <td style="text-align:right; font-weight:600;" t-att-class="item.m &gt;= 0 ? 'text-success' : 'text-danger'"><t t-esc="item.m"/>%</td>
+                                            <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.g)"/></td>
+                                            <td>
+                                                <span t-att-class="item.q === 'S' ? 'badge bg-warning text-dark' : (item.q === 'C' ? 'badge bg-success' : (item.q === 'I' ? 'badge bg-primary' : 'badge bg-danger'))">
+                                                    <t t-esc="item.q === 'S' ? '⭐ Estrella' : (item.q === 'C' ? '🐄 Vaca' : (item.q === 'I' ? '❓ Incógnita' : '🐕 Perro'))"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </t>
+            
             <t t-if="state.analyticsDetailModal">
                 <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeAnalyticsDetailModal"></div>
                 <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">
