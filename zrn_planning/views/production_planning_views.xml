@@ -787,7 +787,7 @@
         <field name="name">zrn_planning.production.planning.wizard.manufacture.form</field>
         <field name="model">zrn_planning.production.planning.wizard</field>
         <field name="arch" type="xml">
-            <form string="Tabla para fabricar" js_class="zrn_planning_production_manufacture_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_planning_production_report_form">
+            <form string="Tabla para fabricar" js_class="zrn_planning_production_manufacture_form" create="0" edit="0" delete="0" duplicate="0" class="zrn_planning_production_report_form zrn_planning_production_manufacture_form">
                 <sheet>
                     <group invisible="1">
                         <field name="report_product_line_ids"/>
@@ -850,16 +850,11 @@
                                          <span>OVs:</span>
                                          <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
                                      </div>
-                                     <div class="zrn_planning_production_report_inline_stat zrn_planning_production_report_inline_stat_passive">
-                                         <i class="fa fa-list-ul"/>
-                                         <span>Lineas:</span>
-                                         <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
-                                     </div>
-                                 </div>
+                                  </div>
                             </div>
                         </div>
                         <div class="zrn_planning_production_report_table_panel">
-                            <div>
+                            <div class="zrn_planning_production_manufacture_table_wrap">
                                 <field name="report_product_line_ids" readonly="1" nolabel="1">
                                     <tree create="0" edit="0" delete="0">
                                         <field name="first_delivery_date"/>
@@ -904,9 +899,27 @@
                         <field name="report_date_to_label"/>
                     </group>
                     <div class="zrn_planning_create_plan_modal">
-                        <div class="zrn_planning_create_plan_modal_head">
-                            <h2>Resumen previo del planning</h2>
-                            <p>El planning se crea solo cuando presionas guardar en esta ventana.</p>
+                        <div class="zrn_planning_create_plan_modal_summary">
+                            <div class="zrn_planning_create_plan_modal_summary_item">
+                                <span>Rango:</span>
+                                <strong><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_planning_create_plan_modal_summary_item">
+                                <span>Clientes:</span>
+                                <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_planning_create_plan_modal_summary_item">
+                                <span>Productos:</span>
+                                <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_planning_create_plan_modal_summary_item">
+                                <span>OVs:</span>
+                                <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_planning_create_plan_modal_summary_item">
+                                <span>Lineas:</span>
+                                <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
+                            </div>
                         </div>
                         <group>
                             <group>
@@ -917,29 +930,6 @@
                                 <field name="notes" placeholder="Notas internas del planning"/>
                             </group>
                         </group>
-                        <div class="zrn_planning_create_plan_modal_stats">
-                            <div class="zrn_planning_create_plan_modal_stat">
-                                <span>Rango consultado</span>
-                                <strong invisible="report_date_range_mode == 'all'"><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
-                                <strong invisible="report_date_range_mode != 'all'"><field name="report_date_range_label" readonly="1" nolabel="1"/></strong>
-                            </div>
-                            <div class="zrn_planning_create_plan_modal_stat">
-                                <span>Clientes</span>
-                                <strong><field name="report_customer_count" readonly="1" nolabel="1"/></strong>
-                            </div>
-                            <div class="zrn_planning_create_plan_modal_stat">
-                                <span>Productos</span>
-                                <strong><field name="report_product_count" readonly="1" nolabel="1"/></strong>
-                            </div>
-                            <div class="zrn_planning_create_plan_modal_stat">
-                                <span>OVs</span>
-                                <strong><field name="report_order_count" readonly="1" nolabel="1"/></strong>
-                            </div>
-                            <div class="zrn_planning_create_plan_modal_stat">
-                                <span>Lineas</span>
-                                <strong><field name="report_row_count" readonly="1" nolabel="1"/></strong>
-                            </div>
-                        </div>
                         <div class="zrn_planning_create_plan_modal_table">
                             <field name="report_product_line_ids" readonly="1" nolabel="1">
                                 <tree create="0" edit="0" delete="0">
