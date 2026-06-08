@@ -374,7 +374,10 @@ class ZrnPlanningMfgPlan(models.Model):
             if not plan.line_ids:
                 raise UserError(_('El planning no tiene lineas para liberar.'))
 
-            plan._create_draft_mrp_productions(mark_released=True)
+            if plan.planning_basis == 'mixed':
+                plan._create_draft_purchase_orders()
+            else:
+                plan._create_draft_mrp_productions(mark_released=True)
             plan.line_ids.filtered(lambda line: line.state not in ('done', 'cancel')).write({
                 'state': 'released',
             })

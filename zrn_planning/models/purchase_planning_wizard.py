@@ -439,7 +439,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
     def action_open_existing_plans(self):
         self.ensure_one()
         tree_view = self.env.ref('zrn_planning.view_zrn_planning_mfg_plan_tree')
-        form_view = self.env.ref('zrn_planning.view_zrn_planning_mfg_plan_form')
+        form_view = self.env.ref('zrn_planning.view_zrn_planning_supply_plan_form')
         domain = [
             ('company_id', '=', self.env.company.id),
             ('line_ids.supply_ids', '!=', False),
@@ -939,8 +939,6 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         if supply_vals:
             self.env['zrn_planning.mfg.plan.supply'].create(supply_vals)
 
-        plan._create_draft_purchase_orders()
-
         # Registrar los documentos origen (OFs y OVs) en el plan maestro
         source_values = []
         for doc_line in self.report_document_line_ids.sorted(
@@ -968,10 +966,13 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         # Si el estado objetivo es 'approved', confirmamos el plan para que genere
         # automáticamente las órdenes de producción en borrador (comportamiento nativo de Prodigyn)
         if target_state == 'approved':
-            plan.action_confirm_plan()
+            plan.write({
+                'approved_at': fields.Datetime.now(),
+                'approved_by': self.env.user.id,
+            })
 
         # Retornar acción para abrir el plan recién creado
-        form_view = self.env.ref('zrn_planning.view_zrn_planning_mfg_plan_form')
+        form_view = self.env.ref('zrn_planning.view_zrn_planning_supply_plan_form')
         return {
             'type': 'ir.actions.act_window',
             'name': _('Planning de abastecimiento'),
