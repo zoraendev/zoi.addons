@@ -1939,28 +1939,28 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6 col-md-3">
                             <div class="border rounded p-3 text-center bg-light" style="border-left: 4px solid #eab308 !important;">
-                                <div class="text-muted small uppercase">⭐ Estrellas</div>
+                                <div class="text-muted small uppercase">Estrellas</div>
                                 <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.bcg_data.sum.S.n)"/> SKUs</h4>
                                 <span class="small text-muted">Venta: Q<t t-esc="formatMoney(commercialPayload.bcg_data.sum.S.r)"/> (Mrg <t t-esc="commercialPayload.bcg_data.sum.S.am"/>%)</span>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="border rounded p-3 text-center bg-light" style="border-left: 4px solid #22c55e !important;">
-                                <div class="text-muted small uppercase">🐄 Vacas Lecheras</div>
+                                <div class="text-muted small uppercase">Vacas Lecheras</div>
                                 <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.bcg_data.sum.C.n)"/> SKUs</h4>
                                 <span class="small text-muted">Venta: Q<t t-esc="formatMoney(commercialPayload.bcg_data.sum.C.r)"/> (Mrg <t t-esc="commercialPayload.bcg_data.sum.C.am"/>%)</span>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="border rounded p-3 text-center bg-light" style="border-left: 4px solid #8b5cf6 !important;">
-                                <div class="text-muted small uppercase">❓ Incógnitas</div>
+                                <div class="text-muted small uppercase">Incógnitas</div>
                                 <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.bcg_data.sum.I.n)"/> SKUs</h4>
                                 <span class="small text-muted">Venta: Q<t t-esc="formatMoney(commercialPayload.bcg_data.sum.I.r)"/> (Mrg <t t-esc="commercialPayload.bcg_data.sum.I.am"/>%)</span>
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="border rounded p-3 text-center bg-light" style="border-left: 4px solid #ef4444 !important;">
-                                <div class="text-muted small uppercase">🐕 Perros</div>
+                                <div class="text-muted small uppercase">Perros</div>
                                 <h4 class="mb-0 mt-1 font-weight-bold"><t t-esc="formatCount(commercialPayload.bcg_data.sum.D.n)"/> SKUs</h4>
                                 <span class="small text-muted">Venta: Q<t t-esc="formatMoney(commercialPayload.bcg_data.sum.D.r)"/> (Mrg <t t-esc="commercialPayload.bcg_data.sum.D.am"/>%)</span>
                             </div>
@@ -1971,16 +1971,16 @@
                         <h6 class="font-weight-bold mb-1">Mapa Estratégico de Posicionamiento de Productos</h6>
                         <div class="zrn_bcg_plot mx-auto" style="max-width: 900px;">
                             <div class="zrn_bcg_quadrant zrn_bcg_q_question align-items-start">
-                                <span class="font-weight-bold text-primary">❓ Incógnitas (Alta Utilidad, Baja Participación)</span>
+                                <span class="font-weight-bold text-primary">Incógnitas (Alta Utilidad, Baja Participación)</span>
                             </div>
                             <div class="zrn_bcg_quadrant zrn_bcg_q_star align-items-end">
-                                <span class="font-weight-bold text-warning" style="color:#b45309 !important;">⭐ Estrellas (Alta Utilidad, Alta Participación)</span>
+                                <span class="font-weight-bold text-warning" style="color:#b45309 !important;">Estrellas (Alta Utilidad, Alta Participación)</span>
                             </div>
                             <div class="zrn_bcg_quadrant zrn_bcg_q_dog align-items-start justify-content-end">
-                                <span class="font-weight-bold text-danger">🐕 Perros (Baja Utilidad, Baja Participación)</span>
+                                <span class="font-weight-bold text-danger">Perros (Baja Utilidad, Baja Participación)</span>
                             </div>
                             <div class="zrn_bcg_quadrant zrn_bcg_q_cow align-items-end justify-content-end">
-                                <span class="font-weight-bold text-success">🐄 Vacas (Baja Utilidad, Alta Participación)</span>
+                                <span class="font-weight-bold text-success">Vacas (Baja Utilidad, Alta Participación)</span>
                             </div>
                             <div class="zrn_bcg_axis_line" style="top: 50%; left: 0; width: 100%;"></div>
                             <div class="zrn_bcg_axis_line" style="left: 50%; top: 0; height: 100%;"></div>
@@ -2041,7 +2041,7 @@
                                             <td style="text-align:right; font-weight:600;"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.g)"/></td>
                                             <td>
                                                 <span t-att-class="item.q === 'S' ? 'badge bg-warning text-dark' : (item.q === 'C' ? 'badge bg-success' : (item.q === 'I' ? 'badge bg-primary' : 'badge bg-danger'))">
-                                                    <t t-esc="item.q === 'S' ? '⭐ Estrella' : (item.q === 'C' ? '🐄 Vaca' : (item.q === 'I' ? '❓ Incógnita' : '🐕 Perro'))"/>
+                                                    <t t-esc="item.q === 'S' ? 'Estrella' : (item.q === 'C' ? 'Vaca' : (item.q === 'I' ? 'Incógnita' : 'Perro'))"/>
                                                 </span>
                                             </td>
                                         </tr>
