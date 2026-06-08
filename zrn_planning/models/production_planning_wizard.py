@@ -291,7 +291,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
 
     def action_back_to_production_planning(self):
         self.ensure_one()
-        action = self.env.ref('zrn_planning.action_zrn_planning_production_planning').read()[0]
+        action = self.env.ref('zrn_planning.action_zrn_planning_home').read()[0]
         action['target'] = 'main'
         return action
 
@@ -564,21 +564,22 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             'target': 'new',
         }
 
-    def _create_mfg_plan(self, target_state='draft', notes=False, plan_name=False):
+    def _create_mfg_plan(self, target_state='draft', notes=False, plan_name=False, planning_line_payload=None):
         self.ensure_one()
         if not self.report_product_line_ids:
             raise UserError(_('No hay datos en la tabla para crear el planning.'))
+
+        planning_line_payload = planning_line_payload or []
+        if not planning_line_payload:
+            raise UserError(_('No hay lineas configuradas para crear el planning.'))
 
         warehouse = self.env['stock.warehouse'].search(
             [('company_id', '=', self.env.company.id)],
             limit=1,
         )
-        date_start = self.fecha_entrega_desde or min(
-            self.report_product_line_ids.mapped('first_delivery_date') or [False]
-        )
-        date_end = self.fecha_entrega_hasta or max(
-            self.report_product_line_ids.mapped('last_delivery_date') or [False]
-        )
+        payload_delivery_dates = [item.get('delivery_date') for item in planning_line_payload if item.get('delivery_date')]
+        date_start = self.fecha_entrega_desde or (min(payload_delivery_dates) if payload_delivery_dates else False)
+        date_end = self.fecha_entrega_hasta or (max(payload_delivery_dates) if payload_delivery_dates else False)
         plan = self.env['zrn_planning.mfg.plan'].create({
             'name': plan_name or (_('Planning de fabricacion %s') % fields.Date.today().strftime('%d/%m/%Y')),
             'company_id': self.env.company.id,
@@ -592,31 +593,41 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
 
         bom_model = self.env['mrp.bom']
         line_values = []
-        for sequence, report_line in enumerate(
-            self.report_product_line_ids.sorted(
-                key=lambda line: (
-                    line.first_delivery_date or fields.Date.today(),
-                    line.product_id.display_name or '',
-                    line.id,
-                )
+        sale_line_ids_for_sources = set()
+        for sequence, line_payload in enumerate(
+            sorted(
+                planning_line_payload,
+                key=lambda item: (
+                    item.get('delivery_date') or fields.Date.today(),
+                    item.get('order_name') or '',
+                    item.get('product_name') or '',
+                    item.get('sale_line_id') or 0,
+                ),
             ),
             start=1,
         ):
-            bom = bom_model.search([('product_id', '=', report_line.product_id.id)], limit=1)
+            sale_line = self.env['sale.order.line'].browse(line_payload['sale_line_id']).exists()
+            if not sale_line:
+                continue
+            product = sale_line.product_id
+            bom = bom_model.search([('product_id', '=', product.id)], limit=1)
             if not bom:
                 bom = bom_model.search(
-                    [('product_tmpl_id', '=', report_line.product_id.product_tmpl_id.id)],
+                    [('product_tmpl_id', '=', product.product_tmpl_id.id)],
                     limit=1,
                 )
-            planned_qty = report_line.suggested_production or report_line.total_units
+            planned_qty = float(line_payload.get('planned_qty') or 0.0)
+            if planned_qty <= 0:
+                continue
+            sale_line_ids_for_sources.add(sale_line.id)
             line_values.append({
                 'plan_id': plan.id,
                 'sequence': sequence * 10,
                 'warehouse_id': warehouse.id if warehouse else False,
-                'product_id': report_line.product_id.id,
+                'product_id': product.id,
                 'bom_id': bom.id if bom else False,
-                'production_date': report_line.first_delivery_date or fields.Date.today(),
-                'delivery_date': report_line.last_delivery_date or report_line.first_delivery_date,
+                'production_date': line_payload.get('production_date') or False,
+                'delivery_date': line_payload.get('delivery_date') or False,
                 'qty_planned': planned_qty,
                 'state': 'draft',
             })
@@ -624,21 +635,32 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             self.env['zrn_planning.mfg.plan.line'].create(line_values)
 
         source_values = []
-        for order_line in self.report_order_line_ids.sorted(
+        source_sale_lines = self.env['sale.order.line'].browse(list(sale_line_ids_for_sources))
+        grouped_orders = {}
+        for sale_line in source_sale_lines.sorted(
             key=lambda line: (
-                line.first_delivery_date or fields.Date.today(),
+                self._get_effective_line_date(line) or fields.Date.today(),
                 line.order_id.name or '',
                 line.id,
             )
         ):
+            grouped_orders.setdefault(sale_line.order_id.id, self.env['sale.order.line'])
+            grouped_orders[sale_line.order_id.id] |= sale_line
+        for order_lines in grouped_orders.values():
+            order = order_lines[0].order_id
+            delivery_dates = [
+                effective_date
+                for effective_date in (self._get_effective_line_date(line) for line in order_lines)
+                if effective_date
+            ]
             source_values.append({
                 'plan_id': plan.id,
                 'source_model': 'sale.order',
-                'source_id': order_line.order_id.id,
-                'source_ref': order_line.order_id.name or '',
-                'customer_id': order_line.customer_id.id,
-                'source_date': order_line.first_delivery_date or order_line.last_delivery_date,
-                'source_state': order_line.state_label or order_line.state or '',
+                'source_id': order.id,
+                'source_ref': order.name or '',
+                'customer_id': (order.partner_shipping_id or order.partner_id).id,
+                'source_date': min(delivery_dates) if delivery_dates else False,
+                'source_state': order.state or '',
             })
         if source_values:
             self.env['zrn_planning.mfg.plan.source'].create(source_values)
@@ -1144,6 +1166,11 @@ class ZrnPlanningProductionPlanningCreatePlanWizard(models.TransientModel):
         related='production_wizard_id.report_row_count',
         readonly=True,
     )
+    planning_line_ids = fields.One2many(
+        'zrn_planning.production.planning.create.plan.wizard.line',
+        'wizard_id',
+        string='Lineas del planning',
+    )
     report_product_line_ids = fields.Many2many(
         'zrn_planning.production.planning.wizard.report.product.line',
         string='Productos del planning',
@@ -1151,10 +1178,55 @@ class ZrnPlanningProductionPlanningCreatePlanWizard(models.TransientModel):
         readonly=True,
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._sync_planning_line_ids()
+        return records
+
     @api.depends('production_wizard_id', 'production_wizard_id.report_product_line_ids')
     def _compute_report_product_line_ids(self):
         for wizard in self:
             wizard.report_product_line_ids = [(6, 0, wizard.production_wizard_id.report_product_line_ids.ids)]
+
+    def _sync_planning_line_ids(self):
+        for wizard in self:
+            wizard.planning_line_ids.unlink()
+            if not wizard.production_wizard_id:
+                continue
+            candidate_lines = wizard.production_wizard_id._search_sale_lines_from_filters(
+                wizard.production_wizard_id._get_filter_values(include_selected=True)
+            )
+            values = []
+            for sequence, sale_line in enumerate(
+                candidate_lines.sorted(
+                    key=lambda line: (
+                        wizard.production_wizard_id._get_effective_line_date(line) or fields.Date.today(),
+                        line.order_id.name or '',
+                        line.product_id.display_name or '',
+                        line.id,
+                    )
+                ),
+                start=1,
+            ):
+                delivery_date = wizard.production_wizard_id._get_effective_line_date(sale_line)
+                planned_qty = max(float(sale_line.product_uom_qty or 0.0) - float(sale_line.qty_delivered or 0.0), 0.0)
+                if planned_qty <= 0:
+                    continue
+                values.append({
+                    'wizard_id': wizard.id,
+                    'sequence': sequence * 10,
+                    'sale_line_id': sale_line.id,
+                    'order_id': sale_line.order_id.id,
+                    'customer_id': (sale_line.order_id.partner_shipping_id or sale_line.order_id.partner_id).id,
+                    'product_id': sale_line.product_id.id,
+                    'default_code': sale_line.product_id.default_code or '',
+                    'line_description': sale_line.name or sale_line.product_id.display_name or '',
+                    'planned_qty': planned_qty,
+                    'delivery_date': delivery_date,
+                })
+            if values:
+                self.env['zrn_planning.production.planning.create.plan.wizard.line'].create(values)
 
     def action_save_plan(self):
         self.ensure_one()
@@ -1162,7 +1234,51 @@ class ZrnPlanningProductionPlanningCreatePlanWizard(models.TransientModel):
             target_state=self.plan_state,
             notes=self.notes or False,
             plan_name=self.plan_name or False,
+            planning_line_payload=[
+                {
+                    'sale_line_id': line.sale_line_id.id,
+                    'order_name': line.order_id.name or '',
+                    'product_name': line.product_id.display_name or '',
+                    'planned_qty': line.planned_qty,
+                    'production_date': line.production_date,
+                    'delivery_date': line.delivery_date,
+                }
+                for line in self.planning_line_ids.sorted(key=lambda item: (item.sequence, item.id))
+            ],
         )
+
+
+class ZrnPlanningProductionPlanningCreatePlanWizardLine(models.TransientModel):
+    _name = 'zrn_planning.production.planning.create.plan.wizard.line'
+    _description = 'Linea operativa para crear planning de fabricacion'
+    _order = 'sequence asc, id asc'
+
+    wizard_id = fields.Many2one(
+        'zrn_planning.production.planning.create.plan.wizard',
+        string='Wizard',
+        required=True,
+        ondelete='cascade',
+    )
+    sequence = fields.Integer(string='Secuencia', default=10)
+    sale_line_id = fields.Many2one('sale.order.line', string='Linea de venta', required=True)
+    order_id = fields.Many2one('sale.order', string='OV', required=True)
+    customer_id = fields.Many2one('res.partner', string='Punto de venta')
+    product_id = fields.Many2one('product.product', string='Producto', required=True)
+    default_code = fields.Char(string='Referencia')
+    line_description = fields.Char(string='Descripcion')
+    planned_qty = fields.Float(string='Cantidad planeada')
+    delivery_date = fields.Date(string='Fecha de entrega')
+    production_deadline = fields.Date(
+        string='Fecha limite OF',
+        compute='_compute_production_deadline',
+        readonly=True,
+    )
+    production_date = fields.Date(string='Inicio OF')
+
+    @api.depends('delivery_date')
+    def _compute_production_deadline(self):
+        for line in self:
+            line.production_deadline = line.delivery_date - timedelta(days=1) if line.delivery_date else False
 
 
 class ZrnPlanningProductionPlanningWizardReportCustomerLine(models.TransientModel):

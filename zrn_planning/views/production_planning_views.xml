@@ -304,6 +304,7 @@
                 <field name="source_count" string="Documentos base"/>
                 <field name="supply_count" string="Insumos"/>
                 <field name="production_count" string="OFs"/>
+                <field name="purchase_count" string="OCs"/>
             </tree>
         </field>
     </record>
@@ -380,6 +381,20 @@
                             <field name="origin"/>
                             <field name="state"/>
                             <field name="product_qty" string="Cantidad"/>
+                        </tree>
+                    </field>
+
+                    <div class="mt-3 mb-2" invisible="purchase_count == 0">
+                        <strong>Lineas de compra</strong>
+                    </div>
+                    <field name="purchase_line_ids" readonly="1" nolabel="1" invisible="purchase_count == 0">
+                        <tree create="0" edit="0" delete="0">
+                            <field name="order_id" string="OC"/>
+                            <field name="product_id" string="Insumo"/>
+                            <field name="product_qty" string="Cantidad"/>
+                            <field name="price_unit"/>
+                            <field name="date_planned" string="Fecha limite"/>
+                            <field name="state"/>
                         </tree>
                     </field>
                 </sheet>
@@ -474,10 +489,11 @@
                                     <field name="state"/>
                                     <field name="supply_count"/>
                                     <field name="production_count"/>
+                                    <field name="purchase_count"/>
                                 </tree>
                             </field>
                         </page>
-                        <page string="Ordenes de fabricacion">
+                        <page string="Ordenes de fabricacion" invisible="planning_basis == 'mixed'">
                             <field name="production_ids" readonly="1">
                                 <tree create="0" delete="0">
                                     <field name="name"/>
@@ -486,6 +502,17 @@
                                     <field name="state"/>
                                     <field name="date_start"/>
                                     <field name="date_deadline"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Ordenes de compra" invisible="planning_basis != 'mixed'">
+                            <field name="purchase_ids" readonly="1">
+                                <tree create="0" delete="0">
+                                    <field name="name"/>
+                                    <field name="partner_id"/>
+                                    <field name="state"/>
+                                    <field name="date_order"/>
+                                    <field name="origin"/>
                                 </tree>
                             </field>
                         </page>
@@ -927,6 +954,7 @@
                     <group invisible="1">
                         <field name="production_wizard_id"/>
                         <field name="report_product_line_ids"/>
+                        <field name="planning_line_ids"/>
                         <field name="report_date_range_mode"/>
                         <field name="report_date_from_label"/>
                         <field name="report_date_to_label"/>
@@ -964,14 +992,16 @@
                             </group>
                         </group>
                         <div class="zrn_planning_create_plan_modal_table">
-                            <field name="report_product_line_ids" readonly="1" nolabel="1">
-                                <tree create="0" edit="0" delete="0">
+                            <field name="planning_line_ids" nolabel="1">
+                                <tree create="0" edit="1" delete="0">
+                                    <field name="order_id" string="OV" readonly="1"/>
                                     <field name="product_id" string="Producto"/>
-                                    <field name="first_delivery_date"/>
-                                    <field name="last_delivery_date"/>
-                                    <field name="total_units" sum="Demanda total"/>
-                                    <field name="stock_free" sum="Stock libre"/>
-                                    <field name="suggested_production" sum="Sugerido fabricar"/>
+                                    <field name="default_code" readonly="1"/>
+                                    <field name="line_description" string="Descripcion" readonly="1"/>
+                                    <field name="planned_qty" sum="Cantidad planeada" readonly="1"/>
+                                    <field name="delivery_date" string="Entrega" readonly="1"/>
+                                    <field name="production_deadline" string="Fecha limite OF" readonly="1"/>
+                                    <field name="production_date" string="Inicio OF"/>
                                 </tree>
                             </field>
                         </div>
@@ -1302,13 +1332,11 @@
 
     <record id="action_zrn_planning_production_planning" model="ir.actions.act_window">
         <field name="name">Planeacion de produccion</field>
-        <field name="res_model">zrn_planning.production.planning</field>
+        <field name="res_model">zrn_planning.home</field>
         <field name="view_mode">form</field>
-        <field name="view_id" ref="view_zrn_planning_production_planning_form"/>
-        <field name="res_id" ref="zrn_planning_production_planning_default"/>
+        <field name="view_id" ref="zrn_planning.view_zrn_planning_home_form"/>
+        <field name="res_id" ref="zrn_planning.zrn_planning_home_default"/>
         <field name="target">current</field>
-        <field name="domain">[('page_key', 'in', ['overview', 'workspace'])]</field>
-        <field name="context" eval="{'active_id': ref('zrn_planning_production_planning_default'), 'active_ids': [ref('zrn_planning_production_planning_default'), ref('zrn_planning_production_planning_secondary_default')]}"/>
     </record>
 
 </odoo>
