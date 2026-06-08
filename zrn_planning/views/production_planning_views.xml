@@ -368,10 +368,10 @@
                         </tree>
                     </field>
 
-                    <div class="mt-3 mb-2">
+                    <div class="mt-3 mb-2" invisible="plan_id.planning_basis == 'mixed'">
                         <strong>Ordenes de fabricacion</strong>
                     </div>
-                    <field name="production_ids" readonly="1" nolabel="1"
+                    <field name="production_ids" readonly="1" nolabel="1" invisible="plan_id.planning_basis == 'mixed'"
                            context="{'form_view_ref': 'zrn_planning.view_zrn_planning_mrp_production_form_modal'}">
                         <tree create="0" edit="0" delete="0">
                             <field name="name" string="Referencia"/>
@@ -384,10 +384,10 @@
                         </tree>
                     </field>
 
-                    <div class="mt-3 mb-2" invisible="purchase_count == 0">
-                        <strong>Lineas de compra</strong>
+                    <div class="mt-3 mb-2" invisible="plan_id.planning_basis != 'mixed' or purchase_count == 0">
+                        <strong>Ordenes de compra</strong>
                     </div>
-                    <field name="purchase_line_ids" readonly="1" nolabel="1" invisible="purchase_count == 0">
+                    <field name="purchase_line_ids" readonly="1" nolabel="1" invisible="plan_id.planning_basis != 'mixed' or purchase_count == 0">
                         <tree create="0" edit="0" delete="0">
                             <field name="order_id" string="OC"/>
                             <field name="product_id" string="Insumo"/>
