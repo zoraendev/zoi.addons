@@ -205,6 +205,7 @@ class ZrnAnalyticsHubAction extends Component {
       rfmFilterAbc: "",
       rfmFilterSearch: "",
       bcgFilter: "all",
+      productChartType: "bar",
       sorts: {
         top_products: { column: "sales_amount", order: "desc" },
         coverage_by_channel: { column: "revenue", order: "desc" },
@@ -1186,6 +1187,7 @@ class ZrnAnalyticsHubAction extends Component {
       this.renderRfmParetoChart();
       this.renderInsightsCadenceChart();
       this.renderSellinSelloutChart();
+      this.renderProductChart();
     } catch (error) {
       console.error("ZRN commercial chart error", error);
     }
@@ -1858,6 +1860,122 @@ class ZrnAnalyticsHubAction extends Component {
         }
       ]
     });
+  }
+
+  setProductChartType(type) {
+    this.state.productChartType = type;
+    this.queueChartRender();
+  }
+
+  renderProductChart() {
+    if (this.state.commercialTab !== "producto") {
+      return;
+    }
+    const products = this.commercialPayload?.all_products || [];
+    if (!products.length) {
+      return;
+    }
+    const chart = this.getChart("product-chart");
+    if (!chart) {
+      return;
+    }
+    // Take top 10 products
+    const top10 = products.slice(0, 10);
+    const chartType = this.state.productChartType || "bar";
+    const symbol = this.commercialPayload.summary?.currency_symbol || "$";
+
+    if (chartType === "pie") {
+      const pieData = top10.map((p) => ({
+        name: p.name,
+        value: p.rev,
+      }));
+      chart.setOption({
+        animationDuration: 600,
+        tooltip: {
+          trigger: "item",
+          formatter: ({ name, value, percent }) =>
+            `${name}<br/>${symbol} ${this.formatMoney(value)}<br/>${percent}% del Top 10`,
+        },
+        legend: {
+          orient: "vertical",
+          right: 10,
+          top: "center",
+          type: "scroll",
+          textStyle: { color: "#5f6b7a", fontSize: 11 },
+        },
+        series: [
+          {
+            type: "pie",
+            radius: ["40%", "70%"],
+            center: ["40%", "50%"],
+            avoidLabelOverlap: true,
+            itemStyle: { borderRadius: 6, borderColor: "#ffffff", borderWidth: 2 },
+            label: { show: false },
+            emphasis: { scale: true, scaleSize: 6 },
+            data: pieData,
+            color: ["#bd1730", "#1f4e8c", "#16a34a", "#eab308", "#64748b", "#3b82f6", "#10b981", "#8b5cf6", "#f43f5e", "#f59e0b"]
+          }
+        ]
+      }, true);
+    } else {
+      // Bar or Line
+      const categories = top10.map((p) => p.name);
+      const data = top10.map((p) => p.rev);
+
+      chart.setOption({
+        animationDuration: 600,
+        grid: { top: 35, right: 30, bottom: 40, left: 55, containLabel: true },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+          valueFormatter: (val) => `${symbol} ${this.formatMoney(val)}`
+        },
+        xAxis: {
+          type: "category",
+          data: categories,
+          axisLine: { lineStyle: { color: "#d6deea" } },
+          axisTick: { show: false },
+          axisLabel: {
+            color: "#5f6b7a",
+            fontSize: 10,
+            interval: 0,
+            rotate: 20,
+            width: 100,
+            overflow: "truncate"
+          },
+        },
+        yAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#edf2f8" } },
+          axisLabel: {
+            color: "#5f6b7a",
+            fontSize: 10,
+            formatter: (val) => this.formatMoney(val)
+          },
+        },
+        series: [
+          {
+            name: "Revenue",
+            type: chartType,
+            data: data,
+            barMaxWidth: 30,
+            smooth: chartType === "line" ? 0.25 : false,
+            symbol: chartType === "line" ? "circle" : "none",
+            symbolSize: 6,
+            itemStyle: {
+              color: "#bd1730",
+              borderRadius: chartType === "bar" ? [4, 4, 0, 0] : [0, 0, 0, 0]
+            },
+            areaStyle: chartType === "line" ? {
+              color: new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: "rgba(189, 23, 48, 0.2)" },
+                { offset: 1, color: "rgba(189, 23, 48, 0.02)" },
+              ]),
+            } : null
+          }
+        ]
+      }, true);
+    }
   }
 }
 

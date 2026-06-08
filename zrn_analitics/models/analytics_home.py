@@ -1145,15 +1145,15 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             return 'hibernating'
 
         RFM_SEGMENT_META = {
-            'champion': {'name': 'Campeón', 'emoji': '🏆'},
-            'loyal': {'name': 'Leal', 'emoji': '💎'},
-            'cant_lose': {'name': 'No perderlo', 'emoji': '🚨'},
-            'at_risk': {'name': 'En riesgo', 'emoji': '⚠️'},
-            'promising': {'name': 'Prometedor', 'emoji': '🚀'},
-            'need_attention': {'name': 'Atender', 'emoji': '👀'},
-            'new': {'name': 'Nuevo', 'emoji': '🌱'},
-            'hibernating': {'name': 'Hibernando', 'emoji': '💤'},
-            'sporadic': {'name': 'Esporádico', 'emoji': '·'}
+            'champion': {'name': 'Campeón', 'emoji': ''},
+            'loyal': {'name': 'Leal', 'emoji': ''},
+            'cant_lose': {'name': 'No perderlo', 'emoji': ''},
+            'at_risk': {'name': 'En riesgo', 'emoji': ''},
+            'promising': {'name': 'Prometedor', 'emoji': ''},
+            'need_attention': {'name': 'Atender', 'emoji': ''},
+            'new': {'name': 'Nuevo', 'emoji': ''},
+            'hibernating': {'name': 'Hibernando', 'emoji': ''},
+            'sporadic': {'name': 'Esporádico', 'emoji': ''}
         }
 
         total_rev_clients = sum(c['rev'] for c in all_clients_raw)
@@ -1522,6 +1522,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             forecast_total = round(f1 + f2 + f3, 2)
             
             ltv_clients.append({
+                'client_id': c['id'],
                 'client': c['name'],
                 'abc': c['abc'],
                 'last_n_rev': [round(r1, 2), round(r2, 2), round(r3, 2)],
@@ -1586,13 +1587,14 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             else:
                 trend = 999.0 if pace_last > 0 else 0.0
                 
+
             prod_trend_info = {
+                'id': p_id,
                 'name': p['name'],
                 'pace_q1_u': round(pace_prev, 2),
                 'pace_abr_u': round(pace_last, 2),
                 'trend': trend
-            }
-            
+            }  
             if trend > 0:
                 growers.append(prod_trend_info)
             elif trend < 0:
@@ -1640,7 +1642,16 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 pdv_data[partner.id]['sellout_q'] += sellout_q
                 pdv_data[partner.id]['sellout_u'] += sellout_u
                 pdv_data[partner.id]['name'] = partner.display_name
+                pdv_data[partner.id]['partner_id'] = partner.id
                 
+                if product.display_name not in sku_data:
+                    sku_data[product.display_name] = {
+                        'sellin_q': 0.0,
+                        'sellin_u': 0.0,
+                        'sellout_q': 0.0,
+                        'sellout_u': 0.0,
+                        'product_id': product.id
+                    }
                 sku_data[product.display_name]['sellin_q'] += amount
                 sku_data[product.display_name]['sellin_u'] += quantity
                 sku_data[product.display_name]['sellout_q'] += sellout_q
@@ -1675,6 +1686,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 
                 by_pdv_list.append({
                     'store': pdv_id,
+                    'partner_id': p_vals.get('partner_id', pdv_id),
                     'pdv_name': p_vals['name'],
                     'sellin_q': round(sellin_q, 2),
                     'sellin_u': round(sellin_u, 2),
@@ -1698,6 +1710,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 sellthrough_pct = round(sellout_q / sellin_q * 100, 1) if sellin_q else 0.0
                 by_sku_list.append({
                     'sku': sku_name,
+                    'product_id': s_vals.get('product_id'),
                     'sellin_q': round(sellin_q, 2),
                     'sellin_u': round(sellin_u, 2),
                     'sellout_q': round(sellout_q, 2),
@@ -1752,6 +1765,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             margin_pct = round((margin_val / rev * 100) if rev else 0.0, 1)
             
             bcg_skus.append({
+                'id': p_id,
                 'n': p['name'],
                 'c': p['category'],
                 'u': p['units'],
