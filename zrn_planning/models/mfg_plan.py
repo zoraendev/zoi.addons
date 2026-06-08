@@ -110,15 +110,21 @@ class ZrnPlanningMfgPlan(models.Model):
         store=False,
     )
 
-    @api.depends('line_ids', 'line_ids.supply_ids', 'line_ids.production_ids', 'source_ids', 'purchase_ids')
+    @api.depends('line_ids', 'line_ids.supply_ids', 'line_ids.production_ids', 'source_ids')
     def _compute_counts(self):
+        has_plan_link = self._column_exists('purchase_order', 'zrn_planning_plan_id')
         for plan in self:
             plan.line_count = len(plan.line_ids)
             plan.source_count = len(plan.source_ids)
             plan.supply_count = len(plan.line_ids.mapped('supply_ids'))
             plan.production_ids = [(6, 0, plan.line_ids.mapped('production_ids').ids)]
             plan.production_count = len(plan.line_ids.mapped('production_ids'))
-            plan.purchase_count = len(plan.purchase_ids)
+            if has_plan_link:
+                plan.purchase_count = self.env['purchase.order'].search_count([
+                    ('zrn_planning_plan_id', '=', plan.id),
+                ])
+            else:
+                plan.purchase_count = 0
 
     @api.model
     def _column_exists(self, table_name, column_name):
@@ -502,12 +508,22 @@ class ZrnPlanningMfgPlanLine(models.Model):
         store=False,
     )
 
-    @api.depends('supply_ids', 'production_ids', 'purchase_line_ids')
+    @api.depends('supply_ids', 'production_ids')
     def _compute_supply_count(self):
+        has_plan_line_link = self.env['zrn_planning.mfg.plan']._column_exists(
+            'purchase_order_line',
+            'zrn_planning_plan_line_id',
+        )
         for line in self:
             line.supply_count = len(line.supply_ids)
             line.production_count = len(line.production_ids)
-            line.purchase_count = len(line.purchase_line_ids.mapped('order_id'))
+            if has_plan_line_link:
+                purchase_lines = self.env['purchase.order.line'].search([
+                    ('zrn_planning_plan_line_id', '=', line.id),
+                ])
+                line.purchase_count = len(purchase_lines.mapped('order_id'))
+            else:
+                line.purchase_count = 0
 
     @api.depends('plan_id')
     def _compute_purchase_links(self):
