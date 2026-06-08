@@ -86,3 +86,27 @@ Para unificar y potenciar la inteligencia de negocio dentro de Odoo sin depender
 *   Se eliminaron gradientes invasivos,cards excesivas y decoraciones innecesarias, prefiriendo la estética sobria y nativa de Odoo.
 *   Se usaron las clases de tabla de Odoo (`o_list_table table-sm table-hover table-striped`) en conjunto con el prefijo `zrn_` para los estilos personalizados del módulo.
 *   Los gráficos se implementaron usando **Apache ECharts** (`window.echarts`), asegurando compatibilidad con el resto del ecosistema de Zoraen Analytics.
+
+---
+
+## Gráfica de Producto y Clics Interactivos de Fila (Junio 2026)
+
+### 1. Contexto del Requerimiento
+Se solicitó añadir interactividad a todas las tablas del Hub Comercial de modo que, al hacer clic en cualquier fila, se despliegue un modal nativo de Odoo con el detalle correspondiente (formulario de Cliente o Producto). Adicionalmente, se solicitó incorporar una gráfica dinámica en la pestaña **"Por Producto"** que permita alternar interactivamente entre diferentes tipos de visualizaciones.
+
+### 2. Cambios Implementados
+
+#### A. Mapeo de IDs e Interactividad en Tablas (`models/analytics_home.py` & `static/src/xml/hubs/hub_commercial.xml`)
+*   Se añadieron campos identificadores (`partner_id` para clientes, `product_id` para productos) en los conjuntos de datos del backend que carecían de ellos, específicamente en las listas de distribución `sellin_vs_sellout` de la pestaña **Desplazamiento**.
+*   Se implementaron manejadores de eventos `t-on-click="() => this.openRecordModal(model, id)"` en los elementos `<tr>` de todas las tablas analíticas del Hub Comercial. Esto redirige la acción al servicio `actionService` de Odoo utilizando el target `new` para abrir el formulario modal nativo en lugar de desviar la navegación.
+
+#### B. Componente de Gráfica Dinámica de Productos (`static/src/js/analytics_hub_action.js`)
+*   Se incorporó el estado `productChartType` en el componente Owl (`ZrnAnalyticsHubAction`) con el valor por defecto `"bar"`.
+*   Se desarrolló el método `renderProductChart()` que extrae el top 10 de productos y genera la configuración de ECharts en base al tipo seleccionado:
+    *   **Barra/Línea**: Configura ejes cartesianos, tooltips formateados con el símbolo de moneda local y barras o líneas suavizadas con gradiente.
+    *   **Rosca (Pie)**: Configura una visualización circular segmentada con leyendas scrolleables para evitar saturación de pantalla.
+*   Se incluyó un selector en la cabecera del panel de productos en el XML para actualizar el estado del gráfico de forma reactiva al hacer clic en los tipos de visualización.
+
+#### C. Remoción de Marcadores y Ajuste de Filtros (`static/src/xml/hubs/hub_commercial.xml`)
+*   Se eliminó el banner genérico de *"Esta vista queda reservada..."* en las pestañas no desarrolladas. En su lugar, ahora se despliega únicamente la barra unificada de **Filtros Comerciales** (`HubCommercialFilters`) para permitir la interacción global y mantener una estructura limpia y homogénea en toda la interfaz.
+*   Se documentó y comentó el código JS de renderizado de ECharts, y los callbacks XML para asegurar mantenibilidad futura.
