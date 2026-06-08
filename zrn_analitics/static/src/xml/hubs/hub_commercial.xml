@@ -21,6 +21,62 @@
         </div>
     </t>
 
+    <t t-name="zrn_analitics.HubCommercialFilters">
+        <section class="zrn_analitics_hub_panel">
+            <div class="zrn_analitics_commercial_panel_head">
+                <span>Filtros comerciales</span>
+                <span>Filtra la información del Hub Comercial</span>
+            </div>
+            <div class="zrn_analitics_commercial_channel_filters">
+                <div class="zrn_analitics_commercial_field">
+                    <label>Periodo</label>
+                    <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.overviewFilters.period_key" onSelect.bind="this.onOverviewPeriodSelect"/>
+                </div>
+                <div class="zrn_analitics_commercial_field">
+                    <label>Marca</label>
+                    <ZrnRelationalMultiSelect
+                        records="getSelectedOptionRecords(commercialPayload.filter_options.brands, state.overviewFilters.brand_ids)"
+                        domain="getOptionDomain(commercialPayload.filter_options.brands)"
+                        resModel="'zrn_commercial.commercial.brand'"
+                        fieldString="'Marca'"
+                        placeholder="'Todas las marcas'"
+                        onChange.bind="this.onOverviewBrandsChange"
+                    />
+                </div>
+                <div class="zrn_analitics_commercial_field">
+                    <label>Categoria</label>
+                    <ZrnRelationalMultiSelect
+                        records="getSelectedOptionRecords(commercialPayload.filter_options.categories, state.overviewFilters.category_ids)"
+                        domain="getOptionDomain(commercialPayload.filter_options.categories)"
+                        resModel="'product.category'"
+                        fieldString="'Categoria'"
+                        placeholder="'Todas las categorias'"
+                        onChange.bind="this.onOverviewCategoriesChange"
+                    />
+                </div>
+                <div class="zrn_analitics_commercial_field">
+                    <label>Canal</label>
+                    <ZrnRelationalMultiSelect
+                        records="getSelectedOptionRecords(commercialPayload.filter_options.channels, state.overviewFilters.channel_ids)"
+                        domain="getOptionDomain(commercialPayload.filter_options.channels)"
+                        resModel="'zrn_commercial.commercial.channel'"
+                        fieldString="'Canal'"
+                        placeholder="'Todos los canales'"
+                        onChange.bind="this.onOverviewChannelsChange"
+                    />
+                </div>
+                <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
+                    <label>Buscar</label>
+                    <input type="text" class="form-control" placeholder="Cliente, PDV, producto o codigo" t-att-value="state.overviewFilters.search" t-on-input="(ev) => this.updateOverviewFilter('search', ev.target.value)" t-on-keydown="this.onOverviewSearchKeydown"/>
+                </div>
+            </div>
+            <div class="zrn_analitics_commercial_channel_actions">
+                <button type="button" class="btn btn-primary" t-on-click="this.applyOverviewFilters">Aplicar</button>
+                <button type="button" class="btn btn-secondary" t-on-click="this.clearOverviewFilters">Limpiar</button>
+            </div>
+        </section>
+    </t>
+
     <t t-name="zrn_analitics.HubCommercial">
         <div class="zrn_analitics_commercial_hub" t-ref="hubRoot">
             <div class="zrn_analitics_commercial_hero">
@@ -63,59 +119,7 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'overview'">
-                <section class="zrn_analitics_hub_panel">
-                    <div class="zrn_analitics_commercial_panel_head">
-                        <span>Filtros del tab</span>
-                        <span>Overview comercial</span>
-                    </div>
-                    <div class="zrn_analitics_commercial_channel_filters">
-                        <div class="zrn_analitics_commercial_field">
-                            <label>Periodo</label>
-                            <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.overviewFilters.period_key" onSelect.bind="this.onOverviewPeriodSelect"/>
-                        </div>
-                        <div class="zrn_analitics_commercial_field">
-                            <label>Marca</label>
-                            <ZrnRelationalMultiSelect
-                                records="getSelectedOptionRecords(commercialPayload.filter_options.brands, state.overviewFilters.brand_ids)"
-                                domain="getOptionDomain(commercialPayload.filter_options.brands)"
-                                resModel="'zrn_commercial.commercial.brand'"
-                                fieldString="'Marca'"
-                                placeholder="'Todas las marcas'"
-                                onChange.bind="this.onOverviewBrandsChange"
-                            />
-                        </div>
-                        <div class="zrn_analitics_commercial_field">
-                            <label>Categoria</label>
-                            <ZrnRelationalMultiSelect
-                                records="getSelectedOptionRecords(commercialPayload.filter_options.categories, state.overviewFilters.category_ids)"
-                                domain="getOptionDomain(commercialPayload.filter_options.categories)"
-                                resModel="'product.category'"
-                                fieldString="'Categoria'"
-                                placeholder="'Todas las categorias'"
-                                onChange.bind="this.onOverviewCategoriesChange"
-                            />
-                        </div>
-                        <div class="zrn_analitics_commercial_field">
-                            <label>Canal</label>
-                            <ZrnRelationalMultiSelect
-                                records="getSelectedOptionRecords(commercialPayload.filter_options.channels, state.overviewFilters.channel_ids)"
-                                domain="getOptionDomain(commercialPayload.filter_options.channels)"
-                                resModel="'zrn_commercial.commercial.channel'"
-                                fieldString="'Canal'"
-                                placeholder="'Todos los canales'"
-                                onChange.bind="this.onOverviewChannelsChange"
-                            />
-                        </div>
-                        <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
-                            <label>Buscar</label>
-                            <input type="text" class="form-control" placeholder="Cliente, PDV, producto o codigo" t-att-value="state.overviewFilters.search" t-on-input="(ev) => this.updateOverviewFilter('search', ev.target.value)" t-on-keydown="onOverviewSearchKeydown"/>
-                        </div>
-                    </div>
-                    <div class="zrn_analitics_commercial_channel_actions">
-                        <button type="button" class="btn btn-primary" t-on-click="applyOverviewFilters">Aplicar</button>
-                        <button type="button" class="btn btn-secondary" t-on-click="clearOverviewFilters">Limpiar</button>
-                    </div>
-                </section>
+                <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <div class="zrn_analitics_commercial_stats">
                     <div class="zrn_analitics_commercial_stat_box">
                         <span>Venta total</span>
@@ -1237,6 +1241,7 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'cliente'">
+                <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
                         <span>Ranking completo de clientes / PDVs</span>
@@ -1294,6 +1299,7 @@
                     .zrn_rfm_segment_count { font-size: 11px; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 12px; }
                     .zrn_rfm_segment_item { display: flex; justify-content: space-between; font-size: 11px; color: #475569; padding: 2px 0; }
                 </style>
+                <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
                         <span>Matriz RFM + Pareto ABC</span>
@@ -1409,7 +1415,7 @@
                                 <t t-set="seg_data" t-value="commercialPayload.clients_rfm.segments[seg.key]"/>
                                 <div class="zrn_rfm_segment_card">
                                     <div class="zrn_rfm_segment_head">
-                                        <span class="zrn_rfm_segment_title"><t t-esc="seg.emoji"/> <t t-esc="seg.name"/></span>
+                                        <span class="zrn_rfm_segment_title"><t t-esc="seg.name"/></span>
                                         <span class="zrn_rfm_segment_count"><t t-esc="formatCount(seg_data.count)"/> pdvs (Q<t t-esc="formatMoney(seg_data.rev)"/>)</span>
                                     </div>
                                     <div class="zrn_rfm_segment_body">
@@ -1480,7 +1486,7 @@
                                             <td style="text-align:center"><t t-esc="item.r_score"/></td>
                                             <td style="text-align:center"><t t-esc="item.f_score"/></td>
                                             <td style="text-align:center"><t t-esc="item.m_score"/></td>
-                                            <td><t t-esc="item.segment_emoji"/> <t t-esc="item.segment"/></td>
+                                            <td><t t-esc="item.segment"/></td>
                                             <td><t t-esc="item.last_month_label"/></td>
                                             <td style="text-align:right"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(item.ticket_avg)"/></td>
                                         </tr>
@@ -1496,6 +1502,7 @@
                 <style>
                     .zrn_retention_cell { padding: 8px 12px; text-align: center; font-weight: 600; font-size: 11px; border-radius: 4px; }
                 </style>
+                <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
                         <span>Análisis de Comportamiento del Cliente</span>
@@ -1670,6 +1677,7 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'producto'">
+                <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
                         <span>Catálogo completo de productos y marcas</span>
@@ -1711,6 +1719,7 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'tendencias'">
+                <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
                         <span>Tendencia y Crecimiento de Ventas</span>
@@ -1719,7 +1728,7 @@
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <div class="border rounded p-3 bg-white">
-                                <h6 class="font-weight-bold mb-3 text-success">📈 Productos en Crecimiento (Growers)</h6>
+                                <h6 class="font-weight-bold mb-3 text-success">Productos en Crecimiento (Growers)</h6>
                                 <div class="zrn_analitics_commercial_table_wrap" style="max-height: 480px; overflow-y: auto;">
                                     <table class="zrn_analitics_commercial_table">
                                         <thead>
@@ -1749,7 +1758,7 @@
 
                         <div class="col-12 col-md-6">
                             <div class="border rounded p-3 bg-white">
-                                <h6 class="font-weight-bold mb-3 text-danger">📉 Productos en Caída (Decliners)</h6>
+                                <h6 class="font-weight-bold mb-3 text-danger">Productos en Caída (Decliners)</h6>
                                 <div class="zrn_analitics_commercial_table_wrap" style="max-height: 480px; overflow-y: auto;">
                                     <table class="zrn_analitics_commercial_table">
                                         <thead>
@@ -1781,6 +1790,7 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'gap'">
+                <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
                         <span>Sell-in Facturado vs Sell-out Consumidor</span>
@@ -1919,6 +1929,7 @@
 
                     .zrn_bcg_axis_line { position: absolute; border: 1px dashed #94a3b8; }
                 </style>
+                <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
                         <span>Matriz BCG (Growth-Share Matrix)</span>

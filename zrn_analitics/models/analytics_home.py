@@ -1145,15 +1145,15 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             return 'hibernating'
 
         RFM_SEGMENT_META = {
-            'champion': {'name': 'Campeón', 'emoji': '🏆'},
-            'loyal': {'name': 'Leal', 'emoji': '💎'},
-            'cant_lose': {'name': 'No perderlo', 'emoji': '🚨'},
-            'at_risk': {'name': 'En riesgo', 'emoji': '⚠️'},
-            'promising': {'name': 'Prometedor', 'emoji': '🚀'},
-            'need_attention': {'name': 'Atender', 'emoji': '👀'},
-            'new': {'name': 'Nuevo', 'emoji': '🌱'},
-            'hibernating': {'name': 'Hibernando', 'emoji': '💤'},
-            'sporadic': {'name': 'Esporádico', 'emoji': '·'}
+            'champion': {'name': 'Campeón', 'emoji': ''},
+            'loyal': {'name': 'Leal', 'emoji': ''},
+            'cant_lose': {'name': 'No perderlo', 'emoji': ''},
+            'at_risk': {'name': 'En riesgo', 'emoji': ''},
+            'promising': {'name': 'Prometedor', 'emoji': ''},
+            'need_attention': {'name': 'Atender', 'emoji': ''},
+            'new': {'name': 'Nuevo', 'emoji': ''},
+            'hibernating': {'name': 'Hibernando', 'emoji': ''},
+            'sporadic': {'name': 'Esporádico', 'emoji': ''}
         }
 
         total_rev_clients = sum(c['rev'] for c in all_clients_raw)
