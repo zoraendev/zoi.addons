@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from datetime import timedelta
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -96,8 +98,19 @@ class ZrnPlanningMfgPlan(models.Model):
         compute='_compute_counts',
         store=False,
     )
+    purchase_ids = fields.Many2many(
+        'purchase.order',
+        string='Ordenes de compra',
+        compute='_compute_purchase_links',
+        readonly=True,
+    )
+    purchase_count = fields.Integer(
+        string='OCs',
+        compute='_compute_counts',
+        store=False,
+    )
 
-    @api.depends('line_ids', 'line_ids.supply_ids', 'line_ids.production_ids', 'source_ids')
+    @api.depends('line_ids', 'line_ids.supply_ids', 'line_ids.production_ids', 'source_ids', 'purchase_ids')
     def _compute_counts(self):
         for plan in self:
             plan.line_count = len(plan.line_ids)
@@ -105,71 +118,231 @@ class ZrnPlanningMfgPlan(models.Model):
             plan.supply_count = len(plan.line_ids.mapped('supply_ids'))
             plan.production_ids = [(6, 0, plan.line_ids.mapped('production_ids').ids)]
             plan.production_count = len(plan.line_ids.mapped('production_ids'))
+            plan.purchase_count = len(plan.purchase_ids)
 
-    def _create_draft_mrp_productions(self):
+    @api.model
+    def _column_exists(self, table_name, column_name):
+        self.env.cr.execute(
+            """
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_name = %s
+              AND column_name = %s
+            LIMIT 1
+            """,
+            (table_name, column_name),
+        )
+        return bool(self.env.cr.fetchone())
+
+    @api.depends('line_ids')
+    def _compute_purchase_links(self):
+        has_plan_link = self._column_exists('purchase_order', 'zrn_planning_plan_id')
+        for plan in self:
+            if has_plan_link:
+                purchase_orders = self.env['purchase.order'].search([
+                    ('zrn_planning_plan_id', '=', plan.id),
+                ])
+                plan.purchase_ids = [(6, 0, purchase_orders.ids)]
+            else:
+                plan.purchase_ids = [(6, 0, [])]
+
+    def _create_draft_mrp_productions(self, mark_released=False):
         Production = self.env['mrp.production']
         created_productions = Production
 
         for plan in self:
             for line in plan.line_ids:
-                if line.production_ids or not line.product_id:
+                if not line.product_id:
                     continue
-
-                bom = line.bom_id
-                if not bom:
-                    bom = self.env['mrp.bom'].search([('product_id', '=', line.product_id.id)], limit=1)
-                if not bom:
-                    bom = self.env['mrp.bom'].search(
-                        [('product_tmpl_id', '=', line.product_id.product_tmpl_id.id)],
-                        limit=1,
-                    )
 
                 qty_planned = float(line.qty_planned or 0.0)
                 if qty_planned <= 0:
                     continue
 
-                production_vals = {
-                    'product_id': line.product_id.id,
-                    'product_uom_id': line.product_id.uom_id.id,
-                    'product_qty': qty_planned,
-                    'bom_id': bom.id if bom else False,
-                    'date_start': line.production_date,
-                    'date_deadline': line.delivery_date or line.production_date,
-                    'origin': plan.name,
-                    'company_id': plan.company_id.id,
-                    'location_src_id': (
-                        plan.warehouse_id.lot_stock_id.id
-                        if plan.warehouse_id and plan.warehouse_id.lot_stock_id
-                        else False
-                    ),
-                    'location_dest_id': (
-                        bom.picking_type_id.default_location_dest_id.id
-                        if bom and bom.picking_type_id and bom.picking_type_id.default_location_dest_id
-                        else (
-                            plan.warehouse_id.manu_type_id.default_location_dest_id.id
-                            if plan.warehouse_id and plan.warehouse_id.manu_type_id
-                            and plan.warehouse_id.manu_type_id.default_location_dest_id
-                            else False
+                production_start = line.production_date or fields.Date.context_today(self)
+                production_deadline = line.delivery_date - timedelta(days=1) if line.delivery_date else production_start
+                if production_deadline and production_deadline < production_start:
+                    production_deadline = production_start
+
+                if not line.production_ids:
+                    bom = line.bom_id
+                    if not bom:
+                        bom = self.env['mrp.bom'].search([('product_id', '=', line.product_id.id)], limit=1)
+                    if not bom:
+                        bom = self.env['mrp.bom'].search(
+                            [('product_tmpl_id', '=', line.product_id.product_tmpl_id.id)],
+                            limit=1,
                         )
-                    ),
-                    'picking_type_id': (
-                        bom.picking_type_id.id
-                        if bom and bom.picking_type_id
-                        else (
-                            plan.warehouse_id.manu_type_id.id
-                            if plan.warehouse_id and plan.warehouse_id.manu_type_id
+
+                    production_vals = {
+                        'product_id': line.product_id.id,
+                        'product_uom_id': line.product_id.uom_id.id,
+                        'product_qty': qty_planned,
+                        'bom_id': bom.id if bom else False,
+                        'date_start': production_start,
+                        'date_deadline': production_deadline,
+                        'origin': plan.name,
+                        'company_id': plan.company_id.id,
+                        'location_src_id': (
+                            plan.warehouse_id.lot_stock_id.id
+                            if plan.warehouse_id and plan.warehouse_id.lot_stock_id
                             else False
-                        )
-                    ),
-                    'zrn_prodigyn_plan_id': plan.id,
-                    'zrn_prodigyn_plan_line_id': line.id,
-                }
-                production = Production.create(production_vals)
-                line.qty_released = qty_planned
-                line.state = 'released'
-                created_productions |= production
+                        ),
+                        'location_dest_id': (
+                            bom.picking_type_id.default_location_dest_id.id
+                            if bom and bom.picking_type_id and bom.picking_type_id.default_location_dest_id
+                            else (
+                                plan.warehouse_id.manu_type_id.default_location_dest_id.id
+                                if plan.warehouse_id and plan.warehouse_id.manu_type_id
+                                and plan.warehouse_id.manu_type_id.default_location_dest_id
+                                else False
+                            )
+                        ),
+                        'picking_type_id': (
+                            bom.picking_type_id.id
+                            if bom and bom.picking_type_id
+                            else (
+                                plan.warehouse_id.manu_type_id.id
+                                if plan.warehouse_id and plan.warehouse_id.manu_type_id
+                                else False
+                            )
+                        ),
+                        'zrn_prodigyn_plan_id': plan.id,
+                        'zrn_prodigyn_plan_line_id': line.id,
+                    }
+                    production = Production.create(production_vals)
+                    created_productions |= production
+
+                if mark_released:
+                    if not line.production_date:
+                        line.production_date = production_start
+                    line.qty_released = qty_planned
+                    line.state = 'released'
 
         return created_productions
+
+    def _get_default_purchase_picking_type(self):
+        self.ensure_one()
+        picking_type = False
+        if self.warehouse_id and self.warehouse_id.in_type_id:
+            picking_type = self.warehouse_id.in_type_id
+        if not picking_type:
+            picking_type = self.env['stock.picking.type'].search(
+                [
+                    ('code', '=', 'incoming'),
+                    ('warehouse_id.company_id', '=', self.company_id.id),
+                ],
+                limit=1,
+            )
+        if not picking_type:
+            picking_type = self.env['stock.picking.type'].search(
+                [('code', '=', 'incoming'), ('company_id', '=', self.company_id.id)],
+                limit=1,
+            )
+        return picking_type
+
+    def _get_supply_seller(self, product, quantity, schedule_date=False):
+        seller = product._select_seller(
+            quantity=quantity,
+            date=schedule_date,
+            uom_id=product.uom_po_id,
+        )
+        if not seller and product.seller_ids:
+            seller = product.seller_ids.sorted(lambda item: item.sequence or 0)[0]
+        return seller
+
+    def _create_draft_purchase_orders(self):
+        PurchaseOrder = self.env['purchase.order']
+        created_orders = PurchaseOrder
+        has_plan_link = self._column_exists('purchase_order', 'zrn_planning_plan_id')
+        has_plan_line_link = self._column_exists('purchase_order_line', 'zrn_planning_plan_line_id')
+
+        for plan in self:
+            if plan.purchase_ids or plan.planning_basis != 'mixed':
+                continue
+
+            grouped_lines = {}
+            missing_supplier_products = set()
+            for line in plan.line_ids:
+                for supply in line.supply_ids.filtered(lambda item: float(item.qty_to_buy or 0.0) > 0.0):
+                    product = supply.component_id
+                    if not product:
+                        continue
+
+                    schedule_date = line.delivery_date or line.production_date or plan.date_start
+                    seller = plan._get_supply_seller(
+                        product=product,
+                        quantity=supply.qty_to_buy,
+                        schedule_date=schedule_date,
+                    )
+                    if not seller or not seller.partner_id:
+                        missing_supplier_products.add(product.display_name or product.name)
+                        continue
+
+                    partner = seller.partner_id
+                    grouped_lines.setdefault(partner.id, {
+                        'partner': partner,
+                        'seller': seller,
+                        'lines': [],
+                    })
+                    grouped_lines[partner.id]['lines'].append({
+                        'plan_line': line,
+                        'supply': supply,
+                        'product': product,
+                        'seller': seller,
+                    })
+
+            if missing_supplier_products:
+                missing_list = ', '.join(sorted(missing_supplier_products))
+                raise UserError(_(
+                    'No se pudieron generar las ordenes de compra del planning porque estos insumos no tienen proveedor configurado: %s'
+                ) % missing_list)
+
+            if not grouped_lines:
+                continue
+
+            picking_type = plan._get_default_purchase_picking_type()
+            for group in grouped_lines.values():
+                partner = group['partner']
+                order_vals = {
+                    'partner_id': partner.id,
+                    'company_id': plan.company_id.id,
+                    'origin': plan.name,
+                    'date_order': fields.Datetime.now(),
+                }
+                if has_plan_link:
+                    order_vals['zrn_planning_plan_id'] = plan.id
+                if picking_type:
+                    order_vals['picking_type_id'] = picking_type.id
+                purchase_order = PurchaseOrder.create(order_vals)
+
+                line_commands = []
+                for item in group['lines']:
+                    supply = item['supply']
+                    product = item['product']
+                    seller = item['seller']
+                    plan_line = item['plan_line']
+                    line_commands.append((0, 0, {
+                        'order_id': purchase_order.id,
+                        'product_id': product.id,
+                        'name': product.display_name or product.name,
+                        'product_qty': supply.qty_to_buy,
+                        'product_uom': product.uom_po_id.id,
+                        'price_unit': seller.price or 0.0,
+                        'date_planned': fields.Datetime.to_string(
+                            fields.Datetime.now() if not (plan_line.delivery_date or plan_line.production_date)
+                            else fields.Datetime.from_string(
+                                f"{(plan_line.delivery_date or plan_line.production_date).strftime('%Y-%m-%d')} 00:00:00"
+                            )
+                        ),
+                        'taxes_id': [(6, 0, product.supplier_taxes_id.ids)],
+                    }))
+                    if has_plan_line_link:
+                        line_commands[-1][2]['zrn_planning_plan_line_id'] = plan_line.id
+                purchase_order.write({'order_line': line_commands})
+                created_orders |= purchase_order
+
+        return created_orders
 
     def action_set_pending_plan(self):
         for plan in self:
@@ -201,7 +374,7 @@ class ZrnPlanningMfgPlan(models.Model):
             if not plan.line_ids:
                 raise UserError(_('El planning no tiene lineas para liberar.'))
 
-            plan._create_draft_mrp_productions()
+            plan._create_draft_mrp_productions(mark_released=True)
             plan.line_ids.filtered(lambda line: line.state not in ('done', 'cancel')).write({
                 'state': 'released',
             })
@@ -274,7 +447,7 @@ class ZrnPlanningMfgPlanLine(models.Model):
         string='Receta',
         domain="[('product_tmpl_id', '=', product_id.product_tmpl_id)]",
     )
-    production_date = fields.Date(string='Fecha de produccion', required=True)
+    production_date = fields.Date(string='Fecha de produccion')
     delivery_date = fields.Date(string='Fecha de entrega objetivo')
     qty_planned = fields.Float(string='Cantidad planeada', digits='Product Unit of Measure', default=0.0)
     qty_released = fields.Float(string='Cantidad liberada', digits='Product Unit of Measure', default=0.0)
@@ -314,12 +487,39 @@ class ZrnPlanningMfgPlanLine(models.Model):
         compute='_compute_supply_count',
         store=False,
     )
+    purchase_line_ids = fields.Many2many(
+        'purchase.order.line',
+        string='Lineas de compra',
+        compute='_compute_purchase_links',
+        readonly=True,
+    )
+    purchase_count = fields.Integer(
+        string='Cantidad de OCs',
+        compute='_compute_supply_count',
+        store=False,
+    )
 
-    @api.depends('supply_ids', 'production_ids')
+    @api.depends('supply_ids', 'production_ids', 'purchase_line_ids')
     def _compute_supply_count(self):
         for line in self:
             line.supply_count = len(line.supply_ids)
             line.production_count = len(line.production_ids)
+            line.purchase_count = len(line.purchase_line_ids.mapped('order_id'))
+
+    @api.depends('plan_id')
+    def _compute_purchase_links(self):
+        has_plan_line_link = self.env['zrn_planning.mfg.plan']._column_exists(
+            'purchase_order_line',
+            'zrn_planning_plan_line_id',
+        )
+        for line in self:
+            if has_plan_line_link:
+                purchase_lines = self.env['purchase.order.line'].search([
+                    ('zrn_planning_plan_line_id', '=', line.id),
+                ])
+                line.purchase_line_ids = [(6, 0, purchase_lines.ids)]
+            else:
+                line.purchase_line_ids = [(6, 0, [])]
 
 
 class ZrnPlanningMfgPlanSupply(models.Model):
@@ -396,6 +596,28 @@ class MrpProduction(models.Model):
         copy=False,
     )
     zrn_prodigyn_plan_line_id = fields.Many2one(
+        'zrn_planning.mfg.plan.line',
+        string='Linea de planning Zoraen',
+        readonly=True,
+        copy=False,
+    )
+
+
+class PurchaseOrder(models.Model):
+    _inherit = 'purchase.order'
+
+    zrn_planning_plan_id = fields.Many2one(
+        'zrn_planning.mfg.plan',
+        string='Planning Zoraen',
+        readonly=True,
+        copy=False,
+    )
+
+
+class PurchaseOrderLine(models.Model):
+    _inherit = 'purchase.order.line'
+
+    zrn_planning_plan_line_id = fields.Many2one(
         'zrn_planning.mfg.plan.line',
         string='Linea de planning Zoraen',
         readonly=True,

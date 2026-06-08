@@ -21,13 +21,13 @@ class ZrnPlanningNavigationMixin:
         return self._open_singleton_action('zrn_planning.action_zrn_planning_home')
 
     def action_open_button_2(self):
-        return self._open_singleton_action('zrn_planning.action_zrn_planning_production_planning')
+        return self._open_singleton_action('zrn_planning.action_zrn_planning_home')
 
     def action_open_button_3(self):
-        return self._open_singleton_action('zrn_planning.action_zrn_planning_production_planning')
+        return self._open_singleton_action('zrn_planning.action_zrn_planning_home')
 
     def action_open_button_4(self):
-        return self._open_singleton_action('zrn_planning.action_zrn_planning_purchase_planning')
+        return self._open_singleton_action('zrn_planning.action_zrn_planning_home')
 
     def action_open_button_5(self):
         return self._open_singleton_action('zrn_planning.action_zrn_planning_delivery_planning')

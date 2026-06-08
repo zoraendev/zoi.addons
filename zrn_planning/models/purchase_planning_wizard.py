@@ -471,7 +471,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
 
     def action_back_to_production_planning(self):
         self.ensure_one()
-        action = self.env.ref('zrn_planning.action_zrn_planning_production_planning').read()[0]
+        action = self.env.ref('zrn_planning.action_zrn_planning_home').read()[0]
         action['target'] = 'main'
         return action
 
@@ -938,6 +938,8 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
 
         if supply_vals:
             self.env['zrn_planning.mfg.plan.supply'].create(supply_vals)
+
+        plan._create_draft_purchase_orders()
 
         # Registrar los documentos origen (OFs y OVs) en el plan maestro
         source_values = []
