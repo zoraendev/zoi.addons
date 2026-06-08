@@ -426,6 +426,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
     def _compute_planning_record_ids(self):
         domain = [
             ('company_id', '=', self.env.company.id),
+            ('planning_basis', '=', 'mixed'),
             ('line_ids.supply_ids', '!=', False),
         ]
         plans = self.env['zrn_planning.mfg.plan'].search(
@@ -442,6 +443,7 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         form_view = self.env.ref('zrn_planning.view_zrn_planning_supply_plan_form')
         domain = [
             ('company_id', '=', self.env.company.id),
+            ('planning_basis', '=', 'mixed'),
             ('line_ids.supply_ids', '!=', False),
         ]
         return {
