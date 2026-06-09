@@ -2533,7 +2533,7 @@
     .zrn_planning_production_report_table_panel
     .o_list_renderer {
     border: 0;
-    height: 37rem !important;
+    height: 35rem !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
