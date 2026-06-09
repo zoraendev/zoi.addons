@@ -1865,6 +1865,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 20px;
     padding: 0;
     background: transparent;
@@ -1878,6 +1879,7 @@
     display: flex;
     min-width: 0;
     align-items: center;
+    flex-wrap: wrap;
     gap: 16px;
   }
 
@@ -2048,6 +2050,7 @@
     min-width: 0;
     align-items: center;
     justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 10px;
   }
 
@@ -2654,21 +2657,41 @@
 
     .o_form_view.zrn_planning_production_report_form
       .zrn_planning_production_report_header {
+      display: grid;
       grid-template-columns: 1fr;
       justify-items: flex-start;
+      align-items: start;
       gap: 12px;
     }
 
     .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_heading_group,
+    .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_actions {
+      width: 100%;
+      gap: 8px;
+    }
+
+    .o_form_view.zrn_planning_production_report_form
       .zrn_planning_production_report_header_range {
+      width: 100%;
+      flex-wrap: wrap;
       justify-content: flex-start;
       text-align: left;
+      white-space: normal;
     }
 
     .o_form_view.zrn_planning_production_report_form
       .zrn_planning_production_report_actions {
       width: 100%;
       justify-content: flex-start;
+    }
+
+    .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_action_btn,
+    .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_inline_stat {
+      min-height: 34px;
     }
 
     .o_form_view.zrn_planning_submodule_form .zrn_planning_building_state {
@@ -3086,6 +3109,7 @@
     .zrn_planning_report_detail_lines_group {
     width: 100%;
     margin-top: 4px;
+    min-height: 0;
   }
 
   .o_form_view.zrn_planning_report_detail_form
@@ -3133,12 +3157,33 @@
 
   .o_form_view.zrn_planning_report_detail_form
     .zrn_planning_report_detail_lines_group
+    .o_field_widget,
+  .o_form_view.zrn_planning_report_detail_form
+    .zrn_planning_report_detail_lines_group
+    .o_field_x2many,
+  .o_form_view
+    .zrn_planning_report_detail_form
+    .zrn_planning_report_detail_lines_group
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_report_detail_form
+    .zrn_planning_report_detail_lines_group
+    .o_field_x2many {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .o_form_view.zrn_planning_report_detail_form
+    .zrn_planning_report_detail_lines_group
     .o_list_renderer,
   .o_form_view
     .zrn_planning_report_detail_form
     .zrn_planning_report_detail_lines_group
     .o_list_renderer {
+    max-height: calc(100vh - 340px);
     overflow-x: auto;
+    overflow-y: auto;
   }
 
   .o_form_view.zrn_planning_report_detail_form
@@ -3150,6 +3195,7 @@
     .o_list_table {
     width: 100%;
     min-width: 980px;
+    margin-bottom: 0 !important;
   }
 
   .o_form_view.zrn_planning_report_detail_form
@@ -3320,7 +3366,19 @@
     .o_form_view
       .zrn_planning_report_detail_form
       .zrn_planning_report_detail_stats {
+      display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .o_form_view.zrn_planning_report_detail_form
+      .zrn_planning_report_detail_lines_group
+      .o_list_renderer,
+    .o_form_view
+      .zrn_planning_report_detail_form
+      .zrn_planning_report_detail_lines_group
+      .o_list_renderer {
+      max-height: calc(100vh - 300px);
     }
 
     .modal-content:has(.zrn_planning_report_line_detail_form) {
