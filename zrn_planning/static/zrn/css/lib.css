@@ -2404,7 +2404,7 @@
   .o_form_view.zrn_planning_production_manufacture_form
     .zrn_planning_production_manufacture_table_wrap
     .o_field_x2many {
-    display: flex;
+    /* display: flex; */
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
