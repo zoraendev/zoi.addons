@@ -2536,6 +2536,15 @@
     height: 35rem !important;
   }
 
+  @media (max-width: 991.98px) {
+    .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_table_panel
+      .o_list_renderer {
+      border: 0;
+      height: 30rem !important;
+    }
+  }
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_table_placeholder {
     display: flex;
