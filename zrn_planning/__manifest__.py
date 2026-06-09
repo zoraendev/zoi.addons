@@ -21,10 +21,10 @@ Addon dedicado a planeacion operativa:
     'depends': ['base', 'sale_stock', 'mrp', 'purchase_stock'],
     'data': [
         'security/ir.model.access.csv',
+        'views/planning_home_views.xml',
         'views/production_planning_views.xml',
         'views/purchase_planning_views.xml',
         'views/delivery_planning_views.xml',
-        'views/planning_home_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
