@@ -1461,19 +1461,39 @@
     white-space: nowrap;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_widget {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_widget {
     margin-bottom: 0 !important;
     flex: 1 1 auto;
     min-width: 0;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o-autocomplete--input,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o-autocomplete--input,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input_dropdown,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input_dropdown {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o-autocomplete--input,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o-autocomplete--input,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input_dropdown,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input_dropdown {
     min-height: 34px;
   }
 
@@ -1505,44 +1525,84 @@
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item span,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item span {
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_summary_item
+    span {
     font-weight: 600;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item .o_field_widget {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_summary_item
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_summary_item
+    .o_field_widget {
     color: var(--z-color-text-strong, #1f2937) !important;
     font-size: 0.8rem !important;
     font-weight: 700 !important;
     margin-bottom: 0 !important;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2manytags,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2manytags,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2one,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2one,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_date,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_date {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_many2manytags,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_many2manytags,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_many2one,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_many2one,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_date,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_date {
     width: 100%;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input {
     width: 100%;
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select {
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select {
     position: relative;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select .o_field_widget {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    .o_field_widget {
     min-width: 160px;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input {
     min-width: 160px;
     height: 34px;
     padding: 0 8px;
@@ -1556,13 +1616,23 @@
     cursor: pointer;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input:hover,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input:hover {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input:hover,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input:hover {
     border-color: var(--o-input-border-color, #b8c2cc);
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input:focus,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input:focus {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input:focus,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input:focus {
     border-color: var(--o-brand-primary, #714b67);
     box-shadow: 0 0 0 0.2rem rgba(113, 75, 103, 0.15);
     outline: 0;
@@ -1620,8 +1690,13 @@
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta strong,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta strong,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta .o_field_widget {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_meta
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_meta
+    .o_field_widget {
     color: var(--z-color-text-strong, #1f2937) !important;
     font-size: 0.76rem !important;
     font-weight: 700 !important;
@@ -1718,7 +1793,9 @@
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_btn_primary:hover,
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_btn_primary:focus,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_btn_primary:hover,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_btn_primary:focus {
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_btn_primary:focus {
     background: var(--z-color-brand-800, #3d53ad) !important;
     border-color: var(--z-color-brand-800, #3d53ad) !important;
     color: #ffffff !important;
@@ -1766,7 +1843,9 @@
     .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item,
     .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item,
     .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_wide,
-    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_wide {
+    .o_form_view
+      .zrn_planning_filter_form
+      .zrn_planning_filter_field_item_wide {
       flex-basis: 100%;
       min-width: 0;
     }
@@ -1776,27 +1855,57 @@
     }
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_widget,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_view,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_view {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_widget,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_x2many,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_renderer,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_view,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_x2many,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_renderer,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_view {
     width: 100%;
     max-width: 100%;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_x2many,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_x2many {
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_renderer,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_renderer {
     overflow-x: auto;
   }
 
@@ -1920,10 +2029,10 @@
     position: relative;
     border-radius: 0;
   }
-  
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -6px;
     left: 0;
@@ -1941,7 +2050,7 @@
     color: var(--z-color-text-muted, #6b7280) !important;
     font-weight: 600;
   }
-  
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab_inactive::after {
     display: none;
@@ -1978,12 +2087,14 @@
   }
 
   .o_form_view.zrn_planning_production_manufacture_form
-    .zrn_planning_production_report_inline_stat i {
+    .zrn_planning_production_report_inline_stat
+    i {
     color: var(--z-color-text-muted, #6b7280);
   }
 
   .o_form_view.zrn_planning_production_manufacture_form
-    .zrn_planning_production_report_inline_stat strong {
+    .zrn_planning_production_report_inline_stat
+    strong {
     color: var(--z-color-text-strong, #1f2937);
     font-size: 0.9rem;
   }
@@ -2071,13 +2182,15 @@
   }
 
   .o_form_view.zrn_planning_production_report_form
-    .zrn_planning_production_report_inline_stat i {
+    .zrn_planning_production_report_inline_stat
+    i {
     color: var(--z-color-brand-700, #4862c9);
     font-size: 0.86rem;
   }
 
   .o_form_view.zrn_planning_production_report_form
-    .zrn_planning_production_report_inline_stat strong {
+    .zrn_planning_production_report_inline_stat
+    strong {
     color: var(--z-color-text-strong, #1f2937);
     font-weight: 700;
     font-size: 0.96rem;
@@ -2101,7 +2214,10 @@
     font-size: 0.82rem;
     font-weight: 600;
     box-shadow: none !important;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2129,7 +2245,7 @@
     color: #ffffff !important;
     box-shadow: none !important;
   }
-  
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn_inactive:hover {
     border-color: var(--z-color-brand-700, #4862c9) !important;
@@ -2276,7 +2392,6 @@
 
   .o_form_view.zrn_planning_production_manufacture_form
     .zrn_planning_production_manufacture_table_wrap {
-    display: flex;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -2418,6 +2533,7 @@
     .zrn_planning_production_report_table_panel
     .o_list_renderer {
     border: 0;
+    height: 40rem;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2834,15 +2950,21 @@
     margin: 0;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -2852,8 +2974,15 @@
     font-size: 0.88rem;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item:not(.zrn_planning_create_plan_modal_summary_item_range),
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item:not(.zrn_planning_create_plan_modal_summary_item_range) {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item:not(
+      .zrn_planning_create_plan_modal_summary_item_range
+    ),
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item:not(
+      .zrn_planning_create_plan_modal_summary_item_range
+    ) {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -2864,8 +2993,13 @@
     background: #f5f6f8;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item span,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item span {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item
+    span,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item
+    span {
     margin: 0;
     font-size: 0.78rem;
     font-weight: 600;
@@ -2874,15 +3008,23 @@
     color: var(--z-color-text-muted, #6b7280);
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item strong,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item strong {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item
+    strong,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item
+    strong {
     font-size: 0.92rem;
     font-weight: 600;
     color: var(--z-color-text-strong, #111827);
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -2894,20 +3036,33 @@
     box-shadow: none !important;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range span,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range span {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range
+    span,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range
+    span {
     font-weight: 500;
     color: var(--z-color-text-muted, #6b7280);
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range strong,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range strong {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range
+    strong,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range
+    strong {
     font-weight: 700;
     color: var(--z-color-text-strong, #111827);
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_table,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_table {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_table,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_table {
     max-height: 320px;
     overflow: auto;
     border: 1px solid var(--z-color-border, #d6dae1);
@@ -3406,15 +3561,32 @@
 }
 
 /* Force all Planning and report wizard form sheets to occupy 100% of the screen width */
-.o_form_view:has(.zrn_planning_production_report_screen, .zrn_planning_production_shell, .zrn_planning_home_shell, .zrn_planning_purchase_report_screen) .o_form_sheet_bg,
-.o_form_view:has(.zrn_planning_production_report_screen, .zrn_planning_production_shell, .zrn_planning_home_shell, .zrn_planning_purchase_report_screen) .o_form_sheet {
+.o_form_view:has(
+    .zrn_planning_production_report_screen,
+    .zrn_planning_production_shell,
+    .zrn_planning_home_shell,
+    .zrn_planning_purchase_report_screen
+  )
+  .o_form_sheet_bg,
+.o_form_view:has(
+    .zrn_planning_production_report_screen,
+    .zrn_planning_production_shell,
+    .zrn_planning_home_shell,
+    .zrn_planning_purchase_report_screen
+  )
+  .o_form_sheet {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 100% !important;
   margin: 0 !important;
   padding: 8px !important;
 }
-.o_form_view:has(.zrn_planning_production_report_screen, .zrn_planning_production_shell, .zrn_planning_home_shell, .zrn_planning_purchase_report_screen) {
+.o_form_view:has(
+  .zrn_planning_production_report_screen,
+  .zrn_planning_production_shell,
+  .zrn_planning_home_shell,
+  .zrn_planning_purchase_report_screen
+) {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 100% !important;
@@ -3438,7 +3610,7 @@
 }
 
 .modal-content:has(.zrn_planning_mfg_plan_line_modal) .modal-title {
-  font-family: 'Outfit', 'Inter', sans-serif !important;
+  font-family: "Outfit", "Inter", sans-serif !important;
   font-weight: 700 !important;
   color: #1e1b4b !important;
   font-size: 1.2rem !important;
@@ -3452,7 +3624,7 @@
 /* Beautiful custom section titles */
 .zrn_planning_mfg_plan_line_modal strong {
   display: block;
-  font-family: 'Outfit', 'Inter', sans-serif !important;
+  font-family: "Outfit", "Inter", sans-serif !important;
   font-size: 1.05rem !important;
   font-weight: 700 !important;
   color: #1e1b4b !important;
@@ -3473,7 +3645,7 @@
 
 /* Improve fields style inside the modal */
 .zrn_planning_mfg_plan_line_modal .o_field_widget {
-  font-family: 'Inter', sans-serif !important;
+  font-family: "Inter", sans-serif !important;
   font-size: 0.92rem !important;
 }
 
@@ -3522,18 +3694,22 @@
   background: #f8fafc !important;
 }
 
-.modal-content:has(.zrn_planning_mfg_plan_line_modal) .modal-footer .btn-primary {
+.modal-content:has(.zrn_planning_mfg_plan_line_modal)
+  .modal-footer
+  .btn-primary {
   background: #7c3aed !important;
   border-color: #7c3aed !important;
   border-radius: 999px !important;
   padding: 8px 24px !important;
   font-weight: 600 !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: "Inter", sans-serif !important;
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25) !important;
   transition: all 0.2s !important;
 }
 
-.modal-content:has(.zrn_planning_mfg_plan_line_modal) .modal-footer .btn-primary:hover {
+.modal-content:has(.zrn_planning_mfg_plan_line_modal)
+  .modal-footer
+  .btn-primary:hover {
   background: #6d28d9 !important;
   border-color: #6d28d9 !important;
   box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4) !important;
