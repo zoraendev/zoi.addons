@@ -2285,13 +2285,7 @@
     > .o_field_widget,
   .o_form_view.zrn_planning_production_manufacture_form
     .zrn_planning_production_manufacture_table_wrap
-    .o_field_x2many,
-  .o_form_view.zrn_planning_production_manufacture_form
-    .zrn_planning_production_manufacture_table_wrap
-    .o_list_view,
-  .o_form_view.zrn_planning_production_manufacture_form
-    .zrn_planning_production_manufacture_table_wrap
-    .o_list_renderer {
+    .o_field_x2many {
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
@@ -2300,8 +2294,19 @@
 
   .o_form_view.zrn_planning_production_manufacture_form
     .zrn_planning_production_manufacture_table_wrap
+    .o_list_view,
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
     .o_list_renderer {
-    overflow: auto !important;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
+    .o_list_renderer {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
     border: 0;
   }
 
