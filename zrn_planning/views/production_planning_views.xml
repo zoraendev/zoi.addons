@@ -1069,7 +1069,10 @@
                                         <field name="stock_initial" sum="Stock inicial"/>
                                         <field name="stock_free" sum="Stock libre"/>
                                         <field name="suggested_production" sum="Sugerido fabricar"/>
-                                        <field name="projected_balance" sum="Saldo proyectado"/>
+                                        <button name="action_open_mrp_production_create"
+                                                type="object"
+                                                string="Fabricar"
+                                                class="zrn_planning_row_action_btn"/>
                                     </tree>
                                 </field>
                             </div>

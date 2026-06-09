@@ -543,6 +543,14 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             'target': 'main',
         }
 
+    def action_download_report_excel(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/zrn_planning/report/export_excel/{self.id}',
+            'target': 'self',
+        }
+
     def action_open_create_mfg_plan_modal(self):
         self.ensure_one()
         if not self.report_product_line_ids:
@@ -563,6 +571,35 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             'views': [(form_view.id, 'form')],
             'target': 'new',
         }
+
+    def action_open_mrp_production_create(self, product_id, suggested_qty=0.0):
+        self.ensure_one()
+
+        product = self.env['product.product'].browse(int(product_id or 0)).exists()
+        if not product:
+            return False
+
+        action = self.env['ir.actions.actions']._for_xml_id('mrp.action_mrp_production_form')
+        action_context = dict(self.env.context)
+        action_context.update({
+            'default_product_id': product.id,
+            'default_product_uom_id': product.uom_id.id,
+            'default_company_id': self.env.company.id,
+            'allowed_company_ids': self.env.companies.ids,
+        })
+
+        quantity = float(suggested_qty or 0.0)
+        if quantity > 0:
+            action_context['default_product_qty'] = quantity
+
+        action.update({
+            'name': _('Nueva orden de fabricacion'),
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+            'context': action_context,
+        })
+        return action
 
     def _create_mfg_plan(self, target_state='draft', notes=False, plan_name=False, planning_line_payload=None):
         self.ensure_one()
@@ -1429,6 +1466,13 @@ class ZrnPlanningProductionPlanningWizardReportProductLine(models.TransientModel
     def action_return_to_report(self):
         self.ensure_one()
         return self.wizard_id.action_open_report()
+
+    def action_open_mrp_production_create(self):
+        self.ensure_one()
+        return self.wizard_id.action_open_mrp_production_create(
+            self.product_id.id,
+            self.suggested_production,
+        )
 
 
 class ZrnPlanningProductionPlanningWizardReportOrderLine(models.TransientModel):

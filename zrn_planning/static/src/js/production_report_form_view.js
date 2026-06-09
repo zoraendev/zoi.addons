@@ -11,6 +11,18 @@ class ZrnPlanningProductionReportFormController extends FormController {
     this.orm = useService("orm");
   }
 
+  async downloadReportExcel() {
+    if (!this.model.root.resId) {
+      return;
+    }
+    const action = await this.orm.call(
+      this.props.resModel,
+      "action_download_report_excel",
+      [[this.model.root.resId]],
+    );
+    await this.actionService.doAction(action);
+  }
+
   async openManufactureTable() {
     if (!this.model.root.resId) {
       return;

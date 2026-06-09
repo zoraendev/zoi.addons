@@ -5,6 +5,14 @@
             <t t-set-slot="control-panel-navigation-additional">
                 <button
                     type="button"
+                    class="btn btn-secondary"
+                    t-on-click="downloadReportExcel"
+                >
+                    <i class="fa fa-download me-1"/>
+                    Exportar
+                </button>
+                <button
+                    type="button"
                     class="btn btn-primary"
                     t-on-click="openManufactureTable"
                 >
@@ -24,7 +32,7 @@
                     t-on-click="createMfgPlan"
                 >
                     <i class="fa fa-plus me-1"/>
-                    Crear
+                    Planear
                 </button>
             </t>
         </xpath>

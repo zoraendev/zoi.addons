@@ -2434,6 +2434,50 @@
     margin-bottom: 0 !important;
   }
 
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
+    .o_list_table
+    .zrn_planning_row_action_btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    min-width: 88px;
+    padding: 5px 10px;
+    border: 1px solid var(--z-color-brand-600, #4f75ff) !important;
+    border-color: var(--z-color-brand-600, #4f75ff) !important;
+    border-radius: 6px !important;
+    background: var(--z-color-brand-600, #4f75ff) !important;
+    background-color: var(--z-color-brand-600, #4f75ff) !important;
+    background-image: none !important;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+    line-height: 1.2;
+    white-space: nowrap;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
+    .o_list_table
+    .zrn_planning_row_action_btn:hover,
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
+    .o_list_table
+    .zrn_planning_row_action_btn:focus {
+    background: var(--z-color-brand-700, #4862c9) !important;
+    background-color: var(--z-color-brand-700, #4862c9) !important;
+    border-color: var(--z-color-brand-700, #4862c9) !important;
+    color: #ffffff !important;
+    box-shadow: none;
+  }
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_table_toolbar {
     display: flex;
