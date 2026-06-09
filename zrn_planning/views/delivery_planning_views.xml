@@ -55,4 +55,12 @@
         <field name="target">current</field>
     </record>
 
+    <menuitem
+        id="menu_zrn_planning_delivery"
+        name="Logistica"
+        parent="menu_zrn_planning_root"
+        sequence="40"
+        action="action_zrn_planning_delivery_planning"
+    />
+
 </odoo>
