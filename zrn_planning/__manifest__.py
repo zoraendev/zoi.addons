@@ -15,7 +15,7 @@ Addon dedicado a planeacion operativa:
     'author': 'Zoraen Corporation',
     'website': 'https://www.zoraen.com',
     'category': 'Operations/Inventory',
-    'version': '0.1',
+    'version': '0.1.1',
     'license': 'LGPL-3',
     'application': True,
     'depends': ['base', 'sale_stock', 'mrp', 'purchase_stock'],

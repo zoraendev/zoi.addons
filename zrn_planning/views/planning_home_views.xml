@@ -136,6 +136,7 @@
         name="Zoraen Planning"
         sequence="10"
         action="action_zrn_planning_home"
+        web_icon="zrn_planning,static/description/icon.png"
     />
 
     <record id="action_server_open_production_wizard" model="ir.actions.server">
