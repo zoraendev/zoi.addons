@@ -69,6 +69,13 @@
                                         string="Logistica"
                                         class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_tertiary"
                                     />
+                                    <button
+                                        name="action_open_inventory_reconciliation"
+                                        type="object"
+                                        icon="fa-balance-scale"
+                                        string="Cuadre Inventario"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
+                                    />
                                 </div>
                             </div>
 

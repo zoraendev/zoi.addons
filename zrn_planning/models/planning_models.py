@@ -63,6 +63,10 @@ class ZrnPlanningHome(ZrnPlanningNavigationMixin, models.Model):
         self.ensure_one()
         return self._open_singleton_action('zrn_planning.action_zrn_planning_delivery_planning')
 
+    def action_open_inventory_reconciliation(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_planning.action_zrn_planning_inventory_reconciliation')
+
 
 class ZrnPlanningProductionPlanning(ZrnPlanningNavigationMixin, models.Model):
     _name = 'zrn_planning.production.planning'

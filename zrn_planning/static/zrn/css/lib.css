@@ -2589,6 +2589,111 @@
     }
   }
 
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item
+    label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--z-color-text-muted, #6b7280);
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item
+    .o_field_widget {
+    margin-bottom: 0;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item_boolean {
+    min-width: 128px;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item_boolean
+    .o_field_boolean {
+    min-width: auto;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    border-width: 1px !important;
+    border-style: solid !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_info {
+    border-color: color-mix(in srgb, #4666d8 70%, var(--z-color-border) 30%) !important;
+    background-color: #eef3ff !important;
+    color: #2846b7 !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_info:hover,
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_info:focus {
+    border-color: #3b59c6 !important;
+    background-color: #e3ebff !important;
+    color: #1f3998 !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_success {
+    border-color: color-mix(in srgb, #2f7d4d 72%, var(--z-color-border) 28%) !important;
+    background-color: #edf8f1 !important;
+    color: #24633d !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_success:hover,
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_success:focus {
+    border-color: #276b42 !important;
+    background-color: #e1f2e8 !important;
+    color: #1e5533 !important;
+  }
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_table_placeholder {
     display: flex;
