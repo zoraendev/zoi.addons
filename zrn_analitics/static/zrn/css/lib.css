@@ -616,6 +616,17 @@
   color: var(--zrn-analitics-text);
 }
 
+.zrn_analitics_commercial_table tbody tr[style*="cursor: pointer"] {
+  transition: all 0.15s ease;
+}
+
+.zrn_analitics_commercial_table tbody tr[style*="cursor: pointer"]:hover {
+  background-color: var(--zrn-analitics-bg-soft) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
+}
+
 .zrn_analitics_commercial_table_sub {
   margin-top: 2px;
   color: var(--zrn-analitics-text-soft);
