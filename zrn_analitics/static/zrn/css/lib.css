@@ -633,6 +633,13 @@
   z-index: 1;
 }
 
+.zrn_analitics_commercial_table tbody tr[style*="cursor: pointer"]:hover td,
+.zrn_analitics_commercial_channel_row:hover td,
+.zrn_analitics_commercial_portfolio_row[style*="cursor: pointer"]:hover td,
+.o_list_table tbody tr[style*="cursor: pointer"]:hover td {
+  background-color: var(--zrn-analitics-bg-soft) !important;
+}
+
 .zrn_analitics_commercial_table_sub {
   margin-top: 2px;
   color: var(--zrn-analitics-text-soft);
@@ -1127,9 +1134,7 @@
   cursor: pointer;
 }
 
-.zrn_analitics_commercial_channel_row:hover td {
-  background: #f8fbff;
-}
+/* overridden by global hub table hover rules */
 
 .zrn_analitics_commercial_modal_backdrop {
   background: rgba(15, 23, 42, 0.34);
