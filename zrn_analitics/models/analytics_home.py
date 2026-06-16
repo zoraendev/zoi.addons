@@ -725,12 +725,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             return sorted(
                 [
                     {
+                        'id': partner_id,
                         'name': item['name'],
                         'order_count': len(item['order_ids']),
                         'units': round(item['units'], 2),
                         'revenue': round(item['revenue'], 2),
                     }
-                    for item in bucket['customers'].values()
+                    for partner_id, item in bucket['customers'].items()
                 ],
                 key=lambda item: item['revenue'],
                 reverse=True,
@@ -1613,7 +1614,14 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'n_lines': len(entry['order_ids']),
                 'channels': len(entry['channel_names']),
                 'list_price': False,
-                'avg_unit_price_real': round(entry['sales_amount'] / entry['quantity_sold'], 2) if entry['quantity_sold'] else 0.0
+                'avg_unit_price_real': round(entry['sales_amount'] / entry['quantity_sold'], 2) if entry['quantity_sold'] else 0.0,
+                'detail': _build_detail_payload(
+                    entry['name'],
+                    entry['category_name'] or 'Producto',
+                    entry['_detail'],
+                    secondary_title='Top PDVs',
+                    secondary_rows=_serialize_customer_rows(entry['_detail']),
+                ),
             })
         all_products.sort(key=lambda x: x['rev'], reverse=True)
         
@@ -1649,7 +1657,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'name': p['name'],
                 'pace_q1_u': round(pace_prev, 2),
                 'pace_abr_u': round(pace_last, 2),
-                'trend': trend
+                'trend': trend,
+                'detail': p['detail']
             }  
             if trend > 0:
                 growers.append(prod_trend_info)
@@ -1740,6 +1749,17 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 days_window = max(30, preceding_days)
                 days_of_cover = round(implied_stock_u / (sellout_u / days_window), 1) if sellout_u > 0 else None
                 
+                customer_entry = customer_map.get(pdv_id)
+                detail_payload = None
+                if customer_entry:
+                    detail_payload = _build_detail_payload(
+                        customer_entry['name'],
+                        customer_entry['channel'] or 'Sin canal',
+                        customer_entry['_detail'],
+                        secondary_title='Productos',
+                        secondary_rows=_serialize_product_rows(customer_entry['_detail']),
+                    )
+
                 by_pdv_list.append({
                     'store': pdv_id,
                     'partner_id': p_vals.get('partner_id', pdv_id),
@@ -1752,7 +1772,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'sellthrough_pct': sellthrough_pct,
                     'implied_stock_u': round(implied_stock_u, 1),
                     'days_of_cover': days_of_cover,
-                    'flag': 'acumulacion' if sellthrough_pct < 50.0 else 'normal'
+                    'flag': 'acumulacion' if sellthrough_pct < 50.0 else 'normal',
+                    'detail': detail_payload,
                 })
             by_pdv_list.sort(key=lambda x: x['sellin_q'], reverse=True)
             
@@ -1764,6 +1785,18 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 sellout_u = s_vals['sellout_u']
                 gap_q = sellin_q - sellout_q
                 sellthrough_pct = round(sellout_q / sellin_q * 100, 1) if sellin_q else 0.0
+
+                product_entry = product_map.get(s_vals.get('product_id'))
+                detail_payload = None
+                if product_entry:
+                    detail_payload = _build_detail_payload(
+                        product_entry['name'],
+                        product_entry['category_name'] or 'Producto',
+                        product_entry['_detail'],
+                        secondary_title='Top PDVs',
+                        secondary_rows=_serialize_customer_rows(product_entry['_detail']),
+                    )
+
                 by_sku_list.append({
                     'sku': sku_name,
                     'product_id': s_vals.get('product_id'),
@@ -1772,7 +1805,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'sellout_q': round(sellout_q, 2),
                     'sellout_u': round(sellout_u, 2),
                     'gap_q': round(gap_q, 2),
-                    'sellthrough_pct': sellthrough_pct
+                    'sellthrough_pct': sellthrough_pct,
+                    'detail': detail_payload,
                 })
             by_sku_list.sort(key=lambda x: x['sellin_q'], reverse=True)
             
@@ -1828,7 +1862,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'r': p['rev'],
                 'm': margin_pct,
                 'g': round(margin_val, 2),
-                's': round((rev / total_rev_bcg * 100) if total_rev_bcg else 0.0, 2)
+                's': round((rev / total_rev_bcg * 100) if total_rev_bcg else 0.0, 2),
+                'detail': p['detail'],
             })
             
         revenues_sorted = sorted([p['r'] for p in bcg_skus])
