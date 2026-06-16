@@ -1154,6 +1154,18 @@
   margin-top: 16px;
 }
 
+/* Force legible text color on badges for readability */
+.badge.bg-success,
+.badge.bg-danger,
+.badge.bg-primary,
+.badge.bg-secondary {
+  color: #ffffff !important;
+}
+
+.badge.bg-warning {
+  color: #1a1a1a !important;
+}
+
 @media (max-width: 1200px) {
   .zrn_analitics_header,
   .zrn_analitics_grid,
