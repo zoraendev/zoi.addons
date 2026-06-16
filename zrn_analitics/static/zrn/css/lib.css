@@ -616,11 +616,17 @@
   color: var(--zrn-analitics-text);
 }
 
-.zrn_analitics_commercial_table tbody tr[style*="cursor: pointer"] {
+.zrn_analitics_commercial_table tbody tr[style*="cursor: pointer"],
+.zrn_analitics_commercial_channel_row,
+.zrn_analitics_commercial_portfolio_row[style*="cursor: pointer"],
+.o_list_table tbody tr[style*="cursor: pointer"] {
   transition: all 0.15s ease;
 }
 
-.zrn_analitics_commercial_table tbody tr[style*="cursor: pointer"]:hover {
+.zrn_analitics_commercial_table tbody tr[style*="cursor: pointer"]:hover,
+.zrn_analitics_commercial_channel_row:hover,
+.zrn_analitics_commercial_portfolio_row[style*="cursor: pointer"]:hover,
+.o_list_table tbody tr[style*="cursor: pointer"]:hover {
   background-color: var(--zrn-analitics-bg-soft) !important;
   box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3) !important;
   position: relative;
