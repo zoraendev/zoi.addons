@@ -17,107 +17,87 @@
                     <field name="page_key" invisible="1"/>
                     <field name="sequence" invisible="1"/>
 
-                    <div class="zrn_planning_production_shell">
-                        <div class="zrn_planning_production_hero">
-                            <div class="zrn_planning_production_hero_copy">
-                                <div class="zrn_planning_production_kicker">Zoraen Planning</div>
-                                <div class="oe_title">
-                                    <h1>Centro de planeacion</h1>
-                                </div>
-                                <div class="zrn_planning_production_intro">
-                                    Centro operativo para coordinar fabricacion, abastecimiento, logistica y seguimiento de planes desacoplados de la ejecucion.
-                                </div>
+                    <div class="zrn_planning_home_shell">
+                        <div class="zrn_planning_home_toolbar">
+                            <div class="zrn_planning_home_menu zrn_planning_home_menu_top">
+                                <button
+                                    name="action_open_production_planning"
+                                    type="object"
+                                    icon="fa-industry"
+                                    string="Produccion"
+                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
+                                />
+                                <button
+                                    name="action_open_supply_planning"
+                                    type="object"
+                                    icon="fa-shopping-cart"
+                                    string="Abastecimiento"
+                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
+                                />
+                                <button
+                                    name="action_open_inventory_reconciliation"
+                                    type="object"
+                                    icon="fa-balance-scale"
+                                    string="Cuadre Inventario"
+                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
+                                />
                             </div>
-                            <div class="zrn_planning_production_quickstats">
-                                <div class="zrn_planning_production_stat">
-                                    <span class="zrn_planning_production_stat_label">Frentes</span>
-                                    <span class="zrn_planning_production_stat_value">3</span>
+                            <div class="zrn_planning_home_quickstats zrn_planning_home_quickstats_top">
+                                <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_neutral">
+                                    <span class="zrn_planning_home_stat_label">Frentes</span>
+                                    <span class="zrn_planning_home_stat_value">3</span>
                                 </div>
-                                <div class="zrn_planning_production_stat">
-                                    <span class="zrn_planning_production_stat_label">Planes</span>
-                                    <span class="zrn_planning_production_stat_value">Activos</span>
+                                <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_brand">
+                                    <span class="zrn_planning_home_stat_label">Planes</span>
+                                    <span class="zrn_planning_home_stat_value">
+                                        <field name="active_plan_count" readonly="1" nolabel="1"/>
+                                    </span>
                                 </div>
-                                <div class="zrn_planning_production_stat">
-                                    <span class="zrn_planning_production_stat_label">Objetivo</span>
-                                    <span class="zrn_planning_production_stat_value">Control</span>
+                                <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_alert">
+                                    <span class="zrn_planning_home_stat_label">Alertas</span>
+                                    <span class="zrn_planning_home_stat_value">2</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="zrn_planning_production_dashboard">
-                            <div class="zrn_planning_production_actions">
-                                <div class="zrn_planning_production_section_title">Frentes de trabajo</div>
-                                <div class="zrn_planning_production_menu">
-                                    <button
-                                        name="action_open_production_planning"
-                                        type="object"
-                                        icon="fa-industry"
-                                        string="Produccion"
-                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
-                                    />
-                                    <button
-                                        name="action_open_supply_planning"
-                                        type="object"
-                                        icon="fa-shopping-cart"
-                                        string="Abastecimiento"
-                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_primary"
-                                    />
-                                    <button
-                                        name="action_open_logistics_planning"
-                                        type="object"
-                                        icon="fa-truck"
-                                        string="Logistica"
-                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_tertiary"
-                                    />
-                                    <button
-                                        name="action_open_inventory_reconciliation"
-                                        type="object"
-                                        icon="fa-balance-scale"
-                                        string="Cuadre Inventario"
-                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="zrn_planning_production_panels">
-                                <div class="zrn_planning_production_panel zrn_planning_production_panel_wide">
-                                    <div class="zrn_planning_production_panel_head">
-                                        <span>Contexto operativo</span>
-                                        <span>Planeacion transversal</span>
+                        <div class="zrn_planning_home_dashboard">
+                            <div class="zrn_planning_home_previews zrn_planning_home_previews_summary">
+                                <div class="zrn_planning_home_panel">
+                                    <div class="zrn_planning_home_panel_head">
+                                        <span>Ultimos planes de fabricacion</span>
+                                        <strong><field name="recent_production_plan_count" readonly="1" nolabel="1"/></strong>
                                     </div>
-                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_list">
-                                        <div class="zrn_planning_production_placeholder_row"/>
-                                        <div class="zrn_planning_production_placeholder_row"/>
-                                        <div class="zrn_planning_production_placeholder_row"/>
-                                        <div class="zrn_planning_production_placeholder_row"/>
+                                    <div class="zrn_planning_home_panel_body">
+                                        <div class="zrn_planning_plans_list_container zrn_planning_home_plans_list_container">
+                                            <field name="recent_production_plan_ids" readonly="1" nolabel="1"
+                                                   context="{'form_view_ref': 'zrn_planning.view_zrn_planning_mfg_plan_form'}">
+                                                <tree limit="5" create="0" delete="0" edit="0">
+                                                    <field name="name" string="Nombre del plan"/>
+                                                    <field name="date_start" string="Inicio"/>
+                                                    <field name="date_end" string="Fin"/>
+                                                    <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'approved'"/>
+                                                </tree>
+                                            </field>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="zrn_planning_production_panel">
-                                    <div class="zrn_planning_production_panel_head">
-                                        <span>Alertas</span>
-                                        <span>Inventario y pagos</span>
+                                <div class="zrn_planning_home_panel">
+                                    <div class="zrn_planning_home_panel_head">
+                                        <span>Ultimos planes de abastecimiento</span>
+                                        <strong><field name="recent_supply_plan_count" readonly="1" nolabel="1"/></strong>
                                     </div>
-                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_map">
-                                        <div class="zrn_planning_production_placeholder_blob"/>
-                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_1"/>
-                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_2"/>
-                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_3"/>
-                                    </div>
-                                </div>
-
-                                <div class="zrn_planning_production_panel">
-                                    <div class="zrn_planning_production_panel_head">
-                                        <span>Seguimiento</span>
-                                        <span>Capacidad y ritmo</span>
-                                    </div>
-                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_chart">
-                                        <div class="zrn_planning_production_placeholder_bars">
-                                            <div/>
-                                            <div/>
-                                            <div/>
-                                            <div/>
-                                            <div/>
+                                    <div class="zrn_planning_home_panel_body">
+                                        <div class="zrn_planning_plans_list_container zrn_planning_home_plans_list_container">
+                                            <field name="recent_supply_plan_ids" readonly="1" nolabel="1"
+                                                   context="{'form_view_ref': 'zrn_planning.view_zrn_planning_supply_plan_form'}">
+                                                <tree limit="5" create="0" delete="0" edit="0">
+                                                    <field name="name" string="Nombre del plan"/>
+                                                    <field name="date_start" string="Inicio"/>
+                                                    <field name="date_end" string="Fin"/>
+                                                    <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'approved'"/>
+                                                </tree>
+                                            </field>
                                         </div>
                                     </div>
                                 </div>
@@ -181,5 +161,9 @@ action = wizard.action_open_filters()
         sequence="30"
         action="action_server_open_purchase_wizard"
     />
+
+    <record id="menu_zrn_planning_delivery" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
 
 </odoo>

@@ -22,8 +22,7 @@
     overflow: auto;
     max-width: none !important;
     margin-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding: 10px 12px 14px !important;
   }
 
   .o_form_view.zrn_planning_home_form .o_form_sheet {
@@ -51,13 +50,19 @@
     flex-direction: column;
     gap: 16px;
     overflow: visible;
+    padding: 4px;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.9fr);
-    gap: 14px;
-    align-items: stretch;
+    display: block;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_hero_copy,
@@ -76,12 +81,12 @@
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_hero_copy {
     display: flex;
-    min-height: 132px;
+    min-height: auto;
     flex-direction: column;
     justify-content: center;
-    gap: 10px;
-    border-radius: 8px;
-    padding: 20px 24px;
+    gap: 6px;
+    border-radius: 0;
+    padding: 4px 0 0;
     background: transparent;
     border-color: transparent;
   }
@@ -110,20 +115,27 @@
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_quickstats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1px;
-    overflow: hidden;
-    border-radius: 8px;
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_quickstats_top {
+    margin-left: auto;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_stat {
     display: flex;
-    min-height: 132px;
+    min-height: 96px;
     flex-direction: column;
     justify-content: center;
     gap: 6px;
-    padding: 18px;
+    padding: 14px 16px;
     background: var(--z-color-surface-2, #f8fafc);
   }
 
@@ -142,13 +154,13 @@
       var(--z-color-text-strong) 78%,
       var(--z-color-brand-1000) 22%
     );
-    font-size: 1.8rem;
+    font-size: 1.45rem;
     font-weight: 700;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_dashboard {
-    display: grid;
-    grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.45fr);
+    display: flex;
+    flex-direction: column;
     gap: 14px;
     flex: 1 1 auto;
     min-height: 0;
@@ -159,7 +171,7 @@
   .o_form_view.zrn_planning_home_form .zrn_planning_home_previews {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     min-height: 0;
   }
 
@@ -217,27 +229,28 @@
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_menu {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: minmax(72px, 1fr);
-    gap: 10px;
-    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 0 0 auto;
     min-height: 0;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn {
     display: flex;
-    min-height: 72px;
+    min-height: 42px;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
-    border-radius: 8px;
+    gap: 6px;
+    border-radius: 6px;
     color: var(--z-color-text-strong, #212529) !important;
     font-weight: 600;
+    font-size: 0.88rem;
     line-height: 1.2;
     text-align: left;
     white-space: nowrap;
-    padding: 0 16px;
+    padding: 8px 12px;
     position: relative;
     overflow: hidden;
     transition:
@@ -246,12 +259,21 @@
       color 180ms ease;
   }
 
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_menu_stack {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(56px, auto);
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_menu_top {
+    justify-content: flex-start;
+  }
+
   .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn::before {
     content: "";
     position: absolute;
     inset: 0 auto 0 0;
-    width: 4px;
-    border-radius: 8px 0 0 8px;
+    width: 3px;
+    border-radius: 6px 0 0 6px;
     background: var(--z-color-brand-600);
     opacity: 0.95;
   }
@@ -302,6 +324,77 @@
     ) !important;
   }
 
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric {
+    min-height: 42px;
+    justify-content: space-between;
+    padding-right: 14px;
+    color: var(--z-color-button-secondary-text, #ffffff) !important;
+    min-width: 112px;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .zrn_planning_home_stat_label,
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .zrn_planning_home_stat_value,
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .o_field_widget {
+    color: inherit !important;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .zrn_planning_home_stat_label {
+    font-size: 0.8rem;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .zrn_planning_home_stat_value,
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .o_field_widget {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_brand {
+    background: color-mix(
+      in srgb,
+      var(--z-color-brand-800) 92%,
+      var(--z-color-brand-700) 8%
+    ) !important;
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-brand-1100) 55%,
+      var(--z-color-brand-700) 45%
+    );
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_neutral {
+    background: color-mix(
+      in srgb,
+      var(--z-color-surface-2, #f4f6f8) 92%,
+      var(--z-color-brand-100) 8%
+    ) !important;
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-border) 78%,
+      var(--z-color-brand-200) 22%
+    );
+    color: var(--z-color-text-strong, #1f2937) !important;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_alert {
+    background: color-mix(
+      in srgb,
+      var(--z-color-warning-100, #fff4db) 88%,
+      var(--z-color-surface-raised, #ffffff) 12%
+    ) !important;
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-warning-300, #f3c969) 56%,
+      var(--z-color-border) 44%
+    );
+    color: var(--z-color-text-strong, #1f2937) !important;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_neutral::before,
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_alert::before {
+    background: var(--z-color-brand-500, #5b79f6);
+  }
+
   .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_tertiary {
     background: color-mix(
       in srgb,
@@ -330,22 +423,24 @@
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_previews {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: minmax(160px, 1.05fr) minmax(150px, 0.9fr) minmax(
-        120px,
-        0.8fr
-      );
+    display: flex;
+    flex-direction: column;
     gap: 10px;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_previews_summary {
+    align-items: stretch;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_panel {
     display: flex;
     flex-direction: column;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
     min-height: 0;
-    background: var(--z-color-surface-raised, #ffffff);
+    border: 0;
+    background: transparent;
+    width: 100%;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_panel_wide {
@@ -367,8 +462,53 @@
   .o_form_view.zrn_planning_home_form .zrn_planning_home_panel_body {
     display: flex;
     flex: 1 1 auto;
-    padding: 12px 14px 14px;
-    min-height: 0;
+    padding: 8px 0 0;
+    min-height: calc(100vh - 320px);
+    overflow: visible;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_plans_list_container {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 100%;
+    max-height: none;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .o_list_table {
+    min-width: 100%;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    th {
+    white-space: nowrap;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    td {
+    vertical-align: middle;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .table-responsive,
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .o_list_renderer,
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .o_renderer {
+    height: 100%;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .o_list_renderer
+    .o_list_table {
+    height: 100%;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_placeholder_calendar,
@@ -2842,9 +2982,20 @@
       overflow: auto;
     }
 
-    .o_form_view.zrn_planning_home_form .zrn_planning_home_menu {
-      grid-template-columns: 1fr;
-      grid-auto-rows: minmax(72px, auto);
+    .o_form_view.zrn_planning_home_form .zrn_planning_home_toolbar {
+      gap: 10px;
+    }
+
+    .o_form_view.zrn_planning_home_form .zrn_planning_home_menu,
+    .o_form_view.zrn_planning_home_form .zrn_planning_home_menu_top {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .o_form_view.zrn_planning_home_form .zrn_planning_home_quickstats_top {
+      width: 100%;
+      margin-left: 0;
+      justify-content: flex-start;
     }
 
     .o_form_view.zrn_planning_production_report_form
@@ -2910,14 +3061,6 @@
       .zrn_planning_production_panel {
       width: 100%;
       min-width: 0;
-    }
-
-    .o_form_view.zrn_planning_home_form .zrn_planning_home_quickstats {
-      display: flex;
-    }
-
-    .o_form_view.zrn_planning_home_form .zrn_planning_home_previews {
-      grid-template-rows: none;
     }
 
     .o_form_view.zrn_planning_home_form .zrn_planning_home_panel_wide {
