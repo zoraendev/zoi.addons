@@ -22,8 +22,7 @@
     overflow: auto;
     max-width: none !important;
     margin-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    padding: 10px 12px 14px !important;
   }
 
   .o_form_view.zrn_planning_home_form .o_form_sheet {
@@ -51,13 +50,19 @@
     flex-direction: column;
     gap: 16px;
     overflow: visible;
+    padding: 4px;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.9fr);
-    gap: 14px;
-    align-items: stretch;
+    display: block;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_hero_copy,
@@ -76,12 +81,12 @@
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_hero_copy {
     display: flex;
-    min-height: 132px;
+    min-height: auto;
     flex-direction: column;
     justify-content: center;
-    gap: 10px;
-    border-radius: 8px;
-    padding: 20px 24px;
+    gap: 6px;
+    border-radius: 0;
+    padding: 4px 0 0;
     background: transparent;
     border-color: transparent;
   }
@@ -110,20 +115,27 @@
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_quickstats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1px;
-    overflow: hidden;
-    border-radius: 8px;
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_quickstats_top {
+    margin-left: auto;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_stat {
     display: flex;
-    min-height: 132px;
+    min-height: 96px;
     flex-direction: column;
     justify-content: center;
     gap: 6px;
-    padding: 18px;
+    padding: 14px 16px;
     background: var(--z-color-surface-2, #f8fafc);
   }
 
@@ -142,13 +154,13 @@
       var(--z-color-text-strong) 78%,
       var(--z-color-brand-1000) 22%
     );
-    font-size: 1.8rem;
+    font-size: 1.45rem;
     font-weight: 700;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_dashboard {
-    display: grid;
-    grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.45fr);
+    display: flex;
+    flex-direction: column;
     gap: 14px;
     flex: 1 1 auto;
     min-height: 0;
@@ -159,7 +171,7 @@
   .o_form_view.zrn_planning_home_form .zrn_planning_home_previews {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     min-height: 0;
   }
 
@@ -217,27 +229,28 @@
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_menu {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: minmax(72px, 1fr);
-    gap: 10px;
-    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 0 0 auto;
     min-height: 0;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn {
     display: flex;
-    min-height: 72px;
+    min-height: 42px;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
-    border-radius: 8px;
+    gap: 6px;
+    border-radius: 6px;
     color: var(--z-color-text-strong, #212529) !important;
     font-weight: 600;
+    font-size: 0.88rem;
     line-height: 1.2;
     text-align: left;
     white-space: nowrap;
-    padding: 0 16px;
+    padding: 8px 12px;
     position: relative;
     overflow: hidden;
     transition:
@@ -246,12 +259,21 @@
       color 180ms ease;
   }
 
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_menu_stack {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(56px, auto);
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_menu_top {
+    justify-content: flex-start;
+  }
+
   .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn::before {
     content: "";
     position: absolute;
     inset: 0 auto 0 0;
-    width: 4px;
-    border-radius: 8px 0 0 8px;
+    width: 3px;
+    border-radius: 6px 0 0 6px;
     background: var(--z-color-brand-600);
     opacity: 0.95;
   }
@@ -302,6 +324,77 @@
     ) !important;
   }
 
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric {
+    min-height: 42px;
+    justify-content: space-between;
+    padding-right: 14px;
+    color: var(--z-color-button-secondary-text, #ffffff) !important;
+    min-width: 112px;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .zrn_planning_home_stat_label,
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .zrn_planning_home_stat_value,
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .o_field_widget {
+    color: inherit !important;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .zrn_planning_home_stat_label {
+    font-size: 0.8rem;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .zrn_planning_home_stat_value,
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric .o_field_widget {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_brand {
+    background: color-mix(
+      in srgb,
+      var(--z-color-brand-800) 92%,
+      var(--z-color-brand-700) 8%
+    ) !important;
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-brand-1100) 55%,
+      var(--z-color-brand-700) 45%
+    );
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_neutral {
+    background: color-mix(
+      in srgb,
+      var(--z-color-surface-2, #f4f6f8) 92%,
+      var(--z-color-brand-100) 8%
+    ) !important;
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-border) 78%,
+      var(--z-color-brand-200) 22%
+    );
+    color: var(--z-color-text-strong, #1f2937) !important;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_alert {
+    background: color-mix(
+      in srgb,
+      var(--z-color-warning-100, #fff4db) 88%,
+      var(--z-color-surface-raised, #ffffff) 12%
+    ) !important;
+    border-color: color-mix(
+      in srgb,
+      var(--z-color-warning-300, #f3c969) 56%,
+      var(--z-color-border) 44%
+    );
+    color: var(--z-color-text-strong, #1f2937) !important;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_neutral::before,
+  .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_metric_alert::before {
+    background: var(--z-color-brand-500, #5b79f6);
+  }
+
   .o_form_view.zrn_planning_home_form .zrn_planning_menu_btn_tertiary {
     background: color-mix(
       in srgb,
@@ -330,22 +423,24 @@
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_previews {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: minmax(160px, 1.05fr) minmax(150px, 0.9fr) minmax(
-        120px,
-        0.8fr
-      );
+    display: flex;
+    flex-direction: column;
     gap: 10px;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_previews_summary {
+    align-items: stretch;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_panel {
     display: flex;
     flex-direction: column;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
     min-height: 0;
-    background: var(--z-color-surface-raised, #ffffff);
+    border: 0;
+    background: transparent;
+    width: 100%;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_panel_wide {
@@ -367,8 +462,53 @@
   .o_form_view.zrn_planning_home_form .zrn_planning_home_panel_body {
     display: flex;
     flex: 1 1 auto;
-    padding: 12px 14px 14px;
-    min-height: 0;
+    padding: 8px 0 0;
+    min-height: calc(100vh - 320px);
+    overflow: visible;
+  }
+
+  .o_form_view.zrn_planning_home_form .zrn_planning_home_plans_list_container {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 100%;
+    max-height: none;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .o_list_table {
+    min-width: 100%;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    th {
+    white-space: nowrap;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    td {
+    vertical-align: middle;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .table-responsive,
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .o_list_renderer,
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .o_renderer {
+    height: 100%;
+  }
+
+  .o_form_view.zrn_planning_home_form
+    .zrn_planning_home_plans_list_container
+    .o_list_renderer
+    .o_list_table {
+    height: 100%;
   }
 
   .o_form_view.zrn_planning_home_form .zrn_planning_home_placeholder_calendar,
@@ -1461,19 +1601,39 @@
     white-space: nowrap;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_widget {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_widget {
     margin-bottom: 0 !important;
     flex: 1 1 auto;
     min-width: 0;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o-autocomplete--input,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o-autocomplete--input,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input_dropdown,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input_dropdown {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o-autocomplete--input,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o-autocomplete--input,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input_dropdown,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input_dropdown {
     min-height: 34px;
   }
 
@@ -1505,44 +1665,84 @@
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item span,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item span {
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_summary_item
+    span {
     font-weight: 600;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_summary_item .o_field_widget {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_summary_item
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_summary_item
+    .o_field_widget {
     color: var(--z-color-text-strong, #1f2937) !important;
     font-size: 0.8rem !important;
     font-weight: 700 !important;
     margin-bottom: 0 !important;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2manytags,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2manytags,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2one,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_many2one,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_date,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_field_date {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_many2manytags,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_many2manytags,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_many2one,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_many2one,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_date,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_field_date {
     width: 100%;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item .o_input,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item .o_input {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item
+    .o_input {
     width: 100%;
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select {
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select {
     position: relative;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select .o_field_widget {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    .o_field_widget {
     min-width: 160px;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input {
     min-width: 160px;
     height: 34px;
     padding: 0 8px;
@@ -1556,13 +1756,23 @@
     cursor: pointer;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input:hover,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input:hover {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input:hover,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input:hover {
     border-color: var(--o-input-border-color, #b8c2cc);
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input:focus,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_select select.o_input:focus {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input:focus,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_field_item_select
+    select.o_input:focus {
     border-color: var(--o-brand-primary, #714b67);
     box-shadow: 0 0 0 0.2rem rgba(113, 75, 103, 0.15);
     outline: 0;
@@ -1620,8 +1830,13 @@
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta strong,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta strong,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_meta .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_meta .o_field_widget {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_meta
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_meta
+    .o_field_widget {
     color: var(--z-color-text-strong, #1f2937) !important;
     font-size: 0.76rem !important;
     font-weight: 700 !important;
@@ -1718,7 +1933,9 @@
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_btn_primary:hover,
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_btn_primary:focus,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_btn_primary:hover,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_btn_primary:focus {
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_btn_primary:focus {
     background: var(--z-color-brand-800, #3d53ad) !important;
     border-color: var(--z-color-brand-800, #3d53ad) !important;
     color: #ffffff !important;
@@ -1766,7 +1983,9 @@
     .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item,
     .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item,
     .o_form_view.zrn_planning_filter_form .zrn_planning_filter_field_item_wide,
-    .o_form_view .zrn_planning_filter_form .zrn_planning_filter_field_item_wide {
+    .o_form_view
+      .zrn_planning_filter_form
+      .zrn_planning_filter_field_item_wide {
       flex-basis: 100%;
       min-width: 0;
     }
@@ -1776,27 +1995,57 @@
     }
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_widget,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_view,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_widget,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_view {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_widget,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_x2many,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_renderer,
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_view,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_x2many,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_renderer,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_view {
     width: 100%;
     max-width: 100%;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_field_x2many {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_x2many,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_field_x2many {
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
   }
 
-  .o_form_view.zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer,
-  .o_form_view .zrn_planning_filter_form .zrn_planning_filter_table_panel .o_list_renderer {
+  .o_form_view.zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_renderer,
+  .o_form_view
+    .zrn_planning_filter_form
+    .zrn_planning_filter_table_panel
+    .o_list_renderer {
     overflow-x: auto;
   }
 
@@ -1865,6 +2114,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 20px;
     padding: 0;
     background: transparent;
@@ -1878,6 +2128,7 @@
     display: flex;
     min-width: 0;
     align-items: center;
+    flex-wrap: wrap;
     gap: 16px;
   }
 
@@ -1918,10 +2169,10 @@
     position: relative;
     border-radius: 0;
   }
-  
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: -6px;
     left: 0;
@@ -1939,7 +2190,7 @@
     color: var(--z-color-text-muted, #6b7280) !important;
     font-weight: 600;
   }
-  
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_title_tab_inactive::after {
     display: none;
@@ -1976,12 +2227,14 @@
   }
 
   .o_form_view.zrn_planning_production_manufacture_form
-    .zrn_planning_production_report_inline_stat i {
+    .zrn_planning_production_report_inline_stat
+    i {
     color: var(--z-color-text-muted, #6b7280);
   }
 
   .o_form_view.zrn_planning_production_manufacture_form
-    .zrn_planning_production_report_inline_stat strong {
+    .zrn_planning_production_report_inline_stat
+    strong {
     color: var(--z-color-text-strong, #1f2937);
     font-size: 0.9rem;
   }
@@ -2048,6 +2301,7 @@
     min-width: 0;
     align-items: center;
     justify-content: flex-end;
+    flex-wrap: wrap;
     gap: 10px;
   }
 
@@ -2068,13 +2322,15 @@
   }
 
   .o_form_view.zrn_planning_production_report_form
-    .zrn_planning_production_report_inline_stat i {
+    .zrn_planning_production_report_inline_stat
+    i {
     color: var(--z-color-brand-700, #4862c9);
     font-size: 0.86rem;
   }
 
   .o_form_view.zrn_planning_production_report_form
-    .zrn_planning_production_report_inline_stat strong {
+    .zrn_planning_production_report_inline_stat
+    strong {
     color: var(--z-color-text-strong, #1f2937);
     font-weight: 700;
     font-size: 0.96rem;
@@ -2098,7 +2354,10 @@
     font-size: 0.82rem;
     font-weight: 600;
     box-shadow: none !important;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2126,7 +2385,7 @@
     color: #ffffff !important;
     box-shadow: none !important;
   }
-  
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_action_btn_inactive:hover {
     border-color: var(--z-color-brand-700, #4862c9) !important;
@@ -2273,7 +2532,6 @@
 
   .o_form_view.zrn_planning_production_manufacture_form
     .zrn_planning_production_manufacture_table_wrap {
-    display: flex;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -2285,14 +2543,8 @@
     > .o_field_widget,
   .o_form_view.zrn_planning_production_manufacture_form
     .zrn_planning_production_manufacture_table_wrap
-    .o_field_x2many,
-  .o_form_view.zrn_planning_production_manufacture_form
-    .zrn_planning_production_manufacture_table_wrap
-    .o_list_view,
-  .o_form_view.zrn_planning_production_manufacture_form
-    .zrn_planning_production_manufacture_table_wrap
-    .o_list_renderer {
-    display: flex;
+    .o_field_x2many {
+    /* display: flex; */
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -2300,8 +2552,19 @@
 
   .o_form_view.zrn_planning_production_manufacture_form
     .zrn_planning_production_manufacture_table_wrap
+    .o_list_view,
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
     .o_list_renderer {
-    overflow: auto !important;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
+    .o_list_renderer {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
     border: 0;
   }
 
@@ -2309,6 +2572,50 @@
     .zrn_planning_production_manufacture_table_wrap
     table.o_list_table {
     margin-bottom: 0 !important;
+  }
+
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
+    .o_list_table
+    .zrn_planning_row_action_btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    min-width: 88px;
+    padding: 5px 10px;
+    border: 1px solid var(--z-color-brand-600, #4f75ff) !important;
+    border-color: var(--z-color-brand-600, #4f75ff) !important;
+    border-radius: 6px !important;
+    background: var(--z-color-brand-600, #4f75ff) !important;
+    background-color: var(--z-color-brand-600, #4f75ff) !important;
+    background-image: none !important;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+    line-height: 1.2;
+    white-space: nowrap;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    color: #ffffff !important;
+  }
+
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
+    .o_list_table
+    .zrn_planning_row_action_btn:hover,
+  .o_form_view.zrn_planning_production_manufacture_form
+    .zrn_planning_production_manufacture_table_wrap
+    .o_list_table
+    .zrn_planning_row_action_btn:focus {
+    background: var(--z-color-brand-700, #4862c9) !important;
+    background-color: var(--z-color-brand-700, #4862c9) !important;
+    border-color: var(--z-color-brand-700, #4862c9) !important;
+    color: #ffffff !important;
+    box-shadow: none;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2410,6 +2717,121 @@
     .zrn_planning_production_report_table_panel
     .o_list_renderer {
     border: 0;
+    height: 35rem !important;
+  }
+
+  @media (max-width: 991.98px) {
+    .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_table_panel
+      .o_list_renderer {
+      border: 0;
+      height: 30rem !important;
+    }
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item
+    label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--z-color-text-muted, #6b7280);
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item
+    .o_field_widget {
+    margin-bottom: 0;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item_boolean {
+    min-width: 128px;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_filter_item_boolean
+    .o_field_boolean {
+    min-width: auto;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    border-width: 1px !important;
+    border-style: solid !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_info {
+    border-color: color-mix(in srgb, #4666d8 70%, var(--z-color-border) 30%) !important;
+    background-color: #eef3ff !important;
+    color: #2846b7 !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_info:hover,
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_info:focus {
+    border-color: #3b59c6 !important;
+    background-color: #e3ebff !important;
+    color: #1f3998 !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_success {
+    border-color: color-mix(in srgb, #2f7d4d 72%, var(--z-color-border) 28%) !important;
+    background-color: #edf8f1 !important;
+    color: #24633d !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_success:hover,
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_inventory_reconciliation_btn_success:focus {
+    border-color: #276b42 !important;
+    background-color: #e1f2e8 !important;
+    color: #1e5533 !important;
   }
 
   .o_form_view.zrn_planning_production_report_form
@@ -2560,9 +2982,20 @@
       overflow: auto;
     }
 
-    .o_form_view.zrn_planning_home_form .zrn_planning_home_menu {
-      grid-template-columns: 1fr;
-      grid-auto-rows: minmax(72px, auto);
+    .o_form_view.zrn_planning_home_form .zrn_planning_home_toolbar {
+      gap: 10px;
+    }
+
+    .o_form_view.zrn_planning_home_form .zrn_planning_home_menu,
+    .o_form_view.zrn_planning_home_form .zrn_planning_home_menu_top {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .o_form_view.zrn_planning_home_form .zrn_planning_home_quickstats_top {
+      width: 100%;
+      margin-left: 0;
+      justify-content: flex-start;
     }
 
     .o_form_view.zrn_planning_production_report_form
@@ -2630,14 +3063,6 @@
       min-width: 0;
     }
 
-    .o_form_view.zrn_planning_home_form .zrn_planning_home_quickstats {
-      display: flex;
-    }
-
-    .o_form_view.zrn_planning_home_form .zrn_planning_home_previews {
-      grid-template-rows: none;
-    }
-
     .o_form_view.zrn_planning_home_form .zrn_planning_home_panel_wide {
       grid-column: span 1;
     }
@@ -2649,21 +3074,41 @@
 
     .o_form_view.zrn_planning_production_report_form
       .zrn_planning_production_report_header {
+      display: grid;
       grid-template-columns: 1fr;
       justify-items: flex-start;
+      align-items: start;
       gap: 12px;
     }
 
     .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_heading_group,
+    .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_actions {
+      width: 100%;
+      gap: 8px;
+    }
+
+    .o_form_view.zrn_planning_production_report_form
       .zrn_planning_production_report_header_range {
+      width: 100%;
+      flex-wrap: wrap;
       justify-content: flex-start;
       text-align: left;
+      white-space: normal;
     }
 
     .o_form_view.zrn_planning_production_report_form
       .zrn_planning_production_report_actions {
       width: 100%;
       justify-content: flex-start;
+    }
+
+    .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_action_btn,
+    .o_form_view.zrn_planning_production_report_form
+      .zrn_planning_production_report_inline_stat {
+      min-height: 34px;
     }
 
     .o_form_view.zrn_planning_submodule_form .zrn_planning_building_state {
@@ -2806,15 +3251,21 @@
     margin: 0;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -2824,8 +3275,15 @@
     font-size: 0.88rem;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item:not(.zrn_planning_create_plan_modal_summary_item_range),
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item:not(.zrn_planning_create_plan_modal_summary_item_range) {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item:not(
+      .zrn_planning_create_plan_modal_summary_item_range
+    ),
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item:not(
+      .zrn_planning_create_plan_modal_summary_item_range
+    ) {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -2836,8 +3294,13 @@
     background: #f5f6f8;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item span,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item span {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item
+    span,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item
+    span {
     margin: 0;
     font-size: 0.78rem;
     font-weight: 600;
@@ -2846,15 +3309,23 @@
     color: var(--z-color-text-muted, #6b7280);
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item strong,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item strong {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item
+    strong,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item
+    strong {
     font-size: 0.92rem;
     font-weight: 600;
     color: var(--z-color-text-strong, #111827);
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -2866,20 +3337,33 @@
     box-shadow: none !important;
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range span,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range span {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range
+    span,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range
+    span {
     font-weight: 500;
     color: var(--z-color-text-muted, #6b7280);
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range strong,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_summary_item_range strong {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range
+    strong,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_summary_item_range
+    strong {
     font-weight: 700;
     color: var(--z-color-text-strong, #111827);
   }
 
-  .o_form_view.zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_table,
-  .o_form_view .zrn_planning_create_plan_modal_form .zrn_planning_create_plan_modal_table {
+  .o_form_view.zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_table,
+  .o_form_view
+    .zrn_planning_create_plan_modal_form
+    .zrn_planning_create_plan_modal_table {
     max-height: 320px;
     overflow: auto;
     border: 1px solid var(--z-color-border, #d6dae1);
@@ -3081,6 +3565,7 @@
     .zrn_planning_report_detail_lines_group {
     width: 100%;
     margin-top: 4px;
+    min-height: 0;
   }
 
   .o_form_view.zrn_planning_report_detail_form
@@ -3128,12 +3613,33 @@
 
   .o_form_view.zrn_planning_report_detail_form
     .zrn_planning_report_detail_lines_group
+    .o_field_widget,
+  .o_form_view.zrn_planning_report_detail_form
+    .zrn_planning_report_detail_lines_group
+    .o_field_x2many,
+  .o_form_view
+    .zrn_planning_report_detail_form
+    .zrn_planning_report_detail_lines_group
+    .o_field_widget,
+  .o_form_view
+    .zrn_planning_report_detail_form
+    .zrn_planning_report_detail_lines_group
+    .o_field_x2many {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .o_form_view.zrn_planning_report_detail_form
+    .zrn_planning_report_detail_lines_group
     .o_list_renderer,
   .o_form_view
     .zrn_planning_report_detail_form
     .zrn_planning_report_detail_lines_group
     .o_list_renderer {
+    max-height: calc(100vh - 340px);
     overflow-x: auto;
+    overflow-y: auto;
   }
 
   .o_form_view.zrn_planning_report_detail_form
@@ -3145,6 +3651,7 @@
     .o_list_table {
     width: 100%;
     min-width: 980px;
+    margin-bottom: 0 !important;
   }
 
   .o_form_view.zrn_planning_report_detail_form
@@ -3315,7 +3822,19 @@
     .o_form_view
       .zrn_planning_report_detail_form
       .zrn_planning_report_detail_stats {
+      display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .o_form_view.zrn_planning_report_detail_form
+      .zrn_planning_report_detail_lines_group
+      .o_list_renderer,
+    .o_form_view
+      .zrn_planning_report_detail_form
+      .zrn_planning_report_detail_lines_group
+      .o_list_renderer {
+      max-height: calc(100vh - 300px);
     }
 
     .modal-content:has(.zrn_planning_report_line_detail_form) {
@@ -3343,15 +3862,32 @@
 }
 
 /* Force all Planning and report wizard form sheets to occupy 100% of the screen width */
-.o_form_view:has(.zrn_planning_production_report_screen, .zrn_planning_production_shell, .zrn_planning_home_shell, .zrn_planning_purchase_report_screen) .o_form_sheet_bg,
-.o_form_view:has(.zrn_planning_production_report_screen, .zrn_planning_production_shell, .zrn_planning_home_shell, .zrn_planning_purchase_report_screen) .o_form_sheet {
+.o_form_view:has(
+    .zrn_planning_production_report_screen,
+    .zrn_planning_production_shell,
+    .zrn_planning_home_shell,
+    .zrn_planning_purchase_report_screen
+  )
+  .o_form_sheet_bg,
+.o_form_view:has(
+    .zrn_planning_production_report_screen,
+    .zrn_planning_production_shell,
+    .zrn_planning_home_shell,
+    .zrn_planning_purchase_report_screen
+  )
+  .o_form_sheet {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 100% !important;
   margin: 0 !important;
   padding: 8px !important;
 }
-.o_form_view:has(.zrn_planning_production_report_screen, .zrn_planning_production_shell, .zrn_planning_home_shell, .zrn_planning_purchase_report_screen) {
+.o_form_view:has(
+  .zrn_planning_production_report_screen,
+  .zrn_planning_production_shell,
+  .zrn_planning_home_shell,
+  .zrn_planning_purchase_report_screen
+) {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 100% !important;
@@ -3375,7 +3911,7 @@
 }
 
 .modal-content:has(.zrn_planning_mfg_plan_line_modal) .modal-title {
-  font-family: 'Outfit', 'Inter', sans-serif !important;
+  font-family: "Outfit", "Inter", sans-serif !important;
   font-weight: 700 !important;
   color: #1e1b4b !important;
   font-size: 1.2rem !important;
@@ -3389,7 +3925,7 @@
 /* Beautiful custom section titles */
 .zrn_planning_mfg_plan_line_modal strong {
   display: block;
-  font-family: 'Outfit', 'Inter', sans-serif !important;
+  font-family: "Outfit", "Inter", sans-serif !important;
   font-size: 1.05rem !important;
   font-weight: 700 !important;
   color: #1e1b4b !important;
@@ -3410,7 +3946,7 @@
 
 /* Improve fields style inside the modal */
 .zrn_planning_mfg_plan_line_modal .o_field_widget {
-  font-family: 'Inter', sans-serif !important;
+  font-family: "Inter", sans-serif !important;
   font-size: 0.92rem !important;
 }
 
@@ -3459,18 +3995,22 @@
   background: #f8fafc !important;
 }
 
-.modal-content:has(.zrn_planning_mfg_plan_line_modal) .modal-footer .btn-primary {
+.modal-content:has(.zrn_planning_mfg_plan_line_modal)
+  .modal-footer
+  .btn-primary {
   background: #7c3aed !important;
   border-color: #7c3aed !important;
   border-radius: 999px !important;
   padding: 8px 24px !important;
   font-weight: 600 !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: "Inter", sans-serif !important;
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25) !important;
   transition: all 0.2s !important;
 }
 
-.modal-content:has(.zrn_planning_mfg_plan_line_modal) .modal-footer .btn-primary:hover {
+.modal-content:has(.zrn_planning_mfg_plan_line_modal)
+  .modal-footer
+  .btn-primary:hover {
   background: #6d28d9 !important;
   border-color: #6d28d9 !important;
   box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4) !important;

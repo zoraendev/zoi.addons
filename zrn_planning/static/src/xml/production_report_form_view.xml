@@ -3,6 +3,18 @@
     <t t-name="zrn_planning.ProductionReportFormView" t-inherit="web.FormView" t-inherit-mode="primary">
         <xpath expr="//Layout" position="inside">
             <t t-set-slot="control-panel-navigation-additional">
+                <span class="o_control_panel_status_indicator">
+                    Lineas:
+                    <t t-esc="model.root.data.report_row_count || 0"/>
+                </span>
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    t-on-click="downloadReportExcel"
+                >
+                    <i class="fa fa-download me-1"/>
+                    Exportar
+                </button>
                 <button
                     type="button"
                     class="btn btn-primary"
@@ -24,7 +36,7 @@
                     t-on-click="createMfgPlan"
                 >
                     <i class="fa fa-plus me-1"/>
-                    Crear
+                    Planear
                 </button>
             </t>
         </xpath>

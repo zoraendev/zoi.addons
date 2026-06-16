@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="zrn_inventory_demo_lot_arroz_2024" model="stock.lot">
+            <field name="name">LOT-ARZ-2024-001</field>
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_arroz_template'))]"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="ref">ARZ-OLD-001</field>
+        </record>
+
+        <record id="zrn_inventory_demo_lot_arroz_2025" model="stock.lot">
+            <field name="name">LOT-ARZ-2025-003</field>
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_arroz_template'))]"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="ref">ARZ-MID-003</field>
+        </record>
+
+        <record id="zrn_inventory_demo_lot_pollo_2025" model="stock.lot">
+            <field name="name">LOT-POL-2025-004</field>
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_pollo_template'))]"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="ref">POL-MID-004</field>
+        </record>
+
+        <record id="zrn_inventory_demo_lot_pollo_2026" model="stock.lot">
+            <field name="name">LOT-POL-2026-001</field>
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_pollo_template'))]"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="ref">POL-NEW-001</field>
+        </record>
+
+        <record id="zrn_inventory_demo_lot_salsa_2024_archived" model="stock.lot">
+            <field name="name">LOT-SAL-2024-002</field>
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_salsa_template'))]"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="ref">SAL-OLD-002</field>
+            <field name="active">False</field>
+        </record>
+
+        <record id="zrn_inventory_demo_lot_salsa_2026" model="stock.lot">
+            <field name="name">LOT-SAL-2026-005</field>
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_salsa_template'))]"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="ref">SAL-NEW-005</field>
+        </record>
+
+        <record id="zrn_inventory_demo_quant_arroz_2024" model="stock.quant">
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_arroz_template'))]"/>
+            <field name="location_id" ref="stock.stock_location_stock"/>
+            <field name="lot_id" ref="zrn_inventory_demo_lot_arroz_2024"/>
+            <field name="quantity">120.0</field>
+            <field name="reserved_quantity">0.0</field>
+            <field name="in_date">2024-02-15 08:00:00</field>
+        </record>
+
+        <record id="zrn_inventory_demo_quant_arroz_2025" model="stock.quant">
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_arroz_template'))]"/>
+            <field name="location_id" ref="stock.stock_location_stock"/>
+            <field name="lot_id" ref="zrn_inventory_demo_lot_arroz_2025"/>
+            <field name="quantity">85.0</field>
+            <field name="reserved_quantity">0.0</field>
+            <field name="in_date">2025-05-06 09:30:00</field>
+        </record>
+
+        <record id="zrn_inventory_demo_quant_pollo_2025" model="stock.quant">
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_pollo_template'))]"/>
+            <field name="location_id" ref="stock.stock_location_stock"/>
+            <field name="lot_id" ref="zrn_inventory_demo_lot_pollo_2025"/>
+            <field name="quantity">64.0</field>
+            <field name="reserved_quantity">0.0</field>
+            <field name="in_date">2025-08-21 11:15:00</field>
+        </record>
+
+        <record id="zrn_inventory_demo_quant_pollo_2026" model="stock.quant">
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_pollo_template'))]"/>
+            <field name="location_id" ref="stock.stock_location_stock"/>
+            <field name="lot_id" ref="zrn_inventory_demo_lot_pollo_2026"/>
+            <field name="quantity">42.0</field>
+            <field name="reserved_quantity">0.0</field>
+            <field name="in_date">2026-03-10 10:00:00</field>
+        </record>
+
+        <record id="zrn_inventory_demo_quant_salsa_2024_archived" model="stock.quant">
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_salsa_template'))]"/>
+            <field name="location_id" ref="stock.stock_location_stock"/>
+            <field name="lot_id" ref="zrn_inventory_demo_lot_salsa_2024_archived"/>
+            <field name="quantity">33.0</field>
+            <field name="reserved_quantity">0.0</field>
+            <field name="in_date">2024-09-04 07:45:00</field>
+        </record>
+
+        <record id="zrn_inventory_demo_quant_salsa_2026" model="stock.quant">
+            <field name="product_id" search="[('product_tmpl_id', '=', ref('zrn_inventory_demo_product_salsa_template'))]"/>
+            <field name="location_id" ref="stock.stock_location_stock"/>
+            <field name="lot_id" ref="zrn_inventory_demo_lot_salsa_2026"/>
+            <field name="quantity">57.0</field>
+            <field name="reserved_quantity">0.0</field>
+            <field name="in_date">2026-01-19 14:20:00</field>
+        </record>
+
+    </data>
+</odoo>

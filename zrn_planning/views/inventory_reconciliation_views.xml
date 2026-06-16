@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="zrn_planning_inventory_reconciliation_default" model="zrn_planning.inventory.reconciliation">
+        <field name="name">Cuadre Inventario</field>
+    </record>
+
+    <record id="view_zrn_planning_inventory_reconciliation_form" model="ir.ui.view">
+        <field name="name">zrn_planning.inventory.reconciliation.form</field>
+        <field name="model">zrn_planning.inventory.reconciliation</field>
+        <field name="arch" type="xml">
+            <form string="Cuadre Inventario" js_class="zrn_planning_form" create="0" delete="0" duplicate="0" class="zrn_planning_production_report_form zrn_planning_inventory_reconciliation_form">
+                <sheet>
+                    <group invisible="1">
+                        <field name="name"/>
+                        <field name="lot_ids"/>
+                        <field name="lot_count"/>
+                        <field name="active_lot_count"/>
+                        <field name="archived_lot_count"/>
+                        <field name="stock_qty_total"/>
+                        <field name="selected_line_count"/>
+                        <field name="date_range_mode"/>
+                        <field name="date_from_label"/>
+                        <field name="date_to_label"/>
+                        <field name="date_range_label"/>
+                    </group>
+                    <div class="zrn_planning_production_report_screen">
+                        <div class="zrn_planning_production_report_header_shell">
+                            <div class="zrn_planning_production_report_header">
+                                <div class="zrn_planning_production_report_heading_group">
+                                    <button
+                                        name="action_open_home"
+                                        type="object"
+                                        string="Regresar"
+                                        icon="fa-arrow-left"
+                                        class="btn zrn_planning_back_btn zrn_planning_report_back_inline"
+                                    />
+                                    <div class="zrn_planning_production_report_title_tab">
+                                        Cuadre Inventario
+                                    </div>
+                                </div>
+                                <div class="zrn_planning_production_report_header_range">
+                                    <span>Rango consultado:</span>
+                                    <strong invisible="date_range_mode != 'range'">
+                                        <field name="date_from_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                    <span invisible="date_range_mode != 'range'">al</span>
+                                    <strong invisible="date_range_mode != 'range'">
+                                        <field name="date_to_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                    <strong invisible="date_range_mode != 'from'">
+                                        desde <field name="date_from_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                    <strong invisible="date_range_mode != 'to'">
+                                        hasta <field name="date_to_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                    <strong invisible="date_range_mode != 'all'">
+                                        <field name="date_range_label" readonly="1" nolabel="1"/>
+                                    </strong>
+                                </div>
+                                <div class="zrn_planning_production_report_inline_stat">
+                                    <i class="fa fa-tags"/>
+                                    <span>Lotes:</span>
+                                    <span><field name="lot_count" readonly="1" nolabel="1"/></span>
+                                </div>
+                                <div class="zrn_planning_production_report_actions">
+                                    <div class="zrn_planning_production_report_inline_stat zrn_planning_production_report_inline_stat_passive">
+                                        <i class="fa fa-check-circle"/>
+                                        <span>Activos:</span>
+                                        <strong><field name="active_lot_count" readonly="1" nolabel="1"/></strong>
+                                    </div>
+                                    <div class="zrn_planning_production_report_inline_stat zrn_planning_production_report_inline_stat_passive">
+                                        <i class="fa fa-archive"/>
+                                        <span>Archivados:</span>
+                                        <strong><field name="archived_lot_count" readonly="1" nolabel="1"/></strong>
+                                    </div>
+                                    <div class="zrn_planning_production_report_inline_stat zrn_planning_production_report_inline_stat_passive">
+                                        <i class="fa fa-cubes"/>
+                                        <span>Stock:</span>
+                                        <strong><field name="stock_qty_total" readonly="1" nolabel="1"/></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="zrn_planning_production_report_table_panel">
+                            <div class="zrn_planning_production_report_table_toolbar zrn_inventory_reconciliation_toolbar">
+                                <div class="zrn_inventory_reconciliation_filters">
+                                    <div class="zrn_inventory_reconciliation_filter_item">
+                                        <label for="date_from">Fecha desde</label>
+                                        <field name="date_from" nolabel="1"/>
+                                    </div>
+                                    <div class="zrn_inventory_reconciliation_filter_item">
+                                        <label for="date_to">Fecha hasta</label>
+                                        <field name="date_to" nolabel="1"/>
+                                    </div>
+                                    <div class="zrn_inventory_reconciliation_filter_item zrn_inventory_reconciliation_filter_item_boolean">
+                                        <label for="only_on_hand">Solo con stock</label>
+                                        <field name="only_on_hand" nolabel="1"/>
+                                    </div>
+                                    <div class="zrn_inventory_reconciliation_filter_item zrn_inventory_reconciliation_filter_item_boolean">
+                                        <label for="show_archived">Mostrar archivados</label>
+                                        <field name="show_archived" nolabel="1"/>
+                                    </div>
+                                </div>
+                                <div class="zrn_inventory_reconciliation_actions">
+                                    <button
+                                        name="action_apply_filters"
+                                        type="object"
+                                        class="btn zrn_planning_production_report_table_toolbar_btn zrn_planning_production_report_table_toolbar_btn_primary"
+                                    >
+                                        <i class="fa fa-filter" style="margin-right:4px;"/>
+                                        <span>Actualizar</span>
+                                    </button>
+                                    <button
+                                        name="action_open_filtered_lots"
+                                        type="object"
+                                        class="btn zrn_planning_production_report_table_toolbar_btn zrn_inventory_reconciliation_btn zrn_inventory_reconciliation_btn_info"
+                                    >
+                                        <i class="fa fa-list" style="margin-right:4px;"/>
+                                        <span>Abrir listado</span>
+                                    </button>
+                                    <button
+                                        name="action_archive_filtered_lots"
+                                        type="object"
+                                        confirm="Se archivaran los lotes filtrados. Al quedar archivados, dejaran de participar en reservas automaticas mientras no se reactiven. Desea continuar?"
+                                        invisible="selected_line_count &gt; 0"
+                                        class="btn zrn_planning_production_report_table_toolbar_btn zrn_planning_production_report_table_toolbar_btn_primary"
+                                    >
+                                        <i class="fa fa-archive" style="margin-right:4px;"/>
+                                        <span>Archivar filtrados</span>
+                                    </button>
+                                    <button
+                                        name="action_archive_selected_lots"
+                                        type="object"
+                                        confirm="Se archivaran unicamente los lotes seleccionados. Desea continuar?"
+                                        invisible="selected_line_count == 0"
+                                        class="btn zrn_planning_production_report_table_toolbar_btn zrn_planning_production_report_table_toolbar_btn_primary"
+                                    >
+                                        <i class="fa fa-archive" style="margin-right:4px;"/>
+                                        <span>Archivar seleccionados</span>
+                                    </button>
+                                    <button
+                                        name="action_unarchive_filtered_lots"
+                                        type="object"
+                                        confirm="Se reactivaran los lotes archivados dentro del rango seleccionado. Desea continuar?"
+                                        class="btn zrn_planning_production_report_table_toolbar_btn zrn_inventory_reconciliation_btn zrn_inventory_reconciliation_btn_success"
+                                    >
+                                        <i class="fa fa-undo" style="margin-right:4px;"/>
+                                        <span>Reactivar filtrados</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="zrn_planning_production_report_table_placeholder">
+                                <field name="line_ids" nolabel="1">
+                                    <tree string="Lotes filtrados" create="0" delete="0" editable="bottom">
+                                        <field name="is_selected" string="" optional="show"/>
+                                        <field name="name" string="Lote"/>
+                                        <field name="lot_state"
+                                               string="Estado"
+                                               widget="badge"
+                                               decoration-success="lot_state == 'active'"
+                                               decoration-muted="lot_state == 'archived'"/>
+                                        <field name="product_id" string="Producto"/>
+                                        <field name="ref" optional="show"/>
+                                        <field name="create_date" string="Fecha lote"/>
+                                        <field name="zrn_oldest_in_date" string="Primera entrada" optional="show"/>
+                                        <field name="product_qty" string="Stock disponible" sum="Stock total"/>
+                                        <field name="zrn_location_names" string="Ubicaciones" optional="show"/>
+                                        <field name="company_id" groups="base.group_multi_company" optional="show"/>
+                                    </tree>
+                                </field>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_zrn_planning_inventory_reconciliation" model="ir.actions.act_window">
+        <field name="name">Cuadre Inventario</field>
+        <field name="res_model">zrn_planning.inventory.reconciliation</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_zrn_planning_inventory_reconciliation_form"/>
+        <field name="res_id" ref="zrn_planning_inventory_reconciliation_default"/>
+        <field name="target">current</field>
+    </record>
+
+    <menuitem
+        id="menu_zrn_planning_inventory_reconciliation"
+        name="Cuadre Inventario"
+        parent="menu_zrn_planning_root"
+        sequence="50"
+        action="action_zrn_planning_inventory_reconciliation"
+    />
+
+</odoo>

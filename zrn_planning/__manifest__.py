@@ -15,16 +15,19 @@ Addon dedicado a planeacion operativa:
     'author': 'Zoraen Corporation',
     'website': 'https://www.zoraen.com',
     'category': 'Operations/Inventory',
-    'version': '0.1',
+    'version': '0.1.1',
     'license': 'LGPL-3',
     'application': True,
     'depends': ['base', 'sale_stock', 'mrp', 'purchase_stock'],
     'data': [
         'security/ir.model.access.csv',
+        'data/inventory_reconciliation_demo_products.xml',
+        'data/inventory_reconciliation_demo_stock.xml',
         'views/planning_home_views.xml',
         'views/production_planning_views.xml',
         'views/purchase_planning_views.xml',
         'views/delivery_planning_views.xml',
+        'views/inventory_reconciliation_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

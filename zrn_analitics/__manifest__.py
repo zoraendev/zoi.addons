@@ -15,7 +15,7 @@ Addon base para la capa analitica:
     'author': 'Zoraen Corporation',
     'website': 'https://www.zoraen.com',
     'category': 'Reporting',
-    'version': '0.1',
+    'version': '0.1.1',
     'license': 'LGPL-3',
     'application': True,
     'depends': ['base', 'web', 'sale', 'zrn_commercial'],

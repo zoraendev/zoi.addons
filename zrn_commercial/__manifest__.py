@@ -14,7 +14,7 @@ Addon dedicado a la capa comercial operativa:
     'author': 'Zoraen Corporation',
     'website': 'https://www.zoraen.com',
     'category': 'Sales',
-    'version': '0.1',
+    'version': '0.1.1',
     'license': 'LGPL-3',
     'application': True,
     'depends': ['base', 'product'],

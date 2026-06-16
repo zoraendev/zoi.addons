@@ -145,6 +145,9 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
         effective_date = line.order_id.commitment_date or line.order_id.date_order
         return self._coerce_to_date(effective_date)
 
+    def _get_line_filter_partner(self, line):
+        return line.order_id.partner_id or line.order_partner_id
+
     @api.model
     def _line_matches_filter_dates(self, line, fecha_desde=False, fecha_hasta=False):
         effective_date = self._get_effective_line_date(line)
@@ -187,7 +190,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
         ]
 
         if cliente_ids:
-            domain.append(('order_id.partner_shipping_id', 'in', cliente_ids))
+            domain.append(('order_id.partner_id', 'in', cliente_ids))
         if product_ids:
             domain.append(('product_id', 'in', product_ids))
 
@@ -217,9 +220,15 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
                 wizard._get_filter_values(include_selected=True)
             )
 
-            wizard.available_cliente_ids = [(6, 0, available_lines.mapped('order_id.partner_shipping_id').ids)]
+            available_partner_ids = [
+                partner.id for partner in available_lines.mapped(lambda line: wizard._get_line_filter_partner(line)) if partner
+            ]
+            candidate_partner_ids = [
+                partner.id for partner in candidate_lines.mapped(lambda line: wizard._get_line_filter_partner(line)) if partner
+            ]
+            wizard.available_cliente_ids = [(6, 0, available_partner_ids)]
             wizard.available_product_ids = [(6, 0, available_lines.mapped('product_id').ids)]
-            wizard.preview_cliente_count = len(candidate_lines.mapped('order_id.partner_shipping_id'))
+            wizard.preview_cliente_count = len(set(candidate_partner_ids))
             wizard.preview_product_count = len(candidate_lines.mapped('product_id'))
             wizard.preview_order_count = len(candidate_lines.mapped('order_id'))
 
@@ -363,11 +372,11 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             grouped_lines = {}
             for line in candidate_lines.sorted(
                 key=lambda item: (
-                    item.order_id.partner_shipping_id.display_name or '',
+                    (wizard._get_line_filter_partner(item).display_name if wizard._get_line_filter_partner(item) else '') or '',
                     item.id,
                 )
             ):
-                partner = line.order_id.partner_shipping_id
+                partner = wizard._get_line_filter_partner(line)
                 if not partner:
                     continue
                 grouped_lines.setdefault(partner.id, self.env['sale.order.line'])
@@ -437,7 +446,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             for product_id, lines in grouped_lines.items():
                 product = self.env['product.product'].browse(product_id)
                 order_ids = lines.mapped('order_id')
-                customer_ids = lines.mapped('order_id.partner_shipping_id')
+                customer_ids = lines.mapped(lambda line: wizard._get_line_filter_partner(line))
                 total_units = sum(lines.mapped('product_uom_qty'))
                 delivery_dates = [
                     effective_date for effective_date in
@@ -501,7 +510,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
                 summary_values.append({
                     'wizard_id': wizard.id,
                     'order_id': order.id,
-                    'customer_id': (order.partner_shipping_id or order.partner_id).id,
+                    'customer_id': order.partner_id.id,
                     'state': order.state or '',
                     'state_label': order_state_labels.get(order.state or '', order.state or ''),
                     'product_count': len(lines.mapped('product_id')),
@@ -543,6 +552,14 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             'target': 'main',
         }
 
+    def action_download_report_excel(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/zrn_planning/report/export_excel/{self.id}',
+            'target': 'self',
+        }
+
     def action_open_create_mfg_plan_modal(self):
         self.ensure_one()
         if not self.report_product_line_ids:
@@ -563,6 +580,35 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             'views': [(form_view.id, 'form')],
             'target': 'new',
         }
+
+    def action_open_mrp_production_create(self, product_id, suggested_qty=0.0):
+        self.ensure_one()
+
+        product = self.env['product.product'].browse(int(product_id or 0)).exists()
+        if not product:
+            return False
+
+        action = self.env['ir.actions.actions']._for_xml_id('mrp.action_mrp_production_form')
+        action_context = dict(self.env.context)
+        action_context.update({
+            'default_product_id': product.id,
+            'default_product_uom_id': product.uom_id.id,
+            'default_company_id': self.env.company.id,
+            'allowed_company_ids': self.env.companies.ids,
+        })
+
+        quantity = float(suggested_qty or 0.0)
+        if quantity > 0:
+            action_context['default_product_qty'] = quantity
+
+        action.update({
+            'name': _('Nueva orden de fabricacion'),
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+            'context': action_context,
+        })
+        return action
 
     def _create_mfg_plan(self, target_state='draft', notes=False, plan_name=False, planning_line_payload=None):
         self.ensure_one()
@@ -658,7 +704,7 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
                 'source_model': 'sale.order',
                 'source_id': order.id,
                 'source_ref': order.name or '',
-                'customer_id': (order.partner_shipping_id or order.partner_id).id,
+                'customer_id': order.partner_id.id,
                 'source_date': min(delivery_dates) if delivery_dates else False,
                 'source_state': order.state or '',
             })
@@ -1087,7 +1133,11 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
             'report_active_tab': 'overview',
             'report_row_count': len(candidate_lines),
             'report_order_count': len(candidate_lines.mapped('order_id')),
-            'report_customer_count': len(candidate_lines.mapped('order_id.partner_shipping_id')),
+            'report_customer_count': len(set(
+                partner.id
+                for partner in candidate_lines.mapped(lambda line: self._get_line_filter_partner(line))
+                if partner
+            )),
             'report_product_count': len(candidate_lines.mapped('product_id')),
             'report_html': self._build_report_html(candidate_lines),
         })
@@ -1218,7 +1268,7 @@ class ZrnPlanningProductionPlanningCreatePlanWizard(models.TransientModel):
                     'sequence': sequence * 10,
                     'sale_line_id': sale_line.id,
                     'order_id': sale_line.order_id.id,
-                    'customer_id': (sale_line.order_id.partner_shipping_id or sale_line.order_id.partner_id).id,
+                    'customer_id': (wizard.production_wizard_id._get_line_filter_partner(sale_line) or sale_line.order_id.partner_id).id,
                     'product_id': sale_line.product_id.id,
                     'default_code': sale_line.product_id.default_code or '',
                     'line_description': sale_line.name or sale_line.product_id.display_name or '',
@@ -1343,7 +1393,7 @@ class ZrnPlanningProductionPlanningWizardReportCustomerLine(models.TransientMode
                     line.wizard_id._get_filter_values(include_selected=True)
                 )
                 detail_lines = candidate_lines.filtered(
-                    lambda sale_line: sale_line.order_id.partner_shipping_id == line.partner_id
+                    lambda sale_line: line.wizard_id._get_line_filter_partner(sale_line) == line.partner_id
                 )
             line.report_detail_sale_line_ids = [(6, 0, detail_lines.ids)]
 
@@ -1429,6 +1479,13 @@ class ZrnPlanningProductionPlanningWizardReportProductLine(models.TransientModel
     def action_return_to_report(self):
         self.ensure_one()
         return self.wizard_id.action_open_report()
+
+    def action_open_mrp_production_create(self):
+        self.ensure_one()
+        return self.wizard_id.action_open_mrp_production_create(
+            self.product_id.id,
+            self.suggested_production,
+        )
 
 
 class ZrnPlanningProductionPlanningWizardReportOrderLine(models.TransientModel):

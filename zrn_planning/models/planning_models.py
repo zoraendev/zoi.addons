@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo import fields, models
+from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -48,6 +48,59 @@ class ZrnPlanningHome(ZrnPlanningNavigationMixin, models.Model):
         required=True,
         default='overview',
     )
+    active_plan_count = fields.Integer(
+        string='Planes activos',
+        compute='_compute_home_dashboard',
+        readonly=True,
+    )
+    recent_production_plan_count = fields.Integer(
+        string='Cantidad planes de fabricacion',
+        compute='_compute_home_dashboard',
+        readonly=True,
+    )
+    recent_production_plan_ids = fields.Many2many(
+        'zrn_planning.mfg.plan',
+        string='Ultimos planes de fabricacion',
+        compute='_compute_home_dashboard',
+        readonly=True,
+    )
+    recent_supply_plan_count = fields.Integer(
+        string='Cantidad planes de abastecimiento',
+        compute='_compute_home_dashboard',
+        readonly=True,
+    )
+    recent_supply_plan_ids = fields.Many2many(
+        'zrn_planning.mfg.plan',
+        string='Ultimos planes de abastecimiento',
+        compute='_compute_home_dashboard',
+        readonly=True,
+    )
+
+    @api.depends_context('company')
+    def _compute_home_dashboard(self):
+        plan_model = self.env['zrn_planning.mfg.plan'].with_context(active_test=False)
+        base_domain = [
+            ('company_id', '=', self.env.company.id),
+            ('active', '=', True),
+        ]
+        active_states = ['draft', 'pending_confirmation', 'approved', 'released']
+        active_plan_count = plan_model.search_count(base_domain + [('state', 'in', active_states)])
+        production_plans = plan_model.search(
+            base_domain + [('planning_basis', '=', 'sale')],
+            order='create_date desc, id desc',
+            limit=7,
+        )
+        supply_plans = plan_model.search(
+            base_domain + [('planning_basis', '=', 'mixed')],
+            order='create_date desc, id desc',
+            limit=7,
+        )
+        for record in self:
+            record.active_plan_count = active_plan_count
+            record.recent_production_plan_count = len(production_plans)
+            record.recent_production_plan_ids = [(6, 0, production_plans.ids)]
+            record.recent_supply_plan_count = len(supply_plans)
+            record.recent_supply_plan_ids = [(6, 0, supply_plans.ids)]
 
     def action_open_production_planning(self):
         self.ensure_one()
@@ -62,6 +115,10 @@ class ZrnPlanningHome(ZrnPlanningNavigationMixin, models.Model):
     def action_open_logistics_planning(self):
         self.ensure_one()
         return self._open_singleton_action('zrn_planning.action_zrn_planning_delivery_planning')
+
+    def action_open_inventory_reconciliation(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_planning.action_zrn_planning_inventory_reconciliation')
 
 
 class ZrnPlanningProductionPlanning(ZrnPlanningNavigationMixin, models.Model):

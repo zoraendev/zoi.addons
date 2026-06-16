@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="zrn_inventory_demo_product_arroz_template" model="product.template">
+            <field name="name">Materia Prima Demo Arroz</field>
+            <field name="default_code">ZRN-LOT-001</field>
+            <field name="detailed_type">product</field>
+            <field name="type">product</field>
+            <field name="tracking">lot</field>
+            <field name="list_price">18.0</field>
+            <field name="standard_price">12.0</field>
+        </record>
+
+        <record id="zrn_inventory_demo_product_pollo_template" model="product.template">
+            <field name="name">Materia Prima Demo Pollo</field>
+            <field name="default_code">ZRN-LOT-002</field>
+            <field name="detailed_type">product</field>
+            <field name="type">product</field>
+            <field name="tracking">lot</field>
+            <field name="list_price">26.0</field>
+            <field name="standard_price">19.0</field>
+        </record>
+
+        <record id="zrn_inventory_demo_product_salsa_template" model="product.template">
+            <field name="name">Materia Prima Demo Salsa</field>
+            <field name="default_code">ZRN-LOT-003</field>
+            <field name="detailed_type">product</field>
+            <field name="type">product</field>
+            <field name="tracking">lot</field>
+            <field name="list_price">11.0</field>
+            <field name="standard_price">7.0</field>
+        </record>
+
+        <function model="ir.model.data" name="_update_xmlids">
+            <value model="base" eval="[{
+                'xml_id': 'zrn_planning.zrn_inventory_demo_product_arroz',
+                'record': obj().env.ref('zrn_planning.zrn_inventory_demo_product_arroz_template').product_variant_id,
+                'noupdate': True,
+            }, {
+                'xml_id': 'zrn_planning.zrn_inventory_demo_product_pollo',
+                'record': obj().env.ref('zrn_planning.zrn_inventory_demo_product_pollo_template').product_variant_id,
+                'noupdate': True,
+            }, {
+                'xml_id': 'zrn_planning.zrn_inventory_demo_product_salsa',
+                'record': obj().env.ref('zrn_planning.zrn_inventory_demo_product_salsa_template').product_variant_id,
+                'noupdate': True,
+            }]"/>
+        </function>
+
+    </data>
+</odoo>
