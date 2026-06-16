@@ -622,7 +622,7 @@
 
 .zrn_analitics_commercial_table tbody tr[style*="cursor: pointer"]:hover {
   background-color: var(--zrn-analitics-bg-soft) !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3) !important;
   position: relative;
   z-index: 1;
 }
