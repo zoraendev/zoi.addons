@@ -1588,7 +1588,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'trend': trend,
                 'forecast': [f1, f2, f3],
                 'forecast_total_3m': forecast_total,
-                'historical_total': c['rev']
+                'historical_total': c['rev'],
+                'detail': c['detail']
             })
             
         ltv_clients.sort(key=lambda x: x['forecast_total_3m'], reverse=True)
