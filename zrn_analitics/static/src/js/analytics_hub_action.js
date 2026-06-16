@@ -743,6 +743,18 @@ class ZrnAnalyticsHubAction extends Component {
     this.state.analyticsDetailModal = detail;
   }
 
+  openCustomerDetailById(partnerId) {
+    if (!partnerId) {
+      return;
+    }
+    const client = this.commercialPayload?.all_clients?.find(c => c.id === partnerId);
+    if (client && client.detail) {
+      this.openAnalyticsDetailModal(client.detail);
+    } else {
+      this.openRecordModal("res.partner", partnerId);
+    }
+  }
+
   closeAnalyticsDetailModal() {
     this.state.analyticsDetailModal = null;
   }
