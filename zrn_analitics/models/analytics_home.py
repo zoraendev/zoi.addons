@@ -639,6 +639,10 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         product_map = {}
 
         def _init_detail_bucket():
+            """
+            Initializes a detail bucket to accumulate metrics (revenue, units, order ids, partner ids)
+            along channels, customers, and products for populating the custom analytics detail modal.
+            """
             return {
                 'revenue': 0.0,
                 'units': 0.0,
@@ -657,9 +661,19 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'units': 0.0,
                     'order_ids': set(),
                 }),
+                'products': defaultdict(lambda: {
+                    'name': '',
+                    'revenue': 0.0,
+                    'units': 0.0,
+                    'order_ids': set(),
+                }),
             }
 
-        def _accumulate_detail(bucket, channel_name, partner, order, amount, quantity):
+        def _accumulate_detail(bucket, channel_name, partner, order, amount, quantity, product=None):
+            """
+            Accumulates transaction line metrics into the designated detail bucket, supporting
+            breakdowns by channel, partner, and product.
+            """
             bucket['revenue'] += amount
             bucket['units'] += quantity
             bucket['order_ids'].add(order.id)
@@ -678,8 +692,17 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             channel_entry['order_ids'].add(order.id)
             if partner:
                 channel_entry['partner_ids'].add(partner.id)
+            if product:
+                product_entry = bucket['products'][product.id]
+                product_entry['name'] = product.display_name
+                product_entry['revenue'] += amount
+                product_entry['units'] += quantity
+                product_entry['order_ids'].add(order.id)
 
         def _serialize_channel_rows(bucket):
+            """
+            Formats and sorts the channel metrics from the bucket for frontend tables.
+            """
             return sorted(
                 [
                     {
@@ -696,6 +719,9 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             )[:8]
 
         def _serialize_customer_rows(bucket):
+            """
+            Formats and sorts the customer metrics from the bucket for frontend tables.
+            """
             return sorted(
                 [
                     {
@@ -710,7 +736,28 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 reverse=True,
             )[:8]
 
+        def _serialize_product_rows(bucket):
+            """
+            Formats and sorts the product metrics from the bucket for customer detail tables.
+            """
+            return sorted(
+                [
+                    {
+                        'name': item['name'],
+                        'units': round(item['units'], 2),
+                        'order_count': len(item['order_ids']),
+                        'revenue': round(item['revenue'], 2),
+                    }
+                    for item in bucket['products'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+
         def _build_detail_payload(title, subtitle, bucket, secondary_title='', secondary_rows=None):
+            """
+            Builds the complete payload structured for the analytics detail modal.
+            """
             return {
                 'title': title,
                 'subtitle': subtitle,
@@ -769,7 +816,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             portfolio_brand['revenue'] += amount
             portfolio_brand['quantity_sold'] += quantity
             portfolio_brand['product_ids'].add(product.id)
-            _accumulate_detail(portfolio_brand['_detail'], channel_name, partner, order, amount, quantity)
+            _accumulate_detail(portfolio_brand['_detail'], channel_name, partner, order, amount, quantity, product)
             category_key = product.categ_id.display_name or 'Sin categoria'
             portfolio_category = portfolio_brand['categories'].setdefault(
                 category_key,
@@ -785,7 +832,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             portfolio_category['revenue'] += amount
             portfolio_category['quantity_sold'] += quantity
             portfolio_category['product_ids'].add(product.id)
-            _accumulate_detail(portfolio_category['_detail'], channel_name, partner, order, amount, quantity)
+            _accumulate_detail(portfolio_category['_detail'], channel_name, partner, order, amount, quantity, product)
             portfolio_product = portfolio_category['products'].setdefault(
                 product.id,
                 {
@@ -798,7 +845,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             )
             portfolio_product['revenue'] += amount
             portfolio_product['quantity_sold'] += quantity
-            _accumulate_detail(portfolio_product['_detail'], channel_name, partner, order, amount, quantity)
+            _accumulate_detail(portfolio_product['_detail'], channel_name, partner, order, amount, quantity, product)
 
             if commercial_partner:
                 channel_entry = channel_map.setdefault(
@@ -826,6 +873,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                         'channels_rev': defaultdict(float),
                         'products_rev': defaultdict(float),
                         'cost_amount': 0.0,
+                        '_detail': _init_detail_bucket(),
                     },
                 )
                 customer_entry['order_ids'].add(order.id)
@@ -838,6 +886,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 if channel_name:
                     customer_entry['channels_rev'][channel_name] += amount
                 customer_entry['products_rev'][product.display_name] += amount
+                _accumulate_detail(customer_entry['_detail'], channel_name, partner, order, amount, quantity, product)
 
             product_entry = product_map.setdefault(
                 product.id,
@@ -864,7 +913,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 product_entry['channel_names'].add(channel_name)
             if partner:
                 product_entry['partner_ids'].add(partner.id)
-            _accumulate_detail(product_entry['_detail'], channel_name, partner, order, amount, quantity)
+            _accumulate_detail(product_entry['_detail'], channel_name, partner, order, amount, quantity, product)
 
         total_amount = round(sum(item['sales_amount'] for item in product_map.values()), 2)
         top_customers = sorted(
@@ -1072,6 +1121,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'first': fields.Date.to_string(first_date) if first_date else '—',
                 'last': fields.Date.to_string(last_date) if last_date else '—',
                 'days_since': days_since,
+                'detail': _build_detail_payload(
+                    entry['name'],
+                    entry['channel'] or 'Sin canal',
+                    entry['_detail'],
+                    secondary_title='Productos',
+                    secondary_rows=_serialize_product_rows(entry['_detail']),
+                ),
                 '_raw_entry': entry
             })
         all_clients_raw.sort(key=lambda x: x['rev'], reverse=True)
