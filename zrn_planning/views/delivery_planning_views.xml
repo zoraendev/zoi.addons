@@ -55,8 +55,4 @@
         <field name="target">current</field>
     </record>
 
-    <record id="menu_zrn_planning_delivery" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-
 </odoo>
