@@ -80,11 +80,43 @@
     <t t-name="zrn_analitics.HubCommercial">
         <div class="zrn_analitics_commercial_hub" t-ref="hubRoot">
             <div class="zrn_analitics_commercial_hero">
-                <div>
-                    <div class="zrn_analitics_commercial_title_row">
-                        <div class="zrn_analitics_hub_panel_title">Hub Comercial</div>
+                <div class="zrn_analitics_commercial_title_row">
+                    <div class="zrn_analitics_hub_panel_title">Hub Comercial</div>
+                </div>
+            </div>
+
+            <div class="zrn_analitics_commercial_shell">
+                <button
+                    type="button"
+                    class="btn zrn_analitics_commercial_sidebar_toggle"
+                    t-on-click="toggleCommercialSidebar"
+                >
+                    <i class="fa fa-bars"></i>
+                    <span>Secciones</span>
+                </button>
+
+                <div
+                    class="zrn_analitics_commercial_sidebar_overlay"
+                    t-att-class="state.commercialSidebarOpen ? 'is-open' : ''"
+                    t-on-click="closeCommercialSidebar"
+                ></div>
+
+                <aside
+                    class="zrn_analitics_commercial_sidebar"
+                    t-att-class="state.commercialSidebarOpen ? 'is-open' : ''"
+                >
+                    <div class="zrn_analitics_commercial_sidebar_head">
+                        <div class="zrn_analitics_commercial_sidebar_title">Secciones</div>
+                        <button
+                            type="button"
+                            class="btn zrn_analitics_commercial_sidebar_close"
+                            t-on-click="closeCommercialSidebar"
+                        >
+                            <i class="fa fa-times"></i>
+                        </button>
                     </div>
-                    <div class="zrn_analitics_commercial_badges">
+
+                    <div class="zrn_analitics_commercial_badges zrn_analitics_commercial_badges_sidebar">
                         <span class="zrn_analitics_commercial_badge zrn_analitics_commercial_badge_sync">
                             Sync con Odoo: <t t-esc="activeHubSummary.sync_label"/>
                         </span>
@@ -95,32 +127,33 @@
                             <t t-esc="formatCount(commercialPayload.summary.brand_count)"/> marcas / <t t-esc="formatCount(commercialPayload.summary.product_count)"/> productos
                         </span>
                     </div>
-                </div>
-            </div>
 
-            <div class="zrn_analitics_commercial_section_tabs">
-                <t t-foreach="commercialTabs" t-as="tab" t-key="tab.key">
-                    <button
-                        type="button"
-                        class="btn zrn_analitics_commercial_section_tab"
-                        t-att-class="state.commercialTab === tab.key ? 'is-active' : ''"
-                        t-on-click="() => this.setCommercialTab(tab.key)"
-                    >
-                        <i class="fa zrn_analitics_commercial_section_tab_icon" t-att-class="tab.icon"></i>
-                        <span><t t-esc="tab.label"/></span>
-                    </button>
-                </t>
-            </div>
+                    <div class="zrn_analitics_commercial_section_tabs">
+                        <t t-foreach="commercialTabs" t-as="tab" t-key="tab.key">
+                            <button
+                                type="button"
+                                class="btn zrn_analitics_commercial_section_tab"
+                                t-att-class="state.commercialTab === tab.key ? 'is-active' : ''"
+                                t-on-click="() => this.setCommercialTab(tab.key)"
+                            >
+                                <i class="fa zrn_analitics_commercial_section_tab_icon" t-att-class="tab.icon"></i>
+                                <span><t t-esc="tab.label"/></span>
+                            </button>
+                        </t>
+                    </div>
+                </aside>
 
-            <t t-if="state.commercialLoading">
-                <div class="zrn_analitics_hub_panel">
-                    <div class="zrn_analitics_hub_panel_text">Cargando resumen comercial...</div>
-                </div>
-            </t>
+                <div class="zrn_analitics_commercial_content">
 
-            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'overview'">
-                <t t-call="zrn_analitics.HubCommercialFilters"/>
-                <div class="zrn_analitics_commercial_stats">
+                    <t t-if="state.commercialLoading">
+                        <div class="zrn_analitics_hub_panel">
+                            <div class="zrn_analitics_hub_panel_text">Cargando resumen comercial...</div>
+                        </div>
+                    </t>
+
+                    <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'overview'">
+                        <t t-call="zrn_analitics.HubCommercialFilters"/>
+                        <div class="zrn_analitics_commercial_stats">
                     <div class="zrn_analitics_commercial_stat_box">
                         <span>Venta total</span>
                         <strong><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(commercialPayload.summary.total_amount)"/></strong>
@@ -268,8 +301,8 @@
                             </div>
                         </div>
                     </section>
-                </div>
-            </t>
+                        </div>
+                    </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'portafolio'">
                 <div class="zrn_analitics_commercial_portfolio">
@@ -1278,20 +1311,6 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'rfm'">
-                <style>
-                    .zrn_rfm_heatmap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-                    .zrn_rfm_cell { border-radius: 6px; padding: 10px; border: 1px solid #e2e8f0; text-align: center; }
-                    .zrn_rfm_cell_title { font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; }
-                    .zrn_rfm_cell_count { font-size: 16px; font-weight: 800; color: #1e293b; margin: 2px 0; }
-                    .zrn_rfm_cell_rev { font-size: 11px; color: #64748b; }
-                    
-                    .zrn_rfm_segments_grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 14px; }
-                    .zrn_rfm_segment_card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #fff; }
-                    .zrn_rfm_segment_head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; margin-bottom: 8px; }
-                    .zrn_rfm_segment_title { font-weight: bold; font-size: 13px; color: #1e293b; }
-                    .zrn_rfm_segment_count { font-size: 11px; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 12px; }
-                    .zrn_rfm_segment_item { display: flex; justify-content: space-between; font-size: 11px; color: #475569; padding: 2px 0; }
-                </style>
                 <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
@@ -1350,15 +1369,15 @@
                         <div class="col-12 col-md-7">
                             <div class="border rounded p-3 bg-white h-100">
                                 <h6 class="font-weight-bold mb-2">Matriz Recencia × Frecuencia · 4 × 4</h6>
-                                <div class="zrn_rfm_heatmap">
+                                <div class="zrn_analitics_rfm_heatmap">
                                     <t t-foreach="[4,3,2,1]" t-as="r" t-key="r">
                                         <t t-foreach="[1,2,3,4]" t-as="f" t-key="f">
                                             <t t-set="cell_key" t-value="r + '-' + f"/>
                                             <t t-set="cell_data" t-value="commercialPayload.clients_rfm.rf_matrix[cell_key] || {'count':0, 'rev':0.0}"/>
-                                            <div class="zrn_rfm_cell" t-att-style="cell_data.count > 10 ? 'background: #dcfce7; border-color: #86efac;' : (cell_data.count > 0 ? 'background: #f0fdf4; border-color: #bbf7d0;' : 'background: #fafafa; border-color: #f1f5f9;')">
-                                                <div class="zrn_rfm_cell_title">R<t t-esc="r"/>-F<t t-esc="f"/></div>
-                                                <div class="zrn_rfm_cell_count"><t t-esc="formatCount(cell_data.count)"/></div>
-                                                <div class="zrn_rfm_cell_rev"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(cell_data.rev)"/></div>
+                                            <div class="zrn_analitics_rfm_cell" t-att-style="cell_data.count > 10 ? 'background: #dcfce7; border-color: #86efac;' : (cell_data.count > 0 ? 'background: #f0fdf4; border-color: #bbf7d0;' : 'background: #fafafa; border-color: #f1f5f9;')">
+                                                <div class="zrn_analitics_rfm_cell_title">R<t t-esc="r"/>-F<t t-esc="f"/></div>
+                                                <div class="zrn_analitics_rfm_cell_count"><t t-esc="formatCount(cell_data.count)"/></div>
+                                                <div class="zrn_analitics_rfm_cell_rev"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(cell_data.rev)"/></div>
                                             </div>
                                         </t>
                                     </t>
@@ -1373,7 +1392,7 @@
                         <div class="col-12 col-md-5">
                             <div class="border rounded p-3 bg-white h-100">
                                 <h6 class="font-weight-bold mb-2">Curva de Concentración de Pareto ABC</h6>
-                                <div class="zrn_commercial_chart_container" style="height: 200px;">
+                                <div class="zrn_analitics_commercial_chart_container" style="height: 200px;">
                                     <div class="w-100 h-100" data-zrn-chart="rfm-pareto"></div>
                                 </div>
                                 <div class="row g-2 mt-2">
@@ -1403,17 +1422,17 @@
                     <!-- RFM Segments Cards -->
                     <div class="border rounded p-3 bg-white mb-4">
                         <h6 class="font-weight-bold mb-3">Segmentación Estratégica RFM (Top 3 clientes por segmento)</h6>
-                        <div class="zrn_rfm_segments_grid">
+                        <div class="zrn_analitics_rfm_segments_grid">
                             <t t-foreach="commercialPayload.clients_rfm.segments_order" t-as="seg" t-key="seg.key">
                                 <t t-set="seg_data" t-value="commercialPayload.clients_rfm.segments[seg.key]"/>
-                                <div class="zrn_rfm_segment_card">
-                                    <div class="zrn_rfm_segment_head">
-                                        <span class="zrn_rfm_segment_title"><t t-esc="seg.name"/></span>
-                                        <span class="zrn_rfm_segment_count"><t t-esc="formatCount(seg_data.count)"/> pdvs (Q<t t-esc="formatMoney(seg_data.rev)"/>)</span>
+                                <div class="zrn_analitics_rfm_segment_card">
+                                    <div class="zrn_analitics_rfm_segment_head">
+                                        <span class="zrn_analitics_rfm_segment_title"><t t-esc="seg.name"/></span>
+                                        <span class="zrn_analitics_rfm_segment_count"><t t-esc="formatCount(seg_data.count)"/> pdvs (Q<t t-esc="formatMoney(seg_data.rev)"/>)</span>
                                     </div>
-                                    <div class="zrn_rfm_segment_body">
+                                    <div class="zrn_analitics_rfm_segment_body">
                                         <t t-foreach="seg_data.top_clients" t-as="tc" t-key="tc.name">
-                                            <div class="zrn_rfm_segment_item">
+                                            <div class="zrn_analitics_rfm_segment_item">
                                                 <span class="text-truncate" style="max-width:180px;"><t t-esc="tc.name"/></span>
                                                 <span class="font-weight-bold"><t t-esc="commercialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(tc.rev)"/></span>
                                             </div>
@@ -1492,9 +1511,6 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'insights'">
-                <style>
-                    .zrn_retention_cell { padding: 8px 12px; text-align: center; font-weight: 600; font-size: 11px; border-radius: 4px; }
-                </style>
                 <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
@@ -1527,7 +1543,7 @@
                                                     <t t-if="offset_val &gt;= 0">
                                                         <t t-set="cell" t-value="cohort.cells[offset_val]"/>
                                                         <t t-if="cell">
-                                                            <div class="zrn_retention_cell" t-att-style="cell.retention_pct &gt;= 0.8 ? 'background:#dcfce7; color:#15803d;' : (cell.retention_pct &gt;= 0.5 ? 'background:#fef9c3; color:#a16207;' : 'background:#fee2e2; color:#b91c1c;')">
+                                                            <div class="zrn_analitics_retention_cell" t-att-style="cell.retention_pct &gt;= 0.8 ? 'background:#dcfce7; color:#15803d;' : (cell.retention_pct &gt;= 0.5 ? 'background:#fef9c3; color:#a16207;' : 'background:#fee2e2; color:#b91c1c;')">
                                                                 <t t-esc="Math.round(cell.retention_pct * 100)"/>%
                                                             </div>
                                                         </t>
@@ -1584,7 +1600,7 @@
                         <div class="col-12 col-md-4">
                             <div class="border rounded p-3 bg-white h-100">
                                 <h6 class="font-weight-bold mb-2">Cadencia de Recompra</h6>
-                                <div class="zrn_commercial_chart_container" style="height: 180px;">
+                                <div class="zrn_analitics_commercial_chart_container" style="height: 180px;">
                                     <div class="w-100 h-100" data-zrn-chart="insights-cadence"></div>
                                 </div>
                             </div>
@@ -1682,7 +1698,7 @@
                             <button type="button" class="btn btn-sm btn-outline-dark" t-att-class="state.productChartType === 'pie' ? 'active' : ''" t-on-click="() => this.setProductChartType('pie')">Rosca (Pie)</button>
                         </div>
                     </div>
-                    <div class="zrn_commercial_chart_container" style="height: 320px;">
+                    <div class="zrn_analitics_commercial_chart_container" style="height: 320px;">
                         <t t-if="hasEchartsLibrary">
                             <div class="w-100 h-100" data-zrn-chart="product-chart"></div>
                         </t>
@@ -1850,7 +1866,7 @@
                     <!-- Chart -->
                     <div class="border rounded p-3 bg-white mb-4">
                         <h6 class="font-weight-bold mb-2">Comparativa Mensual de Ventas</h6>
-                        <div class="zrn_commercial_chart_container" style="height: 220px;">
+                        <div class="zrn_analitics_commercial_chart_container" style="height: 220px;">
                             <div class="w-100 h-100" data-zrn-chart="sellin-sellout"></div>
                         </div>
                     </div>
@@ -1926,23 +1942,6 @@
             </t>
 
             <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab === 'bcg'">
-                <style>
-                    .zrn_bcg_plot { position: relative; width: 100%; height: 380px; border-left: 2px solid #475569; border-bottom: 2px solid #475569; margin: 20px 0; background: #fff; }
-                    .zrn_bcg_quadrant { position: absolute; width: 50%; height: 50%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; }
-                    .zrn_bcg_q_star { top: 0; right: 0; background: rgba(234,179,8,0.08); }
-                    .zrn_bcg_q_question { top: 0; left: 0; background: rgba(139,92,246,0.08); }
-                    .zrn_bcg_q_cow { bottom: 0; right: 0; background: rgba(22,163,74,0.08); }
-                    .zrn_bcg_q_dog { bottom: 0; left: 0; background: rgba(239,68,68,0.08); }
-                    
-                    .zrn_bcg_dot { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; color: #fff; cursor: pointer; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
-                    .zrn_bcg_dot:hover { transform: scale(1.3); z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
-                    .zrn_bcg_dot_star { background: #eab308; color: #1e293b; }
-                    .zrn_bcg_dot_cow { background: #22c55e; }
-                    .zrn_bcg_dot_question { background: #8b5cf6; }
-                    .zrn_bcg_dot_dog { background: #ef4444; }
-
-                    .zrn_bcg_axis_line { position: absolute; border: 1px dashed #94a3b8; }
-                </style>
                 <t t-call="zrn_analitics.HubCommercialFilters"/>
                 <section class="zrn_analitics_hub_panel">
                     <div class="zrn_analitics_commercial_panel_head">
@@ -1983,21 +1982,21 @@
 
                     <div class="border rounded p-3 bg-white mb-4 text-center">
                         <h6 class="font-weight-bold mb-1">Mapa Estratégico de Posicionamiento de Productos</h6>
-                        <div class="zrn_bcg_plot mx-auto" style="max-width: 900px;">
-                            <div class="zrn_bcg_quadrant zrn_bcg_q_question align-items-start">
+                        <div class="zrn_analitics_bcg_plot mx-auto" style="max-width: 900px;">
+                            <div class="zrn_analitics_bcg_quadrant zrn_analitics_bcg_q_question align-items-start">
                                 <span class="font-weight-bold text-primary">Incógnitas (Alta Utilidad, Baja Participación)</span>
                             </div>
-                            <div class="zrn_bcg_quadrant zrn_bcg_q_star align-items-end">
+                            <div class="zrn_analitics_bcg_quadrant zrn_analitics_bcg_q_star align-items-end">
                                 <span class="font-weight-bold text-warning" style="color:#b45309 !important;">Estrellas (Alta Utilidad, Alta Participación)</span>
                             </div>
-                            <div class="zrn_bcg_quadrant zrn_bcg_q_dog align-items-start justify-content-end">
+                            <div class="zrn_analitics_bcg_quadrant zrn_analitics_bcg_q_dog align-items-start justify-content-end">
                                 <span class="font-weight-bold text-danger">Perros (Baja Utilidad, Baja Participación)</span>
                             </div>
-                            <div class="zrn_bcg_quadrant zrn_bcg_q_cow align-items-end justify-content-end">
+                            <div class="zrn_analitics_bcg_quadrant zrn_analitics_bcg_q_cow align-items-end justify-content-end">
                                 <span class="font-weight-bold text-success">Vacas (Baja Utilidad, Alta Participación)</span>
                             </div>
-                            <div class="zrn_bcg_axis_line" style="top: 50%; left: 0; width: 100%;"></div>
-                            <div class="zrn_bcg_axis_line" style="left: 50%; top: 0; height: 100%;"></div>
+                            <div class="zrn_analitics_bcg_axis_line" style="top: 50%; left: 0; width: 100%;"></div>
+                            <div class="zrn_analitics_bcg_axis_line" style="left: 50%; top: 0; height: 100%;"></div>
                             
                             <t t-set="medRev" t-value="commercialPayload.bcg_data.mr"/>
                             <t t-set="medMargin" t-value="commercialPayload.bcg_data.mm"/>
@@ -2007,8 +2006,8 @@
                                 <t t-set="x_pos" t-value="hiVol ? (55 + Math.min((s.r - medRev) / (medRev * 1.5 || 1), 1) * 35) : (5 + Math.min(s.r / (medRev || 1), 1) * 40)"/>
                                 <t t-set="y_pos" t-value="hiMrg ? (45 - Math.min((s.m - medMargin) / (medMargin * 1.5 || 1), 1) * 35) : (55 + Math.min((medMargin - s.m) / (medMargin || 1), 1) * 35)"/>
                                 
-                                <div class="zrn_bcg_dot"
-                                     t-att-class="s.q === 'S' ? 'zrn_bcg_dot_star' : (s.q === 'C' ? 'zrn_bcg_dot_cow' : (s.q === 'I' ? 'zrn_bcg_dot_question' : 'zrn_bcg_dot_dog'))"
+                                <div class="zrn_analitics_bcg_dot"
+                                     t-att-class="s.q === 'S' ? 'zrn_analitics_bcg_dot_star' : (s.q === 'C' ? 'zrn_analitics_bcg_dot_cow' : (s.q === 'I' ? 'zrn_analitics_bcg_dot_question' : 'zrn_analitics_bcg_dot_dog'))"
                                      t-att-style="'left:' + x_pos + '%; top:' + y_pos + '%; width: 18px; height: 18px;'"
                                      t-att-title="s.n + ' (Venta: Q' + formatMoney(s.r) + ' · Margen: ' + s.m + '%)'">
                                     •
@@ -2067,6 +2066,9 @@
                 </section>
             </t>
             
+                </div>
+            </div>
+
             <t t-if="state.analyticsDetailModal">
                 <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeAnalyticsDetailModal"></div>
                 <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">

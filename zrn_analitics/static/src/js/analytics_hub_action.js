@@ -182,10 +182,14 @@ class ZrnAnalyticsHubAction extends Component {
     this._chartRenderTimeouts = [];
     this._chartRenderFrame = 0;
     this._resizeObserver = null;
-    this._chartResizeHandler = () => this.resizeCharts();
+    this._chartResizeHandler = () => {
+      this.syncResponsivePanels();
+      this.resizeCharts();
+    };
     this.state = useState({
       activeHub: "direction",
       commercialTab: "overview",
+      commercialSidebarOpen: false,
       commercialPayload: null,
       commercialLoading: false,
       coveragePayload: null,
@@ -233,6 +237,7 @@ class ZrnAnalyticsHubAction extends Component {
     });
     onMounted(() => {
       window.addEventListener("resize", this._chartResizeHandler);
+      this.syncResponsivePanels();
       if (window.ResizeObserver && this.rootElement) {
         this._resizeObserver = new window.ResizeObserver(() =>
           this.resizeCharts(),
@@ -415,6 +420,7 @@ class ZrnAnalyticsHubAction extends Component {
 
   async setCommercialTab(tabKey) {
     this.state.commercialTab = tabKey;
+    this.closeCommercialSidebar();
     this.state.channelModalRow = null;
     this.state.analyticsDetailModal = null;
     if (tabKey === "cobertura") {
@@ -425,6 +431,20 @@ class ZrnAnalyticsHubAction extends Component {
       await this.loadCommercialPayload();
     }
     this.queueChartRender();
+  }
+
+  syncResponsivePanels() {
+    if (window.innerWidth > 1200 && this.state.commercialSidebarOpen) {
+      this.state.commercialSidebarOpen = false;
+    }
+  }
+
+  toggleCommercialSidebar() {
+    this.state.commercialSidebarOpen = !this.state.commercialSidebarOpen;
+  }
+
+  closeCommercialSidebar() {
+    this.state.commercialSidebarOpen = false;
   }
 
   async loadCommercialPayload(force = false) {
