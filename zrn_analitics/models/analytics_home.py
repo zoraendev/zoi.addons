@@ -571,6 +571,762 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         }
 
     @api.model
+    def _normalize_financial_filters(self, filters=None):
+        return self._normalize_channel_filters(filters)
+
+    @api.model
+    def _build_empty_financial_payload(self, filters=None, filter_options=None, empty_message=''):
+        normalized_filters = self._normalize_financial_filters(filters)
+        date_from = normalized_filters['date_from']
+        date_to = normalized_filters['date_to']
+        filter_options = filter_options or {
+            'periods': self._get_channel_period_options(),
+            'channels': self._get_channel_filter_options(),
+            'brands': self._get_brand_filter_options(self._get_commercial_brand_records()),
+            'categories': [],
+        }
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(date_to),
+                'period_label': '%s al %s' % (
+                    fields.Date.to_string(date_from),
+                    fields.Date.to_string(date_to),
+                ),
+                'currency_symbol': self.env.company.currency_id.symbol or '$',
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'coverage_pct': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'margin_pct': 0.0,
+                'order_count': 0,
+                'product_count': 0,
+                'channel_count': 0,
+                'brand_count': 0,
+            },
+            'active_filters': self._serialize_active_filters(normalized_filters),
+            'filter_options': filter_options,
+            'empty_message': empty_message or 'No hay datos financieros para los filtros seleccionados.',
+            'revenue_series': [],
+            'brand_margin_mix': [],
+            'channel_margin_rows': [],
+            'top_products': [],
+            'product_channel_matrix': [],
+            'brand_rows': [],
+            'portfolio': {
+                'units': [],
+                'rows': [],
+            },
+            'alerts': [],
+            'notes_sources': [
+                {
+                    'label': 'Ventas Odoo',
+                    'detail': 'Revenue y volumen salen de sale.order.line en estados venta o hecho.',
+                },
+                {
+                    'label': 'Costo base',
+                    'detail': 'Costo teórico usando standard_price del producto cuando existe.',
+                },
+                {
+                    'label': 'Segmentación',
+                    'detail': 'Marca y canal reutilizan Zoraen Commercial para mantener consistencia analítica.',
+                },
+            ],
+        }
+
+    @api.model
+    def get_financial_hub_payload(self, filters=None):
+        normalized_filters = self._normalize_financial_filters(filters)
+        date_from = normalized_filters['date_from']
+        date_to = normalized_filters['date_to']
+        currency_symbol = self.env.company.currency_id.symbol or '$'
+        brands, product_brand_map = self._get_commercial_brand_map()
+        channel_setup = self._get_channel_setup_status()
+        order_lines = self.env['sale.order.line'].search([
+            ('order_id.state', 'in', ['sale', 'done']),
+            ('display_type', '=', False),
+            ('company_id', '=', self.env.company.id),
+            ('order_id.date_order', '>=', f'{date_from} 00:00:00'),
+            ('order_id.date_order', '<=', f'{date_to} 23:59:59'),
+        ]).sorted(key=lambda line: ((line.order_id.date_order or fields.Datetime.now()), line.id))
+        filter_options = self._build_filter_options(order_lines, brands)
+
+        if not brands or not product_brand_map:
+            return self._build_empty_financial_payload(
+                filters,
+                filter_options,
+                'No hay marcas comerciales activas para construir el hub financiero.',
+            )
+        if not channel_setup['has_channels'] or not channel_setup['has_assignments']:
+            return self._build_empty_financial_payload(
+                filters,
+                filter_options,
+                self._get_channel_empty_message(channel_setup),
+            )
+
+        month_starts, month_labels = self._get_recent_month_labels(date_to)
+        month_index = {
+            month_start: index
+            for index, month_start in enumerate(month_starts)
+        }
+        revenue_series = [
+            {'label': label, 'revenue': 0.0, 'cost': 0.0, 'margin': 0.0}
+            for label in month_labels
+        ]
+        selected_channel_names = self._get_selected_channel_names(normalized_filters)
+        product_count_set = set()
+        order_id_set = set()
+        unit_map = {}
+        brand_map = {}
+        channel_map = {}
+        product_map = {}
+        product_channel_map = {}
+        customer_detail_index = {}
+
+        def _make_bucket():
+            return {
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+                'order_ids': set(),
+                'partner_ids': set(),
+                'channels': defaultdict(lambda: {
+                    'name': '',
+                    'revenue': 0.0,
+                    'units': 0.0,
+                    'order_ids': set(),
+                    'partner_ids': set(),
+                }),
+                'customers': defaultdict(lambda: {
+                    'id': False,
+                    'name': '',
+                    'revenue': 0.0,
+                    'units': 0.0,
+                    'order_ids': set(),
+                }),
+            }
+
+        def _add_bucket(bucket, channel_name, partner, order, amount, quantity, matched_amount, cost_amount):
+            margin_amount = matched_amount - cost_amount
+            bucket['revenue'] += amount
+            bucket['matched_revenue'] += matched_amount
+            bucket['cost'] += cost_amount
+            bucket['margin'] += margin_amount
+            bucket['units'] += quantity
+            bucket['order_ids'].add(order.id)
+            if partner:
+                bucket['partner_ids'].add(partner.id)
+                customer_entry = bucket['customers'][partner.id]
+                customer_entry['id'] = partner.id
+                customer_entry['name'] = partner.display_name
+                customer_entry['revenue'] += amount
+                customer_entry['units'] += quantity
+                customer_entry['order_ids'].add(order.id)
+            channel_entry = bucket['channels'][channel_name]
+            channel_entry['name'] = channel_name
+            channel_entry['revenue'] += amount
+            channel_entry['units'] += quantity
+            channel_entry['order_ids'].add(order.id)
+            if partner:
+                channel_entry['partner_ids'].add(partner.id)
+
+        def _serialize_detail_rows(bucket):
+            return sorted(
+                [
+                    {
+                        'name': item['name'],
+                        'pdv_count': len(item['partner_ids']),
+                        'order_count': len(item['order_ids']),
+                        'units': round(item['units'], 2),
+                        'revenue': round(item['revenue'], 2),
+                    }
+                    for item in bucket['channels'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+
+        def _serialize_customers(bucket):
+            return sorted(
+                [
+                    {
+                        'id': item['id'],
+                        'name': item['name'],
+                        'order_count': len(item['order_ids']),
+                        'units': round(item['units'], 2),
+                        'revenue': round(item['revenue'], 2),
+                    }
+                    for item in bucket['customers'].values()
+                ],
+                key=lambda item: item['revenue'],
+                reverse=True,
+            )[:8]
+
+        def _build_detail(title, subtitle, bucket, secondary_title='Top PDVs'):
+            return {
+                'title': title,
+                'subtitle': subtitle,
+                'currency_symbol': currency_symbol,
+                'summary_cards': [
+                    {'label': 'Revenue', 'value': round(bucket['revenue'], 2), 'format': 'money'},
+                    {'label': 'Revenue matcheado', 'value': round(bucket['matched_revenue'], 2), 'format': 'money'},
+                    {'label': 'Margen', 'value': round(bucket['margin'], 2), 'format': 'money'},
+                    {'label': 'PDVs', 'value': len(bucket['partner_ids']), 'format': 'count'},
+                ],
+                'channel_rows': _serialize_detail_rows(bucket),
+                'secondary_title': secondary_title,
+                'customer_rows': _serialize_customers(bucket),
+                'secondary_rows': _serialize_customers(bucket),
+            }
+
+        def _top_category_name(category):
+            current = category
+            last_name = category.display_name or category.name or 'Sin categoria'
+            while current:
+                last_name = current.name or last_name
+                current = current.parent_id
+            return last_name
+
+        filtered_count = 0
+        for line in order_lines:
+            order = line.order_id
+            partner = order.partner_id if order else False
+            commercial_partner = partner.commercial_partner_id if partner else False
+            product = line.product_id
+            if not order or not partner or not product:
+                continue
+
+            channel_name = self._resolve_partner_channel(commercial_partner or partner)
+            if not channel_name:
+                continue
+            if selected_channel_names and channel_name not in selected_channel_names:
+                continue
+
+            brand_info = product_brand_map.get(product.id) or {}
+            brand_id = brand_info.get('brand_id')
+            brand_name = brand_info.get('brand_name') or 'Sin marca'
+            if normalized_filters['brand_ids'] and brand_id not in normalized_filters['brand_ids']:
+                continue
+            if normalized_filters['category_ids'] and product.categ_id.id not in normalized_filters['category_ids']:
+                continue
+
+            search_term = normalized_filters['search'].lower()
+            if search_term:
+                haystack = ' '.join([
+                    partner.display_name or '',
+                    commercial_partner.display_name or '',
+                    product.display_name or '',
+                    product.default_code or '',
+                    brand_name,
+                    channel_name,
+                    product.categ_id.display_name or '',
+                ]).lower()
+                if search_term not in haystack:
+                    continue
+
+            filtered_count += 1
+            product_count_set.add(product.id)
+            order_id_set.add(order.id)
+            amount = float(line.price_total or 0.0)
+            quantity = float(line.product_uom_qty or 0.0)
+            standard_cost = float(product.standard_price or 0.0)
+            has_cost = standard_cost > 0
+            has_match = bool(brand_id and has_cost)
+            matched_amount = amount if has_match else 0.0
+            cost_amount = (standard_cost * quantity) if has_match else 0.0
+            margin_amount = matched_amount - cost_amount
+            margin_pct = (margin_amount / matched_amount * 100.0) if matched_amount else 0.0
+            order_date = fields.Datetime.to_datetime(order.date_order).date() if order.date_order else False
+            if order_date:
+                month_key = order_date.replace(day=1)
+                if month_key in month_index:
+                    month_row = revenue_series[month_index[month_key]]
+                    month_row['revenue'] += amount
+                    month_row['cost'] += cost_amount
+                    month_row['margin'] += margin_amount
+
+            channel_entry = channel_map.setdefault(channel_name, {
+                'key': channel_name.lower().replace(' ', '_'),
+                'name': channel_name,
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+                'product_ids': set(),
+                '_detail': _make_bucket(),
+            })
+            channel_entry['revenue'] += amount
+            channel_entry['matched_revenue'] += matched_amount
+            channel_entry['cost'] += cost_amount
+            channel_entry['margin'] += margin_amount
+            channel_entry['units'] += quantity
+            channel_entry['product_ids'].add(product.id)
+            _add_bucket(channel_entry['_detail'], channel_name, commercial_partner or partner, order, amount, quantity, matched_amount, cost_amount)
+
+            brand_entry = brand_map.setdefault(brand_name, {
+                'id': brand_id or 0,
+                'name': brand_name,
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+                'product_ids': set(),
+                '_detail': _make_bucket(),
+            })
+            brand_entry['revenue'] += amount
+            brand_entry['matched_revenue'] += matched_amount
+            brand_entry['cost'] += cost_amount
+            brand_entry['margin'] += margin_amount
+            brand_entry['units'] += quantity
+            brand_entry['product_ids'].add(product.id)
+            _add_bucket(brand_entry['_detail'], channel_name, commercial_partner or partner, order, amount, quantity, matched_amount, cost_amount)
+
+            product_entry = product_map.setdefault(product.id, {
+                'id': product.id,
+                'name': product.display_name,
+                'default_code': product.default_code or '',
+                'brand_name': brand_name,
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+                'channel_names': set(),
+                'has_cost': False,
+                '_detail': _make_bucket(),
+            })
+            product_entry['revenue'] += amount
+            product_entry['matched_revenue'] += matched_amount
+            product_entry['cost'] += cost_amount
+            product_entry['margin'] += margin_amount
+            product_entry['units'] += quantity
+            product_entry['channel_names'].add(channel_name)
+            product_entry['has_cost'] = product_entry['has_cost'] or has_cost
+            _add_bucket(product_entry['_detail'], channel_name, commercial_partner or partner, order, amount, quantity, matched_amount, cost_amount)
+
+            combo_key = '%s__%s' % (channel_name, product.id)
+            combo_entry = product_channel_map.setdefault(combo_key, {
+                'key': combo_key,
+                'channel': channel_name,
+                'product_id': product.id,
+                'product_name': product.display_name,
+                'brand_name': brand_name,
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+            })
+            combo_entry['revenue'] += amount
+            combo_entry['matched_revenue'] += matched_amount
+            combo_entry['cost'] += cost_amount
+            combo_entry['margin'] += margin_amount
+            combo_entry['units'] += quantity
+
+            unit_name = _top_category_name(product.categ_id)
+            line_name = product.categ_id.display_name or product.categ_id.name or 'Sin linea'
+            unit_entry = unit_map.setdefault(unit_name, {
+                'key': 'unit_%s' % (len(unit_map) + 1),
+                'name': unit_name,
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+                'brands': {},
+            })
+            unit_entry['revenue'] += amount
+            unit_entry['matched_revenue'] += matched_amount
+            unit_entry['cost'] += cost_amount
+            unit_entry['margin'] += margin_amount
+            unit_entry['units'] += quantity
+            portfolio_brand = unit_entry['brands'].setdefault(brand_name, {
+                'key': 'brand_%s_%s' % (unit_entry['key'], brand_id or brand_name.lower().replace(' ', '_')),
+                'id': brand_id or 0,
+                'name': brand_name,
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+                'lines': {},
+                '_detail': _make_bucket(),
+            })
+            portfolio_brand['revenue'] += amount
+            portfolio_brand['matched_revenue'] += matched_amount
+            portfolio_brand['cost'] += cost_amount
+            portfolio_brand['margin'] += margin_amount
+            portfolio_brand['units'] += quantity
+            _add_bucket(portfolio_brand['_detail'], channel_name, commercial_partner or partner, order, amount, quantity, matched_amount, cost_amount)
+            portfolio_line = portfolio_brand['lines'].setdefault(line_name, {
+                'key': 'line_%s_%s' % (portfolio_brand['key'], len(portfolio_brand['lines']) + 1),
+                'name': line_name,
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+                'products': {},
+                '_detail': _make_bucket(),
+            })
+            portfolio_line['revenue'] += amount
+            portfolio_line['matched_revenue'] += matched_amount
+            portfolio_line['cost'] += cost_amount
+            portfolio_line['margin'] += margin_amount
+            portfolio_line['units'] += quantity
+            _add_bucket(portfolio_line['_detail'], channel_name, commercial_partner or partner, order, amount, quantity, matched_amount, cost_amount)
+            portfolio_product = portfolio_line['products'].setdefault(product.id, {
+                'key': 'sku_%s_%s' % (portfolio_line['key'], product.id),
+                'id': product.id,
+                'name': product.display_name,
+                'revenue': 0.0,
+                'matched_revenue': 0.0,
+                'cost': 0.0,
+                'margin': 0.0,
+                'units': 0.0,
+                '_detail': _make_bucket(),
+            })
+            portfolio_product['revenue'] += amount
+            portfolio_product['matched_revenue'] += matched_amount
+            portfolio_product['cost'] += cost_amount
+            portfolio_product['margin'] += margin_amount
+            portfolio_product['units'] += quantity
+            _add_bucket(portfolio_product['_detail'], channel_name, commercial_partner or partner, order, amount, quantity, matched_amount, cost_amount)
+
+            if commercial_partner:
+                customer_detail_index[commercial_partner.id] = customer_detail_index.get(commercial_partner.id) or _make_bucket()
+                _add_bucket(customer_detail_index[commercial_partner.id], channel_name, commercial_partner, order, amount, quantity, matched_amount, cost_amount)
+
+        if not filtered_count:
+            return self._build_empty_financial_payload(
+                filters,
+                filter_options,
+                'No hay datos financieros para los filtros seleccionados.',
+            )
+
+        total_revenue = sum(item['revenue'] for item in channel_map.values())
+        total_matched_revenue = sum(item['matched_revenue'] for item in channel_map.values())
+        total_cost = sum(item['cost'] for item in channel_map.values())
+        total_margin = total_matched_revenue - total_cost
+        coverage_pct = (total_matched_revenue / total_revenue * 100.0) if total_revenue else 0.0
+        total_margin_pct = (total_margin / total_matched_revenue * 100.0) if total_matched_revenue else 0.0
+
+        def _serialize_margin_row(row):
+            margin_pct_value = (row['margin'] / row['matched_revenue'] * 100.0) if row['matched_revenue'] else 0.0
+            return {
+                'id': row.get('id') or 0,
+                'key': row.get('key') or '',
+                'name': row['name'],
+                'revenue': round(row['revenue'], 2),
+                'matched_revenue': round(row['matched_revenue'], 2),
+                'cost': round(row['cost'], 2),
+                'margin': round(row['margin'], 2),
+                'margin_pct': round(margin_pct_value, 2),
+                'units': round(row['units'], 2),
+                'product_count': len(row.get('product_ids', [])),
+            }
+
+        brand_rows = []
+        for brand_name, row in brand_map.items():
+            serialized = _serialize_margin_row(row)
+            serialized['detail'] = _build_detail(
+                brand_name,
+                'Detalle financiero por marca',
+                row['_detail'],
+            )
+            brand_rows.append(serialized)
+        brand_rows.sort(key=lambda item: item['revenue'], reverse=True)
+
+        channel_rows = []
+        for channel_name, row in channel_map.items():
+            serialized = _serialize_margin_row(row)
+            serialized['detail'] = _build_detail(
+                channel_name,
+                'Detalle financiero por canal',
+                row['_detail'],
+            )
+            channel_rows.append(serialized)
+        channel_rows.sort(key=lambda item: item['revenue'], reverse=True)
+
+        top_products = []
+        for product_id, row in product_map.items():
+            margin_pct_value = (row['margin'] / row['matched_revenue'] * 100.0) if row['matched_revenue'] else 0.0
+            detail = _build_detail(
+                row['name'],
+                'Producto financiero',
+                row['_detail'],
+            )
+            customer_rows = detail.get('customer_rows') or []
+            detail['secondary_rows'] = customer_rows
+            top_products.append({
+                'id': product_id,
+                'name': row['name'],
+                'default_code': row['default_code'],
+                'brand_name': row['brand_name'],
+                'revenue': round(row['revenue'], 2),
+                'matched_revenue': round(row['matched_revenue'], 2),
+                'cost': round(row['cost'], 2),
+                'margin': round(row['margin'], 2),
+                'margin_pct': round(margin_pct_value, 2),
+                'units': round(row['units'], 2),
+                'channel_count': len(row['channel_names']),
+                'has_cost': row['has_cost'],
+                'detail': detail,
+            })
+        top_products.sort(key=lambda item: item['margin'], reverse=True)
+
+        product_channel_rows = []
+        for combo in product_channel_map.values():
+            margin_pct_value = (combo['margin'] / combo['matched_revenue'] * 100.0) if combo['matched_revenue'] else 0.0
+            product_channel_rows.append({
+                'key': combo['key'],
+                'channel': combo['channel'],
+                'product_id': combo['product_id'],
+                'product_name': combo['product_name'],
+                'brand_name': combo['brand_name'],
+                'revenue': round(combo['revenue'], 2),
+                'matched_revenue': round(combo['matched_revenue'], 2),
+                'cost': round(combo['cost'], 2),
+                'margin': round(combo['margin'], 2),
+                'margin_pct': round(margin_pct_value, 2),
+                'units': round(combo['units'], 2),
+            })
+        product_channel_rows.sort(key=lambda item: item['margin'], reverse=True)
+
+        units = []
+        portfolio_rows = []
+        for unit_name, unit in sorted(unit_map.items(), key=lambda item: item[1]['revenue'], reverse=True):
+            unit_margin_pct = (unit['margin'] / unit['matched_revenue'] * 100.0) if unit['matched_revenue'] else 0.0
+            unit_sku_count = sum(
+                len(line_row['products'])
+                for brand in unit['brands'].values()
+                for line_row in brand['lines'].values()
+            )
+            unit_payload = {
+                'key': unit['key'],
+                'name': unit_name,
+                'revenue': round(unit['revenue'], 2),
+                'matched_revenue': round(unit['matched_revenue'], 2),
+                'cost': round(unit['cost'], 2),
+                'margin': round(unit['margin'], 2),
+                'margin_pct': round(unit_margin_pct, 2),
+                'units': round(unit['units'], 2),
+                'sku_count': unit_sku_count,
+                'brands': [],
+            }
+            units.append(unit_payload)
+            portfolio_rows.append({
+                'key': unit['key'],
+                'level': 'unit',
+                'ancestor_keys': [],
+                'label': unit_name,
+                'revenue': unit_payload['revenue'],
+                'matched_revenue': unit_payload['matched_revenue'],
+                'cost': unit_payload['cost'],
+                'margin': unit_payload['margin'],
+                'margin_pct': unit_payload['margin_pct'],
+                'units_sold': unit_payload['units'],
+                'sku_count': unit_payload['sku_count'],
+                'detail': False,
+            })
+            for brand_name, brand in sorted(unit['brands'].items(), key=lambda item: item[1]['revenue'], reverse=True):
+                brand_margin_pct = (brand['margin'] / brand['matched_revenue'] * 100.0) if brand['matched_revenue'] else 0.0
+                brand_sku_count = sum(len(line_row['products']) for line_row in brand['lines'].values())
+                brand_payload = {
+                    'key': brand['key'],
+                    'id': brand['id'],
+                    'name': brand_name,
+                    'revenue': round(brand['revenue'], 2),
+                    'matched_revenue': round(brand['matched_revenue'], 2),
+                    'cost': round(brand['cost'], 2),
+                    'margin': round(brand['margin'], 2),
+                    'margin_pct': round(brand_margin_pct, 2),
+                    'units': round(brand['units'], 2),
+                    'lines': [],
+                    'detail': _build_detail(brand_name, '%s · %s' % (unit_name, brand_name), brand['_detail'], 'Top PDVs'),
+                }
+                unit_payload['brands'].append(brand_payload)
+                portfolio_rows.append({
+                    'key': brand['key'],
+                    'resId': brand['id'] or False,
+                    'level': 'brand',
+                    'ancestor_keys': [unit['key']],
+                    'label': brand_name,
+                    'revenue': brand_payload['revenue'],
+                    'matched_revenue': brand_payload['matched_revenue'],
+                    'cost': brand_payload['cost'],
+                    'margin': brand_payload['margin'],
+                    'margin_pct': brand_payload['margin_pct'],
+                    'units_sold': brand_payload['units'],
+                    'sku_count': brand_sku_count,
+                    'detail': brand_payload['detail'],
+                })
+                for line_name, line_row in sorted(brand['lines'].items(), key=lambda item: item[1]['revenue'], reverse=True):
+                    line_margin_pct = (line_row['margin'] / line_row['matched_revenue'] * 100.0) if line_row['matched_revenue'] else 0.0
+                    products = []
+                    line_payload = {
+                        'key': line_row['key'],
+                        'name': line_name,
+                        'revenue': round(line_row['revenue'], 2),
+                        'matched_revenue': round(line_row['matched_revenue'], 2),
+                        'cost': round(line_row['cost'], 2),
+                        'margin': round(line_row['margin'], 2),
+                        'margin_pct': round(line_margin_pct, 2),
+                        'units': round(line_row['units'], 2),
+                        'product_count': len(line_row['products']),
+                        'products': products,
+                        'detail': _build_detail(line_name, '%s · %s' % (brand_name, line_name), line_row['_detail'], 'Top PDVs'),
+                    }
+                    brand_payload['lines'].append(line_payload)
+                    portfolio_rows.append({
+                        'key': line_payload['key'],
+                        'level': 'line',
+                        'ancestor_keys': [unit['key'], brand['key']],
+                        'label': line_name,
+                        'revenue': line_payload['revenue'],
+                        'matched_revenue': line_payload['matched_revenue'],
+                        'cost': line_payload['cost'],
+                        'margin': line_payload['margin'],
+                        'margin_pct': line_payload['margin_pct'],
+                        'units_sold': line_payload['units'],
+                        'sku_count': line_payload['product_count'],
+                        'detail': line_payload['detail'],
+                    })
+                    for sku_row in sorted(line_row['products'].values(), key=lambda item: item['revenue'], reverse=True):
+                        sku_margin_pct = (sku_row['margin'] / sku_row['matched_revenue'] * 100.0) if sku_row['matched_revenue'] else 0.0
+                        sku_payload = {
+                            'key': sku_row['key'],
+                            'id': sku_row['id'],
+                            'name': sku_row['name'],
+                            'revenue': round(sku_row['revenue'], 2),
+                            'matched_revenue': round(sku_row['matched_revenue'], 2),
+                            'cost': round(sku_row['cost'], 2),
+                            'margin': round(sku_row['margin'], 2),
+                            'margin_pct': round(sku_margin_pct, 2),
+                            'units': round(sku_row['units'], 2),
+                            'detail': _build_detail(sku_row['name'], '%s · %s' % (brand_name, line_name), sku_row['_detail'], 'Top PDVs'),
+                        }
+                        products.append(sku_payload)
+                        portfolio_rows.append({
+                            'key': sku_payload['key'],
+                            'resId': sku_payload['id'],
+                            'level': 'sku',
+                            'ancestor_keys': [unit['key'], brand['key'], line_row['key']],
+                            'label': sku_payload['name'],
+                            'revenue': sku_payload['revenue'],
+                            'matched_revenue': sku_payload['matched_revenue'],
+                            'cost': sku_payload['cost'],
+                            'margin': sku_payload['margin'],
+                            'margin_pct': sku_payload['margin_pct'],
+                            'units_sold': sku_payload['units'],
+                            'sku_count': 1,
+                            'detail': sku_payload['detail'],
+                        })
+                    line_payload['products'] = products
+
+        alerts = []
+        missing_cost_products = [item for item in top_products if item['revenue'] > 0 and item['matched_revenue'] <= 0][:5]
+        if missing_cost_products:
+            alerts.append({
+                'severity': 'warn',
+                'title': 'Productos sin costo o sin marca activa',
+                'detail': 'Hay revenue fuera del margen teórico porque faltan costo estándar o asignación de marca en algunos productos.',
+                'items': [item['name'] for item in missing_cost_products],
+            })
+        low_margin_products = [
+            item for item in top_products
+            if item['matched_revenue'] >= 500 and item['margin_pct'] <= 10
+        ][:5]
+        if low_margin_products:
+            alerts.append({
+                'severity': 'alert',
+                'title': 'Productos con margen bajo',
+                'detail': 'Estos SKUs tienen margen bruto teórico menor o igual al 10% en el periodo filtrado.',
+                'items': [item['name'] for item in low_margin_products],
+            })
+        if channel_rows:
+            top_channel = channel_rows[0]
+            top_channel_mix = (top_channel['revenue'] / total_revenue * 100.0) if total_revenue else 0.0
+            if top_channel_mix >= 55:
+                alerts.append({
+                    'severity': 'info',
+                    'title': 'Concentración por canal',
+                    'detail': '%s concentra %.1f%% del revenue filtrado.' % (top_channel['name'], top_channel_mix),
+                    'items': [],
+                })
+        if brand_rows:
+            top_brand = brand_rows[0]
+            top_brand_mix = (top_brand['revenue'] / total_revenue * 100.0) if total_revenue else 0.0
+            if top_brand_mix >= 45:
+                alerts.append({
+                    'severity': 'info',
+                    'title': 'Concentración por marca',
+                    'detail': '%s concentra %.1f%% del revenue filtrado.' % (top_brand['name'], top_brand_mix),
+                    'items': [],
+                })
+
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(date_to),
+                'period_label': '%s al %s' % (
+                    fields.Date.to_string(date_from),
+                    fields.Date.to_string(date_to),
+                ),
+                'currency_symbol': currency_symbol,
+                'revenue': round(total_revenue, 2),
+                'matched_revenue': round(total_matched_revenue, 2),
+                'coverage_pct': round(coverage_pct, 2),
+                'cost': round(total_cost, 2),
+                'margin': round(total_margin, 2),
+                'margin_pct': round(total_margin_pct, 2),
+                'order_count': len(order_id_set),
+                'product_count': len(product_count_set),
+                'channel_count': len(channel_rows),
+                'brand_count': len(brand_rows),
+            },
+            'active_filters': self._serialize_active_filters(normalized_filters),
+            'filter_options': filter_options,
+            'empty_message': '',
+            'revenue_series': [
+                {
+                    'label': item['label'],
+                    'revenue': round(item['revenue'], 2),
+                    'cost': round(item['cost'], 2),
+                    'margin': round(item['margin'], 2),
+                }
+                for item in revenue_series
+            ],
+            'brand_margin_mix': brand_rows[:8],
+            'channel_margin_rows': channel_rows,
+            'top_products': top_products,
+            'product_channel_matrix': product_channel_rows[:30],
+            'brand_rows': brand_rows,
+            'portfolio': {
+                'units': units,
+                'rows': portfolio_rows,
+            },
+            'alerts': alerts,
+            'notes_sources': [
+                {
+                    'label': 'Ventas Odoo',
+                    'detail': 'Revenue y pedidos consolidados desde sale.order.line y sale.order.',
+                },
+                {
+                    'label': 'Costo estándar',
+                    'detail': 'El margen mostrado es teórico y usa standard_price del producto cuando hay match de marca.',
+                },
+                {
+                    'label': 'Catálogo comercial',
+                    'detail': 'Marcas y canales reutilizan Zoraen Commercial para sostener el mismo corte analítico.',
+                },
+            ],
+        }
+
+    @api.model
     def get_commercial_hub_payload(self, filters=None):
         normalized_filters = self._normalize_channel_filters(filters)
         date_from = normalized_filters['date_from']

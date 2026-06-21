@@ -42,6 +42,15 @@ const COMMERCIAL_TABS = [
   { key: "bcg", label: "Matriz BCG", icon: "fa-th-large" },
 ];
 
+const FINANCIAL_TABS = [
+  { key: "overview", label: "Resumen", icon: "fa-line-chart" },
+  { key: "producto", label: "Por Producto", icon: "fa-cube" },
+  { key: "canal", label: "Por Canal", icon: "fa-sitemap" },
+  { key: "marca", label: "Por Marca", icon: "fa-tags" },
+  { key: "portafolio", label: "Portafolio", icon: "fa-archive" },
+  { key: "alertas", label: "Alertas", icon: "fa-bell-o" },
+];
+
 const DEFAULT_FILTERS = Object.freeze({
   period_key: "ytd",
   channel_ids: [],
@@ -178,6 +187,7 @@ class ZrnAnalyticsHubAction extends Component {
     this.rootRef = useRef("hubRoot");
     this.hubs = HUBS;
     this.commercialTabs = COMMERCIAL_TABS;
+    this.financialTabs = FINANCIAL_TABS;
     this._charts = new Map();
     this._chartRenderTimeouts = [];
     this._chartRenderFrame = 0;
@@ -189,15 +199,21 @@ class ZrnAnalyticsHubAction extends Component {
     this.state = useState({
       activeHub: "direction",
       commercialTab: "overview",
+      financialTab: "overview",
       commercialSidebarOpen: false,
       commercialPayload: null,
       commercialLoading: false,
+      financialPayload: null,
+      financialLoading: false,
       coveragePayload: null,
       coverageLoading: false,
       channelPayload: null,
       channelLoading: false,
+      financialFilters: cloneDefaultFilters(),
       selectedPortfolioUnit: "",
       portfolioExpanded: {},
+      selectedFinancialUnit: "",
+      financialPortfolioExpanded: {},
       overviewFilters: cloneDefaultFilters(),
       portfolioFilters: cloneDefaultFilters(),
       coverageFilters: cloneDefaultFilters(),
@@ -216,6 +232,10 @@ class ZrnAnalyticsHubAction extends Component {
         sku_distribution: { column: "revenue", order: "desc" },
         portfolio_holes: { column: "gap_count", order: "desc" },
         clients_at_risk: { column: "days_since_last", order: "desc" },
+        financial_products: { column: "margin", order: "desc" },
+        financial_channels: { column: "margin", order: "desc" },
+        financial_brands: { column: "margin", order: "desc" },
+        financial_product_channel: { column: "margin", order: "desc" },
         all_clients: { column: "rev", order: "desc" },
         rfm_clients: { column: "rev", order: "desc" },
         market_basket: { column: "lift", order: "desc" },
@@ -329,6 +349,26 @@ class ZrnAnalyticsHubAction extends Component {
     return this.sortData(this.coveragePayload.clients_at_risk || [], sort.column, sort.order);
   }
 
+  get sortedFinancialProducts() {
+    const sort = this.state.sorts.financial_products;
+    return this.sortData(this.financialPayload.top_products || [], sort.column, sort.order);
+  }
+
+  get sortedFinancialChannels() {
+    const sort = this.state.sorts.financial_channels;
+    return this.sortData(this.financialPayload.channel_margin_rows || [], sort.column, sort.order);
+  }
+
+  get sortedFinancialBrands() {
+    const sort = this.state.sorts.financial_brands;
+    return this.sortData(this.financialPayload.brand_rows || [], sort.column, sort.order);
+  }
+
+  get sortedFinancialProductChannel() {
+    const sort = this.state.sorts.financial_product_channel;
+    return this.sortData(this.financialPayload.product_channel_matrix || [], sort.column, sort.order);
+  }
+
   get sortedAllClients() {
     const sort = this.state.sorts.all_clients;
     return this.sortData(this.commercialPayload?.all_clients || [], sort.column, sort.order);
@@ -405,6 +445,11 @@ class ZrnAnalyticsHubAction extends Component {
 
   async setActiveHub(hubKey) {
     this.state.activeHub = hubKey;
+    if (hubKey === "financial") {
+      await this.loadFinancialPayload();
+      this.queueChartRender();
+      return;
+    }
     if (hubKey !== "commercial") {
       return;
     }
@@ -430,6 +475,14 @@ class ZrnAnalyticsHubAction extends Component {
     } else {
       await this.loadCommercialPayload();
     }
+    this.queueChartRender();
+  }
+
+  async setFinancialTab(tabKey) {
+    this.state.financialTab = tabKey;
+    this.closeCommercialSidebar();
+    this.state.analyticsDetailModal = null;
+    await this.loadFinancialPayload();
     this.queueChartRender();
   }
 
@@ -463,6 +516,25 @@ class ZrnAnalyticsHubAction extends Component {
       this.syncPortfolioStateFromPayload();
     } finally {
       this.state.commercialLoading = false;
+    }
+  }
+
+  async loadFinancialPayload(force = false) {
+    if (this.state.financialPayload && !force) {
+      return;
+    }
+    this.state.financialLoading = true;
+    try {
+      const payload = await this.orm.call(
+        "zrn_analitics.home",
+        "get_financial_hub_payload",
+        [this.state.financialFilters],
+      );
+      this.state.financialPayload = payload;
+      this.syncFinancialFiltersFromPayload(payload);
+      this.syncFinancialStateFromPayload();
+    } finally {
+      this.state.financialLoading = false;
     }
   }
 
@@ -544,6 +616,17 @@ class ZrnAnalyticsHubAction extends Component {
     };
   }
 
+  syncFinancialFiltersFromPayload(payload) {
+    const activeFilters = payload?.active_filters || {};
+    this.state.financialFilters = {
+      period_key: activeFilters.period_key || DEFAULT_FILTERS.period_key,
+      channel_ids: normalizeFilterIds(activeFilters.channel_ids),
+      brand_ids: normalizeFilterIds(activeFilters.brand_ids),
+      category_ids: normalizeFilterIds(activeFilters.category_ids),
+      search: activeFilters.search || "",
+    };
+  }
+
   syncPortfolioStateFromPayload() {
     const units = this.commercialPortfolio.units || [];
     const defaultUnit = units[0]?.key || "";
@@ -553,6 +636,23 @@ class ZrnAnalyticsHubAction extends Component {
     if (defaultUnit && this.state.portfolioExpanded[defaultUnit] === undefined) {
       this.state.portfolioExpanded = {
         ...this.state.portfolioExpanded,
+        [defaultUnit]: true,
+      };
+    }
+  }
+
+  syncFinancialStateFromPayload() {
+    const units = this.financialPortfolio.units || [];
+    const defaultUnit = units[0]?.key || "";
+    this.state.selectedFinancialUnit =
+      units.find((unit) => unit.key === this.state.selectedFinancialUnit)?.key ||
+      defaultUnit;
+    if (
+      defaultUnit &&
+      this.state.financialPortfolioExpanded[defaultUnit] === undefined
+    ) {
+      this.state.financialPortfolioExpanded = {
+        ...this.state.financialPortfolioExpanded,
         [defaultUnit]: true,
       };
     }
@@ -593,6 +693,16 @@ class ZrnAnalyticsHubAction extends Component {
   updateChannelFilter(key, value) {
     this.state.channelFilters = {
       ...this.state.channelFilters,
+      [key]:
+        key === "channel_ids" || key === "brand_ids" || key === "category_ids"
+          ? normalizeFilterIds(value)
+          : value ?? "",
+    };
+  }
+
+  updateFinancialFilter(key, value) {
+    this.state.financialFilters = {
+      ...this.state.financialFilters,
       [key]:
         key === "channel_ids" || key === "brand_ids" || key === "category_ids"
           ? normalizeFilterIds(value)
@@ -665,6 +775,22 @@ class ZrnAnalyticsHubAction extends Component {
     this.updateChannelFilter("category_ids", records.map((r) => r.id));
   }
 
+  onFinancialPeriodSelect(value) {
+    this.updateFinancialFilter("period_key", value);
+  }
+
+  onFinancialChannelsChange(records) {
+    this.updateFinancialFilter("channel_ids", records.map((r) => r.id));
+  }
+
+  onFinancialBrandsChange(records) {
+    this.updateFinancialFilter("brand_ids", records.map((r) => r.id));
+  }
+
+  onFinancialCategoriesChange(records) {
+    this.updateFinancialFilter("category_ids", records.map((r) => r.id));
+  }
+
   getOptionDomain(options) {
     const ids = (options || [])
       .map((option) => Number(option.id))
@@ -698,6 +824,10 @@ class ZrnAnalyticsHubAction extends Component {
     await this.loadChannelPayload(true);
   }
 
+  async applyFinancialFilters() {
+    await this.loadFinancialPayload(true);
+  }
+
   async clearOverviewFilters() {
     this.state.overviewFilters = cloneDefaultFilters();
     await this.loadCommercialPayload(true);
@@ -716,6 +846,11 @@ class ZrnAnalyticsHubAction extends Component {
   async clearChannelFilters() {
     this.state.channelFilters = cloneDefaultFilters();
     await this.loadChannelPayload(true);
+  }
+
+  async clearFinancialFilters() {
+    this.state.financialFilters = cloneDefaultFilters();
+    await this.loadFinancialPayload(true);
   }
 
   onOverviewSearchKeydown(ev) {
@@ -739,6 +874,12 @@ class ZrnAnalyticsHubAction extends Component {
   onChannelSearchKeydown(ev) {
     if (ev.key === "Enter") {
       this.applyChannelFilters();
+    }
+  }
+
+  onFinancialSearchKeydown(ev) {
+    if (ev.key === "Enter") {
+      this.applyFinancialFilters();
     }
   }
 
@@ -802,6 +943,46 @@ class ZrnAnalyticsHubAction extends Component {
     this.state.channelModalRow = row;
   }
 
+  openFinancialProduct(row) {
+    if (!row) {
+      return;
+    }
+    if (row.detail) {
+      this.openAnalyticsDetailModal(row.detail);
+      return;
+    }
+    this.openRecordModal("product.product", row.id);
+  }
+
+  openFinancialChannel(row) {
+    if (row?.detail) {
+      this.openAnalyticsDetailModal(row.detail);
+    }
+  }
+
+  openFinancialBrand(row) {
+    if (row?.detail) {
+      this.openAnalyticsDetailModal(row.detail);
+    }
+  }
+
+  openFinancialPortfolioRow(row) {
+    if (!row) {
+      return;
+    }
+    if (row.level === "sku" && row.resId) {
+      this.openRecordModal("product.product", row.resId);
+      return;
+    }
+    if (row.level === "brand" && row.resId) {
+      this.openRecordModal("zrn_commercial.commercial.brand", row.resId);
+      return;
+    }
+    if (row.detail) {
+      this.openAnalyticsDetailModal(row.detail);
+    }
+  }
+
   closeChannelModal() {
     this.state.channelModalRow = null;
   }
@@ -825,7 +1006,17 @@ class ZrnAnalyticsHubAction extends Component {
     );
   }
 
+  get activeFinancialTab() {
+    return (
+      this.financialTabs.find((tab) => tab.key === this.state.financialTab) ||
+      this.financialTabs[0]
+    );
+  }
+
   get activeHubSummary() {
+    if (this.state.activeHub === "financial") {
+      return this.financialPayload.summary || {};
+    }
     if (this.state.commercialTab === "cobertura") {
       return this.coveragePayload.summary || {};
     }
@@ -866,6 +1057,41 @@ class ZrnAnalyticsHubAction extends Component {
         top_channels: [],
         top_products: [],
         portfolio_rows: [],
+      }
+    );
+  }
+
+  get financialPayload() {
+    return (
+      this.state.financialPayload || {
+        summary: {
+          sync_label: "",
+          period_label: "",
+          currency_symbol: "$",
+          revenue: 0,
+          matched_revenue: 0,
+          coverage_pct: 0,
+          cost: 0,
+          margin: 0,
+          margin_pct: 0,
+        },
+        active_filters: cloneDefaultFilters(),
+        filter_options: {
+          periods: [],
+          channels: [],
+          brands: [],
+          categories: [],
+        },
+        empty_message: "",
+        revenue_series: [],
+        brand_margin_mix: [],
+        channel_margin_rows: [],
+        top_products: [],
+        product_channel_matrix: [],
+        brand_rows: [],
+        portfolio: { units: [], rows: [] },
+        alerts: [],
+        notes_sources: [],
       }
     );
   }
@@ -933,6 +1159,18 @@ class ZrnAnalyticsHubAction extends Component {
 
   get hasChannelRows() {
     return Boolean((this.channelPayload.rows || []).length);
+  }
+
+  get hasFinancialRevenueSeries() {
+    return Boolean((this.financialPayload.revenue_series || []).length);
+  }
+
+  get hasFinancialBrandMix() {
+    return Boolean((this.financialPayload.brand_margin_mix || []).length);
+  }
+
+  get hasFinancialChannels() {
+    return Boolean((this.financialPayload.channel_margin_rows || []).length);
   }
 
   get hasEchartsLibrary() {
@@ -1126,6 +1364,45 @@ class ZrnAnalyticsHubAction extends Component {
     };
   }
 
+  get financialPortfolio() {
+    return this.financialPayload.portfolio || { units: [], rows: [] };
+  }
+
+  get activeFinancialUnit() {
+    const units = this.financialPortfolio.units || [];
+    if (!units.length) {
+      return null;
+    }
+    return (
+      units.find((unit) => unit.key === this.state.selectedFinancialUnit) ||
+      units[0]
+    );
+  }
+
+  selectFinancialUnit(unitKey) {
+    this.state.selectedFinancialUnit = unitKey;
+  }
+
+  toggleFinancialPortfolioRow(rowKey) {
+    this.state.financialPortfolioExpanded = {
+      ...this.state.financialPortfolioExpanded,
+      [rowKey]: !this.isFinancialPortfolioRowExpanded(rowKey),
+    };
+  }
+
+  isFinancialPortfolioRowExpanded(rowKey) {
+    if (this.state.financialPortfolioExpanded[rowKey] !== undefined) {
+      return Boolean(this.state.financialPortfolioExpanded[rowKey]);
+    }
+    return rowKey === this.financialPortfolio.units?.[0]?.key;
+  }
+
+  isFinancialPortfolioRowVisible(row) {
+    return (row.ancestor_keys || []).every((key) =>
+      this.isFinancialPortfolioRowExpanded(key),
+    );
+  }
+
   get activePortfolioUnit() {
     const units = this.commercialPortfolio.units || [];
     if (!units.length) {
@@ -1201,27 +1478,38 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   renderCharts() {
-    if (
-      !window.echarts ||
-      !this.rootElement ||
-      this.state.activeHub !== "commercial"
-    ) {
+    if (!window.echarts || !this.rootElement) {
       return;
     }
-    try {
-      this.renderOverviewLineChart();
-      this.renderOverviewDonutChart();
-      this.renderOverviewCustomersChart();
-      this.renderPortfolioUnitsChart();
-      this.renderPortfolioBrandsChart();
-      this.renderCoverageChannelChart();
-      this.renderCoverageSkuChart();
-      this.renderRfmParetoChart();
-      this.renderInsightsCadenceChart();
-      this.renderSellinSelloutChart();
-      this.renderProductChart();
-    } catch (error) {
-      console.error("ZRN commercial chart error", error);
+    if (this.state.activeHub === "commercial") {
+      try {
+        this.renderOverviewLineChart();
+        this.renderOverviewDonutChart();
+        this.renderOverviewCustomersChart();
+        this.renderPortfolioUnitsChart();
+        this.renderPortfolioBrandsChart();
+        this.renderCoverageChannelChart();
+        this.renderCoverageSkuChart();
+        this.renderRfmParetoChart();
+        this.renderInsightsCadenceChart();
+        this.renderSellinSelloutChart();
+        this.renderProductChart();
+      } catch (error) {
+        console.error("ZRN commercial chart error", error);
+      }
+    }
+    if (this.state.activeHub === "financial") {
+      try {
+        this.renderFinancialOverviewChart();
+        this.renderFinancialBrandChart();
+        this.renderFinancialChannelChart();
+        this.renderFinancialProductChart();
+        this.renderFinancialProductMarginPctChart();
+        this.renderFinancialPortfolioUnitChart();
+        this.renderFinancialPortfolioBrandChart();
+      } catch (error) {
+        console.error("ZRN financial chart error", error);
+      }
     }
   }
 
@@ -1655,6 +1943,372 @@ class ZrnAnalyticsHubAction extends Component {
           {
             type: "bar",
             data: reversed.map((row) => Number(row.pdv_pct || 0)),
+            barWidth: 18,
+            itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
+          },
+        ],
+      },
+      true,
+    );
+  }
+
+  renderFinancialOverviewChart() {
+    if (this.state.financialTab !== "overview") {
+      return;
+    }
+    const series = this.financialPayload.revenue_series || [];
+    if (!series.length) {
+      return;
+    }
+    const chart = this.getChart("financial-overview");
+    if (!chart) {
+      return;
+    }
+    chart.setOption(
+      {
+        animationDuration: 650,
+        grid: { top: 28, right: 20, bottom: 26, left: 24, containLabel: true },
+        tooltip: {
+          trigger: "axis",
+          valueFormatter: (value) =>
+            `${this.financialPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+        },
+        legend: {
+          data: ["Revenue", "Costo", "Margen"],
+          textStyle: { color: "#5f6b7a", fontSize: 11 },
+        },
+        xAxis: {
+          type: "category",
+          data: series.map((item) => item.label),
+          axisLine: { lineStyle: { color: "#d6deea" } },
+          axisTick: { show: false },
+          axisLabel: { color: "#5f6b7a", fontSize: 11 },
+        },
+        yAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#edf2f8" } },
+          axisLabel: {
+            color: "#5f6b7a",
+            fontSize: 11,
+            formatter: (value) => this.formatMoney(value),
+          },
+        },
+        series: [
+          {
+            name: "Revenue",
+            type: "bar",
+            data: series.map((item) => Number(item.revenue || 0)),
+            itemStyle: { color: "#0f766e", borderRadius: [6, 6, 0, 0] },
+            barMaxWidth: 28,
+          },
+          {
+            name: "Costo",
+            type: "bar",
+            data: series.map((item) => Number(item.cost || 0)),
+            itemStyle: { color: "#c2410c", borderRadius: [6, 6, 0, 0] },
+            barMaxWidth: 28,
+          },
+          {
+            name: "Margen",
+            type: "line",
+            smooth: 0.2,
+            symbolSize: 8,
+            data: series.map((item) => Number(item.margin || 0)),
+            lineStyle: { color: "#bd1730", width: 3 },
+            itemStyle: { color: "#bd1730" },
+          },
+        ],
+      },
+      true,
+    );
+  }
+
+  renderFinancialBrandChart() {
+    if (this.state.financialTab !== "overview" && this.state.financialTab !== "marca") {
+      return;
+    }
+    const rows =
+      this.state.financialTab === "overview"
+        ? (this.financialPayload.brand_margin_mix || []).slice(0, 8)
+        : (this.sortedFinancialBrands || []).slice(0, 8);
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart(
+      this.state.financialTab === "overview"
+        ? "financial-brand-overview"
+        : "financial-brand-detail",
+    );
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].reverse();
+    chart.setOption(
+      {
+        animationDuration: 650,
+        grid: { top: 12, right: 16, bottom: 12, left: 140, containLabel: false },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+          valueFormatter: (value) =>
+            `${this.financialPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+        },
+        xAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#edf2f8" } },
+          axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+        },
+        yAxis: {
+          type: "category",
+          data: reversed.map((row) => row.name),
+          axisTick: { show: false },
+          axisLine: { show: false },
+          axisLabel: { color: "#334155", fontSize: 11, width: 130, overflow: "truncate" },
+        },
+        series: [
+          {
+            type: "bar",
+            data: reversed.map((row) => Number(row.margin || 0)),
+            barWidth: 18,
+            itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
+          },
+        ],
+      },
+      true,
+    );
+  }
+
+  renderFinancialChannelChart() {
+    if (this.state.financialTab !== "overview" && this.state.financialTab !== "canal") {
+      return;
+    }
+    const rows = (this.sortedFinancialChannels || []).slice(0, 8);
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart(
+      this.state.financialTab === "overview"
+        ? "financial-channel-overview"
+        : "financial-channel-detail",
+    );
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].reverse();
+    chart.setOption(
+      {
+        animationDuration: 650,
+        grid: { top: 12, right: 16, bottom: 12, left: 150, containLabel: false },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+          valueFormatter: (value) => `${Number(value || 0).toFixed(1)}%`,
+        },
+        xAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#edf2f8" } },
+          axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => `${value}%` },
+        },
+        yAxis: {
+          type: "category",
+          data: reversed.map((row) => row.name),
+          axisTick: { show: false },
+          axisLine: { show: false },
+          axisLabel: { color: "#334155", fontSize: 11, width: 140, overflow: "truncate" },
+        },
+        series: [
+          {
+            type: "bar",
+            data: reversed.map((row) => Number(row.margin_pct || 0)),
+            barWidth: 18,
+            itemStyle: { color: "#0f766e", borderRadius: [0, 6, 6, 0] },
+          },
+        ],
+      },
+      true,
+    );
+  }
+
+  renderFinancialProductChart() {
+    if (this.state.financialTab !== "producto") {
+      return;
+    }
+    const rows = (this.sortedFinancialProducts || []).slice(0, 10);
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("financial-product-margin");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].reverse();
+    chart.setOption(
+      {
+        animationDuration: 650,
+        grid: { top: 12, right: 16, bottom: 12, left: 220, containLabel: false },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+          valueFormatter: (value) =>
+            `${this.financialPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+        },
+        xAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#edf2f8" } },
+          axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+        },
+        yAxis: {
+          type: "category",
+          data: reversed.map((row) => row.name),
+          axisTick: { show: false },
+          axisLine: { show: false },
+          axisLabel: { color: "#334155", fontSize: 11, width: 210, overflow: "truncate" },
+        },
+        series: [
+          {
+            type: "bar",
+            data: reversed.map((row) => Number(row.margin || 0)),
+            barWidth: 18,
+            itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
+          },
+        ],
+      },
+      true,
+    );
+  }
+
+  renderFinancialProductMarginPctChart() {
+    if (this.state.financialTab !== "producto") {
+      return;
+    }
+    const rows = (this.sortedFinancialProducts || []).slice(0, 10);
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("financial-product-margin-pct");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].reverse();
+    chart.setOption(
+      {
+        animationDuration: 650,
+        grid: { top: 12, right: 16, bottom: 12, left: 220, containLabel: false },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+          valueFormatter: (value) => `${Number(value || 0).toFixed(1)}%`,
+        },
+        xAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#edf2f8" } },
+          axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => `${value}%` },
+        },
+        yAxis: {
+          type: "category",
+          data: reversed.map((row) => row.name),
+          axisTick: { show: false },
+          axisLine: { show: false },
+          axisLabel: { color: "#334155", fontSize: 11, width: 210, overflow: "truncate" },
+        },
+        series: [
+          {
+            type: "bar",
+            data: reversed.map((row) => Number(row.margin_pct || 0)),
+            barWidth: 18,
+            itemStyle: { color: "#0f766e", borderRadius: [0, 6, 6, 0] },
+          },
+        ],
+      },
+      true,
+    );
+  }
+
+  renderFinancialPortfolioUnitChart() {
+    if (this.state.financialTab !== "portafolio") {
+      return;
+    }
+    const units = this.financialPortfolio.units || [];
+    if (!units.length) {
+      return;
+    }
+    const chart = this.getChart("financial-portfolio-units");
+    if (!chart) {
+      return;
+    }
+    chart.setOption(
+      {
+        animationDuration: 650,
+        grid: { top: 18, right: 20, bottom: 30, left: 24, containLabel: true },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+          valueFormatter: (value) =>
+            `${this.financialPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+        },
+        xAxis: {
+          type: "category",
+          data: units.map((unit) => unit.name),
+          axisTick: { show: false },
+          axisLine: { lineStyle: { color: "#d6deea" } },
+          axisLabel: { color: "#5f6b7a", fontSize: 11 },
+        },
+        yAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#edf2f8" } },
+          axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+        },
+        series: [
+          {
+            type: "bar",
+            data: units.map((unit) => Number(unit.margin || 0)),
+            barMaxWidth: 56,
+            itemStyle: { color: "#1f4e8c", borderRadius: [6, 6, 0, 0] },
+          },
+        ],
+      },
+      true,
+    );
+  }
+
+  renderFinancialPortfolioBrandChart() {
+    if (this.state.financialTab !== "portafolio") {
+      return;
+    }
+    const brands = this.activeFinancialUnit?.brands || [];
+    if (!brands.length) {
+      return;
+    }
+    const chart = this.getChart("financial-portfolio-brands");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...brands].reverse();
+    chart.setOption(
+      {
+        animationDuration: 650,
+        grid: { top: 8, right: 16, bottom: 8, left: 160, containLabel: false },
+        tooltip: {
+          trigger: "axis",
+          axisPointer: { type: "shadow" },
+          valueFormatter: (value) => `${Number(value || 0).toFixed(1)}%`,
+        },
+        xAxis: {
+          type: "value",
+          splitLine: { lineStyle: { color: "#edf2f8" } },
+          axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => `${value}%` },
+        },
+        yAxis: {
+          type: "category",
+          data: reversed.map((brand) => brand.name),
+          axisTick: { show: false },
+          axisLine: { show: false },
+          axisLabel: { color: "#334155", fontSize: 11, width: 150, overflow: "truncate" },
+        },
+        series: [
+          {
+            type: "bar",
+            data: reversed.map((brand) => Number(brand.margin_pct || 0)),
             barWidth: 18,
             itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
           },
