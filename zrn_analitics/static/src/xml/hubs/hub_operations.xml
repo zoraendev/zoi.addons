@@ -1,9 +1,660 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <t t-name="zrn_analitics.HubOperationsFilters">
+        <section class="zrn_analitics_hub_panel">
+            <div class="zrn_analitics_commercial_panel_head">
+                <span>Filtros operativos</span>
+                <span>Demanda inferida desde ventas con corte por marca y canal</span>
+            </div>
+            <div class="zrn_analitics_commercial_channel_filters">
+                <div class="zrn_analitics_commercial_field">
+                    <label>Periodo</label>
+                    <SelectMenu choices="getPeriodChoices(operationsPayload.filter_options.periods)" value="state.operationsFilters.period_key" onSelect.bind="this.onOperationsPeriodSelect"/>
+                </div>
+                <div class="zrn_analitics_commercial_field">
+                    <label>Marca</label>
+                    <ZrnRelationalMultiSelect
+                        records="getSelectedOptionRecords(operationsPayload.filter_options.brands, state.operationsFilters.brand_ids)"
+                        domain="getOptionDomain(operationsPayload.filter_options.brands)"
+                        resModel="'zrn_commercial.commercial.brand'"
+                        fieldString="'Marca'"
+                        placeholder="'Todas las marcas'"
+                        onChange.bind="this.onOperationsBrandsChange"
+                    />
+                </div>
+                <div class="zrn_analitics_commercial_field">
+                    <label>Canal</label>
+                    <ZrnRelationalMultiSelect
+                        records="getSelectedOptionRecords(operationsPayload.filter_options.channels, state.operationsFilters.channel_ids)"
+                        domain="getOptionDomain(operationsPayload.filter_options.channels)"
+                        resModel="'zrn_commercial.commercial.channel'"
+                        fieldString="'Canal'"
+                        placeholder="'Todos los canales'"
+                        onChange.bind="this.onOperationsChannelsChange"
+                    />
+                </div>
+                <div class="zrn_analitics_commercial_field">
+                    <label>Clase ABC</label>
+                    <SelectMenu choices="getSelectChoices(operationsPayload.filter_options.abc_choices, 'Todas las clases')" value="state.operationsFilters.abc_class" onSelect.bind="this.onOperationsAbcSelect"/>
+                </div>
+                <div class="zrn_analitics_commercial_field">
+                    <label>Rotacion</label>
+                    <SelectMenu choices="getSelectChoices(operationsPayload.filter_options.rotation_choices, 'Toda la rotacion')" value="state.operationsFilters.rotation_key" onSelect.bind="this.onOperationsRotationSelect"/>
+                </div>
+                <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
+                    <label>Buscar</label>
+                    <input type="text" class="form-control" placeholder="Producto, marca, canal o codigo" t-att-value="state.operationsFilters.search" t-on-input="(ev) => this.updateOperationsFilter('search', ev.target.value)" t-on-keydown="this.onOperationsSearchKeydown"/>
+                </div>
+            </div>
+            <div class="zrn_analitics_commercial_channel_actions">
+                <button type="button" class="btn btn-primary" t-on-click="this.applyOperationsFilters">Aplicar</button>
+                <button type="button" class="btn btn-secondary" t-on-click="this.clearOperationsFilters">Limpiar</button>
+            </div>
+        </section>
+    </t>
+
     <t t-name="zrn_analitics.HubOperations">
-        <div class="zrn_analitics_hub_panel">
-            <div class="zrn_analitics_hub_panel_title">Hub Operaciones</div>
-            <div class="zrn_analitics_hub_panel_text">Vista de prueba activa para el hub de Operaciones.</div>
+        <div class="zrn_analitics_commercial_hub" t-ref="hubRoot">
+            <div class="zrn_analitics_commercial_hero">
+                <div class="zrn_analitics_commercial_title_row">
+                    <div class="zrn_analitics_hub_panel_title">Hub Operaciones</div>
+                </div>
+            </div>
+
+            <div class="zrn_analitics_commercial_shell">
+                <button
+                    type="button"
+                    class="btn zrn_analitics_commercial_sidebar_toggle"
+                    t-on-click="toggleCommercialSidebar"
+                >
+                    <i class="fa fa-bars"></i>
+                    <span>Secciones</span>
+                </button>
+
+                <div
+                    class="zrn_analitics_commercial_sidebar_overlay"
+                    t-att-class="state.commercialSidebarOpen ? 'is-open' : ''"
+                    t-on-click="closeCommercialSidebar"
+                ></div>
+
+                <aside
+                    class="zrn_analitics_commercial_sidebar"
+                    t-att-class="state.commercialSidebarOpen ? 'is-open' : ''"
+                >
+                    <div class="zrn_analitics_commercial_sidebar_head">
+                        <div class="zrn_analitics_commercial_sidebar_title">Secciones</div>
+                        <button
+                            type="button"
+                            class="btn zrn_analitics_commercial_sidebar_close"
+                            t-on-click="closeCommercialSidebar"
+                        >
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="zrn_analitics_commercial_badges zrn_analitics_commercial_badges_sidebar">
+                        <span class="zrn_analitics_commercial_badge zrn_analitics_commercial_badge_sync">
+                            Sync con Odoo: <t t-esc="activeHubSummary.sync_label"/>
+                        </span>
+                        <span class="zrn_analitics_commercial_badge">
+                            <t t-esc="activeHubSummary.period_label"/>
+                        </span>
+                        <span class="zrn_analitics_commercial_badge">
+                            <t t-esc="formatCount(operationsPayload.summary.brand_count)"/> marcas / <t t-esc="formatCount(operationsPayload.summary.product_count)"/> productos
+                        </span>
+                    </div>
+
+                    <div class="zrn_analitics_commercial_section_tabs">
+                        <t t-foreach="operationsTabs" t-as="tab" t-key="tab.key">
+                            <button
+                                type="button"
+                                class="btn zrn_analitics_commercial_section_tab"
+                                t-att-class="state.operationsTab === tab.key ? 'is-active' : ''"
+                                t-on-click="() => this.setOperationsTab(tab.key)"
+                            >
+                                <i class="fa zrn_analitics_commercial_section_tab_icon" t-att-class="tab.icon"></i>
+                                <span><t t-esc="tab.label"/></span>
+                            </button>
+                        </t>
+                    </div>
+                </aside>
+
+                <div class="zrn_analitics_commercial_content">
+                    <t t-if="state.operationsLoading">
+                        <div class="zrn_analitics_hub_panel">
+                            <div class="zrn_analitics_hub_panel_text">Cargando resumen operativo...</div>
+                        </div>
+                    </t>
+
+                    <t t-if="!state.operationsLoading">
+                        <t t-call="zrn_analitics.HubOperationsFilters"/>
+
+                        <div class="zrn_analitics_commercial_stats">
+                            <div class="zrn_analitics_commercial_stat_box">
+                                <span>Unidades vendidas</span>
+                                <strong><t t-esc="formatCount(operationsPayload.summary.total_units)"/></strong>
+                            </div>
+                            <div class="zrn_analitics_commercial_stat_box">
+                                <span>Revenue</span>
+                                <strong><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(operationsPayload.summary.total_revenue)"/></strong>
+                            </div>
+                            <div class="zrn_analitics_commercial_stat_box">
+                                <span>Pedidos</span>
+                                <strong><t t-esc="formatCount(operationsPayload.summary.order_count)"/></strong>
+                            </div>
+                            <div class="zrn_analitics_commercial_stat_box">
+                                <span>PDVs</span>
+                                <strong><t t-esc="formatCount(operationsPayload.summary.point_count)"/></strong>
+                            </div>
+                            <div class="zrn_analitics_commercial_stat_box">
+                                <span>SKUs activos</span>
+                                <strong><t t-esc="formatCount(operationsPayload.summary.product_count)"/></strong>
+                            </div>
+                            <div class="zrn_analitics_commercial_stat_box">
+                                <span>Promedio unid/dia</span>
+                                <strong><t t-esc="formatCount(operationsPayload.summary.avg_units_day)"/></strong>
+                            </div>
+                        </div>
+
+                        <t t-if="operationsPayload.empty_message">
+                            <div class="zrn_analitics_commercial_empty_note">
+                                <t t-esc="operationsPayload.empty_message"/>
+                            </div>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'overview'">
+                            <div class="zrn_analitics_commercial_top_row">
+                                <section class="zrn_analitics_hub_panel zrn_analitics_commercial_panel_main">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Demanda mensual</span>
+                                        <span>Unidades proyectadas por mes</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_line_chart">
+                                        <t t-if="hasOperationsMonthlySeries and hasEchartsLibrary">
+                                            <div class="zrn_analitics_commercial_echart" data-zrn-chart="operations-overview-monthly"></div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="zrn_analitics_commercial_chart_empty">Sin demanda mensual para graficar.</div>
+                                        </t>
+                                    </div>
+                                </section>
+
+                                <section class="zrn_analitics_hub_panel zrn_analitics_commercial_panel_side">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Mix por marca</span>
+                                        <span>Participacion de unidades</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_donut_wrap">
+                                        <t t-if="hasOperationsBrandMix and hasEchartsLibrary">
+                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_donut" data-zrn-chart="operations-overview-brand-mix"></div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="zrn_analitics_commercial_chart_empty">Sin mix por marca para mostrar.</div>
+                                        </t>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <div class="zrn_analitics_commercial_bottom_grid">
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Distribucion ABC</span>
+                                        <span>SKUs por clase</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_bar_list">
+                                        <t t-if="hasEchartsLibrary">
+                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="operations-overview-abc"></div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="zrn_analitics_commercial_chart_empty">Libreria ECharts no disponible.</div>
+                                        </t>
+                                    </div>
+                                </section>
+
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Distribucion de rotacion</span>
+                                        <span>Frecuencia de venta</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_bar_list">
+                                        <t t-if="hasEchartsLibrary">
+                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="operations-overview-rotation"></div>
+                                        </t>
+                                        <t t-else="">
+                                            <div class="zrn_analitics_commercial_chart_empty">Libreria ECharts no disponible.</div>
+                                        </t>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Top SKUs</span>
+                                    <span>Ordenado por unidades vendidas</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_table_wrap">
+                                    <div class="o_list_renderer o_list_view table-responsive">
+                                        <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th t-on-click="() => this.toggleSort('operations_top_skus', 'name')" class="o_column_sortable" style="cursor: pointer;">Producto</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_top_skus', 'brand_name')" class="o_column_sortable" style="cursor: pointer;">Marca</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_top_skus', 'abc_class')" class="o_column_sortable text-center" style="cursor: pointer;">ABC</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_top_skus', 'rotation_key')" class="o_column_sortable text-center" style="cursor: pointer;">Rotacion</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_top_skus', 'units')" class="o_column_sortable text-end" style="cursor: pointer;">Unidades</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_top_skus', 'revenue')" class="o_column_sortable text-end" style="cursor: pointer;">Revenue</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr t-foreach="sortedOperationsTopSkus" t-as="row" t-key="row.id" t-on-click="() => this.openOperationsProduct(row)" style="cursor: pointer;">
+                                                    <td><strong><t t-esc="row.name"/></strong></td>
+                                                    <td><t t-esc="row.brand_name"/></td>
+                                                    <td class="text-center"><t t-esc="row.abc_class"/></td>
+                                                    <td class="text-center"><t t-esc="row.rotation_key"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.units)"/></td>
+                                                    <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'demanda'">
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Plan de produccion sugerido</span>
+                                    <span>Lotes base desde demanda promedio</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_table_wrap">
+                                    <div class="o_list_renderer o_list_view table-responsive">
+                                        <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th t-on-click="() => this.toggleSort('operations_demanda', 'name')" class="o_column_sortable" style="cursor: pointer;">Producto</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_demanda', 'brand_name')" class="o_column_sortable" style="cursor: pointer;">Marca</th>
+                                                    <th class="text-center">ABC</th>
+                                                    <th class="text-center">Rotacion</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_demanda', 'units_per_month')" class="o_column_sortable text-end" style="cursor: pointer;">Unid/mes</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_demanda', 'units_per_day')" class="o_column_sortable text-end" style="cursor: pointer;">Unid/dia</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_demanda', 'weekly_suggestion')" class="o_column_sortable text-end" style="cursor: pointer;">Semanal</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_demanda', 'biweekly_suggestion')" class="o_column_sortable text-end" style="cursor: pointer;">Quincenal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr t-foreach="sortedOperationsDemanda" t-as="row" t-key="row.id" t-on-click="() => this.openOperationsProduct(row)" style="cursor: pointer;">
+                                                    <td><strong><t t-esc="row.name"/></strong></td>
+                                                    <td><t t-esc="row.brand_name"/></td>
+                                                    <td class="text-center"><t t-esc="row.abc_class"/></td>
+                                                    <td class="text-center"><t t-esc="row.rotation_key"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.units_per_month)"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.units_per_day)"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.weekly_suggestion)"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.biweekly_suggestion)"/></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'abc'">
+                            <div class="zrn_analitics_commercial_bottom_grid">
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Curva ABC</span>
+                                        <span>Concentracion por SKU</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_bar_list">
+                                        <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="operations-overview-abc"></div>
+                                    </div>
+                                </section>
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Rotacion</span>
+                                        <span>Frecuencia de venta</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_bar_list">
+                                        <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="operations-overview-rotation"></div>
+                                    </div>
+                                </section>
+                            </div>
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Detalle ABC y rotacion</span>
+                                    <span>Click para abrir producto</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_table_wrap">
+                                    <div class="o_list_renderer o_list_view table-responsive">
+                                        <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th t-on-click="() => this.toggleSort('operations_abc', 'name')" class="o_column_sortable" style="cursor: pointer;">Producto</th>
+                                                    <th class="text-center">ABC</th>
+                                                    <th class="text-center">Rotacion</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_abc', 'days_active')" class="o_column_sortable text-end" style="cursor: pointer;">Dias activos</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_abc', 'units')" class="o_column_sortable text-end" style="cursor: pointer;">Unidades</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_abc', 'revenue')" class="o_column_sortable text-end" style="cursor: pointer;">Revenue</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr t-foreach="sortedOperationsAbc" t-as="row" t-key="row.id" t-on-click="() => this.openOperationsProduct(row)" style="cursor: pointer;">
+                                                    <td><strong><t t-esc="row.name"/></strong></td>
+                                                    <td class="text-center"><t t-esc="row.abc_class"/></td>
+                                                    <td class="text-center"><t t-esc="row.rotation_key"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.days_active)"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.units)"/></td>
+                                                    <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'portafolio'">
+                            <div class="zrn_analitics_commercial_top_row">
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Unidades por unidad</span>
+                                        <span>Drill operativo</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_line_chart">
+                                        <div class="zrn_analitics_commercial_echart" data-zrn-chart="operations-portfolio-units"></div>
+                                    </div>
+                                </section>
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Fuentes</span>
+                                        <span>Lectura rapida</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_coverage_notes">
+                                        <t t-foreach="operationsPayload.notes_sources" t-as="note" t-key="note.label">
+                                            <div class="zrn_analitics_commercial_coverage_note_row">
+                                                <strong><t t-esc="note.label"/></strong>
+                                                <span><t t-esc="note.detail"/></span>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </section>
+                            </div>
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Drill UN → Marca → Linea → SKU</span>
+                                    <span>Click en marca o SKU para abrir registro</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_portfolio_table_wrap">
+                                    <div class="o_list_renderer o_list_view table-responsive">
+                                        <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th t-on-click="() => this.toggleSort('operations_portfolio', 'label')" class="o_column_sortable" style="cursor: pointer;">Nivel</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_portfolio', 'units')" class="o_column_sortable text-end" style="cursor: pointer;">Unidades</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_portfolio', 'sku_count')" class="o_column_sortable text-end" style="cursor: pointer;">SKUs</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_portfolio', 'order_count')" class="o_column_sortable text-end" style="cursor: pointer;">Pedidos</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_portfolio', 'revenue')" class="o_column_sortable text-end" style="cursor: pointer;">Revenue</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr
+                                                    t-foreach="sortedOperationsPortfolioRows"
+                                                    t-as="row"
+                                                    t-key="row.key"
+                                                    t-if="this.isOperationsPortfolioRowVisible(row)"
+                                                    t-att-class="'zrn_analitics_commercial_portfolio_row is-' + row.level"
+                                                    t-att-style="(row.level === 'brand' || row.level === 'sku') ? 'cursor: pointer;' : ''"
+                                                    t-on-click="() => this.openOperationsPortfolioRow(row)"
+                                                >
+                                                    <td>
+                                                        <div t-att-class="'zrn_analitics_commercial_portfolio_cell is-' + row.level">
+                                                            <button
+                                                                t-if="row.level !== 'sku'"
+                                                                type="button"
+                                                                class="btn zrn_analitics_commercial_portfolio_toggle"
+                                                                t-on-click.stop="() => this.toggleOperationsPortfolioRow(row.key)"
+                                                            >
+                                                                <i class="fa" t-att-class="this.isOperationsPortfolioRowExpanded(row.key) ? 'fa-caret-down' : 'fa-caret-right'"></i>
+                                                            </button>
+                                                            <span t-if="row.level === 'sku'" class="zrn_analitics_commercial_portfolio_dot"></span>
+                                                            <strong><t t-esc="row.label"/></strong>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.units)"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.sku_count)"/></td>
+                                                    <td class="text-end"><t t-esc="formatCount(row.order_count)"/></td>
+                                                    <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'tendencias'">
+                            <div class="zrn_analitics_commercial_top_row">
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Tendencias</span>
+                                        <span>Variacion del ritmo reciente</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_bar_list">
+                                        <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="operations-trends"></div>
+                                    </div>
+                                </section>
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Sin venta reciente</span>
+                                        <span>Más de 14 dias sin movimiento</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_table_wrap">
+                                        <div class="o_list_renderer o_list_view table-responsive">
+                                            <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Producto</th>
+                                                        <th class="text-end">Dias sin venta</th>
+                                                        <th class="text-end">Revenue</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr t-foreach="operationsPayload.missing_recent_sales" t-as="row" t-key="row.id" t-on-click="() => this.openOperationsProduct(row)" style="cursor: pointer;">
+                                                        <td><strong><t t-esc="row.name"/></strong></td>
+                                                        <td class="text-end"><t t-esc="formatCount(row.days_since_last)"/></td>
+                                                        <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_commercial_panel_head">
+                                    <span>Detalle de tendencia</span>
+                                    <span>Click para abrir producto</span>
+                                </div>
+                                <div class="zrn_analitics_commercial_table_wrap">
+                                    <div class="o_list_renderer o_list_view table-responsive">
+                                        <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th t-on-click="() => this.toggleSort('operations_trends', 'name')" class="o_column_sortable" style="cursor: pointer;">Producto</th>
+                                                    <th class="text-center">ABC</th>
+                                                    <th class="text-center">Rotacion</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_trends', 'trend_pct')" class="o_column_sortable text-end" style="cursor: pointer;">Trend %</th>
+                                                    <th t-on-click="() => this.toggleSort('operations_trends', 'revenue')" class="o_column_sortable text-end" style="cursor: pointer;">Revenue</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr t-foreach="sortedOperationsTrends" t-as="row" t-key="row.id" t-on-click="() => this.openOperationsProduct(row)" style="cursor: pointer;">
+                                                    <td><strong><t t-esc="row.name"/></strong></td>
+                                                    <td class="text-center"><t t-esc="row.abc_class"/></td>
+                                                    <td class="text-center"><t t-esc="row.rotation_key"/></td>
+                                                    <td class="text-end"><t t-esc="formatPercent(row.trend_pct)"/></td>
+                                                    <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'forecast'">
+                            <div class="zrn_analitics_commercial_top_row">
+                                <section class="zrn_analitics_hub_panel zrn_analitics_commercial_panel_main">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Forecast mensual</span>
+                                        <span>Actual vs proyectado</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_line_chart">
+                                        <div class="zrn_analitics_commercial_echart" data-zrn-chart="operations-forecast"></div>
+                                    </div>
+                                </section>
+                                <section class="zrn_analitics_hub_panel zrn_analitics_commercial_panel_side">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Proximo mes</span>
+                                        <span>Blend de revenue</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_coverage_universe">
+                                        <div class="zrn_analitics_commercial_coverage_universe_group">
+                                            <strong>Forecast blend</strong>
+                                            <div class="zrn_analitics_commercial_coverage_universe_row">
+                                                <span><t t-esc="operationsPayload.forecast.next_month_label"/></span>
+                                                <strong><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(operationsPayload.forecast.next_month_blend)"/></strong>
+                                            </div>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_coverage_universe_group">
+                                            <strong>Run-rate anual</strong>
+                                            <div class="zrn_analitics_commercial_coverage_universe_row">
+                                                <span>Proyeccion simple</span>
+                                                <strong><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(operationsPayload.forecast.runrate_annual)"/></strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                            <div class="zrn_analitics_commercial_bottom_grid">
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Serie mensual</span>
+                                        <span>Pace y proyeccion</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_table_wrap">
+                                        <div class="o_list_renderer o_list_view table-responsive">
+                                            <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Mes</th>
+                                                        <th class="text-end">Actual Q</th>
+                                                        <th class="text-end">Proyectado Q</th>
+                                                        <th class="text-end">Unidades</th>
+                                                        <th class="text-end">MoM</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr t-foreach="operationsPayload.forecast.monthly" t-as="row" t-key="row.month_key">
+                                                        <td><strong><t t-esc="row.label"/></strong></td>
+                                                        <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
+                                                        <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.projected_revenue)"/></td>
+                                                        <td class="text-end"><t t-esc="formatCount(row.projected_units)"/></td>
+                                                        <td class="text-end"><t t-esc="formatPercent(row.mom_pct)"/></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </section>
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Pace por canal</span>
+                                        <span>Comparativo rapido</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_table_wrap">
+                                        <div class="o_list_renderer o_list_view table-responsive">
+                                            <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th t-on-click="() => this.toggleSort('operations_forecast_channels', 'channel')" class="o_column_sortable" style="cursor: pointer;">Canal</th>
+                                                        <th t-on-click="() => this.toggleSort('operations_forecast_channels', 'total_ytd')" class="o_column_sortable text-end" style="cursor: pointer;">YTD</th>
+                                                        <th t-on-click="() => this.toggleSort('operations_forecast_channels', 'current_projected')" class="o_column_sortable text-end" style="cursor: pointer;">Actual proyectado</th>
+                                                        <th t-on-click="() => this.toggleSort('operations_forecast_channels', 'projected_vs_last_pct')" class="o_column_sortable text-end" style="cursor: pointer;">Δ vs ultimo</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr t-foreach="sortedOperationsForecastChannels" t-as="row" t-key="row.channel">
+                                                        <td><strong><t t-esc="row.channel"/></strong></td>
+                                                        <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.total_ytd)"/></td>
+                                                        <td class="text-end"><t t-esc="operationsPayload.summary.currency_symbol"/> <t t-esc="formatMoney(row.current_projected)"/></td>
+                                                        <td class="text-end"><t t-esc="formatPercent(row.projected_vs_last_pct)"/></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'inventarios'">
+                            <div class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_hub_panel_title">Inventarios pendiente</div>
+                                <div class="zrn_analitics_hub_panel_text">Se necesita `stock.quant` para dias de cobertura, riesgo de quiebre y exceso de stock.</div>
+                            </div>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'compras'">
+                            <div class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_hub_panel_title">Compras pendiente</div>
+                                <div class="zrn_analitics_hub_panel_text">Se necesita `purchase.order` para lead time, OTIF y concentracion de spend por proveedor.</div>
+                            </div>
+                        </t>
+
+                        <t t-if="state.operationsTab === 'alertas'">
+                            <div class="zrn_analitics_commercial_bottom_grid">
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Alertas automaticas</span>
+                                        <span>Reglas del pipeline</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_coverage_notes">
+                                        <t t-foreach="operationsPayload.alerts" t-as="alert" t-key="alert.title">
+                                            <div class="zrn_analitics_commercial_coverage_note_row">
+                                                <strong><t t-esc="alert.title"/></strong>
+                                                <span><t t-esc="alert.detail"/></span>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </section>
+                                <section class="zrn_analitics_hub_panel">
+                                    <div class="zrn_analitics_commercial_panel_head">
+                                        <span>Growers y decliners</span>
+                                        <span>Lectura accionable</span>
+                                    </div>
+                                    <div class="zrn_analitics_commercial_coverage_notes">
+                                        <div class="zrn_analitics_commercial_coverage_note_row">
+                                            <strong>Growers</strong>
+                                            <span><t t-esc="formatCount(operationsPayload.growers.length)"/> SKUs con tendencia positiva.</span>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_coverage_note_row">
+                                            <strong>Decliners</strong>
+                                            <span><t t-esc="formatCount(operationsPayload.decliners.length)"/> SKUs con tendencia negativa.</span>
+                                        </div>
+                                        <div class="zrn_analitics_commercial_coverage_note_row">
+                                            <strong>Sin venta reciente</strong>
+                                            <span><t t-esc="formatCount(operationsPayload.missing_recent_sales.length)"/> SKUs con mas de 14 dias sin movimiento.</span>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        </t>
+                    </t>
+                </div>
+            </div>
         </div>
     </t>
 </templates>

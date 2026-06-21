@@ -430,8 +430,7 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   get sortedOperationsPortfolioRows() {
-    const sort = this.state.sorts.operations_portfolio;
-    return this.sortData(this.operationsPayload.portfolio?.rows || [], sort.column, sort.order);
+    return this.operationsPayload.portfolio?.rows || [];
   }
 
   get sortedOperationsTrends() {
@@ -734,6 +733,18 @@ class ZrnAnalyticsHubAction extends Component {
     };
   }
 
+  syncOperationsFiltersFromPayload(payload) {
+    const activeFilters = payload?.active_filters || {};
+    this.state.operationsFilters = {
+      period_key: activeFilters.period_key || OPERATIONS_DEFAULT_FILTERS.period_key,
+      channel_ids: normalizeFilterIds(activeFilters.channel_ids),
+      brand_ids: normalizeFilterIds(activeFilters.brand_ids),
+      abc_class: activeFilters.abc_class || "",
+      rotation_key: activeFilters.rotation_key || "",
+      search: activeFilters.search || "",
+    };
+  }
+
   syncPortfolioStateFromPayload() {
     const units = this.commercialPortfolio.units || [];
     const defaultUnit = units[0]?.key || "";
@@ -760,6 +771,20 @@ class ZrnAnalyticsHubAction extends Component {
     ) {
       this.state.financialPortfolioExpanded = {
         ...this.state.financialPortfolioExpanded,
+        [defaultUnit]: true,
+      };
+    }
+  }
+
+  syncOperationsStateFromPayload() {
+    const units = this.operationsPayload.portfolio?.units || [];
+    const defaultUnit = units[0]?.key || "";
+    if (
+      defaultUnit &&
+      this.state.operationsPortfolioExpanded[defaultUnit] === undefined
+    ) {
+      this.state.operationsPortfolioExpanded = {
+        ...this.state.operationsPortfolioExpanded,
         [defaultUnit]: true,
       };
     }
@@ -812,6 +837,16 @@ class ZrnAnalyticsHubAction extends Component {
       ...this.state.financialFilters,
       [key]:
         key === "channel_ids" || key === "brand_ids" || key === "category_ids"
+          ? normalizeFilterIds(value)
+          : value ?? "",
+    };
+  }
+
+  updateOperationsFilter(key, value) {
+    this.state.operationsFilters = {
+      ...this.state.operationsFilters,
+      [key]:
+        key === "channel_ids" || key === "brand_ids"
           ? normalizeFilterIds(value)
           : value ?? "",
     };
@@ -898,6 +933,26 @@ class ZrnAnalyticsHubAction extends Component {
     this.updateFinancialFilter("category_ids", records.map((r) => r.id));
   }
 
+  onOperationsPeriodSelect(value) {
+    this.updateOperationsFilter("period_key", value);
+  }
+
+  onOperationsChannelsChange(records) {
+    this.updateOperationsFilter("channel_ids", records.map((r) => r.id));
+  }
+
+  onOperationsBrandsChange(records) {
+    this.updateOperationsFilter("brand_ids", records.map((r) => r.id));
+  }
+
+  onOperationsAbcSelect(value) {
+    this.updateOperationsFilter("abc_class", value);
+  }
+
+  onOperationsRotationSelect(value) {
+    this.updateOperationsFilter("rotation_key", value);
+  }
+
   getOptionDomain(options) {
     const ids = (options || [])
       .map((option) => Number(option.id))
@@ -935,6 +990,10 @@ class ZrnAnalyticsHubAction extends Component {
     await this.loadFinancialPayload(true);
   }
 
+  async applyOperationsFilters() {
+    await this.loadOperationsPayload(true);
+  }
+
   async clearOverviewFilters() {
     this.state.overviewFilters = cloneDefaultFilters();
     await this.loadCommercialPayload(true);
@@ -958,6 +1017,11 @@ class ZrnAnalyticsHubAction extends Component {
   async clearFinancialFilters() {
     this.state.financialFilters = cloneDefaultFilters();
     await this.loadFinancialPayload(true);
+  }
+
+  async clearOperationsFilters() {
+    this.state.operationsFilters = cloneOperationsDefaultFilters();
+    await this.loadOperationsPayload(true);
   }
 
   onOverviewSearchKeydown(ev) {
@@ -987,6 +1051,12 @@ class ZrnAnalyticsHubAction extends Component {
   onFinancialSearchKeydown(ev) {
     if (ev.key === "Enter") {
       this.applyFinancialFilters();
+    }
+  }
+
+  onOperationsSearchKeydown(ev) {
+    if (ev.key === "Enter") {
+      this.applyOperationsFilters();
     }
   }
 
@@ -1090,6 +1160,47 @@ class ZrnAnalyticsHubAction extends Component {
     }
   }
 
+  openOperationsProduct(row) {
+    if (row?.id) {
+      this.openRecordModal("product.product", row.id);
+    } else if (row?.resId) {
+      this.openRecordModal("product.product", row.resId);
+    }
+  }
+
+  openOperationsPortfolioRow(row) {
+    if (!row) {
+      return;
+    }
+    if (row.level === "brand" && row.resId) {
+      this.openRecordModal("zrn_commercial.commercial.brand", row.resId);
+      return;
+    }
+    if (row.level === "sku" && row.resId) {
+      this.openRecordModal("product.product", row.resId);
+    }
+  }
+
+  toggleOperationsPortfolioRow(rowKey) {
+    this.state.operationsPortfolioExpanded = {
+      ...this.state.operationsPortfolioExpanded,
+      [rowKey]: !this.isOperationsPortfolioRowExpanded(rowKey),
+    };
+  }
+
+  isOperationsPortfolioRowExpanded(rowKey) {
+    if (this.state.operationsPortfolioExpanded[rowKey] !== undefined) {
+      return Boolean(this.state.operationsPortfolioExpanded[rowKey]);
+    }
+    return rowKey === this.operationsPayload.portfolio?.units?.[0]?.key;
+  }
+
+  isOperationsPortfolioRowVisible(row) {
+    return (row.ancestor_keys || []).every((key) =>
+      this.isOperationsPortfolioRowExpanded(key),
+    );
+  }
+
   closeChannelModal() {
     this.state.channelModalRow = null;
   }
@@ -1120,7 +1231,17 @@ class ZrnAnalyticsHubAction extends Component {
     );
   }
 
+  get activeOperationsTab() {
+    return (
+      this.operationsTabs.find((tab) => tab.key === this.state.operationsTab) ||
+      this.operationsTabs[0]
+    );
+  }
+
   get activeHubSummary() {
+    if (this.state.activeHub === "operations") {
+      return this.operationsPayload.summary || {};
+    }
     if (this.state.activeHub === "financial") {
       return this.financialPayload.summary || {};
     }
@@ -1164,6 +1285,51 @@ class ZrnAnalyticsHubAction extends Component {
         top_channels: [],
         top_products: [],
         portfolio_rows: [],
+      }
+    );
+  }
+
+  get operationsPayload() {
+    return (
+      this.state.operationsPayload || {
+        summary: {
+          sync_label: "",
+          period_label: "",
+          currency_symbol: "$",
+          total_units: 0,
+          total_revenue: 0,
+          order_count: 0,
+          point_count: 0,
+          product_count: 0,
+          brand_count: 0,
+          avg_units_day: 0,
+          period_days: 0,
+        },
+        active_filters: cloneOperationsDefaultFilters(),
+        filter_options: {
+          periods: [],
+          channels: [],
+          brands: [],
+          abc_choices: [],
+          rotation_choices: [],
+        },
+        empty_message: "",
+        kpis: [],
+        monthly_demand_series: [],
+        brand_units_mix: [],
+        abc_distribution: [],
+        rotation_distribution: [],
+        top_skus: [],
+        production_suggestions: [],
+        portfolio: { units: [], rows: [] },
+        trend_rows: [],
+        growers: [],
+        decliners: [],
+        missing_recent_sales: [],
+        forecast: { monthly: [], channel_pace: [], next_month_label: "", next_month_blend: 0, runrate_annual: 0 },
+        alerts: [],
+        pending_tabs: { inventarios: true, compras: true },
+        notes_sources: [],
       }
     );
   }
@@ -1278,6 +1444,14 @@ class ZrnAnalyticsHubAction extends Component {
 
   get hasFinancialChannels() {
     return Boolean((this.financialPayload.channel_margin_rows || []).length);
+  }
+
+  get hasOperationsMonthlySeries() {
+    return Boolean((this.operationsPayload.monthly_demand_series || []).length);
+  }
+
+  get hasOperationsBrandMix() {
+    return Boolean((this.operationsPayload.brand_units_mix || []).length);
   }
 
   get hasEchartsLibrary() {
@@ -1616,6 +1790,19 @@ class ZrnAnalyticsHubAction extends Component {
         this.renderFinancialPortfolioBrandChart();
       } catch (error) {
         console.error("ZRN financial chart error", error);
+      }
+    }
+    if (this.state.activeHub === "operations") {
+      try {
+        this.renderOperationsMonthlyChart();
+        this.renderOperationsBrandMixChart();
+        this.renderOperationsAbcChart();
+        this.renderOperationsRotationChart();
+        this.renderOperationsPortfolioUnitsChart();
+        this.renderOperationsTrendsChart();
+        this.renderOperationsForecastChart();
+      } catch (error) {
+        console.error("ZRN operations chart error", error);
       }
     }
   }
@@ -2057,6 +2244,282 @@ class ZrnAnalyticsHubAction extends Component {
       },
       true,
     );
+  }
+
+  renderOperationsMonthlyChart() {
+    if (this.state.operationsTab !== "overview") {
+      return;
+    }
+    const series = this.operationsPayload.monthly_demand_series || [];
+    if (!series.length) {
+      return;
+    }
+    const chart = this.getChart("operations-overview-monthly");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 18, right: 20, bottom: 26, left: 24, containLabel: true },
+      tooltip: { trigger: "axis" },
+      xAxis: {
+        type: "category",
+        data: series.map((item) => item.label),
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisTick: { show: false },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatCount(value) },
+      },
+      series: [
+        {
+          name: "Unidades",
+          type: "bar",
+          data: series.map((item) => Number(item.projected_units || item.units || 0)),
+          itemStyle: { color: "#1f4e8c", borderRadius: [6, 6, 0, 0] },
+          barMaxWidth: 44,
+        },
+      ],
+    }, true);
+  }
+
+  renderOperationsBrandMixChart() {
+    if (this.state.operationsTab !== "overview") {
+      return;
+    }
+    const mix = (this.operationsPayload.brand_units_mix || []).slice(0, 6);
+    if (!mix.length) {
+      return;
+    }
+    const chart = this.getChart("operations-overview-brand-mix");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      color: ["#1f4e8c", "#2f65ad", "#78a7df", "#a9c7eb", "#d6e6f8", "#bd1730"],
+      tooltip: { trigger: "item" },
+      legend: {
+        orient: "vertical",
+        right: 0,
+        top: "middle",
+        textStyle: { color: "#5f6b7a", fontSize: 11 },
+      },
+      series: [
+        {
+          type: "pie",
+          radius: ["46%", "72%"],
+          center: ["34%", "50%"],
+          itemStyle: { borderColor: "#ffffff", borderWidth: 2 },
+          label: { show: false },
+          data: mix.map((item) => ({ name: item.name, value: Number(item.value || 0) })),
+        },
+      ],
+    }, true);
+  }
+
+  renderOperationsAbcChart() {
+    if (this.state.operationsTab !== "overview" && this.state.operationsTab !== "abc") {
+      return;
+    }
+    const rows = this.operationsPayload.abc_distribution || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("operations-overview-abc");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 18, right: 20, bottom: 26, left: 24, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: rows.map((item) => item.label),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      series: [{
+        type: "bar",
+        data: rows.map((item) => Number(item.value || 0)),
+        itemStyle: { color: "#bd1730", borderRadius: [6, 6, 0, 0] },
+        barMaxWidth: 36,
+      }],
+    }, true);
+  }
+
+  renderOperationsRotationChart() {
+    if (this.state.operationsTab !== "overview" && this.state.operationsTab !== "abc") {
+      return;
+    }
+    const rows = this.operationsPayload.rotation_distribution || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("operations-overview-rotation");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 18, right: 20, bottom: 26, left: 24, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: rows.map((item) => item.label),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      series: [{
+        type: "bar",
+        data: rows.map((item) => Number(item.value || 0)),
+        itemStyle: { color: "#0f766e", borderRadius: [6, 6, 0, 0] },
+        barMaxWidth: 36,
+      }],
+    }, true);
+  }
+
+  renderOperationsPortfolioUnitsChart() {
+    if (this.state.operationsTab !== "portafolio") {
+      return;
+    }
+    const rows = this.operationsPayload.portfolio?.units || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("operations-portfolio-units");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 18, right: 20, bottom: 26, left: 24, containLabel: true },
+      tooltip: { trigger: "axis" },
+      xAxis: {
+        type: "category",
+        data: rows.map((item) => item.name),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatCount(value) },
+      },
+      series: [{
+        type: "bar",
+        data: rows.map((item) => Number(item.units || 0)),
+        itemStyle: { color: "#1f4e8c", borderRadius: [6, 6, 0, 0] },
+        barMaxWidth: 44,
+      }],
+    }, true);
+  }
+
+  renderOperationsTrendsChart() {
+    if (this.state.operationsTab !== "tendencias") {
+      return;
+    }
+    const rows = (this.sortedOperationsTrends || []).slice(0, 10);
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("operations-trends");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 12, right: 16, bottom: 12, left: 180, containLabel: false },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (value) => `${Number(value || 0).toFixed(1)}%` },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => `${value}%` },
+      },
+      yAxis: {
+        type: "category",
+        data: [...rows].reverse().map((item) => item.name),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { color: "#334155", fontSize: 11, width: 170, overflow: "truncate" },
+      },
+      series: [{
+        type: "bar",
+        data: [...rows].reverse().map((item) => ({
+          value: Number(item.trend_pct || 0),
+          itemStyle: { color: Number(item.trend_pct || 0) >= 0 ? "#0f766e" : "#bd1730" },
+        })),
+        barWidth: 18,
+      }],
+    }, true);
+  }
+
+  renderOperationsForecastChart() {
+    if (this.state.operationsTab !== "forecast") {
+      return;
+    }
+    const rows = this.operationsPayload.forecast?.monthly || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("operations-forecast");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      legend: { data: ["Actual Q", "Proyectado Q"], textStyle: { color: "#5f6b7a", fontSize: 11 } },
+      grid: { top: 28, right: 20, bottom: 26, left: 24, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (value) => `${this.operationsPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      xAxis: {
+        type: "category",
+        data: rows.map((item) => item.label),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+      },
+      series: [
+        {
+          name: "Actual Q",
+          type: "bar",
+          data: rows.map((item) => Number(item.revenue || 0)),
+          itemStyle: { color: "#a9c7eb", borderRadius: [6, 6, 0, 0] },
+          barMaxWidth: 28,
+        },
+        {
+          name: "Proyectado Q",
+          type: "line",
+          smooth: 0.2,
+          symbolSize: 8,
+          data: rows.map((item) => Number(item.projected_revenue || 0)),
+          lineStyle: { color: "#bd1730", width: 3 },
+          itemStyle: { color: "#bd1730" },
+        },
+      ],
+    }, true);
   }
 
   renderFinancialOverviewChart() {
