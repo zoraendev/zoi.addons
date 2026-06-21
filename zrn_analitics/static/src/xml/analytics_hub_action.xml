@@ -3,35 +3,30 @@
     <t t-name="zrn_analitics.HubAction">
         <div class="zrn_analitics_hub_workspace">
             <div class="zrn_analitics_hub_header">
-                <div class="zrn_analitics_hub_header_main">
-                    <div class="zrn_analitics_kicker">Zoraen Analytics</div>
-                    <h1>Hubs</h1>
-                    <div class="zrn_analitics_hub_intro">
-                        Centro principal para navegar hubs de reporteria y analisis de datos.
-                    </div>
-                </div>
                 <div class="zrn_analitics_hub_header_actions">
                     <button
                         type="button"
                         class="btn zrn_analitics_hub_back_btn"
                         t-on-click="openHome"
                     >
-                        Volver al centro
+                        <i class="fa fa-arrow-left"></i>
+                        <span>Regresar</span>
                     </button>
                 </div>
-            </div>
-
-            <div class="zrn_analitics_hub_tabs">
-                <t t-foreach="hubs" t-as="hub" t-key="hub.key">
-                    <button
-                        type="button"
-                        class="btn zrn_analitics_hub_tab"
-                        t-att-class="state.activeHub === hub.key ? 'zrn_analitics_hub_tab_active' : ''"
-                        t-on-click="() => this.setActiveHub(hub.key)"
-                    >
-                        <t t-esc="hub.label"/>
-                    </button>
-                </t>
+                <div class="zrn_analitics_hub_tabs_shell">
+                    <div class="zrn_analitics_hub_tabs">
+                        <t t-foreach="hubs" t-as="hub" t-key="hub.key">
+                            <button
+                                type="button"
+                                class="btn zrn_analitics_hub_tab"
+                                t-att-class="state.activeHub === hub.key ? 'zrn_analitics_hub_tab_active' : ''"
+                                t-on-click="() => this.setActiveHub(hub.key)"
+                            >
+                                <t t-esc="hub.label"/>
+                            </button>
+                        </t>
+                    </div>
+                </div>
             </div>
 
             <div class="zrn_analitics_hub_body">
