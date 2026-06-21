@@ -102,6 +102,47 @@ class ZrnPlanningHome(ZrnPlanningNavigationMixin, models.Model):
             record.recent_supply_plan_count = len(supply_plans)
             record.recent_supply_plan_ids = [(6, 0, supply_plans.ids)]
 
+    def _build_home_chart_payload(self, plans, order_field, completed_field, order_label):
+        return {
+            'labels': plans.mapped('name'),
+            'plan_count': len(plans),
+            'orders_generated': [plan[order_field] for plan in plans],
+            'orders_completed': [plan[completed_field] for plan in plans],
+            'order_label': order_label,
+        }
+
+    def get_home_chart_payload(self):
+        self.ensure_one()
+        plan_model = self.env['zrn_planning.mfg.plan'].with_context(active_test=False)
+        base_domain = [
+            ('company_id', '=', self.env.company.id),
+            ('active', '=', True),
+        ]
+        production_plans = plan_model.search(
+            base_domain + [('planning_basis', '=', 'sale')],
+            order='create_date desc, id desc',
+            limit=7,
+        )
+        supply_plans = plan_model.search(
+            base_domain + [('planning_basis', '=', 'mixed')],
+            order='create_date desc, id desc',
+            limit=7,
+        )
+        return {
+            'production': self._build_home_chart_payload(
+                production_plans,
+                'production_count',
+                'completed_production_count',
+                'OFs',
+            ),
+            'supply': self._build_home_chart_payload(
+                supply_plans,
+                'purchase_count',
+                'completed_purchase_count',
+                'OCs',
+            ),
+        }
+
     def action_open_production_planning(self):
         self.ensure_one()
         wizard = self.env['zrn_planning.production.planning.wizard'].create({})

@@ -31,6 +31,7 @@ Addon dedicado a planeacion operativa:
     ],
     'assets': {
         'web.assets_backend': [
+            'zrn_analitics/static/lib/echarts/echarts.min.js',
             'zrn_planning/static/src/js/planning_form_view.js',
             'zrn_planning/static/src/js/production_report_form_view.js',
             'zrn_planning/static/src/xml/planning_form_view.xml',

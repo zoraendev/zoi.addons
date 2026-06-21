@@ -98,6 +98,11 @@ class ZrnPlanningMfgPlan(models.Model):
         compute='_compute_counts',
         store=False,
     )
+    completed_production_count = fields.Integer(
+        string='OFs finalizadas',
+        compute='_compute_counts',
+        store=False,
+    )
     purchase_ids = fields.Many2many(
         'purchase.order',
         string='Ordenes de compra',
@@ -109,22 +114,34 @@ class ZrnPlanningMfgPlan(models.Model):
         compute='_compute_counts',
         store=False,
     )
+    completed_purchase_count = fields.Integer(
+        string='OCs finalizadas',
+        compute='_compute_counts',
+        store=False,
+    )
 
     @api.depends('line_ids', 'line_ids.supply_ids', 'line_ids.production_ids', 'source_ids')
     def _compute_counts(self):
         has_plan_link = self._column_exists('purchase_order', 'zrn_planning_plan_id')
         for plan in self:
+            productions = plan.line_ids.mapped('production_ids')
             plan.line_count = len(plan.line_ids)
             plan.source_count = len(plan.source_ids)
             plan.supply_count = len(plan.line_ids.mapped('supply_ids'))
-            plan.production_ids = [(6, 0, plan.line_ids.mapped('production_ids').ids)]
-            plan.production_count = len(plan.line_ids.mapped('production_ids'))
+            plan.production_ids = [(6, 0, productions.ids)]
+            plan.production_count = len(productions)
+            plan.completed_production_count = len(productions.filtered(lambda production: production.state == 'done'))
             if has_plan_link:
-                plan.purchase_count = self.env['purchase.order'].search_count([
+                purchases = self.env['purchase.order'].search([
                     ('zrn_planning_plan_id', '=', plan.id),
                 ])
+                plan.purchase_count = len(purchases)
+                plan.completed_purchase_count = len(
+                    purchases.filtered(lambda purchase: purchase.state in ('purchase', 'done'))
+                )
             else:
                 plan.purchase_count = 0
+                plan.completed_purchase_count = 0
 
     @api.model
     def _column_exists(self, table_name, column_name):
