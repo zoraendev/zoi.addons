@@ -2,16 +2,16 @@
 <templates xml:space="preserve">
     <t t-name="zrn_analitics.HubFinancialFilters">
         <section class="zrn_analitics_hub_panel">
-            <div class="zrn_analitics_commercial_panel_head">
+            <div class="zrn_analitics_financial_panel_head">
                 <span>Filtros financieros</span>
                 <span>Revenue, costo teórico y margen por corte comercial</span>
             </div>
-            <div class="zrn_analitics_commercial_channel_filters">
-                <div class="zrn_analitics_commercial_field">
+            <div class="zrn_analitics_financial_channel_filters">
+                <div class="zrn_analitics_financial_field">
                     <label>Periodo</label>
                     <SelectMenu choices="getPeriodChoices(financialPayload.filter_options.periods)" value="state.financialFilters.period_key" onSelect.bind="this.onFinancialPeriodSelect"/>
                 </div>
-                <div class="zrn_analitics_commercial_field">
+                <div class="zrn_analitics_financial_field">
                     <label>Marca</label>
                     <ZrnRelationalMultiSelect
                         records="getSelectedOptionRecords(financialPayload.filter_options.brands, state.financialFilters.brand_ids)"
@@ -22,7 +22,7 @@
                         onChange.bind="this.onFinancialBrandsChange"
                     />
                 </div>
-                <div class="zrn_analitics_commercial_field">
+                <div class="zrn_analitics_financial_field">
                     <label>Categoria</label>
                     <ZrnRelationalMultiSelect
                         records="getSelectedOptionRecords(financialPayload.filter_options.categories, state.financialFilters.category_ids)"
@@ -33,7 +33,7 @@
                         onChange.bind="this.onFinancialCategoriesChange"
                     />
                 </div>
-                <div class="zrn_analitics_commercial_field">
+                <div class="zrn_analitics_financial_field">
                     <label>Canal</label>
                     <ZrnRelationalMultiSelect
                         records="getSelectedOptionRecords(financialPayload.filter_options.channels, state.financialFilters.channel_ids)"
@@ -44,7 +44,7 @@
                         onChange.bind="this.onFinancialChannelsChange"
                     />
                 </div>
-                <div class="zrn_analitics_commercial_field zrn_analitics_commercial_field_search">
+                <div class="zrn_analitics_financial_field zrn_analitics_financial_field_search">
                     <label>Buscar</label>
                     <input
                         type="text"
@@ -56,10 +56,10 @@
                     />
                 </div>
             </div>
-            <div class="zrn_analitics_commercial_channel_actions">
+            <div class="zrn_analitics_financial_channel_actions">
                 <button type="button" class="btn btn-primary" t-on-click="applyFinancialFilters">Aplicar</button>
                 <button type="button" class="btn btn-secondary" t-on-click="clearFinancialFilters">Limpiar</button>
-                <div class="zrn_analitics_commercial_channel_period">
+                <div class="zrn_analitics_financial_channel_period">
                     <strong>Periodo:</strong>
                     <span><t t-esc="financialPayload.summary.period_label"/></span>
                 </div>
@@ -68,17 +68,17 @@
     </t>
 
     <t t-name="zrn_analitics.HubFinancial">
-        <div class="zrn_analitics_commercial_hub zrn_analitics_financial_hub" t-ref="hubRoot">
-            <div class="zrn_analitics_commercial_hero">
-                <div class="zrn_analitics_commercial_title_row">
+        <div class="zrn_analitics_financial_hub" t-ref="hubRoot">
+            <div class="zrn_analitics_financial_hero">
+                <div class="zrn_analitics_financial_title_row">
                     <div class="zrn_analitics_hub_panel_title">Hub Financiero</div>
                 </div>
             </div>
 
-            <div class="zrn_analitics_commercial_shell">
+            <div class="zrn_analitics_financial_shell">
                 <button
                     type="button"
-                    class="btn zrn_analitics_commercial_sidebar_toggle"
+                    class="btn zrn_analitics_financial_sidebar_toggle"
                     t-on-click="toggleCommercialSidebar"
                 >
                     <i class="fa fa-bars"></i>
@@ -86,54 +86,54 @@
                 </button>
 
                 <div
-                    class="zrn_analitics_commercial_sidebar_overlay"
+                    class="zrn_analitics_financial_sidebar_overlay"
                     t-att-class="state.commercialSidebarOpen ? 'is-open' : ''"
                     t-on-click="closeCommercialSidebar"
                 ></div>
 
                 <aside
-                    class="zrn_analitics_commercial_sidebar"
+                    class="zrn_analitics_financial_sidebar"
                     t-att-class="state.commercialSidebarOpen ? 'is-open' : ''"
                 >
-                    <div class="zrn_analitics_commercial_sidebar_head">
-                        <div class="zrn_analitics_commercial_sidebar_title">Secciones</div>
+                    <div class="zrn_analitics_financial_sidebar_head">
+                        <div class="zrn_analitics_financial_sidebar_title">Secciones</div>
                         <button
                             type="button"
-                            class="btn zrn_analitics_commercial_sidebar_close"
+                            class="btn zrn_analitics_financial_sidebar_close"
                             t-on-click="closeCommercialSidebar"
                         >
                             <i class="fa fa-times"></i>
                         </button>
                     </div>
 
-                    <div class="zrn_analitics_commercial_badges zrn_analitics_commercial_badges_sidebar">
-                        <span class="zrn_analitics_commercial_badge zrn_analitics_commercial_badge_sync">
+                    <div class="zrn_analitics_financial_badges zrn_analitics_financial_badges_sidebar">
+                        <span class="zrn_analitics_financial_badge zrn_analitics_financial_badge_sync">
                             Sync con Odoo: <t t-esc="activeHubSummary.sync_label"/>
                         </span>
-                        <span class="zrn_analitics_commercial_badge">
+                        <span class="zrn_analitics_financial_badge">
                             <t t-esc="activeHubSummary.period_label"/>
                         </span>
-                        <span class="zrn_analitics_commercial_badge">
+                        <span class="zrn_analitics_financial_badge">
                             <t t-esc="formatCount(financialPayload.summary.brand_count)"/> marcas / <t t-esc="formatCount(financialPayload.summary.product_count)"/> productos
                         </span>
                     </div>
 
-                    <div class="zrn_analitics_commercial_section_tabs">
+                    <div class="zrn_analitics_financial_section_tabs">
                         <t t-foreach="financialTabs" t-as="tab" t-key="tab.key">
                             <button
                                 type="button"
-                                class="btn zrn_analitics_commercial_section_tab"
+                                class="btn zrn_analitics_financial_section_tab"
                                 t-att-class="state.financialTab === tab.key ? 'is-active' : ''"
                                 t-on-click="() => this.setFinancialTab(tab.key)"
                             >
-                                <i class="fa zrn_analitics_commercial_section_tab_icon" t-att-class="tab.icon"></i>
+                                <i class="fa zrn_analitics_financial_section_tab_icon" t-att-class="tab.icon"></i>
                                 <span><t t-esc="tab.label"/></span>
                             </button>
                         </t>
                     </div>
                 </aside>
 
-                <div class="zrn_analitics_commercial_content">
+                <div class="zrn_analitics_financial_content">
                     <t t-if="state.financialLoading">
                         <div class="zrn_analitics_hub_panel">
                             <div class="zrn_analitics_hub_panel_text">Cargando resumen financiero...</div>
@@ -143,96 +143,96 @@
                     <t t-if="!state.financialLoading">
                         <t t-call="zrn_analitics.HubFinancialFilters"/>
 
-                        <div class="zrn_analitics_commercial_stats">
-                            <div class="zrn_analitics_commercial_stat_box">
+                        <div class="zrn_analitics_financial_stats">
+                            <div class="zrn_analitics_financial_stat_box">
                                 <span>Revenue</span>
                                 <strong><t t-esc="financialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(financialPayload.summary.revenue)"/></strong>
                             </div>
-                            <div class="zrn_analitics_commercial_stat_box">
+                            <div class="zrn_analitics_financial_stat_box">
                                 <span>Revenue matcheado</span>
                                 <strong><t t-esc="financialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(financialPayload.summary.matched_revenue)"/></strong>
                             </div>
-                            <div class="zrn_analitics_commercial_stat_box">
+                            <div class="zrn_analitics_financial_stat_box">
                                 <span>Cobertura</span>
                                 <strong><t t-esc="formatPercent(financialPayload.summary.coverage_pct)"/></strong>
                             </div>
-                            <div class="zrn_analitics_commercial_stat_box">
+                            <div class="zrn_analitics_financial_stat_box">
                                 <span>Costo teórico</span>
                                 <strong><t t-esc="financialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(financialPayload.summary.cost)"/></strong>
                             </div>
-                            <div class="zrn_analitics_commercial_stat_box">
+                            <div class="zrn_analitics_financial_stat_box">
                                 <span>Margen</span>
                                 <strong><t t-esc="financialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(financialPayload.summary.margin)"/></strong>
                             </div>
-                            <div class="zrn_analitics_commercial_stat_box">
+                            <div class="zrn_analitics_financial_stat_box">
                                 <span>Margen %</span>
                                 <strong><t t-esc="formatPercent(financialPayload.summary.margin_pct)"/></strong>
                             </div>
                         </div>
 
                         <t t-if="financialPayload.empty_message">
-                            <div class="zrn_analitics_commercial_empty_note">
+                            <div class="zrn_analitics_financial_empty_note">
                                 <t t-esc="financialPayload.empty_message"/>
                             </div>
                         </t>
 
                         <t t-if="state.financialTab === 'overview'">
-                            <div class="zrn_analitics_commercial_top_row">
-                                <section class="zrn_analitics_hub_panel zrn_analitics_commercial_panel_main">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                            <div class="zrn_analitics_financial_top_row">
+                                <section class="zrn_analitics_hub_panel zrn_analitics_financial_panel_main">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Evolución financiera</span>
                                         <span>Revenue, costo y margen</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_line_chart">
+                                    <div class="zrn_analitics_financial_line_chart">
                                         <t t-if="hasFinancialRevenueSeries &amp;&amp; hasEchartsLibrary">
-                                            <div class="zrn_analitics_commercial_echart" data-zrn-chart="financial-overview"></div>
+                                            <div class="zrn_analitics_financial_echart" data-zrn-chart="financial-overview"></div>
                                         </t>
                                         <t t-else="">
-                                            <div class="zrn_analitics_commercial_chart_empty">Sin serie financiera para graficar.</div>
+                                            <div class="zrn_analitics_financial_chart_empty">Sin serie financiera para graficar.</div>
                                         </t>
                                     </div>
                                 </section>
 
-                                <section class="zrn_analitics_hub_panel zrn_analitics_commercial_panel_side">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                                <section class="zrn_analitics_hub_panel zrn_analitics_financial_panel_side">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Margen por marca</span>
                                         <span>Top del periodo</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_donut_wrap">
+                                    <div class="zrn_analitics_financial_donut_wrap">
                                         <t t-if="hasFinancialBrandMix &amp;&amp; hasEchartsLibrary">
-                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_donut" data-zrn-chart="financial-brand-overview"></div>
+                                            <div class="zrn_analitics_financial_echart zrn_analitics_financial_echart_donut" data-zrn-chart="financial-brand-overview"></div>
                                         </t>
                                         <t t-else="">
-                                            <div class="zrn_analitics_commercial_chart_empty">Sin margen por marca para mostrar.</div>
+                                            <div class="zrn_analitics_financial_chart_empty">Sin margen por marca para mostrar.</div>
                                         </t>
                                     </div>
                                 </section>
                             </div>
 
-                            <div class="zrn_analitics_commercial_bottom_grid">
+                            <div class="zrn_analitics_financial_bottom_grid">
                                 <section class="zrn_analitics_hub_panel">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Margen % por canal</span>
                                         <span>Lectura rápida por segmento</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_bar_list">
+                                    <div class="zrn_analitics_financial_bar_list">
                                         <t t-if="hasFinancialChannels &amp;&amp; hasEchartsLibrary">
-                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="financial-channel-overview"></div>
+                                            <div class="zrn_analitics_financial_echart zrn_analitics_financial_echart_bar" data-zrn-chart="financial-channel-overview"></div>
                                         </t>
                                         <t t-else="">
-                                            <div class="zrn_analitics_commercial_chart_empty">Sin canales con margen calculable.</div>
+                                            <div class="zrn_analitics_financial_chart_empty">Sin canales con margen calculable.</div>
                                         </t>
                                     </div>
                                 </section>
 
                                 <section class="zrn_analitics_hub_panel">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Notas y fuentes</span>
                                         <span>Trazabilidad del dato</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_coverage_notes">
+                                    <div class="zrn_analitics_financial_coverage_notes">
                                         <t t-foreach="financialPayload.notes_sources" t-as="note" t-key="note.label">
-                                            <div class="zrn_analitics_commercial_coverage_note_row">
+                                            <div class="zrn_analitics_financial_coverage_note_row">
                                                 <strong><t t-esc="note.label"/></strong>
                                                 <span><t t-esc="note.detail"/></span>
                                             </div>
@@ -243,44 +243,44 @@
                         </t>
 
                         <t t-if="state.financialTab === 'producto'">
-                            <div class="zrn_analitics_commercial_top_row">
+                            <div class="zrn_analitics_financial_top_row">
                                 <section class="zrn_analitics_hub_panel">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Margen por producto</span>
                                         <span>Top 10 por contribución</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_bar_list">
+                                    <div class="zrn_analitics_financial_bar_list">
                                         <t t-if="sortedFinancialProducts.length &amp;&amp; hasEchartsLibrary">
-                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="financial-product-margin"></div>
+                                            <div class="zrn_analitics_financial_echart zrn_analitics_financial_echart_bar" data-zrn-chart="financial-product-margin"></div>
                                         </t>
                                         <t t-else="">
-                                            <div class="zrn_analitics_commercial_chart_empty">Sin productos para mostrar.</div>
+                                            <div class="zrn_analitics_financial_chart_empty">Sin productos para mostrar.</div>
                                         </t>
                                     </div>
                                 </section>
 
                                 <section class="zrn_analitics_hub_panel">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Margen % por producto</span>
                                         <span>Top 10 con costo matcheado</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_bar_list">
+                                    <div class="zrn_analitics_financial_bar_list">
                                         <t t-if="sortedFinancialProducts.length &amp;&amp; hasEchartsLibrary">
-                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="financial-product-margin-pct"></div>
+                                            <div class="zrn_analitics_financial_echart zrn_analitics_financial_echart_bar" data-zrn-chart="financial-product-margin-pct"></div>
                                         </t>
                                         <t t-else="">
-                                            <div class="zrn_analitics_commercial_chart_empty">Sin margen porcentual para mostrar.</div>
+                                            <div class="zrn_analitics_financial_chart_empty">Sin margen porcentual para mostrar.</div>
                                         </t>
                                     </div>
                                 </section>
                             </div>
 
                             <section class="zrn_analitics_hub_panel">
-                                <div class="zrn_analitics_commercial_panel_head">
+                                <div class="zrn_analitics_financial_panel_head">
                                     <span>Ranking de productos</span>
                                     <span>Click en la fila para abrir detalle</span>
                                 </div>
-                                <div class="zrn_analitics_commercial_table_wrap">
+                                <div class="zrn_analitics_financial_table_wrap">
                                     <div class="o_list_renderer o_list_view table-responsive">
                                         <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                             <thead>
@@ -316,29 +316,29 @@
                         </t>
 
                         <t t-if="state.financialTab === 'canal'">
-                            <div class="zrn_analitics_commercial_top_row">
+                            <div class="zrn_analitics_financial_top_row">
                                 <section class="zrn_analitics_hub_panel">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Margen % por canal</span>
                                         <span>Comparativo filtrado</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_bar_list">
+                                    <div class="zrn_analitics_financial_bar_list">
                                         <t t-if="sortedFinancialChannels.length &amp;&amp; hasEchartsLibrary">
-                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="financial-channel-detail"></div>
+                                            <div class="zrn_analitics_financial_echart zrn_analitics_financial_echart_bar" data-zrn-chart="financial-channel-detail"></div>
                                         </t>
                                         <t t-else="">
-                                            <div class="zrn_analitics_commercial_chart_empty">Sin canales para mostrar.</div>
+                                            <div class="zrn_analitics_financial_chart_empty">Sin canales para mostrar.</div>
                                         </t>
                                     </div>
                                 </section>
                             </div>
 
                             <section class="zrn_analitics_hub_panel">
-                                <div class="zrn_analitics_commercial_panel_head">
+                                <div class="zrn_analitics_financial_panel_head">
                                     <span>Detalle por canal</span>
                                     <span>Click en la fila para abrir detalle</span>
                                 </div>
-                                <div class="zrn_analitics_commercial_table_wrap">
+                                <div class="zrn_analitics_financial_table_wrap">
                                     <div class="o_list_renderer o_list_view table-responsive">
                                         <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                             <thead>
@@ -371,11 +371,11 @@
                             </section>
 
                             <section class="zrn_analitics_hub_panel">
-                                <div class="zrn_analitics_commercial_panel_head">
+                                <div class="zrn_analitics_financial_panel_head">
                                     <span>Producto × canal</span>
                                     <span>Top 30 por margen</span>
                                 </div>
-                                <div class="zrn_analitics_commercial_table_wrap">
+                                <div class="zrn_analitics_financial_table_wrap">
                                     <div class="o_list_renderer o_list_view table-responsive">
                                         <table class="o_list_table table table-sm position-relative mb-0 table-striped">
                                             <thead>
@@ -407,29 +407,29 @@
                         </t>
 
                         <t t-if="state.financialTab === 'marca'">
-                            <div class="zrn_analitics_commercial_top_row">
+                            <div class="zrn_analitics_financial_top_row">
                                 <section class="zrn_analitics_hub_panel">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Margen por marca</span>
                                         <span>Comparativo del periodo</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_bar_list">
+                                    <div class="zrn_analitics_financial_bar_list">
                                         <t t-if="sortedFinancialBrands.length &amp;&amp; hasEchartsLibrary">
-                                            <div class="zrn_analitics_commercial_echart zrn_analitics_commercial_echart_bar" data-zrn-chart="financial-brand-detail"></div>
+                                            <div class="zrn_analitics_financial_echart zrn_analitics_financial_echart_bar" data-zrn-chart="financial-brand-detail"></div>
                                         </t>
                                         <t t-else="">
-                                            <div class="zrn_analitics_commercial_chart_empty">Sin marcas para mostrar.</div>
+                                            <div class="zrn_analitics_financial_chart_empty">Sin marcas para mostrar.</div>
                                         </t>
                                     </div>
                                 </section>
                             </div>
 
                             <section class="zrn_analitics_hub_panel">
-                                <div class="zrn_analitics_commercial_panel_head">
+                                <div class="zrn_analitics_financial_panel_head">
                                     <span>Comparativo por marca</span>
                                     <span>Click en la fila para abrir detalle</span>
                                 </div>
-                                <div class="zrn_analitics_commercial_table_wrap">
+                                <div class="zrn_analitics_financial_table_wrap">
                                     <div class="o_list_renderer o_list_view table-responsive">
                                         <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                             <thead>
@@ -463,51 +463,51 @@
                         </t>
 
                         <t t-if="state.financialTab === 'portafolio'">
-                            <div class="zrn_analitics_commercial_portfolio">
-                                <div class="zrn_analitics_commercial_portfolio_note">
+                            <div class="zrn_analitics_financial_portfolio">
+                                <div class="zrn_analitics_financial_portfolio_note">
                                     <strong>Portafolio financiero por unidad</strong>
                                     <span>Lectura jerárquica UN → Marca → Línea → SKU usando el catálogo actual de Odoo y Zoraen Commercial.</span>
                                 </div>
 
-                                <div class="zrn_analitics_commercial_portfolio_cards">
+                                <div class="zrn_analitics_financial_portfolio_cards">
                                     <t t-foreach="financialPortfolio.units || []" t-as="unit" t-key="unit.key">
                                         <button
                                             type="button"
-                                            class="btn zrn_analitics_commercial_portfolio_card"
+                                            class="btn zrn_analitics_financial_portfolio_card"
                                             t-att-class="state.selectedFinancialUnit === unit.key ? 'is-active' : ''"
                                             t-on-click="() => this.selectFinancialUnit(unit.key)"
                                         >
-                                            <span class="zrn_analitics_commercial_portfolio_card_name"><t t-esc="unit.name"/></span>
-                                            <strong class="zrn_analitics_commercial_portfolio_card_value"><t t-esc="financialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(unit.margin)"/></strong>
-                                            <span class="zrn_analitics_commercial_portfolio_card_meta"><t t-esc="formatPercent(unit.margin_pct)"/> margen</span>
+                                            <span class="zrn_analitics_financial_portfolio_card_name"><t t-esc="unit.name"/></span>
+                                            <strong class="zrn_analitics_financial_portfolio_card_value"><t t-esc="financialPayload.summary.currency_symbol"/> <t t-esc="formatMoney(unit.margin)"/></strong>
+                                            <span class="zrn_analitics_financial_portfolio_card_meta"><t t-esc="formatPercent(unit.margin_pct)"/> margen</span>
                                         </button>
                                     </t>
                                 </div>
 
-                                <div class="zrn_analitics_commercial_portfolio_top">
-                                    <section class="zrn_analitics_hub_panel zrn_analitics_commercial_portfolio_chart">
-                                        <div class="zrn_analitics_commercial_panel_head">
+                                <div class="zrn_analitics_financial_portfolio_top">
+                                    <section class="zrn_analitics_hub_panel zrn_analitics_financial_portfolio_chart">
+                                        <div class="zrn_analitics_financial_panel_head">
                                             <span>Margen por unidad</span>
                                             <span>Vista consolidada</span>
                                         </div>
-                                        <div class="zrn_analitics_commercial_echart" data-zrn-chart="financial-portfolio-units"></div>
+                                        <div class="zrn_analitics_financial_echart" data-zrn-chart="financial-portfolio-units"></div>
                                     </section>
 
-                                    <section class="zrn_analitics_hub_panel zrn_analitics_commercial_portfolio_brand_mix">
-                                        <div class="zrn_analitics_commercial_panel_head">
+                                    <section class="zrn_analitics_hub_panel zrn_analitics_financial_portfolio_brand_mix">
+                                        <div class="zrn_analitics_financial_panel_head">
                                             <span>Margen % por marca</span>
                                             <span>Unidad activa</span>
                                         </div>
-                                        <div class="zrn_analitics_commercial_echart" data-zrn-chart="financial-portfolio-brands"></div>
+                                        <div class="zrn_analitics_financial_echart" data-zrn-chart="financial-portfolio-brands"></div>
                                     </section>
                                 </div>
 
                                 <section class="zrn_analitics_hub_panel">
-                                    <div class="zrn_analitics_commercial_panel_head">
+                                    <div class="zrn_analitics_financial_panel_head">
                                         <span>Drill financiero</span>
                                         <span>Expande para ver marcas, líneas y productos</span>
                                     </div>
-                                    <div class="zrn_analitics_commercial_portfolio_table_wrap">
+                                    <div class="zrn_analitics_financial_portfolio_table_wrap">
                                         <div class="o_list_renderer o_list_view table-responsive">
                                             <table class="o_list_table table table-sm table-hover position-relative mb-0 table-striped">
                                                 <thead>
@@ -525,14 +525,14 @@
                                                     <t t-foreach="financialPortfolio.rows || []" t-as="row" t-key="row.key">
                                                         <tr
                                                             t-if="row.level === 'unit' || isFinancialPortfolioRowVisible(row)"
-                                                            class="zrn_analitics_commercial_portfolio_row"
+                                                            class="zrn_analitics_financial_portfolio_row"
                                                             t-att-class="'is-' + row.level"
                                                         >
-                                                            <td class="zrn_analitics_commercial_portfolio_cell" t-att-class="'is-' + row.level">
+                                                            <td class="zrn_analitics_financial_portfolio_cell" t-att-class="'is-' + row.level">
                                                                 <button
                                                                     t-if="row.level !== 'sku'"
                                                                     type="button"
-                                                                    class="btn zrn_analitics_commercial_portfolio_toggle"
+                                                                    class="btn zrn_analitics_financial_portfolio_toggle"
                                                                     t-on-click="() => this.toggleFinancialPortfolioRow(row.key)"
                                                                 >
                                                                     <i class="fa" t-att-class="isFinancialPortfolioRowExpanded(row.key) ? 'fa-caret-down' : 'fa-caret-right'"></i>
@@ -559,24 +559,24 @@
 
                         <t t-if="state.financialTab === 'alertas'">
                             <section class="zrn_analitics_hub_panel">
-                                <div class="zrn_analitics_commercial_panel_head">
+                                <div class="zrn_analitics_financial_panel_head">
                                     <span>Alertas financieras</span>
                                     <span>Reglas simples sobre cobertura, margen y concentración</span>
                                 </div>
-                                <div class="zrn_analitics_commercial_coverage_notes">
+                                <div class="zrn_analitics_financial_coverage_notes">
                                     <t t-if="financialPayload.alerts.length">
                                         <t t-foreach="financialPayload.alerts" t-as="alert" t-key="alert.title">
-                                            <div class="zrn_analitics_commercial_coverage_note_row">
+                                            <div class="zrn_analitics_financial_coverage_note_row">
                                                 <strong><t t-esc="alert.title"/></strong>
                                                 <span><t t-esc="alert.detail"/></span>
                                             </div>
-                                            <div t-if="alert.items &amp;&amp; alert.items.length" class="zrn_analitics_commercial_table_sub">
+                                            <div t-if="alert.items &amp;&amp; alert.items.length" class="zrn_analitics_financial_table_sub">
                                                 <t t-esc="alert.items.join(', ')"/>
                                             </div>
                                         </t>
                                     </t>
                                     <t t-else="">
-                                        <div class="zrn_analitics_commercial_coverage_note_row">
+                                        <div class="zrn_analitics_financial_coverage_note_row">
                                             <strong>Sin alertas activas</strong>
                                             <span>Ninguna regla financiera superó los umbrales del periodo filtrado.</span>
                                         </div>
@@ -584,40 +584,68 @@
                                 </div>
                             </section>
                         </t>
+
+                        <t t-if="state.financialTab === 'precios' || state.financialTab === 'cartera' || state.financialTab === 'avanzado' || state.financialTab === 'pnl'">
+                            <section class="zrn_analitics_hub_panel">
+                                <div class="zrn_analitics_financial_panel_head">
+                                    <span>
+                                        <t t-if="state.financialTab === 'precios'">Precios vs Costos</t>
+                                        <t t-if="state.financialTab === 'cartera'">Cartera</t>
+                                        <t t-if="state.financialTab === 'avanzado'">Analisis Avanzado</t>
+                                        <t t-if="state.financialTab === 'pnl'">P&amp;L</t>
+                                    </span>
+                                    <span>Pendiente de backend y datos específicos</span>
+                                </div>
+                                <div class="zrn_analitics_financial_empty_note">
+                                    <t t-if="state.financialTab === 'precios'">
+                                        Esta tab queda reservada para la matriz de precios, costos y margen por canal. Aun no se conecta porque la fuente maestra de pricing no vive de forma persistida en este hub.
+                                    </t>
+                                    <t t-if="state.financialTab === 'cartera'">
+                                        Esta tab queda reservada para aging, cobranza y riesgo de cuentas por cobrar. Su implementacion depende de una capa contable real y del modelo definitivo de cartera.
+                                    </t>
+                                    <t t-if="state.financialTab === 'avanzado'">
+                                        Esta tab queda reservada para analisis como sensibilidad de precios, waterfall de margen y cruces financieros que necesitan fuentes adicionales o reglas mas maduras.
+                                    </t>
+                                    <t t-if="state.financialTab === 'pnl'">
+                                        Esta tab queda reservada para estado de resultados y lecturas P&amp;L. Se habilitara cuando el hub tenga acceso a datos contables y a la estructura final del analisis financiero.
+                                    </t>
+                                </div>
+                            </section>
+                        </t>
                     </t>
 
                     <t t-if="state.analyticsDetailModal">
-                        <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeAnalyticsDetailModal"></div>
-                        <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">
+                        <div class="modal-backdrop fade show zrn_analitics_financial_modal_backdrop" t-on-click="closeAnalyticsDetailModal"></div>
+                        <div class="modal fade show d-block zrn_analitics_financial_modal_shell" tabindex="-1" role="dialog">
                             <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
-                                <div class="modal-content zrn_analitics_commercial_modal">
+                                <div class="modal-content zrn_analitics_financial_modal">
                                     <div class="modal-header">
                                         <div>
                                             <h4 class="modal-title"><t t-esc="state.analyticsDetailModal.title"/></h4>
-                                            <div class="zrn_analitics_commercial_table_sub">
+                                            <div class="zrn_analitics_financial_table_sub">
                                                 <t t-esc="state.analyticsDetailModal.subtitle"/>
                                             </div>
                                         </div>
                                         <button type="button" class="btn-close" aria-label="Close" t-on-click="closeAnalyticsDetailModal"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <div class="zrn_analitics_commercial_channel_modal_cards">
+                                        <div class="zrn_analitics_financial_channel_modal_cards">
                                             <t t-foreach="state.analyticsDetailModal.summary_cards || []" t-as="card" t-key="card.label">
-                                                <div class="zrn_analitics_commercial_coverage_card">
+                                                <div class="zrn_analitics_financial_coverage_card">
                                                     <span><t t-esc="card.label"/></span>
                                                     <strong><t t-esc="formatDetailCard(state.analyticsDetailModal, card)"/></strong>
                                                 </div>
                                             </t>
                                         </div>
 
-                                        <div class="zrn_analitics_commercial_channel_modal_grid">
+                                        <div class="zrn_analitics_financial_channel_modal_grid">
                                             <section class="zrn_analitics_hub_panel">
-                                                <div class="zrn_analitics_commercial_panel_head">
+                                                <div class="zrn_analitics_financial_panel_head">
                                                     <span>Por canal</span>
                                                     <span>Base analítica</span>
                                                 </div>
-                                                <div class="zrn_analitics_commercial_table_wrap">
-                                                    <table class="zrn_analitics_commercial_table">
+                                                <div class="zrn_analitics_financial_table_wrap">
+                                                    <table class="zrn_analitics_financial_table">
                                                         <thead>
                                                             <tr>
                                                                 <th>Canal</th>
@@ -643,12 +671,12 @@
                                             </section>
 
                                             <section class="zrn_analitics_hub_panel">
-                                                <div class="zrn_analitics_commercial_panel_head">
+                                                <div class="zrn_analitics_financial_panel_head">
                                                     <span><t t-esc="state.analyticsDetailModal.secondary_title || 'Top PDVs'"/></span>
                                                     <span>Detalle del cálculo</span>
                                                 </div>
-                                                <div class="zrn_analitics_commercial_table_wrap">
-                                                    <table class="zrn_analitics_commercial_table">
+                                                <div class="zrn_analitics_financial_table_wrap">
+                                                    <table class="zrn_analitics_financial_table">
                                                         <thead>
                                                             <tr>
                                                                 <th>Nombre</th>

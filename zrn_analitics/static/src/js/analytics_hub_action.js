@@ -48,6 +48,22 @@ const FINANCIAL_TABS = [
   { key: "canal", label: "Por Canal", icon: "fa-sitemap" },
   { key: "marca", label: "Por Marca", icon: "fa-tags" },
   { key: "portafolio", label: "Portafolio", icon: "fa-archive" },
+  { key: "precios", label: "Precios vs Costos", icon: "fa-balance-scale" },
+  { key: "cartera", label: "Cartera", icon: "fa-credit-card" },
+  { key: "avanzado", label: "Analisis Avanzado", icon: "fa-search" },
+  { key: "pnl", label: "P&L", icon: "fa-bar-chart" },
+  { key: "alertas", label: "Alertas", icon: "fa-bell-o" },
+];
+
+const OPERATIONS_TABS = [
+  { key: "overview", label: "Resumen", icon: "fa-home" },
+  { key: "demanda", label: "Demanda", icon: "fa-industry" },
+  { key: "abc", label: "Rotacion & ABC", icon: "fa-signal" },
+  { key: "portafolio", label: "Portafolio", icon: "fa-sitemap" },
+  { key: "tendencias", label: "Tendencias", icon: "fa-line-chart" },
+  { key: "forecast", label: "Forecast", icon: "fa-area-chart" },
+  { key: "inventarios", label: "Inventarios", icon: "fa-cubes" },
+  { key: "compras", label: "Compras", icon: "fa-shopping-cart" },
   { key: "alertas", label: "Alertas", icon: "fa-bell-o" },
 ];
 
@@ -65,6 +81,23 @@ function cloneDefaultFilters() {
     channel_ids: [],
     brand_ids: [],
     category_ids: [],
+  };
+}
+
+const OPERATIONS_DEFAULT_FILTERS = Object.freeze({
+  period_key: "ytd",
+  channel_ids: [],
+  brand_ids: [],
+  abc_class: "",
+  rotation_key: "",
+  search: "",
+});
+
+function cloneOperationsDefaultFilters() {
+  return {
+    ...OPERATIONS_DEFAULT_FILTERS,
+    channel_ids: [],
+    brand_ids: [],
   };
 }
 
@@ -188,6 +221,7 @@ class ZrnAnalyticsHubAction extends Component {
     this.hubs = HUBS;
     this.commercialTabs = COMMERCIAL_TABS;
     this.financialTabs = FINANCIAL_TABS;
+    this.operationsTabs = OPERATIONS_TABS;
     this._charts = new Map();
     this._chartRenderTimeouts = [];
     this._chartRenderFrame = 0;
@@ -200,20 +234,25 @@ class ZrnAnalyticsHubAction extends Component {
       activeHub: "direction",
       commercialTab: "overview",
       financialTab: "overview",
+      operationsTab: "overview",
       commercialSidebarOpen: false,
       commercialPayload: null,
       commercialLoading: false,
       financialPayload: null,
       financialLoading: false,
+      operationsPayload: null,
+      operationsLoading: false,
       coveragePayload: null,
       coverageLoading: false,
       channelPayload: null,
       channelLoading: false,
       financialFilters: cloneDefaultFilters(),
+      operationsFilters: cloneOperationsDefaultFilters(),
       selectedPortfolioUnit: "",
       portfolioExpanded: {},
       selectedFinancialUnit: "",
       financialPortfolioExpanded: {},
+      operationsPortfolioExpanded: {},
       overviewFilters: cloneDefaultFilters(),
       portfolioFilters: cloneDefaultFilters(),
       coverageFilters: cloneDefaultFilters(),
@@ -236,6 +275,12 @@ class ZrnAnalyticsHubAction extends Component {
         financial_channels: { column: "margin", order: "desc" },
         financial_brands: { column: "margin", order: "desc" },
         financial_product_channel: { column: "margin", order: "desc" },
+        operations_top_skus: { column: "units", order: "desc" },
+        operations_demanda: { column: "units_per_month", order: "desc" },
+        operations_abc: { column: "revenue", order: "desc" },
+        operations_portfolio: { column: "revenue", order: "desc" },
+        operations_trends: { column: "trend_pct", order: "desc" },
+        operations_forecast_channels: { column: "total_ytd", order: "desc" },
         all_clients: { column: "rev", order: "desc" },
         rfm_clients: { column: "rev", order: "desc" },
         market_basket: { column: "lift", order: "desc" },
@@ -369,6 +414,36 @@ class ZrnAnalyticsHubAction extends Component {
     return this.sortData(this.financialPayload.product_channel_matrix || [], sort.column, sort.order);
   }
 
+  get sortedOperationsTopSkus() {
+    const sort = this.state.sorts.operations_top_skus;
+    return this.sortData(this.operationsPayload.top_skus || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsDemanda() {
+    const sort = this.state.sorts.operations_demanda;
+    return this.sortData(this.operationsPayload.production_suggestions || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsAbc() {
+    const sort = this.state.sorts.operations_abc;
+    return this.sortData(this.operationsPayload.top_skus || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsPortfolioRows() {
+    const sort = this.state.sorts.operations_portfolio;
+    return this.sortData(this.operationsPayload.portfolio?.rows || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsTrends() {
+    const sort = this.state.sorts.operations_trends;
+    return this.sortData(this.operationsPayload.trend_rows || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsForecastChannels() {
+    const sort = this.state.sorts.operations_forecast_channels;
+    return this.sortData(this.operationsPayload.forecast?.channel_pace || [], sort.column, sort.order);
+  }
+
   get sortedAllClients() {
     const sort = this.state.sorts.all_clients;
     return this.sortData(this.commercialPayload?.all_clients || [], sort.column, sort.order);
@@ -450,6 +525,12 @@ class ZrnAnalyticsHubAction extends Component {
       this.queueChartRender();
       return;
     }
+    if (hubKey === "operations") {
+      await this.loadOperationsPayload();
+      this.syncOperationsStateFromPayload();
+      this.queueChartRender();
+      return;
+    }
     if (hubKey !== "commercial") {
       return;
     }
@@ -483,6 +564,13 @@ class ZrnAnalyticsHubAction extends Component {
     this.closeCommercialSidebar();
     this.state.analyticsDetailModal = null;
     await this.loadFinancialPayload();
+    this.queueChartRender();
+  }
+
+  async setOperationsTab(tabKey) {
+    this.state.operationsTab = tabKey;
+    this.closeCommercialSidebar();
+    await this.loadOperationsPayload();
     this.queueChartRender();
   }
 
@@ -535,6 +623,25 @@ class ZrnAnalyticsHubAction extends Component {
       this.syncFinancialStateFromPayload();
     } finally {
       this.state.financialLoading = false;
+    }
+  }
+
+  async loadOperationsPayload(force = false) {
+    if (this.state.operationsPayload && !force) {
+      return;
+    }
+    this.state.operationsLoading = true;
+    try {
+      const payload = await this.orm.call(
+        "zrn_analitics.home",
+        "get_operations_hub_payload",
+        [this.state.operationsFilters],
+      );
+      this.state.operationsPayload = payload;
+      this.syncOperationsFiltersFromPayload(payload);
+      this.syncOperationsStateFromPayload();
+    } finally {
+      this.state.operationsLoading = false;
     }
   }
 

@@ -575,6 +575,104 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         return self._normalize_channel_filters(filters)
 
     @api.model
+    def _normalize_operations_filters(self, filters=None):
+        normalized_filters = self._normalize_channel_filters(filters)
+        filters = filters or {}
+        abc_class = (filters.get('abc_class') or filters.get('abc') or '').strip().upper()
+        if abc_class not in ('A', 'B', 'C'):
+            abc_class = ''
+        rotation_key = (filters.get('rotation_key') or filters.get('rotation') or '').strip()
+        valid_rotation_keys = {'Alta', 'Media', 'Baja', 'Muy Baja'}
+        if rotation_key not in valid_rotation_keys:
+            rotation_key = ''
+        normalized_filters.update({
+            'abc_class': abc_class,
+            'rotation_key': rotation_key,
+        })
+        return normalized_filters
+
+    @api.model
+    def _serialize_operations_active_filters(self, normalized_filters):
+        active_filters = self._serialize_active_filters(normalized_filters)
+        active_filters.update({
+            'abc_class': normalized_filters.get('abc_class') or '',
+            'rotation_key': normalized_filters.get('rotation_key') or '',
+        })
+        return active_filters
+
+    @api.model
+    def _build_empty_operations_payload(self, filters=None, filter_options=None, empty_message=''):
+        normalized_filters = self._normalize_operations_filters(filters)
+        date_from = normalized_filters['date_from']
+        date_to = normalized_filters['date_to']
+        brands = self._get_commercial_brand_records()
+        filter_options = filter_options or {
+            'periods': self._get_channel_period_options(),
+            'channels': self._get_channel_filter_options(),
+            'brands': self._get_brand_filter_options(brands),
+            'abc_choices': ['A', 'B', 'C'],
+            'rotation_choices': ['Alta', 'Media', 'Baja', 'Muy Baja'],
+        }
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(date_to),
+                'period_label': '%s al %s' % (
+                    fields.Date.to_string(date_from),
+                    fields.Date.to_string(date_to),
+                ),
+                'currency_symbol': self.env.company.currency_id.symbol or '$',
+                'total_units': 0.0,
+                'total_revenue': 0.0,
+                'order_count': 0,
+                'point_count': 0,
+                'product_count': 0,
+                'brand_count': 0,
+                'avg_units_day': 0.0,
+                'period_days': max((date_to - date_from).days + 1, 1),
+            },
+            'active_filters': self._serialize_operations_active_filters(normalized_filters),
+            'filter_options': filter_options,
+            'empty_message': empty_message or 'No hay datos operativos para los filtros seleccionados.',
+            'kpis': [],
+            'monthly_demand_series': [],
+            'brand_units_mix': [],
+            'abc_distribution': [],
+            'rotation_distribution': [],
+            'top_skus': [],
+            'production_suggestions': [],
+            'portfolio': {
+                'units': [],
+                'rows': [],
+            },
+            'trend_rows': [],
+            'growers': [],
+            'decliners': [],
+            'missing_recent_sales': [],
+            'forecast': {
+                'monthly': [],
+                'channel_pace': [],
+                'next_month_label': '',
+                'next_month_blend': 0.0,
+                'runrate_annual': 0.0,
+            },
+            'alerts': [],
+            'pending_tabs': {
+                'inventarios': True,
+                'compras': True,
+            },
+            'notes_sources': [
+                {
+                    'label': 'Ventas Odoo',
+                    'detail': 'Operaciones usa sale.order.line como proxy de demanda mientras no exista data estructurada de inventarios, compras o produccion.',
+                },
+                {
+                    'label': 'Segmentacion',
+                    'detail': 'Marca y canal reutilizan Zoraen Commercial para sostener el mismo corte operativo del hub comercial.',
+                },
+            ],
+        }
+
+    @api.model
     def _build_empty_financial_payload(self, filters=None, filter_options=None, empty_message=''):
         normalized_filters = self._normalize_financial_filters(filters)
         date_from = normalized_filters['date_from']
@@ -2718,6 +2816,640 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             'bcg_data': bcg_data,
             'active_filters': self._serialize_active_filters(normalized_filters),
             'filter_options': filter_options,
+        }
+
+    @api.model
+    def get_operations_hub_payload(self, filters=None):
+        normalized_filters = self._normalize_operations_filters(filters)
+        date_from = normalized_filters['date_from']
+        date_to = normalized_filters['date_to']
+        period_days = max((date_to - date_from).days + 1, 1)
+        currency_symbol = self.env.company.currency_id.symbol or '$'
+        brands, product_brand_map = self._get_commercial_brand_map()
+        channel_setup = self._get_channel_setup_status()
+        base_filter_options = {
+            'periods': self._get_channel_period_options(),
+            'channels': self._get_channel_filter_options(),
+            'brands': self._get_brand_filter_options(brands),
+            'abc_choices': ['A', 'B', 'C'],
+            'rotation_choices': ['Alta', 'Media', 'Baja', 'Muy Baja'],
+        }
+
+        if not brands or not product_brand_map:
+            return self._build_empty_operations_payload(
+                normalized_filters,
+                base_filter_options,
+                'No hay marcas comerciales activas para construir el hub de Operaciones.',
+            )
+        if not channel_setup['has_channels'] or not channel_setup['has_assignments']:
+            return self._build_empty_operations_payload(
+                normalized_filters,
+                base_filter_options,
+                self._get_channel_empty_message(channel_setup),
+            )
+
+        order_lines = self._get_commercial_sale_order_lines(
+            date_from,
+            date_to,
+            list(product_brand_map.keys()),
+        )
+        if not order_lines:
+            return self._build_empty_operations_payload(
+                normalized_filters,
+                base_filter_options,
+                'No hay ventas en el periodo para inferir demanda operativa.',
+            )
+
+        base_lines = order_lines.filtered(
+            lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters)
+        )
+        if not base_lines:
+            return self._build_empty_operations_payload(
+                normalized_filters,
+                base_filter_options,
+                'No hay datos operativos para los filtros seleccionados.',
+            )
+
+        def _month_key_from_date(value):
+            if not value:
+                return False
+            return value.strftime('%Y-%m')
+
+        def _month_label(month_key):
+            year, month = month_key.split('-')
+            month_names = {
+                1: 'Ene',
+                2: 'Feb',
+                3: 'Mar',
+                4: 'Abr',
+                5: 'May',
+                6: 'Jun',
+                7: 'Jul',
+                8: 'Ago',
+                9: 'Sep',
+                10: 'Oct',
+                11: 'Nov',
+                12: 'Dic',
+            }
+            return '%s %s' % (month_names[int(month)], year)
+
+        def _days_in_month(any_date):
+            next_month = (any_date.replace(day=28) + timedelta(days=4)).replace(day=1)
+            return (next_month - any_date.replace(day=1)).days
+
+        def _safe_pct(numerator, denominator):
+            return (numerator / denominator * 100.0) if denominator else 0.0
+
+        def _rotation_label(frequency_pct):
+            if frequency_pct >= 0.65:
+                return 'Alta'
+            if frequency_pct >= 0.35:
+                return 'Media'
+            if frequency_pct >= 0.15:
+                return 'Baja'
+            return 'Muy Baja'
+
+        month_keys = []
+        current_month = date_from.replace(day=1)
+        while current_month <= date_to.replace(day=1):
+            month_keys.append(current_month.strftime('%Y-%m'))
+            current_month = (current_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+        channels_seen = set()
+        product_rows = {}
+        month_totals = {
+            month_key: {'revenue': 0.0, 'units': 0.0}
+            for month_key in month_keys
+        }
+        channel_month_totals = defaultdict(lambda: defaultdict(float))
+        channel_totals = defaultdict(float)
+        partner_ids = set()
+        order_ids = set()
+
+        for line in base_lines:
+            order = line.order_id
+            partner = order.partner_id if order else False
+            commercial_partner = partner.commercial_partner_id or partner if partner else False
+            product = line.product_id
+            if not order or not product or not commercial_partner:
+                continue
+
+            brand_info = product_brand_map.get(product.id)
+            if not brand_info:
+                continue
+
+            order_date = fields.Datetime.to_datetime(order.date_order).date() if order.date_order else date_to
+            month_key = _month_key_from_date(order_date.replace(day=1))
+            channel_name = self._resolve_partner_channel(commercial_partner)
+            if not channel_name:
+                continue
+
+            channels_seen.add(channel_name)
+            amount = float(line.price_total or 0.0)
+            quantity = float(line.product_uom_qty or 0.0)
+            order_ids.add(order.id)
+            partner_ids.add(commercial_partner.id)
+
+            row = product_rows.setdefault(
+                product.id,
+                {
+                    'id': product.id,
+                    'name': product.display_name,
+                    'default_code': product.default_code or '',
+                    'brand_id': brand_info['brand_id'],
+                    'brand_name': brand_info['brand_name'],
+                    'category_name': product.categ_id.display_name or 'Sin categoria',
+                    'unit_name': (
+                        (product.categ_id.complete_name or '').split('/')[0].strip()
+                        if product.categ_id and product.categ_id.complete_name
+                        else 'Sin unidad'
+                    ),
+                    'line_name': product.categ_id.display_name or 'Sin linea',
+                    'revenue': 0.0,
+                    'units': 0.0,
+                    'order_ids': set(),
+                    'partner_ids': set(),
+                    'channels': set(),
+                    'sale_dates': set(),
+                    'monthly_revenue': defaultdict(float),
+                    'monthly_units': defaultdict(float),
+                },
+            )
+            row['revenue'] += amount
+            row['units'] += quantity
+            row['order_ids'].add(order.id)
+            row['partner_ids'].add(commercial_partner.id)
+            row['channels'].add(channel_name)
+            row['sale_dates'].add(order_date)
+            row['monthly_revenue'][month_key] += amount
+            row['monthly_units'][month_key] += quantity
+
+            if month_key in month_totals:
+                month_totals[month_key]['revenue'] += amount
+                month_totals[month_key]['units'] += quantity
+            channel_month_totals[channel_name][month_key] += amount
+            channel_totals[channel_name] += amount
+
+        if not product_rows:
+            return self._build_empty_operations_payload(
+                normalized_filters,
+                {
+                    **base_filter_options,
+                    'channels': self._get_channel_filter_options(channels_seen),
+                },
+                'No hay productos ligados a marcas activas con ventas para este corte operativo.',
+            )
+
+        sorted_products = sorted(
+            product_rows.values(),
+            key=lambda item: item['revenue'],
+            reverse=True,
+        )
+        total_revenue_all = sum(item['revenue'] for item in sorted_products)
+        cumulative_revenue = 0.0
+        for item in sorted_products:
+            cumulative_revenue += item['revenue']
+            cumulative_pct = _safe_pct(cumulative_revenue, total_revenue_all)
+            if cumulative_pct <= 80.0:
+                abc_class = 'A'
+            elif cumulative_pct <= 95.0:
+                abc_class = 'B'
+            else:
+                abc_class = 'C'
+            item['abc_class'] = abc_class
+            item['cumulative_pct'] = round(cumulative_pct, 2)
+            item['days_active'] = len(item['sale_dates'])
+            item['frequency_pct'] = item['days_active'] / period_days
+            item['rotation_key'] = _rotation_label(item['frequency_pct'])
+            item['units_per_day'] = item['units'] / period_days
+            item['units_per_month'] = item['units'] * 30.0 / period_days
+            item['weekly_suggestion'] = round(item['units_per_day'] * 7.0)
+            item['biweekly_suggestion'] = round(item['units_per_day'] * 15.0)
+            last_sale = max(item['sale_dates']) if item['sale_dates'] else date_from
+            item['days_since_last'] = max((date_to - last_sale).days, 0)
+
+            previous_months = month_keys[:-1]
+            current_month_key = month_keys[-1]
+            prev_revenue = sum(item['monthly_revenue'].get(month_key, 0.0) for month_key in previous_months)
+            prev_days = 0
+            for month_key in previous_months:
+                year, month = [int(part) for part in month_key.split('-')]
+                prev_days += _days_in_month(fields.Date.from_string('%04d-%02d-01' % (year, month)))
+            current_month_revenue = item['monthly_revenue'].get(current_month_key, 0.0)
+            current_month_units = item['monthly_units'].get(current_month_key, 0.0)
+            current_month_date = date_to.replace(day=1)
+            current_days_with_data = date_to.day if current_month_key == date_to.strftime('%Y-%m') else _days_in_month(current_month_date)
+            prev_pace = prev_revenue / prev_days if prev_days else 0.0
+            current_pace = current_month_revenue / current_days_with_data if current_days_with_data else 0.0
+            item['trend_pct'] = round(((current_pace / prev_pace) - 1.0) * 100.0, 1) if prev_pace else 0.0
+            item['current_month_units'] = current_month_units
+
+        selected_products = []
+        for item in sorted_products:
+            if normalized_filters.get('abc_class') and item['abc_class'] != normalized_filters['abc_class']:
+                continue
+            if normalized_filters.get('rotation_key') and item['rotation_key'] != normalized_filters['rotation_key']:
+                continue
+            selected_products.append(item)
+
+        if not selected_products:
+            return self._build_empty_operations_payload(
+                normalized_filters,
+                {
+                    **base_filter_options,
+                    'channels': self._get_channel_filter_options(channels_seen),
+                },
+                'No hay productos para la combinacion de clase ABC y rotacion seleccionada.',
+            )
+
+        selected_product_ids = {item['id'] for item in selected_products}
+        total_units = sum(item['units'] for item in selected_products)
+        total_revenue = sum(item['revenue'] for item in selected_products)
+        selected_order_ids = set()
+        selected_partner_ids = set()
+        for item in selected_products:
+            selected_order_ids.update(item['order_ids'])
+            selected_partner_ids.update(item['partner_ids'])
+
+        selected_monthly = []
+        next_month_blend = 0.0
+        for index, month_key in enumerate(month_keys):
+            month_revenue = 0.0
+            month_units = 0.0
+            for item in selected_products:
+                month_revenue += item['monthly_revenue'].get(month_key, 0.0)
+                month_units += item['monthly_units'].get(month_key, 0.0)
+            year, month = [int(part) for part in month_key.split('-')]
+            month_start = fields.Date.from_string('%04d-%02d-01' % (year, month))
+            days_in_month = _days_in_month(month_start)
+            is_partial = month_key == date_to.strftime('%Y-%m')
+            days_with_data = date_to.day if is_partial else days_in_month
+            projected_revenue = month_revenue * days_in_month / days_with_data if days_with_data else month_revenue
+            projected_units = month_units * days_in_month / days_with_data if days_with_data else month_units
+            prev_projected = selected_monthly[index - 1]['projected_revenue'] if index else 0.0
+            selected_monthly.append({
+                'month_key': month_key,
+                'label': _month_label(month_key),
+                'revenue': round(month_revenue, 2),
+                'units': round(month_units, 2),
+                'days_in_month': days_in_month,
+                'days_with_data': days_with_data,
+                'is_partial': is_partial,
+                'daily_revenue': round(month_revenue / days_with_data, 2) if days_with_data else 0.0,
+                'daily_units': round(month_units / days_with_data, 2) if days_with_data else 0.0,
+                'projected_revenue': round(projected_revenue, 2),
+                'projected_units': round(projected_units, 2),
+                'mom_pct': round(((projected_revenue / prev_projected) - 1.0) * 100.0, 1) if prev_projected else 0.0,
+            })
+
+        if selected_monthly:
+            recent_projected = [item['projected_revenue'] for item in selected_monthly[-3:]]
+            trailing_average = sum(recent_projected) / len(recent_projected)
+            linear_projection = recent_projected[-1] if len(recent_projected) == 1 else (
+                recent_projected[-1] + (recent_projected[-1] - recent_projected[0]) / max(len(recent_projected) - 1, 1)
+            )
+            next_month_blend = round((trailing_average + linear_projection) / 2.0, 2)
+
+        selected_channel_month_totals = defaultdict(lambda: defaultdict(float))
+        for line in base_lines:
+            product = line.product_id
+            if not product or product.id not in selected_product_ids:
+                continue
+            order = line.order_id
+            partner = order.partner_id if order else False
+            commercial_partner = partner.commercial_partner_id or partner if partner else False
+            if not order or not commercial_partner:
+                continue
+            channel_name = self._resolve_partner_channel(commercial_partner)
+            if not channel_name:
+                continue
+            order_date = fields.Datetime.to_datetime(order.date_order).date() if order.date_order else date_to
+            month_key = _month_key_from_date(order_date.replace(day=1))
+            selected_channel_month_totals[channel_name][month_key] += float(line.price_total or 0.0)
+
+        forecast_channel_rows = []
+        if month_keys:
+            current_month_key = month_keys[-1]
+            last_full_month_key = month_keys[-2] if len(month_keys) > 1 else month_keys[-1]
+            current_days = date_to.day
+            current_days_total = _days_in_month(date_to.replace(day=1))
+            for channel_name, totals in selected_channel_month_totals.items():
+                ytd_value = sum(totals.values())
+                current_partial = totals.get(current_month_key, 0.0)
+                current_projected = current_partial * current_days_total / current_days if current_days else current_partial
+                last_full_value = totals.get(last_full_month_key, 0.0)
+                forecast_channel_rows.append({
+                    'channel': channel_name,
+                    'total_ytd': round(ytd_value, 2),
+                    'current_partial': round(current_partial, 2),
+                    'current_projected': round(current_projected, 2),
+                    'last_full_month': round(last_full_value, 2),
+                    'last_full_label': _month_label(last_full_month_key),
+                    'projected_vs_last_pct': round(((current_projected / last_full_value) - 1.0) * 100.0, 1) if last_full_value else 0.0,
+                })
+        forecast_channel_rows.sort(key=lambda item: item['total_ytd'], reverse=True)
+
+        brand_units_map = defaultdict(float)
+        abc_counts = defaultdict(int)
+        rotation_counts = defaultdict(int)
+        production_rows = []
+        trend_rows = []
+        missing_recent_sales = []
+        growers = []
+        decliners = []
+
+        portfolio_units = {}
+        portfolio_rows = []
+
+        for item in selected_products:
+            brand_units_map[item['brand_name']] += item['units']
+            abc_counts[item['abc_class']] += 1
+            rotation_counts[item['rotation_key']] += 1
+
+            production_rows.append({
+                'id': item['id'],
+                'name': item['name'],
+                'brand_name': item['brand_name'],
+                'category_name': item['category_name'],
+                'abc_class': item['abc_class'],
+                'rotation_key': item['rotation_key'],
+                'units_per_month': round(item['units_per_month'], 1),
+                'units_per_day': round(item['units_per_day'], 2),
+                'weekly_suggestion': int(item['weekly_suggestion']),
+                'biweekly_suggestion': int(item['biweekly_suggestion']),
+                'days_active': item['days_active'],
+            })
+
+            trend_row = {
+                'id': item['id'],
+                'name': item['name'],
+                'brand_name': item['brand_name'],
+                'abc_class': item['abc_class'],
+                'rotation_key': item['rotation_key'],
+                'trend_pct': item['trend_pct'],
+                'days_since_last': item['days_since_last'],
+                'revenue': round(item['revenue'], 2),
+                'units': round(item['units'], 2),
+            }
+            trend_rows.append(trend_row)
+            if item['trend_pct'] > 0:
+                growers.append(trend_row)
+            elif item['trend_pct'] < 0:
+                decliners.append(trend_row)
+            if item['days_since_last'] > 14 and item['revenue'] >= 500:
+                missing_recent_sales.append(trend_row)
+
+            unit_bucket = portfolio_units.setdefault(
+                item['unit_name'],
+                {
+                    'key': 'ops-unit-%s' % len(portfolio_units),
+                    'name': item['unit_name'],
+                    'units': 0.0,
+                    'revenue': 0.0,
+                    'sku_ids': set(),
+                    'order_ids': set(),
+                    'brands': {},
+                },
+            )
+            unit_bucket['units'] += item['units']
+            unit_bucket['revenue'] += item['revenue']
+            unit_bucket['sku_ids'].add(item['id'])
+            unit_bucket['order_ids'].update(item['order_ids'])
+            brand_bucket = unit_bucket['brands'].setdefault(
+                item['brand_name'],
+                {
+                    'key': 'ops-brand-%s-%s' % (unit_bucket['key'], item['brand_id']),
+                    'resId': item['brand_id'],
+                    'name': item['brand_name'],
+                    'units': 0.0,
+                    'revenue': 0.0,
+                    'sku_ids': set(),
+                    'order_ids': set(),
+                    'lines': {},
+                },
+            )
+            brand_bucket['units'] += item['units']
+            brand_bucket['revenue'] += item['revenue']
+            brand_bucket['sku_ids'].add(item['id'])
+            brand_bucket['order_ids'].update(item['order_ids'])
+            line_bucket = brand_bucket['lines'].setdefault(
+                item['line_name'],
+                {
+                    'key': 'ops-line-%s-%s' % (brand_bucket['key'], len(brand_bucket['lines'])),
+                    'name': item['line_name'],
+                    'units': 0.0,
+                    'revenue': 0.0,
+                    'sku_ids': set(),
+                    'order_ids': set(),
+                    'skus': [],
+                },
+            )
+            line_bucket['units'] += item['units']
+            line_bucket['revenue'] += item['revenue']
+            line_bucket['sku_ids'].add(item['id'])
+            line_bucket['order_ids'].update(item['order_ids'])
+            line_bucket['skus'].append(item)
+
+        for unit in sorted(portfolio_units.values(), key=lambda item: item['revenue'], reverse=True):
+            portfolio_rows.append({
+                'key': unit['key'],
+                'ancestor_keys': [],
+                'level': 'unit',
+                'label': unit['name'],
+                'units': round(unit['units'], 2),
+                'revenue': round(unit['revenue'], 2),
+                'sku_count': len(unit['sku_ids']),
+                'order_count': len(unit['order_ids']),
+            })
+            for brand in sorted(unit['brands'].values(), key=lambda item: item['revenue'], reverse=True):
+                portfolio_rows.append({
+                    'key': brand['key'],
+                    'ancestor_keys': [unit['key']],
+                    'level': 'brand',
+                    'label': brand['name'],
+                    'resId': brand['resId'],
+                    'units': round(brand['units'], 2),
+                    'revenue': round(brand['revenue'], 2),
+                    'sku_count': len(brand['sku_ids']),
+                    'order_count': len(brand['order_ids']),
+                })
+                for line in sorted(brand['lines'].values(), key=lambda item: item['revenue'], reverse=True):
+                    portfolio_rows.append({
+                        'key': line['key'],
+                        'ancestor_keys': [unit['key'], brand['key']],
+                        'level': 'line',
+                        'label': line['name'],
+                        'units': round(line['units'], 2),
+                        'revenue': round(line['revenue'], 2),
+                        'sku_count': len(line['sku_ids']),
+                        'order_count': len(line['order_ids']),
+                    })
+                    for sku in sorted(line['skus'], key=lambda item: item['revenue'], reverse=True):
+                        portfolio_rows.append({
+                            'key': 'ops-sku-%s' % sku['id'],
+                            'ancestor_keys': [unit['key'], brand['key'], line['key']],
+                            'level': 'sku',
+                            'label': sku['name'],
+                            'resId': sku['id'],
+                            'units': round(sku['units'], 2),
+                            'revenue': round(sku['revenue'], 2),
+                            'sku_count': 1,
+                            'order_count': len(sku['order_ids']),
+                        })
+
+        top_skus = [
+            {
+                'id': item['id'],
+                'name': item['name'],
+                'brand_name': item['brand_name'],
+                'category_name': item['category_name'],
+                'abc_class': item['abc_class'],
+                'rotation_key': item['rotation_key'],
+                'units': round(item['units'], 2),
+                'revenue': round(item['revenue'], 2),
+                'days_active': item['days_active'],
+                'channels': len(item['channels']),
+                'cumulative_pct': item['cumulative_pct'],
+            }
+            for item in sorted(selected_products, key=lambda row: row['units'], reverse=True)[:15]
+        ]
+
+        kpis = [
+            {'label': 'Unidades vendidas', 'value': round(total_units, 1), 'type': 'count'},
+            {'label': 'Revenue filtrado', 'value': round(total_revenue, 2), 'type': 'currency'},
+            {'label': 'SKUs activos', 'value': len(selected_products), 'type': 'count'},
+            {'label': 'Marcas activas', 'value': len({item['brand_name'] for item in selected_products}), 'type': 'count'},
+            {'label': 'Pedidos', 'value': len(selected_order_ids), 'type': 'count'},
+            {'label': 'Promedio unid/dia', 'value': round(total_units / period_days, 2), 'type': 'count'},
+        ]
+
+        alerts = []
+        if selected_products:
+            top_brand_name, top_brand_units = max(brand_units_map.items(), key=lambda entry: entry[1])
+            top_brand_pct = _safe_pct(top_brand_units, total_units)
+            if top_brand_pct >= 45.0:
+                alerts.append({
+                    'severity': 'info',
+                    'title': 'Concentracion por marca',
+                    'detail': '%s concentra %.1f%% del volumen vendido en el periodo.' % (top_brand_name, top_brand_pct),
+                })
+        if missing_recent_sales:
+            alerts.append({
+                'severity': 'warn',
+                'title': 'SKUs sin venta reciente',
+                'detail': '%s productos llevan mas de 14 dias sin movimiento y aun pesan en revenue.' % len(missing_recent_sales[:10]),
+            })
+        low_rotation_a = [
+            item for item in selected_products
+            if item['abc_class'] == 'A' and item['rotation_key'] in ('Baja', 'Muy Baja')
+        ]
+        if low_rotation_a:
+            alerts.append({
+                'severity': 'alert',
+                'title': 'Clase A con rotacion baja',
+                'detail': '%s SKUs clase A requieren revision de disponibilidad, produccion o surtido.' % len(low_rotation_a[:10]),
+            })
+        alerts.append({
+            'severity': 'info',
+            'title': 'Inventarios pendientes',
+            'detail': 'La tab de inventarios sigue en espera de stock.quant para calcular cobertura y riesgo de quiebre.',
+        })
+        alerts.append({
+            'severity': 'info',
+            'title': 'Compras pendientes',
+            'detail': 'La tab de compras sigue en espera de purchase.order para lead time, OTIF y spend por proveedor.',
+        })
+
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(date_to),
+                'period_label': '%s al %s' % (
+                    fields.Date.to_string(date_from),
+                    fields.Date.to_string(date_to),
+                ),
+                'currency_symbol': currency_symbol,
+                'total_units': round(total_units, 1),
+                'total_revenue': round(total_revenue, 2),
+                'order_count': len(selected_order_ids),
+                'point_count': len(selected_partner_ids),
+                'product_count': len(selected_products),
+                'brand_count': len({item['brand_name'] for item in selected_products}),
+                'avg_units_day': round(total_units / period_days, 2),
+                'period_days': period_days,
+            },
+            'active_filters': self._serialize_operations_active_filters(normalized_filters),
+            'filter_options': {
+                **base_filter_options,
+                'channels': self._get_channel_filter_options(channels_seen),
+            },
+            'empty_message': '',
+            'kpis': kpis,
+            'monthly_demand_series': selected_monthly,
+            'brand_units_mix': [
+                {
+                    'name': name,
+                    'value': round(value, 2),
+                }
+                for name, value in sorted(brand_units_map.items(), key=lambda item: item[1], reverse=True)
+            ],
+            'abc_distribution': [
+                {'label': key, 'value': abc_counts.get(key, 0)}
+                for key in ['A', 'B', 'C']
+            ],
+            'rotation_distribution': [
+                {'label': key, 'value': rotation_counts.get(key, 0)}
+                for key in ['Alta', 'Media', 'Baja', 'Muy Baja']
+            ],
+            'top_skus': top_skus,
+            'production_suggestions': sorted(
+                production_rows,
+                key=lambda item: item['units_per_month'],
+                reverse=True,
+            )[:30],
+            'portfolio': {
+                'units': [
+                    {
+                        'key': unit['key'],
+                        'name': unit['name'],
+                        'units': round(unit['units'], 2),
+                        'revenue': round(unit['revenue'], 2),
+                        'sku_count': len(unit['sku_ids']),
+                        'brand_count': len(unit['brands']),
+                    }
+                    for unit in sorted(portfolio_units.values(), key=lambda item: item['revenue'], reverse=True)
+                ],
+                'rows': portfolio_rows,
+            },
+            'trend_rows': sorted(trend_rows, key=lambda item: item['trend_pct'], reverse=True),
+            'growers': sorted(growers, key=lambda item: item['trend_pct'], reverse=True)[:12],
+            'decliners': sorted(decliners, key=lambda item: item['trend_pct'])[:12],
+            'missing_recent_sales': sorted(missing_recent_sales, key=lambda item: item['days_since_last'], reverse=True)[:12],
+            'forecast': {
+                'monthly': selected_monthly,
+                'channel_pace': forecast_channel_rows[:12],
+                'next_month_label': 'Proximo mes',
+                'next_month_blend': next_month_blend,
+                'runrate_annual': round(next_month_blend * 12.0, 2),
+            },
+            'alerts': alerts,
+            'pending_tabs': {
+                'inventarios': True,
+                'compras': True,
+            },
+            'notes_sources': [
+                {
+                    'label': 'Demanda inferida',
+                    'detail': 'Las unidades operativas se leen desde sale.order.line en estados venta o hecho.',
+                },
+                {
+                    'label': 'Segmentacion',
+                    'detail': 'Marca y canal reutilizan Zoraen Commercial para no duplicar catálogos.',
+                },
+                {
+                    'label': 'Pendientes',
+                    'detail': 'Inventarios y Compras quedan visibles pero pendientes hasta conectar stock y purchase.',
+                },
+            ],
         }
 
     @api.model
