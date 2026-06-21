@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_zrn_commercial_crm_lead_form" model="ir.ui.view">
+        <field name="name">zrn_commercial.crm.lead.form</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@invisible=&quot;type == 'lead'&quot;][1]" position="after">
+                <group string="Capa comercial Zoraen">
+                    <group>
+                        <field name="zrn_brand_id" required="type == 'opportunity'" options="{'no_create_edit': True}"/>
+                        <field name="zrn_allowed_channel_ids" invisible="1"/>
+                        <field name="zrn_channel_id" required="type == 'opportunity'" domain="[('id', 'in', zrn_allowed_channel_ids)]" options="{'no_create_edit': True}"/>
+                        <field name="zrn_priority"/>
+                    </group>
+                    <group>
+                        <field name="zrn_followup_state" readonly="1"/>
+                        <field name="activity_date_deadline" readonly="1"/>
+                        <field name="zrn_next_step_note" placeholder="Siguiente paso visible para el equipo"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//page[@name='internal_notes']" position="after">
+                <page string="Comercial Zoraen" name="zrn_commercial">
+                    <group>
+                        <field name="zrn_brand_id" options="{'no_create_edit': True}"/>
+                        <field name="zrn_channel_id" domain="[('id', 'in', zrn_allowed_channel_ids)]" options="{'no_create_edit': True}"/>
+                        <field name="zrn_priority"/>
+                        <field name="zrn_followup_state" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="zrn_next_step_note" placeholder="Proximo paso comercial"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_crm_lead_tree_oppor" model="ir.ui.view">
+        <field name="name">zrn_commercial.crm.lead.tree.opportunity</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+        <field name="arch" type="xml">
+            <field name="user_id" position="after">
+                <field name="zrn_brand_id" optional="show"/>
+                <field name="zrn_channel_id" optional="show"/>
+                <field name="zrn_followup_state" widget="badge" optional="show"/>
+                <field name="zrn_next_step_note" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_crm_lead_tree_leads" model="ir.ui.view">
+        <field name="name">zrn_commercial.crm.lead.tree.leads</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+        <field name="arch" type="xml">
+            <field name="user_id" position="after">
+                <field name="zrn_brand_id" optional="show"/>
+                <field name="zrn_channel_id" optional="show"/>
+                <field name="zrn_followup_state" widget="badge" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_crm_opportunity_search" model="ir.ui.view">
+        <field name="name">zrn_commercial.crm.opportunity.search</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='team_id']" position="after">
+                <field name="zrn_brand_id"/>
+                <field name="zrn_channel_id"/>
+                <field name="zrn_priority"/>
+            </xpath>
+            <xpath expr="//filter[@name='open_opportunities']" position="after">
+                <filter string="Sin actividad" name="zrn_no_activity" domain="[('activity_ids', '=', False)]"/>
+                <filter string="Actividad vencida" name="zrn_overdue_activity" domain="[('activity_state', '=', 'overdue')]"/>
+            </xpath>
+            <xpath expr="//search/group[last()]" position="inside">
+                <filter string="Marca comercial" name="zrn_group_brand" context="{'group_by': 'zrn_brand_id'}"/>
+                <filter string="Canal comercial" name="zrn_group_channel" context="{'group_by': 'zrn_channel_id'}"/>
+                <filter string="Prioridad comercial" name="zrn_group_priority" context="{'group_by': 'zrn_priority'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_crm_leads_search" model="ir.ui.view">
+        <field name="name">zrn_commercial.crm.leads.search</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='team_id']" position="after">
+                <field name="zrn_brand_id"/>
+                <field name="zrn_channel_id"/>
+            </xpath>
+            <xpath expr="//search/group[last()]" position="inside">
+                <filter string="Marca comercial" name="zrn_group_brand_leads" context="{'group_by': 'zrn_brand_id'}"/>
+                <filter string="Canal comercial" name="zrn_group_channel_leads" context="{'group_by': 'zrn_channel_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_partner_form" model="ir.ui.view">
+        <field name="name">zrn_commercial.res.partner.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="zrn_commercial_status"/>
+                <field name="zrn_account_owner_id" widget="many2one_avatar_user"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Comercial Zoraen" name="zrn_commercial">
+                    <group>
+                        <group>
+                            <field name="zrn_primary_brand_id" options="{'no_create_edit': True}"/>
+                            <field name="zrn_brand_ids" widget="many2many_tags" options="{'no_create_edit': True}"/>
+                            <field name="zrn_primary_channel_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="zrn_commercial_status"/>
+                            <field name="zrn_account_owner_id" widget="many2one_avatar_user"/>
+                            <field name="zrn_last_activity_date" readonly="1"/>
+                            <field name="zrn_followup_state" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_partner_tree" model="ir.ui.view">
+        <field name="name">zrn_commercial.res.partner.tree</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <field name="user_id" position="after">
+                <field name="zrn_primary_brand_id" optional="show"/>
+                <field name="zrn_primary_channel_id" optional="show"/>
+                <field name="zrn_commercial_status" widget="badge" optional="show"/>
+                <field name="activity_state" widget="badge" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_partner_search" model="ir.ui.view">
+        <field name="name">zrn_commercial.res.partner.search</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="zrn_primary_brand_id"/>
+                <field name="zrn_primary_channel_id"/>
+                <field name="zrn_commercial_status"/>
+            </xpath>
+            <xpath expr="//filter[@name='inactive']" position="before">
+                <filter string="Sin actividad" name="zrn_partner_no_activity" domain="[('activity_ids', '=', False)]"/>
+                <filter string="Actividad vencida" name="zrn_partner_overdue" domain="[('activity_state', '=', 'overdue')]"/>
+            </xpath>
+            <xpath expr="//search/group[last()]" position="inside">
+                <filter string="Marca comercial" name="zrn_partner_group_brand" context="{'group_by': 'zrn_primary_brand_id'}"/>
+                <filter string="Estado comercial" name="zrn_partner_group_status" context="{'group_by': 'zrn_commercial_status'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_sale_order_form" model="ir.ui.view">
+        <field name="name">zrn_commercial.sale.order.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale_crm.sale_view_inherit123"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='opportunity_id']" position="after">
+                <field name="zrn_brand_id" options="{'no_create_edit': True}"/>
+                <field name="zrn_channel_id" options="{'no_create_edit': True}"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <div class="alert alert-warning" role="alert" invisible="not zrn_brand_warning">
+                    <field name="zrn_brand_warning" readonly="1"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_sale_order_tree" model="ir.ui.view">
+        <field name="name">zrn_commercial.sale.order.tree</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="zrn_brand_id" optional="show"/>
+                <field name="zrn_channel_id" optional="show"/>
+                <field name="zrn_followup_state" widget="badge" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_zrn_commercial_sale_order_search" model="ir.ui.view">
+        <field name="name">zrn_commercial.sale.order.search</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="zrn_brand_id"/>
+                <field name="zrn_channel_id"/>
+            </xpath>
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                <filter string="Sin actividad" name="zrn_order_no_activity" domain="[('activity_ids', '=', False)]"/>
+                <filter string="Actividad vencida" name="zrn_order_overdue" domain="[('activity_state', '=', 'overdue')]"/>
+            </xpath>
+            <xpath expr="//search/group[last()]" position="inside">
+                <filter string="Marca comercial" name="zrn_order_group_brand" context="{'group_by': 'zrn_brand_id'}"/>
+                <filter string="Canal comercial" name="zrn_order_group_channel" context="{'group_by': 'zrn_channel_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_zrn_commercial_prospects" model="ir.actions.act_window">
+        <field name="name">Prospectos</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">tree,kanban,form,activity</field>
+        <field name="domain">['|', ('type', '=', 'lead'), ('type', '=', False)]</field>
+        <field name="context">{'default_type': 'lead', 'search_default_type': 'lead'}</field>
+        <field name="search_view_id" ref="crm.view_crm_case_leads_filter"/>
+    </record>
+
+    <record id="action_zrn_commercial_opportunities" model="ir.actions.act_window">
+        <field name="name">Oportunidades</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">tree,kanban,graph,pivot,form,activity</field>
+        <field name="domain">[('type', '=', 'opportunity')]</field>
+        <field name="context">{'default_type': 'opportunity', 'search_default_open_opportunities': 1}</field>
+        <field name="search_view_id" ref="crm.view_crm_case_opportunities_filter"/>
+    </record>
+
+    <record id="action_zrn_commercial_customers" model="ir.actions.act_window">
+        <field name="name">Clientes comerciales</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">tree,kanban,form,activity</field>
+        <field name="domain">[('customer_rank', '&gt;', 0)]</field>
+        <field name="search_view_id" ref="base.view_res_partner_filter"/>
+    </record>
+
+    <record id="action_zrn_commercial_quotations" model="ir.actions.act_window">
+        <field name="name">Cotizaciones</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">tree,kanban,graph,pivot,form,calendar,activity</field>
+        <field name="domain">[('state', 'in', ['draft', 'sent', 'sale'])]</field>
+        <field name="context">{'search_default_draft': 1}</field>
+        <field name="search_view_id" ref="sale.view_sales_order_filter"/>
+    </record>
+
+    <record id="action_zrn_commercial_reports_pipeline" model="ir.actions.act_window">
+        <field name="name">Reporte de pipeline</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">graph,pivot,tree</field>
+        <field name="domain">[('type', '=', 'opportunity')]</field>
+        <field name="search_view_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="context">{'search_default_open_opportunities': 1}</field>
+    </record>
+
+    <record id="action_zrn_commercial_reports_quotations" model="ir.actions.act_window">
+        <field name="name">Reporte de cotizaciones</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">graph,pivot,tree</field>
+        <field name="domain">[('state', 'in', ['draft', 'sent', 'sale'])]</field>
+        <field name="search_view_id" ref="sale.view_sales_order_filter"/>
+    </record>
+
+    <menuitem id="menu_zrn_commercial_prospects"
+        name="Prospectos"
+        parent="zrn_commercial.menu_zrn_commercial_root"
+        action="action_zrn_commercial_prospects"
+        sequence="20"/>
+
+    <menuitem id="menu_zrn_commercial_opportunities"
+        name="Oportunidades"
+        parent="zrn_commercial.menu_zrn_commercial_root"
+        action="action_zrn_commercial_opportunities"
+        sequence="25"/>
+
+    <menuitem id="menu_zrn_commercial_customers"
+        name="Clientes comerciales"
+        parent="zrn_commercial.menu_zrn_commercial_root"
+        action="action_zrn_commercial_customers"
+        sequence="30"/>
+
+    <menuitem id="menu_zrn_commercial_quotations"
+        name="Cotizaciones"
+        parent="zrn_commercial.menu_zrn_commercial_root"
+        action="action_zrn_commercial_quotations"
+        sequence="35"/>
+
+    <menuitem id="menu_zrn_commercial_reports_root"
+        name="Reportes comerciales"
+        parent="zrn_commercial.menu_zrn_commercial_root"
+        sequence="40"/>
+
+    <menuitem id="menu_zrn_commercial_reports_pipeline"
+        name="Pipeline"
+        parent="menu_zrn_commercial_reports_root"
+        action="action_zrn_commercial_reports_pipeline"
+        sequence="10"/>
+
+    <menuitem id="menu_zrn_commercial_reports_quotations"
+        name="Cotizaciones"
+        parent="menu_zrn_commercial_reports_root"
+        action="action_zrn_commercial_reports_quotations"
+        sequence="20"/>
+
+</odoo>

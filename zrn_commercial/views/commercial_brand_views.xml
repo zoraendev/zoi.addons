@@ -6,10 +6,16 @@
         <field name="model">zrn_commercial.commercial.brand</field>
         <field name="arch" type="xml">
             <tree string="Marcas comerciales">
+                <header>
+                    <button name="%(action_zrn_commercial_brand_import_wizard)d" type="action" string="Importar marcas" class="btn-primary"/>
+                </header>
                 <field name="active" optional="show" widget="boolean_toggle"/>
                 <field name="name"/>
                 <field name="code" optional="show"/>
+                <field name="commercial_status" widget="badge" optional="show"/>
                 <field name="owner_name" optional="show"/>
+                <field name="opportunity_count" string="Oportunidades" optional="show"/>
+                <field name="quotation_count" string="Cotizaciones" optional="show"/>
                 <field name="country_id" optional="show"/>
                 <field name="product_count" string="Productos"/>
                 <field name="company_id" groups="base.group_multi_company" optional="show"/>
@@ -23,6 +29,17 @@
         <field name="arch" type="xml">
             <form string="Marca comercial">
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_opportunities" type="object" class="oe_stat_button" icon="fa-line-chart">
+                            <field name="opportunity_count" string="Oportunidades" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_customers" type="object" class="oe_stat_button" icon="fa-users">
+                            <field name="customer_count" string="Clientes" widget="statinfo"/>
+                        </button>
+                        <button name="action_open_quotations" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="quotation_count" string="Cotizaciones" widget="statinfo"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" placeholder="Nombre de la marca"/>
@@ -31,6 +48,7 @@
                     <group>
                         <group>
                             <field name="code"/>
+                            <field name="commercial_status"/>
                             <field name="owner_name" placeholder="Empresa o grupo titular de la marca"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="active"/>
@@ -55,7 +73,13 @@
                         <page string="Detalle">
                             <group>
                                 <field name="description" placeholder="Descripcion de la marca"/>
+                                <field name="playbook_notes" placeholder="Lineamientos comerciales, foco y uso interno"/>
                                 <field name="notes" placeholder="Notas internas"/>
+                            </group>
+                            <group>
+                                <field name="suggested_channel_ids" widget="many2many_tags" options="{'no_create_edit': True}"/>
+                                <field name="responsible_user_ids" widget="many2many_tags"/>
+                                <field name="focus_product_ids" widget="many2many_tags"/>
                             </group>
                         </page>
                         <page string="Productos">
@@ -82,6 +106,17 @@
                                     </group>
                                 </form>
                             </field>
+                        </page>
+                        <page string="Origen">
+                            <group>
+                                <field name="source_model_name" readonly="1"/>
+                                <field name="source_record_name" readonly="1"/>
+                                <field name="source_record_id" readonly="1"/>
+                                <field name="source_sync_date" readonly="1"/>
+                            </group>
+                            <group>
+                                <button name="action_sync_from_source" type="object" string="Sincronizar desde origen" class="btn-secondary" invisible="not source_record_id"/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

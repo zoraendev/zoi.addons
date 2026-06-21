@@ -20,6 +20,10 @@ class ZrnCommercialChannel(models.Model):
     )
     description = fields.Text(string='Descripcion')
     notes = fields.Text(string='Notas internas')
+    owner_user_id = fields.Many2one(
+        'res.users',
+        string='Responsable comercial',
+    )
     partner_link_ids = fields.One2many(
         'zrn_commercial.commercial.channel.partner',
         'channel_id',
@@ -28,6 +32,21 @@ class ZrnCommercialChannel(models.Model):
     partner_count = fields.Integer(
         string='Clientes / PDVs',
         compute='_compute_partner_count',
+        store=False,
+    )
+    opportunity_count = fields.Integer(
+        string='Oportunidades',
+        compute='_compute_related_counts',
+        store=False,
+    )
+    quotation_count = fields.Integer(
+        string='Cotizaciones',
+        compute='_compute_related_counts',
+        store=False,
+    )
+    account_without_followup_count = fields.Integer(
+        string='Cuentas sin seguimiento',
+        compute='_compute_related_counts',
         store=False,
     )
 
@@ -48,6 +67,23 @@ class ZrnCommercialChannel(models.Model):
     def _compute_partner_count(self):
         for channel in self:
             channel.partner_count = len(channel.partner_link_ids)
+
+    @api.depends('partner_link_ids', 'partner_link_ids.partner_id')
+    def _compute_related_counts(self):
+        lead_model = self.env['crm.lead'].sudo()
+        order_model = self.env['sale.order'].sudo()
+        for channel in self:
+            channel.opportunity_count = lead_model.search_count([
+                ('zrn_channel_id', '=', channel.id),
+                ('type', '=', 'opportunity'),
+            ])
+            channel.quotation_count = order_model.search_count([
+                ('zrn_channel_id', '=', channel.id),
+                ('state', 'in', ['draft', 'sent', 'sale']),
+            ])
+            channel.account_without_followup_count = len(channel.partner_link_ids.filtered(
+                lambda link: not link.partner_id.activity_state or link.partner_id.activity_state == 'overdue'
+            ))
 
     @api.model
     def _seed_default_channel_partners(self):
@@ -81,6 +117,26 @@ class ZrnCommercialChannel(models.Model):
                         'partner_id': partner.id,
                         'notes': 'Carga inicial automatica por coincidencia de nombre.',
                     })
+
+    def action_open_customers(self):
+        self.ensure_one()
+        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_customers')
+        action['domain'] = [('zrn_primary_channel_id', '=', self.id)]
+        return action
+
+    def action_open_opportunities(self):
+        self.ensure_one()
+        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_opportunities')
+        action['domain'] = [('zrn_channel_id', '=', self.id), ('type', '=', 'opportunity')]
+        action['context'] = dict(self.env.context, default_zrn_channel_id=self.id)
+        return action
+
+    def action_open_quotations(self):
+        self.ensure_one()
+        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_quotations')
+        action['domain'] = [('zrn_channel_id', '=', self.id)]
+        action['context'] = dict(self.env.context, default_zrn_channel_id=self.id)
+        return action
 
 
 class ZrnCommercialChannelPartner(models.Model):

@@ -45,6 +45,30 @@ class ZrnCommercialHome(ZrnCommercialNavigationMixin, models.Model):
         required=True,
         default='overview',
     )
+    brand_count = fields.Integer(compute='_compute_dashboard_counts')
+    channel_count = fields.Integer(compute='_compute_dashboard_counts')
+    prospect_count = fields.Integer(compute='_compute_dashboard_counts')
+    opportunity_count = fields.Integer(compute='_compute_dashboard_counts')
+    quotation_count = fields.Integer(compute='_compute_dashboard_counts')
+    overdue_count = fields.Integer(compute='_compute_dashboard_counts')
+
+    def _compute_dashboard_counts(self):
+        brand_model = self.env['zrn_commercial.commercial.brand'].sudo()
+        channel_model = self.env['zrn_commercial.commercial.channel'].sudo()
+        lead_model = self.env['crm.lead'].sudo()
+        order_model = self.env['sale.order'].sudo()
+        today = fields.Date.today()
+        for record in self:
+            record.brand_count = brand_model.search_count([('active', '=', True)])
+            record.channel_count = channel_model.search_count([('active', '=', True)])
+            record.prospect_count = lead_model.search_count([('type', '=', 'lead'), ('active', '=', True)])
+            record.opportunity_count = lead_model.search_count([('type', '=', 'opportunity'), ('active', '=', True)])
+            record.quotation_count = order_model.search_count([('state', 'in', ['draft', 'sent'])])
+            record.overdue_count = lead_model.search_count([
+                ('type', '=', 'opportunity'),
+                ('activity_date_deadline', '<', today),
+                ('active', '=', True),
+            ])
 
     def action_open_brands(self):
         """
@@ -73,6 +97,26 @@ class ZrnCommercialHome(ZrnCommercialNavigationMixin, models.Model):
         """
         self.ensure_one()
         return self._open_singleton_action('zrn_commercial.action_zrn_commercial_pricing')
+
+    def action_open_prospects(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_commercial.action_zrn_commercial_prospects')
+
+    def action_open_opportunities(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_commercial.action_zrn_commercial_opportunities')
+
+    def action_open_customers(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_commercial.action_zrn_commercial_customers')
+
+    def action_open_quotations(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_commercial.action_zrn_commercial_quotations')
+
+    def action_open_reports(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_commercial.action_zrn_commercial_reports_pipeline')
 
 
 class ZrnCommercialPortfolio(ZrnCommercialNavigationMixin, models.Model):

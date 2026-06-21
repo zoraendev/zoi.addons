@@ -26,6 +26,12 @@
                     <field name="name" invisible="1"/>
                     <field name="page_key" invisible="1"/>
                     <field name="sequence" invisible="1"/>
+                    <field name="brand_count" invisible="1"/>
+                    <field name="channel_count" invisible="1"/>
+                    <field name="prospect_count" invisible="1"/>
+                    <field name="opportunity_count" invisible="1"/>
+                    <field name="quotation_count" invisible="1"/>
+                    <field name="overdue_count" invisible="1"/>
 
                     <div class="zrn_planning_production_shell">
                         <!-- Seccion Hero con KPIs iniciales -->
@@ -33,24 +39,24 @@
                             <div class="zrn_planning_production_hero_copy">
                                 <div class="zrn_planning_production_kicker">Zoraen Commercial</div>
                                 <div class="oe_title">
-                                    <h1>Centro de planeacion comercial</h1>
+                                    <h1>Centro comercial operativo</h1>
                                 </div>
                                 <div class="zrn_planning_production_intro">
-                                    Centro operativo comercial para coordinar marcas, portafolio de productos y precios sugeridos.
+                                    Prospectos, oportunidades, clientes, cotizaciones, marcas y canales desde una sola capa comercial de Zoraen.
                                 </div>
                             </div>
                                 <div class="zrn_planning_production_quickstats">
                                 <div class="zrn_planning_production_stat">
-                                    <span class="zrn_planning_production_stat_label">Frentes</span>
-                                    <span class="zrn_planning_production_stat_value">4</span>
+                                    <span class="zrn_planning_production_stat_label">Prospectos</span>
+                                    <span class="zrn_planning_production_stat_value"><field name="prospect_count"/></span>
                                 </div>
                                 <div class="zrn_planning_production_stat">
-                                    <span class="zrn_planning_production_stat_label">Marcas</span>
-                                    <span class="zrn_planning_production_stat_value">Activas</span>
+                                    <span class="zrn_planning_production_stat_label">Oportunidades</span>
+                                    <span class="zrn_planning_production_stat_value"><field name="opportunity_count"/></span>
                                 </div>
                                 <div class="zrn_planning_production_stat">
-                                    <span class="zrn_planning_production_stat_label">Objetivo</span>
-                                    <span class="zrn_planning_production_stat_value">Analisis</span>
+                                    <span class="zrn_planning_production_stat_label">Cotizaciones</span>
+                                    <span class="zrn_planning_production_stat_value"><field name="quotation_count"/></span>
                                 </div>
                             </div>
                         </div>
@@ -61,10 +67,38 @@
                                 <div class="zrn_planning_production_section_title">Frentes de trabajo comercial</div>
                                 <div class="zrn_planning_production_menu">
                                     <button
+                                        name="action_open_prospects"
+                                        type="object"
+                                        icon="fa-filter"
+                                        string="Prospectos"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
+                                    />
+                                    <button
+                                        name="action_open_opportunities"
+                                        type="object"
+                                        icon="fa-line-chart"
+                                        string="Oportunidades"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
+                                    />
+                                    <button
+                                        name="action_open_customers"
+                                        type="object"
+                                        icon="fa-users"
+                                        string="Clientes"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_primary"
+                                    />
+                                    <button
+                                        name="action_open_quotations"
+                                        type="object"
+                                        icon="fa-file-text-o"
+                                        string="Cotizaciones"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_tertiary"
+                                    />
+                                    <button
                                         name="action_open_brands"
                                         type="object"
                                         icon="fa-tags"
-                                        string="Marcas comerciales"
+                                        string="Marcas"
                                         class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
                                     />
                                     <button
@@ -74,20 +108,6 @@
                                         string="Canales"
                                         class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
                                     />
-                                    <button
-                                        name="action_open_portfolio"
-                                        type="object"
-                                        icon="fa-folder-open"
-                                        string="Portafolio"
-                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_primary"
-                                    />
-                                    <button
-                                        name="action_open_pricing"
-                                        type="object"
-                                        icon="fa-money"
-                                        string="Pricing"
-                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_tertiary"
-                                    />
                                 </div>
                             </div>
 
@@ -95,43 +115,50 @@
                             <div class="zrn_planning_production_panels">
                                 <div class="zrn_planning_production_panel zrn_planning_production_panel_wide">
                                     <div class="zrn_planning_production_panel_head">
-                                        <span>Contexto operativo</span>
-                                        <span>Canales y marcas</span>
+                                        <span>Base comercial</span>
+                                        <span>Marcas y canales</span>
                                     </div>
-                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_list">
-                                        <div class="zrn_planning_production_placeholder_row"/>
-                                        <div class="zrn_planning_production_placeholder_row"/>
-                                        <div class="zrn_planning_production_placeholder_row"/>
-                                        <div class="zrn_planning_production_placeholder_row"/>
-                                    </div>
-                                </div>
-
-                                <div class="zrn_planning_production_panel">
-                                    <div class="zrn_planning_production_panel_head">
-                                        <span>Alertas</span>
-                                        <span>Precios y margenes</span>
-                                    </div>
-                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_map">
-                                        <div class="zrn_planning_production_placeholder_blob"/>
-                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_1"/>
-                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_2"/>
-                                        <div class="zrn_planning_production_placeholder_dot zrn_planning_production_placeholder_dot_3"/>
+                                    <div class="zrn_planning_production_panel_body">
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span>Marcas activas</span>
+                                            <strong><field name="brand_count"/></strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span>Canales activos</span>
+                                            <strong><field name="channel_count"/></strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span>Cotizaciones abiertas</span>
+                                            <strong><field name="quotation_count"/></strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-2">
+                                            <span>Oportunidades vencidas</span>
+                                            <strong><field name="overdue_count"/></strong>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div class="zrn_planning_production_panel">
                                     <div class="zrn_planning_production_panel_head">
                                         <span>Seguimiento</span>
-                                        <span>Desempeno de portafolio</span>
+                                        <span>Acciones rapidas</span>
                                     </div>
-                                    <div class="zrn_planning_production_panel_body zrn_planning_production_placeholder_chart">
-                                        <div class="zrn_planning_production_placeholder_bars">
-                                            <div/>
-                                            <div/>
-                                            <div/>
-                                            <div/>
-                                            <div/>
-                                        </div>
+                                    <div class="zrn_planning_production_panel_body">
+                                        <div class="mb-2">Prioriza oportunidades con actividad vencida y cotizaciones abiertas.</div>
+                                        <button name="action_open_opportunities" type="object" string="Revisar pipeline" class="btn btn-secondary btn-sm mb-2"/>
+                                        <button name="action_open_reports" type="object" string="Abrir reportes" class="btn btn-secondary btn-sm"/>
+                                    </div>
+                                </div>
+
+                                <div class="zrn_planning_production_panel">
+                                    <div class="zrn_planning_production_panel_head">
+                                        <span>Clasificacion</span>
+                                        <span>Orden comercial</span>
+                                    </div>
+                                    <div class="zrn_planning_production_panel_body">
+                                        <div class="mb-2">Usa marcas y canales para mantener cartera, pipeline y cotizaciones alineadas.</div>
+                                        <button name="action_open_brands" type="object" string="Gestionar marcas" class="btn btn-secondary btn-sm mb-2"/>
+                                        <button name="action_open_channels" type="object" string="Gestionar canales" class="btn btn-secondary btn-sm"/>
                                     </div>
                                 </div>
                             </div>
@@ -293,6 +320,7 @@
         parent="menu_zrn_commercial_root"
         action="action_zrn_commercial_portfolio"
         sequence="20"
+        groups="base.group_no_one"
     />
 
     <menuitem
@@ -301,6 +329,7 @@
         parent="menu_zrn_commercial_root"
         action="action_zrn_commercial_pricing"
         sequence="30"
+        groups="base.group_no_one"
     />
 
 </odoo>
