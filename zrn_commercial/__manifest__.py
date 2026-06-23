@@ -29,5 +29,13 @@ Addon dedicado a la capa comercial operativa:
         'views/commercial_flow_views.xml',
         'views/commercial_hub_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            # Librería externa de ECharts cargada desde el módulo analítico común
+            'zrn_analitics/static/lib/echarts/echarts.min.js',
+            # Controlador JS para el rendering y control dinámico del dashboard comercial
+            'zrn_commercial/static/src/js/commercial_form_view.js',
+        ],
+    },
     'installable': True,
 }
