@@ -75,6 +75,14 @@ const PDV_TABS = [
   { key: "alertas", label: "Alertas", icon: "fa-bell-o" },
 ];
 
+const RRHH_TABS = [
+  { key: "overview", label: "Resumen", icon: "fa-home" },
+  { key: "predictor", label: "Predictor", icon: "fa-balance-scale" },
+  { key: "patrones", label: "Patrones Validados", icon: "fa-check-circle-o" },
+  { key: "checklist", label: "Checklist Entrevista", icon: "fa-list-ul" },
+  { key: "historico", label: "Historico", icon: "fa-table" },
+];
+
 const DEFAULT_FILTERS = Object.freeze({
   period_key: "ytd",
   channel_ids: [],
@@ -108,6 +116,42 @@ function cloneOperationsDefaultFilters() {
     channel_ids: [],
     product_channel_ids: [],
     brand_ids: [],
+  };
+}
+
+function cloneRrhhPredictorForm() {
+  return {
+    evaluation_date: "",
+    notes: "",
+    family_structure: "",
+    family_contact: "",
+    asset_congruence: "",
+    income_gaps: "",
+    living_context: "",
+    tattoo_visibility: "",
+    job_count: "",
+    conflict_history: "",
+    recent_alcohol: "",
+    sleep_condition: "",
+    breakfast_condition: "",
+  };
+}
+
+function cloneRrhhChecklistForm() {
+  return {
+    interview_date: "",
+    observations: "",
+    family_parents: false,
+    family_legal_issues: false,
+    family_living: false,
+    finance_assets: false,
+    finance_story: false,
+    finance_gaps: false,
+    work_job_count: false,
+    work_exit_reason: false,
+    work_tattoos: false,
+    exam_rest_food: false,
+    exam_alcohol: false,
   };
 }
 
@@ -233,6 +277,7 @@ class ZrnAnalyticsHubAction extends Component {
     this.financialTabs = FINANCIAL_TABS;
     this.operationsTabs = OPERATIONS_TABS;
     this.pdvTabs = PDV_TABS;
+    this.rrhhTabs = RRHH_TABS;
     this._charts = new Map();
     this._chartRenderTimeouts = [];
     this._chartRenderFrame = 0;
@@ -247,6 +292,7 @@ class ZrnAnalyticsHubAction extends Component {
       financialTab: "overview",
       operationsTab: "overview",
       pdvTab: "overview",
+      rrhhTab: "overview",
       commercialSidebarOpen: false,
       pdvSidebarOpen: false,
       commercialPayload: null,
@@ -257,6 +303,8 @@ class ZrnAnalyticsHubAction extends Component {
       operationsLoading: false,
       pdvPayload: null,
       pdvLoading: false,
+      rrhhPayload: null,
+      rrhhLoading: false,
       coveragePayload: null,
       coverageLoading: false,
       channelPayload: null,
@@ -281,6 +329,10 @@ class ZrnAnalyticsHubAction extends Component {
       rfmFilterSearch: "",
       bcgFilter: "all",
       productChartType: "bar",
+      rrhhPredictorForm: cloneRrhhPredictorForm(),
+      rrhhChecklistForm: cloneRrhhChecklistForm(),
+      rrhhHistorySearch: "",
+      rrhhHistoryRisk: "",
       sorts: {
         top_products: { column: "sales_amount", order: "desc" },
         coverage_by_channel: { column: "revenue", order: "desc" },
@@ -318,6 +370,7 @@ class ZrnAnalyticsHubAction extends Component {
         bcg_skus: { column: "r", order: "desc" },
         sellin_pdv: { column: "sellin_q", order: "desc" },
         sellin_sku: { column: "sellin_q", order: "desc" },
+        rrhh_historical: { column: "created_at", order: "desc" },
       },
     });
     onWillStart(async () => {
@@ -599,6 +652,23 @@ class ZrnAnalyticsHubAction extends Component {
     return this.sortData(this.pdvPayload.alerts?.rows || [], sort.column, sort.order);
   }
 
+  get sortedRrhhHistorical() {
+    const sort = this.state.sorts.rrhh_historical;
+    let list = this.sortData(this.rrhhPayload.historical_rows || [], sort.column, sort.order);
+    if (this.state.rrhhHistoryRisk) {
+      list = list.filter((row) => row.predictor_risk_level === this.state.rrhhHistoryRisk);
+    }
+    if (this.state.rrhhHistorySearch) {
+      const query = this.state.rrhhHistorySearch.toLowerCase();
+      list = list.filter((row) =>
+        [row.name, row.job_name, row.stage_name, row.pattern_labels]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(query))
+      );
+    }
+    return list;
+  }
+
   async setActiveHub(hubKey) {
     this.state.activeHub = hubKey;
     if (hubKey === "pdv") {
@@ -614,6 +684,11 @@ class ZrnAnalyticsHubAction extends Component {
     if (hubKey === "operations") {
       await this.loadOperationsPayload();
       this.syncOperationsStateFromPayload();
+      this.queueChartRender();
+      return;
+    }
+    if (hubKey === "rrhh") {
+      await this.loadRrhhPayload();
       this.queueChartRender();
       return;
     }
@@ -665,6 +740,13 @@ class ZrnAnalyticsHubAction extends Component {
     this.closePdvSidebar();
     this.state.analyticsDetailModal = null;
     await this.loadPdvPayload();
+    this.queueChartRender();
+  }
+
+  async setRrhhTab(tabKey) {
+    this.state.rrhhTab = tabKey;
+    this.closeCommercialSidebar();
+    await this.loadRrhhPayload();
     this.queueChartRender();
   }
 
@@ -765,6 +847,24 @@ class ZrnAnalyticsHubAction extends Component {
       this.syncPdvFiltersFromPayload(payload);
     } finally {
       this.state.pdvLoading = false;
+    }
+  }
+
+  async loadRrhhPayload(force = false, filters = null) {
+    if (this.state.rrhhPayload && !force && !filters) {
+      return;
+    }
+    this.state.rrhhLoading = true;
+    try {
+      const payload = await this.orm.call(
+        "zrn_analitics.home",
+        "get_rrhh_hub_payload",
+        [filters || this.state.rrhhPayload?.active_filters || {}],
+      );
+      this.state.rrhhPayload = payload;
+      this.syncRrhhFormsFromPayload(payload);
+    } finally {
+      this.state.rrhhLoading = false;
     }
   }
 
@@ -878,6 +978,23 @@ class ZrnAnalyticsHubAction extends Component {
       brand_ids: normalizeFilterIds(activeFilters.brand_ids),
       category_ids: normalizeFilterIds(activeFilters.category_ids),
       search: activeFilters.search || "",
+    };
+  }
+
+  syncRrhhFormsFromPayload(payload) {
+    const predictor = payload?.current_predictor;
+    const checklist = payload?.current_checklist;
+    this.state.rrhhPredictorForm = {
+      ...cloneRrhhPredictorForm(),
+      evaluation_date: predictor?.evaluation_date || "",
+      notes: predictor?.notes || "",
+      ...(predictor?.answers || {}),
+    };
+    this.state.rrhhChecklistForm = {
+      ...cloneRrhhChecklistForm(),
+      interview_date: checklist?.interview_date || "",
+      observations: checklist?.observations || "",
+      ...(checklist?.answers || {}),
     };
   }
 
@@ -1199,6 +1316,100 @@ class ZrnAnalyticsHubAction extends Component {
     await this.loadPdvPayload(true);
   }
 
+  async selectRrhhApplicant(applicantId) {
+    if (!applicantId) {
+      return;
+    }
+    await this.loadRrhhPayload(true, { selected_applicant_id: applicantId });
+  }
+
+  onRrhhHistoryRiskSelect(value) {
+    this.state.rrhhHistoryRisk = value;
+  }
+
+  updateRrhhPredictorValue(key, value) {
+    this.state.rrhhPredictorForm = {
+      ...this.state.rrhhPredictorForm,
+      [key]: value,
+    };
+  }
+
+  updateRrhhChecklistValue(key, value) {
+    this.state.rrhhChecklistForm = {
+      ...this.state.rrhhChecklistForm,
+      [key]: value,
+    };
+  }
+
+  async saveRrhhPredictor() {
+    const applicantId = this.state.rrhhPayload?.active_filters?.selected_applicant_id;
+    if (!applicantId) {
+      return;
+    }
+    this.state.rrhhLoading = true;
+    try {
+      const payload = await this.orm.call(
+        "zrn_analitics.home",
+        "upsert_rrhh_predictor",
+        [applicantId, this.state.rrhhPredictorForm],
+      );
+      this.state.rrhhPayload = payload;
+      this.syncRrhhFormsFromPayload(payload);
+    } finally {
+      this.state.rrhhLoading = false;
+    }
+  }
+
+  async saveRrhhChecklist() {
+    const applicantId = this.state.rrhhPayload?.active_filters?.selected_applicant_id;
+    if (!applicantId) {
+      return;
+    }
+    this.state.rrhhLoading = true;
+    try {
+      const payload = await this.orm.call(
+        "zrn_analitics.home",
+        "upsert_rrhh_checklist",
+        [applicantId, this.state.rrhhChecklistForm],
+      );
+      this.state.rrhhPayload = payload;
+      this.syncRrhhFormsFromPayload(payload);
+    } finally {
+      this.state.rrhhLoading = false;
+    }
+  }
+
+  async recomputeRrhhPatterns() {
+    const applicantId = this.state.rrhhPayload?.active_filters?.selected_applicant_id;
+    if (!applicantId) {
+      return;
+    }
+    this.state.rrhhLoading = true;
+    try {
+      const payload = await this.orm.call(
+        "zrn_analitics.home",
+        "recompute_rrhh_patterns",
+        [applicantId],
+      );
+      this.state.rrhhPayload = payload;
+      this.syncRrhhFormsFromPayload(payload);
+    } finally {
+      this.state.rrhhLoading = false;
+    }
+  }
+
+  async useRrhhHistoricalApplicant(applicantId) {
+    await this.selectRrhhApplicant(applicantId);
+    this.state.rrhhTab = "predictor";
+  }
+
+  openRrhhApplicant(applicantId) {
+    if (!applicantId) {
+      return;
+    }
+    this.openRecordModal("hr.applicant", applicantId);
+  }
+
   onOverviewSearchKeydown(ev) {
     if (ev.key === "Enter") {
       this.applyOverviewFilters();
@@ -1455,9 +1666,19 @@ class ZrnAnalyticsHubAction extends Component {
     );
   }
 
+  get activeRrhhTab() {
+    return (
+      this.rrhhTabs.find((tab) => tab.key === this.state.rrhhTab) ||
+      this.rrhhTabs[0]
+    );
+  }
+
   get activeHubSummary() {
     if (this.state.activeHub === "pdv") {
       return this.pdvPayload.summary || {};
+    }
+    if (this.state.activeHub === "rrhh") {
+      return this.rrhhPayload.summary || {};
     }
     if (this.state.activeHub === "operations") {
       return this.operationsPayload.summary || {};
@@ -1507,6 +1728,62 @@ class ZrnAnalyticsHubAction extends Component {
         portfolio_rows: [],
       }
     );
+  }
+
+  get rrhhPayload() {
+    return (
+      this.state.rrhhPayload || {
+        summary: {
+          sync_label: "",
+          applicant_count: 0,
+          predictor_count: 0,
+          checklist_count: 0,
+          pattern_count: 0,
+          high_risk_count: 0,
+          pending_count: 0,
+        },
+        active_filters: { selected_applicant_id: false },
+        applicant_options: [],
+        current_applicant: null,
+        current_predictor: null,
+        current_checklist: null,
+        current_patterns: {
+          matched_pattern_count: 0,
+          severity_level: "low",
+          summary_text: "",
+          patterns: [],
+          current_patterns: [],
+        },
+        overview: {
+          risk_distribution: [],
+          stage_distribution: [],
+          job_distribution: [],
+          latest_rows: [],
+        },
+        predictor_config: { questions: [], thresholds: [] },
+        checklist_template: { sections: [] },
+        validated_patterns: { non_predictive_factors: [], library: [] },
+        historical_rows: [],
+        notes_sources: [],
+        empty_message: "",
+      }
+    );
+  }
+
+  get rrhhPredictorFactors() {
+    const groups = new Map();
+    (this.rrhhPayload.predictor_config?.questions || []).forEach((question) => {
+      if (!groups.has(question.factor_key)) {
+        groups.set(question.factor_key, {
+          key: question.factor_key,
+          label: question.factor,
+          badge: question.badge,
+          questions: [],
+        });
+      }
+      groups.get(question.factor_key).questions.push(question);
+    });
+    return [...groups.values()];
   }
 
   get operationsPayload() {
@@ -2022,6 +2299,26 @@ class ZrnAnalyticsHubAction extends Component {
     return choices;
   }
 
+  getRrhhApplicantChoices(options) {
+    return [
+      { value: "", label: "Seleccionar solicitud" },
+      ...(options || []).map((option) => ({
+        value: option.id,
+        label: option.job_name ? `${option.name} · ${option.job_name}` : option.name,
+      })),
+    ];
+  }
+
+  getRrhhRiskChoices(options) {
+    return [
+      { value: "", label: "Todos los riesgos" },
+      ...(options || []).map((option) => ({
+        value: option.key,
+        label: option.label,
+      })),
+    ];
+  }
+
   getPeriodChoices(options) {
     // FIX: El backend en Python envía las opciones de periodo usando la estructura {'value': ..., 'label': ...}.
     // Se mapea con option.value y se mantiene fallback a option.key para compatibilidad.
@@ -2113,6 +2410,14 @@ class ZrnAnalyticsHubAction extends Component {
         this.renderPdvOtrosChannelsChart();
       } catch (error) {
         console.error("ZRN pdv chart error", error);
+      }
+    }
+    if (this.state.activeHub === "rrhh") {
+      try {
+        this.renderRrhhRiskChart();
+        this.renderRrhhStageChart();
+      } catch (error) {
+        console.error("ZRN rrhh chart error", error);
       }
     }
   }
@@ -3598,6 +3903,77 @@ class ZrnAnalyticsHubAction extends Component {
           itemStyle: { color: "#475569", borderRadius: [0, 6, 6, 0] },
         },
       ],
+    }, true);
+  }
+
+  renderRrhhRiskChart() {
+    if (this.state.rrhhTab !== "overview") {
+      return;
+    }
+    const rows = this.rrhhPayload.overview?.risk_distribution || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("rrhh-risk-distribution");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      color: ["#16a34a", "#f59e0b", "#ea580c", "#dc2626"],
+      tooltip: { trigger: "item" },
+      legend: {
+        orient: "vertical",
+        right: 0,
+        top: "middle",
+        textStyle: { color: "#5f6b7a", fontSize: 11 },
+      },
+      series: [{
+        type: "pie",
+        radius: ["48%", "74%"],
+        center: ["34%", "50%"],
+        itemStyle: { borderColor: "#ffffff", borderWidth: 2 },
+        label: { show: false },
+        data: rows.map((row) => ({ name: row.label, value: Number(row.value || 0) })),
+      }],
+    }, true);
+  }
+
+  renderRrhhStageChart() {
+    if (this.state.rrhhTab !== "overview") {
+      return;
+    }
+    const rows = this.rrhhPayload.overview?.stage_distribution || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("rrhh-stage-distribution");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].slice(0, 8).reverse();
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 12, right: 16, bottom: 12, left: 180, containLabel: false },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((row) => row.label),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { color: "#334155", fontSize: 11, width: 170, overflow: "truncate" },
+      },
+      series: [{
+        type: "bar",
+        data: reversed.map((row) => Number(row.value || 0)),
+        barWidth: 18,
+        itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
+      }],
     }, true);
   }
 
