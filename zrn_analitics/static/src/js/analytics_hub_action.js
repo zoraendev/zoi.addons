@@ -67,6 +67,14 @@ const OPERATIONS_TABS = [
   { key: "alertas", label: "Alertas", icon: "fa-bell-o" },
 ];
 
+const PDV_TABS = [
+  { key: "overview", label: "Overview", icon: "fa-home" },
+  { key: "ranking", label: "Ranking PDVs", icon: "fa-list-ol" },
+  { key: "canales", label: "Canales PDV", icon: "fa-exchange" },
+  { key: "otros", label: "Otras cadenas", icon: "fa-sitemap" },
+  { key: "alertas", label: "Alertas", icon: "fa-bell-o" },
+];
+
 const DEFAULT_FILTERS = Object.freeze({
   period_key: "ytd",
   channel_ids: [],
@@ -87,6 +95,7 @@ function cloneDefaultFilters() {
 const OPERATIONS_DEFAULT_FILTERS = Object.freeze({
   period_key: "ytd",
   channel_ids: [],
+  product_channel_ids: [],
   brand_ids: [],
   abc_class: "",
   rotation_key: "",
@@ -97,6 +106,7 @@ function cloneOperationsDefaultFilters() {
   return {
     ...OPERATIONS_DEFAULT_FILTERS,
     channel_ids: [],
+    product_channel_ids: [],
     brand_ids: [],
   };
 }
@@ -222,6 +232,7 @@ class ZrnAnalyticsHubAction extends Component {
     this.commercialTabs = COMMERCIAL_TABS;
     this.financialTabs = FINANCIAL_TABS;
     this.operationsTabs = OPERATIONS_TABS;
+    this.pdvTabs = PDV_TABS;
     this._charts = new Map();
     this._chartRenderTimeouts = [];
     this._chartRenderFrame = 0;
@@ -235,17 +246,22 @@ class ZrnAnalyticsHubAction extends Component {
       commercialTab: "overview",
       financialTab: "overview",
       operationsTab: "overview",
+      pdvTab: "overview",
       commercialSidebarOpen: false,
+      pdvSidebarOpen: false,
       commercialPayload: null,
       commercialLoading: false,
       financialPayload: null,
       financialLoading: false,
       operationsPayload: null,
       operationsLoading: false,
+      pdvPayload: null,
+      pdvLoading: false,
       coveragePayload: null,
       coverageLoading: false,
       channelPayload: null,
       channelLoading: false,
+      pdvFilters: cloneDefaultFilters(),
       financialFilters: cloneDefaultFilters(),
       operationsFilters: cloneOperationsDefaultFilters(),
       selectedPortfolioUnit: "",
@@ -281,6 +297,16 @@ class ZrnAnalyticsHubAction extends Component {
         operations_portfolio: { column: "revenue", order: "desc" },
         operations_trends: { column: "trend_pct", order: "desc" },
         operations_forecast_channels: { column: "total_ytd", order: "desc" },
+        operations_inventory_risk: { column: "coverage_days", order: "asc" },
+        operations_inventory_overstock: { column: "coverage_days", order: "desc" },
+        operations_inventory_rotation: { column: "days_since_last", order: "desc" },
+        operations_purchase_suppliers: { column: "spend", order: "desc" },
+        operations_purchase_orders: { column: "open_amount", order: "desc" },
+        operations_purchase_backlog: { column: "open_amount", order: "desc" },
+        operations_purchase_leadtime: { column: "avg_lead_time_days", order: "desc" },
+        pdv_ranking: { column: "rev", order: "desc" },
+        pdv_chain: { column: "rev", order: "desc" },
+        pdv_alerts: { column: "days_since_last", order: "desc" },
         all_clients: { column: "rev", order: "desc" },
         rfm_clients: { column: "rev", order: "desc" },
         market_basket: { column: "lift", order: "desc" },
@@ -298,6 +324,7 @@ class ZrnAnalyticsHubAction extends Component {
       await Promise.all([
         this.loadCommercialPayload(),
         this.loadCoveragePayload(),
+        this.loadPdvPayload(),
       ]);
     });
     onMounted(() => {
@@ -443,6 +470,41 @@ class ZrnAnalyticsHubAction extends Component {
     return this.sortData(this.operationsPayload.forecast?.channel_pace || [], sort.column, sort.order);
   }
 
+  get sortedOperationsInventoryRisk() {
+    const sort = this.state.sorts.operations_inventory_risk;
+    return this.sortData(this.operationsPayload.inventory?.risk_rows || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsInventoryOverstock() {
+    const sort = this.state.sorts.operations_inventory_overstock;
+    return this.sortData(this.operationsPayload.inventory?.overstock_rows || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsInventoryRotation() {
+    const sort = this.state.sorts.operations_inventory_rotation;
+    return this.sortData(this.operationsPayload.inventory?.rotation_rows || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsPurchaseSuppliers() {
+    const sort = this.state.sorts.operations_purchase_suppliers;
+    return this.sortData(this.operationsPayload.purchases?.supplier_rows || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsPurchaseOrders() {
+    const sort = this.state.sorts.operations_purchase_orders;
+    return this.sortData(this.operationsPayload.purchases?.open_orders || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsPurchaseBacklog() {
+    const sort = this.state.sorts.operations_purchase_backlog;
+    return this.sortData(this.operationsPayload.purchases?.backlog_rows || [], sort.column, sort.order);
+  }
+
+  get sortedOperationsPurchaseLeadtime() {
+    const sort = this.state.sorts.operations_purchase_leadtime;
+    return this.sortData(this.operationsPayload.purchases?.leadtime_rows || [], sort.column, sort.order);
+  }
+
   get sortedAllClients() {
     const sort = this.state.sorts.all_clients;
     return this.sortData(this.commercialPayload?.all_clients || [], sort.column, sort.order);
@@ -517,8 +579,33 @@ class ZrnAnalyticsHubAction extends Component {
     return this.sortData(data.by_sku || [], sort.column, sort.order);
   }
 
+  get sortedPdvRanking() {
+    const sort = this.state.sorts.pdv_ranking;
+    return this.sortData(this.pdvPayload.ranking_rows || [], sort.column, sort.order);
+  }
+
+  get sortedPdvChannelRows() {
+    const sort = this.state.sorts.pdv_chain;
+    return this.sortData(this.pdvPayload.channel_compare?.rows || [], sort.column, sort.order);
+  }
+
+  get sortedPdvOtrosRows() {
+    const sort = this.state.sorts.pdv_chain;
+    return this.sortData(this.pdvPayload.otros?.rows || [], sort.column, sort.order);
+  }
+
+  get sortedPdvAlerts() {
+    const sort = this.state.sorts.pdv_alerts;
+    return this.sortData(this.pdvPayload.alerts?.rows || [], sort.column, sort.order);
+  }
+
   async setActiveHub(hubKey) {
     this.state.activeHub = hubKey;
+    if (hubKey === "pdv") {
+      await this.loadPdvPayload();
+      this.queueChartRender();
+      return;
+    }
     if (hubKey === "financial") {
       await this.loadFinancialPayload();
       this.queueChartRender();
@@ -573,9 +660,20 @@ class ZrnAnalyticsHubAction extends Component {
     this.queueChartRender();
   }
 
+  async setPdvTab(tabKey) {
+    this.state.pdvTab = tabKey;
+    this.closePdvSidebar();
+    this.state.analyticsDetailModal = null;
+    await this.loadPdvPayload();
+    this.queueChartRender();
+  }
+
   syncResponsivePanels() {
     if (window.innerWidth > 1200 && this.state.commercialSidebarOpen) {
       this.state.commercialSidebarOpen = false;
+    }
+    if (window.innerWidth > 1200 && this.state.pdvSidebarOpen) {
+      this.state.pdvSidebarOpen = false;
     }
   }
 
@@ -585,6 +683,14 @@ class ZrnAnalyticsHubAction extends Component {
 
   closeCommercialSidebar() {
     this.state.commercialSidebarOpen = false;
+  }
+
+  togglePdvSidebar() {
+    this.state.pdvSidebarOpen = !this.state.pdvSidebarOpen;
+  }
+
+  closePdvSidebar() {
+    this.state.pdvSidebarOpen = false;
   }
 
   async loadCommercialPayload(force = false) {
@@ -641,6 +747,24 @@ class ZrnAnalyticsHubAction extends Component {
       this.syncOperationsStateFromPayload();
     } finally {
       this.state.operationsLoading = false;
+    }
+  }
+
+  async loadPdvPayload(force = false) {
+    if (this.state.pdvPayload && !force) {
+      return;
+    }
+    this.state.pdvLoading = true;
+    try {
+      const payload = await this.orm.call(
+        "zrn_analitics.home",
+        "get_pdv_hub_payload",
+        [this.state.pdvFilters],
+      );
+      this.state.pdvPayload = payload;
+      this.syncPdvFiltersFromPayload(payload);
+    } finally {
+      this.state.pdvLoading = false;
     }
   }
 
@@ -738,9 +862,21 @@ class ZrnAnalyticsHubAction extends Component {
     this.state.operationsFilters = {
       period_key: activeFilters.period_key || OPERATIONS_DEFAULT_FILTERS.period_key,
       channel_ids: normalizeFilterIds(activeFilters.channel_ids),
+      product_channel_ids: normalizeFilterIds(activeFilters.product_channel_ids),
       brand_ids: normalizeFilterIds(activeFilters.brand_ids),
       abc_class: activeFilters.abc_class || "",
       rotation_key: activeFilters.rotation_key || "",
+      search: activeFilters.search || "",
+    };
+  }
+
+  syncPdvFiltersFromPayload(payload) {
+    const activeFilters = payload?.active_filters || {};
+    this.state.pdvFilters = {
+      period_key: activeFilters.period_key || DEFAULT_FILTERS.period_key,
+      channel_ids: normalizeFilterIds(activeFilters.channel_ids),
+      brand_ids: normalizeFilterIds(activeFilters.brand_ids),
+      category_ids: normalizeFilterIds(activeFilters.category_ids),
       search: activeFilters.search || "",
     };
   }
@@ -846,7 +982,17 @@ class ZrnAnalyticsHubAction extends Component {
     this.state.operationsFilters = {
       ...this.state.operationsFilters,
       [key]:
-        key === "channel_ids" || key === "brand_ids"
+        key === "channel_ids" || key === "product_channel_ids" || key === "brand_ids"
+          ? normalizeFilterIds(value)
+          : value ?? "",
+    };
+  }
+
+  updatePdvFilter(key, value) {
+    this.state.pdvFilters = {
+      ...this.state.pdvFilters,
+      [key]:
+        key === "channel_ids" || key === "brand_ids" || key === "category_ids"
           ? normalizeFilterIds(value)
           : value ?? "",
     };
@@ -941,6 +1087,10 @@ class ZrnAnalyticsHubAction extends Component {
     this.updateOperationsFilter("channel_ids", records.map((r) => r.id));
   }
 
+  onOperationsProductChannelsChange(records) {
+    this.updateOperationsFilter("product_channel_ids", records.map((r) => r.id));
+  }
+
   onOperationsBrandsChange(records) {
     this.updateOperationsFilter("brand_ids", records.map((r) => r.id));
   }
@@ -951,6 +1101,22 @@ class ZrnAnalyticsHubAction extends Component {
 
   onOperationsRotationSelect(value) {
     this.updateOperationsFilter("rotation_key", value);
+  }
+
+  onPdvPeriodSelect(value) {
+    this.updatePdvFilter("period_key", value);
+  }
+
+  onPdvChannelsChange(records) {
+    this.updatePdvFilter("channel_ids", records.map((r) => r.id));
+  }
+
+  onPdvBrandsChange(records) {
+    this.updatePdvFilter("brand_ids", records.map((r) => r.id));
+  }
+
+  onPdvCategoriesChange(records) {
+    this.updatePdvFilter("category_ids", records.map((r) => r.id));
   }
 
   getOptionDomain(options) {
@@ -994,6 +1160,10 @@ class ZrnAnalyticsHubAction extends Component {
     await this.loadOperationsPayload(true);
   }
 
+  async applyPdvFilters() {
+    await this.loadPdvPayload(true);
+  }
+
   async clearOverviewFilters() {
     this.state.overviewFilters = cloneDefaultFilters();
     await this.loadCommercialPayload(true);
@@ -1022,6 +1192,11 @@ class ZrnAnalyticsHubAction extends Component {
   async clearOperationsFilters() {
     this.state.operationsFilters = cloneOperationsDefaultFilters();
     await this.loadOperationsPayload(true);
+  }
+
+  async clearPdvFilters() {
+    this.state.pdvFilters = cloneDefaultFilters();
+    await this.loadPdvPayload(true);
   }
 
   onOverviewSearchKeydown(ev) {
@@ -1060,6 +1235,12 @@ class ZrnAnalyticsHubAction extends Component {
     }
   }
 
+  onPdvSearchKeydown(ev) {
+    if (ev.key === "Enter") {
+      this.applyPdvFilters();
+    }
+  }
+
   openRecordModal(model, resId) {
     if (!resId) {
       return;
@@ -1079,6 +1260,17 @@ class ZrnAnalyticsHubAction extends Component {
       return;
     }
     this.state.analyticsDetailModal = detail;
+  }
+
+  openPdvRow(row) {
+    if (!row) {
+      return;
+    }
+    if (row.detail) {
+      this.openAnalyticsDetailModal(row.detail);
+      return;
+    }
+    this.openRecordModal("res.partner", row.partner_id);
   }
 
   openCustomerDetailById(partnerId) {
@@ -1168,6 +1360,24 @@ class ZrnAnalyticsHubAction extends Component {
     }
   }
 
+  openOperationsProductChannel(row) {
+    if (row?.product_channel_id) {
+      this.openRecordModal("zrn_commercial.product.channel", row.product_channel_id);
+    }
+  }
+
+  openOperationsSupplier(row) {
+    if (row?.partner_id) {
+      this.openRecordModal("res.partner", row.partner_id);
+    }
+  }
+
+  openOperationsPurchaseOrder(row) {
+    if (row?.order_id) {
+      this.openRecordModal("purchase.order", row.order_id);
+    }
+  }
+
   openOperationsPortfolioRow(row) {
     if (!row) {
       return;
@@ -1238,7 +1448,17 @@ class ZrnAnalyticsHubAction extends Component {
     );
   }
 
+  get activePdvTab() {
+    return (
+      this.pdvTabs.find((tab) => tab.key === this.state.pdvTab) ||
+      this.pdvTabs[0]
+    );
+  }
+
   get activeHubSummary() {
+    if (this.state.activeHub === "pdv") {
+      return this.pdvPayload.summary || {};
+    }
     if (this.state.activeHub === "operations") {
       return this.operationsPayload.summary || {};
     }
@@ -1309,6 +1529,7 @@ class ZrnAnalyticsHubAction extends Component {
         filter_options: {
           periods: [],
           channels: [],
+          product_channels: [],
           brands: [],
           abc_choices: [],
           rotation_choices: [],
@@ -1327,8 +1548,40 @@ class ZrnAnalyticsHubAction extends Component {
         decliners: [],
         missing_recent_sales: [],
         forecast: { monthly: [], channel_pace: [], next_month_label: "", next_month_blend: 0, runrate_annual: 0 },
+        inventory: {
+          summary: {
+            on_hand_units: 0,
+            available_units: 0,
+            reserved_units: 0,
+            inventory_value: 0,
+            risk_count: 0,
+            overstock_count: 0,
+            avg_coverage_days: 0,
+            dormant_pct: 0,
+          },
+          coverage_distribution: [],
+          brand_stock_mix: [],
+          product_channel_mix: [],
+          risk_rows: [],
+          overstock_rows: [],
+          rotation_rows: [],
+        },
+        purchases: {
+          summary: {
+            open_orders: 0,
+            open_amount: 0,
+            period_spend: 0,
+            avg_lead_time_days: 0,
+            late_lines: 0,
+            supplier_concentration_pct: 0,
+          },
+          spend_series: [],
+          supplier_rows: [],
+          open_orders: [],
+          backlog_rows: [],
+          leadtime_rows: [],
+        },
         alerts: [],
-        pending_tabs: { inventarios: true, compras: true },
         notes_sources: [],
       }
     );
@@ -1414,6 +1667,48 @@ class ZrnAnalyticsHubAction extends Component {
         summary_cards: [],
         rows: [],
         empty_message: "",
+      }
+    );
+  }
+
+  get pdvPayload() {
+    return (
+      this.state.pdvPayload || {
+        summary: {
+          sync_label: "",
+          period_label: "",
+          currency_symbol: "$",
+          total_pdvs: 0,
+          total_revenue: 0,
+          order_count: 0,
+          avg_ticket: 0,
+          active_channel_count: 0,
+          new_count: 0,
+          dormant_count: 0,
+          low_st_count: 0,
+          alert_count: 0,
+          top_pdv_name: "",
+          top_pdv_revenue: 0,
+        },
+        active_filters: cloneDefaultFilters(),
+        filter_options: {
+          periods: [],
+          channels: [],
+          brands: [],
+          categories: [],
+        },
+        empty_message: "",
+        revenue_series: [],
+        channel_coverage: [],
+        top_pdvs: [],
+        ranking_rows: [],
+        new_pdvs: [],
+        dormant_pdvs: [],
+        otros: { channels: [], rows: [] },
+        walmart: { summary: {}, by_month: [], rows: [] },
+        puma: { summary: {}, by_month: [], rows: [] },
+        alerts: { rows: [] },
+        notes_sources: [],
       }
     );
   }
@@ -1801,8 +2096,23 @@ class ZrnAnalyticsHubAction extends Component {
         this.renderOperationsPortfolioUnitsChart();
         this.renderOperationsTrendsChart();
         this.renderOperationsForecastChart();
+        this.renderOperationsInventoryCoverageChart();
+        this.renderOperationsInventoryBrandMixChart();
+        this.renderOperationsPurchaseSpendChart();
+        this.renderOperationsPurchaseSupplierChart();
       } catch (error) {
         console.error("ZRN operations chart error", error);
+      }
+    }
+    if (this.state.activeHub === "pdv") {
+      try {
+        this.renderPdvOverviewRevenueChart();
+        this.renderPdvOverviewCoverageChart();
+        this.renderPdvOverviewTopPdvChart();
+        this.renderPdvChannelChart();
+        this.renderPdvOtrosChannelsChart();
+      } catch (error) {
+        console.error("ZRN pdv chart error", error);
       }
     }
   }
@@ -2522,6 +2832,157 @@ class ZrnAnalyticsHubAction extends Component {
     }, true);
   }
 
+  renderOperationsInventoryCoverageChart() {
+    if (this.state.operationsTab !== "inventarios") {
+      return;
+    }
+    const rows = this.operationsPayload.inventory?.coverage_distribution || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("operations-inventory-coverage");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 18, right: 20, bottom: 26, left: 24, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: rows.map((item) => item.label),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      series: [{
+        type: "bar",
+        data: rows.map((item) => Number(item.value || 0)),
+        itemStyle: { color: "#1f4e8c", borderRadius: [6, 6, 0, 0] },
+        barMaxWidth: 40,
+      }],
+    }, true);
+  }
+
+  renderOperationsInventoryBrandMixChart() {
+    if (this.state.operationsTab !== "inventarios") {
+      return;
+    }
+    const mix = (this.operationsPayload.inventory?.brand_stock_mix || []).slice(0, 8);
+    if (!mix.length) {
+      return;
+    }
+    const chart = this.getChart("operations-inventory-brand-mix");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      color: ["#1f4e8c", "#2f65ad", "#78a7df", "#a9c7eb", "#d6e6f8", "#bd1730", "#0f766e", "#94a3b8"],
+      tooltip: { trigger: "item" },
+      legend: {
+        orient: "vertical",
+        right: 0,
+        top: "middle",
+        textStyle: { color: "#5f6b7a", fontSize: 11 },
+      },
+      series: [{
+        type: "pie",
+        radius: ["46%", "72%"],
+        center: ["34%", "50%"],
+        itemStyle: { borderColor: "#ffffff", borderWidth: 2 },
+        label: { show: false },
+        data: mix.map((item) => ({ name: item.name, value: Number(item.value || 0) })),
+      }],
+    }, true);
+  }
+
+  renderOperationsPurchaseSpendChart() {
+    if (this.state.operationsTab !== "compras") {
+      return;
+    }
+    const rows = this.operationsPayload.purchases?.spend_series || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("operations-purchases-spend");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 18, right: 20, bottom: 26, left: 24, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (value) => `${this.operationsPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      xAxis: {
+        type: "category",
+        data: rows.map((item) => item.label),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+      },
+      series: [{
+        type: "bar",
+        data: rows.map((item) => Number(item.value || 0)),
+        itemStyle: { color: "#0f766e", borderRadius: [6, 6, 0, 0] },
+        barMaxWidth: 40,
+      }],
+    }, true);
+  }
+
+  renderOperationsPurchaseSupplierChart() {
+    if (this.state.operationsTab !== "compras") {
+      return;
+    }
+    const rows = (this.operationsPayload.purchases?.supplier_rows || []).slice(0, 8);
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("operations-purchases-suppliers");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].reverse();
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 12, right: 16, bottom: 12, left: 180, containLabel: false },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        valueFormatter: (value) => `${this.operationsPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((row) => row.supplier),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { color: "#334155", fontSize: 11, width: 170, overflow: "truncate" },
+      },
+      series: [{
+        type: "bar",
+        data: reversed.map((row) => Number(row.spend || 0)),
+        barWidth: 18,
+        itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
+      }],
+    }, true);
+  }
+
   renderFinancialOverviewChart() {
     if (this.state.financialTab !== "overview") {
       return;
@@ -2886,6 +3347,258 @@ class ZrnAnalyticsHubAction extends Component {
       },
       true,
     );
+  }
+
+  renderPdvOverviewRevenueChart() {
+    if (this.state.pdvTab !== "overview") {
+      return;
+    }
+    const series = this.pdvPayload.revenue_series || [];
+    if (!series.length) {
+      return;
+    }
+    const chart = this.getChart("pdv-overview-revenue");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 18, right: 20, bottom: 26, left: 24, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        valueFormatter: (value) =>
+          `${this.pdvPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      xAxis: {
+        type: "category",
+        data: series.map((item) => item.label),
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisTick: { show: false },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: {
+          color: "#5f6b7a",
+          fontSize: 11,
+          formatter: (value) => this.formatMoney(value),
+        },
+      },
+      series: [
+        {
+          type: "line",
+          smooth: 0.25,
+          symbolSize: 7,
+          data: series.map((item) => Number(item.value || 0)),
+          lineStyle: { color: "#1f4e8c", width: 3 },
+          itemStyle: { color: "#1f4e8c" },
+          areaStyle: {
+            color: new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(31, 78, 140, 0.18)" },
+              { offset: 1, color: "rgba(31, 78, 140, 0.03)" },
+            ]),
+          },
+        },
+      ],
+    }, true);
+  }
+
+  renderPdvOverviewCoverageChart() {
+    if (this.state.pdvTab !== "overview") {
+      return;
+    }
+    const rows = this.pdvPayload.channel_coverage || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("pdv-overview-coverage");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 650,
+      legend: {
+        data: ["Activos", "Red total"],
+        textStyle: { color: "#5f6b7a", fontSize: 11 },
+      },
+      grid: { top: 30, right: 20, bottom: 30, left: 24, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      xAxis: {
+        type: "category",
+        data: rows.map((row) => row.channel),
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11 },
+      },
+      series: [
+        {
+          name: "Activos",
+          type: "bar",
+          data: rows.map((row) => Number(row.active || 0)),
+          itemStyle: { color: "#1f4e8c", borderRadius: [6, 6, 0, 0] },
+          barMaxWidth: 28,
+        },
+        {
+          name: "Red total",
+          type: "bar",
+          data: rows.map((row) => Number(row.network_total || 0)),
+          itemStyle: { color: "#a9c7eb", borderRadius: [6, 6, 0, 0] },
+          barMaxWidth: 28,
+        },
+      ],
+    }, true);
+  }
+
+  renderPdvOverviewTopPdvChart() {
+    if (this.state.pdvTab !== "overview") {
+      return;
+    }
+    const rows = (this.pdvPayload.top_pdvs || []).slice(0, 8);
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("pdv-overview-top");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].reverse();
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 12, right: 16, bottom: 12, left: 180, containLabel: false },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        valueFormatter: (value) =>
+          `${this.pdvPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((row) => row.name_short),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { color: "#334155", fontSize: 11, width: 170, overflow: "truncate" },
+      },
+      series: [
+        {
+          type: "bar",
+          data: reversed.map((row) => Number(row.rev || 0)),
+          barWidth: 18,
+          itemStyle: { color: "#bd1730", borderRadius: [0, 6, 6, 0] },
+        },
+      ],
+    }, true);
+  }
+
+  renderPdvChannelChart() {
+    if (this.state.pdvTab !== "canales") {
+      return;
+    }
+    const rows = this.pdvPayload.channel_compare?.by_month || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("pdv-channel-monthly");
+    if (!chart) {
+      return;
+    }
+    chart.setOption({
+      animationDuration: 600,
+      grid: { top: 35, right: 20, bottom: 25, left: 35, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        valueFormatter: (value) =>
+          `${this.pdvPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      legend: {
+        data: ["Sell-in", "Sell-out"],
+        textStyle: { color: "#5f6b7a" },
+      },
+      xAxis: {
+        type: "category",
+        data: rows.map((row) => row.label),
+        axisLine: { lineStyle: { color: "#d6deea" } },
+        axisLabel: { color: "#5f6b7a" },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", formatter: (value) => this.formatMoney(value) },
+      },
+      series: [
+        {
+          name: "Sell-in",
+          type: "bar",
+          data: rows.map((row) => Number(row.sellin_q || 0)),
+          color: "#2563eb",
+          barMaxWidth: 24,
+        },
+        {
+          name: "Sell-out",
+          type: "bar",
+          data: rows.map((row) => Number(row.sellout_q || 0)),
+          color: "#16a34a",
+          barMaxWidth: 24,
+        },
+      ],
+    }, true);
+  }
+
+  renderPdvOtrosChannelsChart() {
+    if (this.state.pdvTab !== "otros") {
+      return;
+    }
+    const rows = this.pdvPayload.otros?.channels || [];
+    if (!rows.length) {
+      return;
+    }
+    const chart = this.getChart("pdv-otros-channels");
+    if (!chart) {
+      return;
+    }
+    const reversed = [...rows].reverse();
+    chart.setOption({
+      animationDuration: 650,
+      grid: { top: 12, right: 16, bottom: 12, left: 180, containLabel: false },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        valueFormatter: (value) =>
+          `${this.pdvPayload.summary.currency_symbol} ${this.formatMoney(value)}`,
+      },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#edf2f8" } },
+        axisLabel: { color: "#5f6b7a", fontSize: 11, formatter: (value) => this.formatMoney(value) },
+      },
+      yAxis: {
+        type: "category",
+        data: reversed.map((row) => row.channel),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { color: "#334155", fontSize: 11, width: 170, overflow: "truncate" },
+      },
+      series: [
+        {
+          type: "bar",
+          data: reversed.map((row) => Number(row.revenue || 0)),
+          barWidth: 18,
+          itemStyle: { color: "#475569", borderRadius: [0, 6, 6, 0] },
+        },
+      ],
+    }, true);
   }
 
   resizeCharts() {

@@ -136,6 +136,53 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         }
 
     @api.model
+    def _get_product_channel_records(self, usage_types=None, active_only=True):
+        domain = [('company_id', '=', self.env.company.id)]
+        if active_only:
+            domain.append(('active', '=', True))
+        if usage_types:
+            domain.append(('usage_type', 'in', list(usage_types)))
+        return self.env['zrn_commercial.product.channel'].search(domain, order='name asc, id asc')
+
+    @api.model
+    def _get_product_channel_map(self, usage_types=None, active_only=True):
+        channels = self._get_product_channel_records(usage_types=usage_types, active_only=active_only)
+        links = self.env['zrn_commercial.product.channel.product'].search([
+            ('channel_id', 'in', channels.ids),
+            ('active', '=', True),
+            ('company_id', '=', self.env.company.id),
+        ], order='channel_id asc, sequence asc, id asc')
+        product_channel_map = {}
+        template_channel_map = {}
+        for link in links:
+            channel = link.channel_id
+            if not channel or not link.product_tmpl_id:
+                continue
+            channel_info = {
+                'channel_id': channel.id,
+                'channel_name': channel.name,
+                'usage_type': channel.usage_type,
+                'min_stock_days': float(channel.min_stock_days or 0.0),
+                'target_stock_days': float(channel.target_stock_days or 0.0),
+                'max_stock_days': float(channel.max_stock_days or 0.0),
+            }
+            template_channel_map[link.product_tmpl_id.id] = channel_info
+            for product in link.product_tmpl_id.product_variant_ids:
+                product_channel_map[product.id] = channel_info
+        return channels, product_channel_map, template_channel_map
+
+    @api.model
+    def _get_product_channel_filter_options(self, channels=None):
+        channels = channels or self._get_product_channel_records()
+        return [
+            {
+                'id': channel.id,
+                'name': channel.name,
+            }
+            for channel in channels
+        ]
+
+    @api.model
     def _get_channel_empty_message(self, setup_status):
         if not setup_status['has_channels']:
             return 'No hay canales comerciales creados en Zoraen Commercial.'
@@ -298,6 +345,17 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
     @api.model
     def _resolve_partner_channel(self, partner):
         return self._get_explicit_channel_name(partner)
+
+    @api.model
+    def _infer_pdv_subchain(self, channel_name, partner_name=''):
+        normalized_channel = (channel_name or '').strip()
+        normalized_name = (partner_name or '').upper()
+        if normalized_channel == 'Walmart/Paiz':
+            if 'PAIZ' in normalized_name:
+                return 'Paiz'
+            if 'WALMART' in normalized_name:
+                return 'Walmart'
+        return normalized_channel or 'Sin canal'
 
     @api.model
     def _get_empty_coverage_dashboard_data(self, empty_message=''):
@@ -585,9 +643,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         valid_rotation_keys = {'Alta', 'Media', 'Baja', 'Muy Baja'}
         if rotation_key not in valid_rotation_keys:
             rotation_key = ''
+        product_channel_ids = self._normalize_filter_ids(
+            filters.get('product_channel_ids') or filters.get('product_channel_id')
+        )
         normalized_filters.update({
             'abc_class': abc_class,
             'rotation_key': rotation_key,
+            'product_channel_ids': product_channel_ids,
         })
         return normalized_filters
 
@@ -597,6 +659,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         active_filters.update({
             'abc_class': normalized_filters.get('abc_class') or '',
             'rotation_key': normalized_filters.get('rotation_key') or '',
+            'product_channel_ids': normalized_filters.get('product_channel_ids') or [],
         })
         return active_filters
 
@@ -610,6 +673,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             'periods': self._get_channel_period_options(),
             'channels': self._get_channel_filter_options(),
             'brands': self._get_brand_filter_options(brands),
+            'product_channels': self._get_product_channel_filter_options(),
             'abc_choices': ['A', 'B', 'C'],
             'rotation_choices': ['Alta', 'Media', 'Baja', 'Muy Baja'],
         }
@@ -655,11 +719,40 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'next_month_blend': 0.0,
                 'runrate_annual': 0.0,
             },
-            'alerts': [],
-            'pending_tabs': {
-                'inventarios': True,
-                'compras': True,
+            'inventory': {
+                'summary': {
+                    'on_hand_units': 0.0,
+                    'available_units': 0.0,
+                    'reserved_units': 0.0,
+                    'inventory_value': 0.0,
+                    'risk_count': 0,
+                    'overstock_count': 0,
+                    'avg_coverage_days': 0.0,
+                    'dormant_pct': 0.0,
+                },
+                'coverage_distribution': [],
+                'brand_stock_mix': [],
+                'product_channel_mix': [],
+                'risk_rows': [],
+                'overstock_rows': [],
+                'rotation_rows': [],
             },
+            'purchases': {
+                'summary': {
+                    'open_orders': 0,
+                    'open_amount': 0.0,
+                    'period_spend': 0.0,
+                    'avg_lead_time_days': 0.0,
+                    'late_lines': 0,
+                    'supplier_concentration_pct': 0.0,
+                },
+                'spend_series': [],
+                'supplier_rows': [],
+                'open_orders': [],
+                'backlog_rows': [],
+                'leadtime_rows': [],
+            },
+            'alerts': [],
             'notes_sources': [
                 {
                     'label': 'Ventas Odoo',
@@ -667,7 +760,81 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 },
                 {
                     'label': 'Segmentacion',
-                    'detail': 'Marca y canal reutilizan Zoraen Commercial para sostener el mismo corte operativo del hub comercial.',
+                    'detail': 'Marca, canal comercial y canal de producto reutilizan Zoraen Commercial para sostener el mismo corte operativo del hub.',
+                },
+            ],
+        }
+
+    @api.model
+    def _build_empty_pdv_hub_payload(self, filters=None, filter_options=None, empty_message=''):
+        normalized_filters = self._normalize_channel_filters(filters)
+        date_from = normalized_filters['date_from']
+        date_to = normalized_filters['date_to']
+        brands = self._get_commercial_brand_records()
+        filter_options = filter_options or {
+            'periods': self._get_channel_period_options(),
+            'channels': self._get_channel_filter_options(),
+            'brands': self._get_brand_filter_options(brands),
+            'categories': [],
+        }
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(date_to),
+                'period_label': '%s al %s' % (
+                    fields.Date.to_string(date_from),
+                    fields.Date.to_string(date_to),
+                ),
+                'currency_symbol': self.env.company.currency_id.symbol or '$',
+                'total_pdvs': 0,
+                'total_revenue': 0.0,
+                'order_count': 0,
+                'avg_ticket': 0.0,
+                'active_channel_count': 0,
+                'new_count': 0,
+                'dormant_count': 0,
+                'low_st_count': 0,
+                'alert_count': 0,
+                'top_pdv_name': '',
+                'top_pdv_revenue': 0.0,
+            },
+            'active_filters': self._serialize_active_filters(normalized_filters),
+            'filter_options': filter_options,
+            'empty_message': empty_message or 'No hay datos PDV para los filtros seleccionados.',
+            'revenue_series': [],
+            'channel_coverage': [],
+            'top_pdvs': [],
+            'ranking_rows': [],
+            'new_pdvs': [],
+            'dormant_pdvs': [],
+            'channel_compare': {
+                'channel_labels': [],
+                'supported_channel_labels': [],
+                'summary': {
+                    'sellin_q': 0.0,
+                    'sellout_q': 0.0,
+                    'sellthrough_q_pct': 0.0,
+                    'pdvs_with_data': 0,
+                    'period': '',
+                },
+                'by_month': [],
+                'rows': [],
+                'empty_message': '',
+            },
+            'otros': {
+                'channels': [],
+                'rows': [],
+            },
+            'alerts': {
+                'rows': [],
+            },
+            'notes_sources': [
+                {
+                    'label': 'Ventas Odoo',
+                    'detail': 'PDV usa sale.order.line y sale.order para resumir actividad real por punto de venta.',
+                },
+                {
+                    'label': 'Segmentacion',
+                    'detail': 'Marca y canal reutilizan Zoraen Commercial para mantener el mismo corte analitico.',
                 },
             ],
         }
@@ -2826,11 +2993,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         period_days = max((date_to - date_from).days + 1, 1)
         currency_symbol = self.env.company.currency_id.symbol or '$'
         brands, product_brand_map = self._get_commercial_brand_map()
+        product_channels, product_channel_map, template_channel_map = self._get_product_channel_map()
         channel_setup = self._get_channel_setup_status()
         base_filter_options = {
             'periods': self._get_channel_period_options(),
             'channels': self._get_channel_filter_options(),
             'brands': self._get_brand_filter_options(brands),
+            'product_channels': self._get_product_channel_filter_options(product_channels),
             'abc_choices': ['A', 'B', 'C'],
             'rotation_choices': ['Alta', 'Media', 'Baja', 'Muy Baja'],
         }
@@ -2863,6 +3032,14 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         base_lines = order_lines.filtered(
             lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters)
         )
+        selected_product_channel_ids = set(normalized_filters.get('product_channel_ids') or [])
+        if selected_product_channel_ids:
+            base_lines = base_lines.filtered(
+                lambda line: (
+                    product_channel_map.get(line.product_id.id, {}).get('channel_id')
+                    in selected_product_channel_ids
+                )
+            )
         if not base_lines:
             return self._build_empty_operations_payload(
                 normalized_filters,
@@ -2954,10 +3131,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 product.id,
                 {
                     'id': product.id,
+                    'product_tmpl_id': product.product_tmpl_id.id,
                     'name': product.display_name,
                     'default_code': product.default_code or '',
                     'brand_id': brand_info['brand_id'],
                     'brand_name': brand_info['brand_name'],
+                    'product_channel_id': product_channel_map.get(product.id, {}).get('channel_id'),
+                    'product_channel_name': product_channel_map.get(product.id, {}).get('channel_name') or 'Sin canal',
                     'category_name': product.categ_id.display_name or 'Sin categoria',
                     'unit_name': (
                         (product.categ_id.complete_name or '').split('/')[0].strip()
@@ -2973,6 +3153,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     'sale_dates': set(),
                     'monthly_revenue': defaultdict(float),
                     'monthly_units': defaultdict(float),
+                    'standard_price': float(product.standard_price or 0.0),
                 },
             )
             row['revenue'] += amount
@@ -3323,6 +3504,239 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             {'label': 'Promedio unid/dia', 'value': round(total_units / period_days, 2), 'type': 'count'},
         ]
 
+        stock_products = self.env['product.product'].browse(selected_product_ids).filtered(
+            lambda product: product.detailed_type == 'product'
+        )
+        quants = self.env['stock.quant'].search([
+            ('product_id', 'in', stock_products.ids),
+            ('location_id.usage', '=', 'internal'),
+        ])
+        quant_map = defaultdict(lambda: {'on_hand': 0.0, 'reserved': 0.0, 'available': 0.0})
+        for quant in quants:
+            product_quant = quant_map[quant.product_id.id]
+            on_hand = float(quant.quantity or 0.0)
+            reserved = float(quant.reserved_quantity or 0.0)
+            product_quant['on_hand'] += on_hand
+            product_quant['reserved'] += reserved
+            product_quant['available'] += on_hand - reserved
+
+        inventory_brand_mix = defaultdict(float)
+        inventory_channel_mix = defaultdict(float)
+        coverage_buckets = defaultdict(int)
+        inventory_risk_rows = []
+        inventory_overstock_rows = []
+        inventory_rotation_rows = []
+        coverage_sum = 0.0
+        coverage_count = 0
+        dormant_count = 0
+        total_on_hand = 0.0
+        total_available = 0.0
+        total_reserved = 0.0
+        total_inventory_value = 0.0
+
+        for item in selected_products:
+            quant_data = quant_map.get(item['id']) or {}
+            on_hand = float(quant_data.get('on_hand') or 0.0)
+            available = float(quant_data.get('available') or 0.0)
+            reserved = float(quant_data.get('reserved') or 0.0)
+            if not on_hand and not available and not reserved and item['product_tmpl_id'] not in template_channel_map:
+                continue
+
+            total_on_hand += on_hand
+            total_available += available
+            total_reserved += reserved
+            inventory_value = on_hand * float(item.get('standard_price') or 0.0)
+            total_inventory_value += inventory_value
+            inventory_brand_mix[item['brand_name']] += on_hand
+            inventory_channel_mix[item.get('product_channel_name') or 'Sin canal'] += on_hand
+
+            demand_per_day = float(item.get('units_per_day') or 0.0)
+            coverage_days = (available / demand_per_day) if demand_per_day > 0 else False
+            product_channel_info = product_channel_map.get(item['id']) or {}
+            min_days = float(product_channel_info.get('min_stock_days') or 0.0)
+            target_days = float(product_channel_info.get('target_stock_days') or 0.0)
+            max_days = float(product_channel_info.get('max_stock_days') or 0.0)
+
+            if coverage_days is False:
+                coverage_label = 'Sin demanda'
+            elif coverage_days <= 0:
+                coverage_label = 'Sin stock'
+            elif min_days and coverage_days < min_days:
+                coverage_label = 'Bajo minimo'
+            elif max_days and coverage_days > max_days:
+                coverage_label = 'Sobrestock'
+            else:
+                coverage_label = 'En rango'
+            coverage_buckets[coverage_label] += 1
+
+            if coverage_days is not False:
+                coverage_sum += coverage_days
+                coverage_count += 1
+
+            row = {
+                'id': item['id'],
+                'name': item['name'],
+                'default_code': item['default_code'],
+                'brand_name': item['brand_name'],
+                'product_channel_name': item.get('product_channel_name') or 'Sin canal',
+                'on_hand': round(on_hand, 2),
+                'available': round(available, 2),
+                'reserved': round(reserved, 2),
+                'coverage_days': round(coverage_days, 1) if coverage_days is not False else None,
+                'target_days': round(target_days, 1),
+                'min_days': round(min_days, 1),
+                'max_days': round(max_days, 1),
+                'units_per_day': round(demand_per_day, 2),
+                'units_per_month': round(item['units_per_month'], 1),
+                'rotation_key': item['rotation_key'],
+                'abc_class': item['abc_class'],
+                'inventory_value': round(inventory_value, 2),
+                'days_since_last': item['days_since_last'],
+            }
+
+            has_recent_demand = demand_per_day > 0 or item['days_since_last'] <= 30
+            if (coverage_days is not False and min_days and coverage_days < min_days) or (available <= 0 and has_recent_demand):
+                inventory_risk_rows.append(row)
+            if coverage_days is not False and max_days and coverage_days > max_days:
+                inventory_overstock_rows.append(row)
+            if on_hand > 0 and (item['rotation_key'] in ('Baja', 'Muy Baja') or item['days_since_last'] > 30):
+                inventory_rotation_rows.append(row)
+                dormant_count += 1
+
+        purchase_lines = self.env['purchase.order.line'].search([
+            ('order_id.company_id', '=', self.env.company.id),
+            ('product_id', 'in', list(selected_product_ids)),
+            ('display_type', '=', False),
+            ('order_id.state', 'in', ['purchase', 'done']),
+        ])
+        purchase_lines_in_period = purchase_lines.filtered(
+            lambda line: (
+                (line.order_id.date_approve and date_from <= fields.Datetime.to_datetime(line.order_id.date_approve).date() <= date_to)
+                or
+                (line.order_id.date_order and date_from <= fields.Datetime.to_datetime(line.order_id.date_order).date() <= date_to)
+            )
+        )
+        purchase_lines_in_period_ids = set(purchase_lines_in_period.ids)
+
+        spend_by_month = defaultdict(float)
+        supplier_map = defaultdict(lambda: {
+            'partner_id': False,
+            'supplier': '',
+            'spend': 0.0,
+            'open_amount': 0.0,
+            'line_count': 0,
+            'lead_times': [],
+            'late_lines': 0,
+        })
+        open_order_rows = []
+        backlog_rows = []
+        purchase_order_seen = set()
+
+        for line in purchase_lines:
+            order = line.order_id
+            if not order:
+                continue
+            product = line.product_id
+            order_date = fields.Datetime.to_datetime(order.date_order).date() if order.date_order else date_to
+            approve_date = fields.Datetime.to_datetime(order.date_approve).date() if order.date_approve else order_date
+            month_key = approve_date.replace(day=1).strftime('%Y-%m')
+            price_total = float(getattr(line, 'price_total', 0.0) or (line.price_unit * line.product_qty))
+            open_qty = max(float(line.product_qty or 0.0) - float(line.qty_received or 0.0), 0.0)
+            open_amount = open_qty * float(line.price_unit or 0.0)
+            supplier = order.partner_id
+            supplier_entry = supplier_map[supplier.id]
+            supplier_entry['partner_id'] = supplier.id
+            supplier_entry['supplier'] = supplier.display_name
+            supplier_entry['line_count'] += 1
+
+            if line.id in purchase_lines_in_period_ids:
+                supplier_entry['spend'] += price_total
+                spend_by_month[month_key] += price_total
+
+            incoming_pickings = order.picking_ids.filtered(
+                lambda picking: picking.state == 'done' and picking.picking_type_id.code == 'incoming'
+            )
+            if incoming_pickings and order.date_approve:
+                receipt_dates = [
+                    fields.Datetime.to_datetime(picking.date_done).date()
+                    for picking in incoming_pickings
+                    if picking.date_done
+                ]
+                if receipt_dates:
+                    first_receipt = min(receipt_dates)
+                    supplier_entry['lead_times'].append((first_receipt - approve_date).days)
+
+            is_late = bool(line.date_planned and fields.Datetime.to_datetime(line.date_planned).date() < date_to and open_qty > 0)
+            if is_late:
+                supplier_entry['late_lines'] += 1
+
+            if open_qty > 0:
+                supplier_entry['open_amount'] += open_amount
+                backlog_rows.append({
+                    'order_id': order.id,
+                    'order_name': order.name,
+                    'partner_id': supplier.id,
+                    'supplier': supplier.display_name,
+                    'product_id': product.id,
+                    'product_name': product.display_name,
+                    'brand_name': product_brand_map.get(product.id, {}).get('brand_name') or 'Sin marca',
+                    'product_channel_name': product_channel_map.get(product.id, {}).get('channel_name') or 'Sin canal',
+                    'open_qty': round(open_qty, 2),
+                    'qty_received': round(float(line.qty_received or 0.0), 2),
+                    'product_qty': round(float(line.product_qty or 0.0), 2),
+                    'open_amount': round(open_amount, 2),
+                    'planned_date': fields.Date.to_string(fields.Datetime.to_datetime(line.date_planned).date()) if line.date_planned else '',
+                    'is_late': is_late,
+                })
+                if order.id not in purchase_order_seen:
+                    purchase_order_seen.add(order.id)
+                    open_order_rows.append({
+                        'order_id': order.id,
+                        'name': order.name,
+                        'partner_id': supplier.id,
+                        'supplier': supplier.display_name,
+                        'date_order': fields.Date.to_string(order_date),
+                        'planned_date': fields.Date.to_string(fields.Datetime.to_datetime(line.date_planned).date()) if line.date_planned else '',
+                        'amount_total': round(float(order.amount_total or 0.0), 2),
+                        'open_amount': round(open_amount, 2),
+                        'line_count': len(order.order_line.filtered(lambda ol: not ol.display_type)),
+                        'is_late': is_late,
+                    })
+
+        supplier_rows = []
+        total_period_spend = 0.0
+        total_open_amount = 0.0
+        total_lead_times = []
+        total_late_lines = 0
+        for supplier_entry in supplier_map.values():
+            total_period_spend += supplier_entry['spend']
+            total_open_amount += supplier_entry['open_amount']
+            total_lead_times.extend(supplier_entry['lead_times'])
+            total_late_lines += supplier_entry['late_lines']
+            supplier_rows.append({
+                'partner_id': supplier_entry['partner_id'],
+                'supplier': supplier_entry['supplier'],
+                'spend': round(supplier_entry['spend'], 2),
+                'open_amount': round(supplier_entry['open_amount'], 2),
+                'line_count': supplier_entry['line_count'],
+                'avg_lead_time_days': round(sum(supplier_entry['lead_times']) / len(supplier_entry['lead_times']), 1)
+                if supplier_entry['lead_times'] else 0.0,
+                'late_lines': supplier_entry['late_lines'],
+            })
+        supplier_rows.sort(key=lambda entry: entry['spend'], reverse=True)
+
+        spend_series = []
+        for month_key in month_keys:
+            spend_series.append({
+                'month_key': month_key,
+                'label': _month_label(month_key),
+                'value': round(spend_by_month.get(month_key, 0.0), 2),
+            })
+
+        top_supplier_spend = supplier_rows[0]['spend'] if supplier_rows else 0.0
+        avg_coverage_days = round(coverage_sum / coverage_count, 1) if coverage_count else 0.0
+        supplier_concentration_pct = round(_safe_pct(top_supplier_spend, total_period_spend), 1) if total_period_spend else 0.0
+
         alerts = []
         if selected_products:
             top_brand_name, top_brand_units = max(brand_units_map.items(), key=lambda entry: entry[1])
@@ -3344,21 +3758,45 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             if item['abc_class'] == 'A' and item['rotation_key'] in ('Baja', 'Muy Baja')
         ]
         if low_rotation_a:
+                alerts.append({
+                    'severity': 'alert',
+                    'title': 'Clase A con rotacion baja',
+                    'detail': '%s SKUs clase A requieren revision de disponibilidad, produccion o surtido.' % len(low_rotation_a[:10]),
+                })
+        if inventory_risk_rows:
             alerts.append({
                 'severity': 'alert',
-                'title': 'Clase A con rotacion baja',
-                'detail': '%s SKUs clase A requieren revision de disponibilidad, produccion o surtido.' % len(low_rotation_a[:10]),
+                'title': 'Inventario en riesgo',
+                'detail': '%s SKUs quedaron bajo minimo o sin stock frente a demanda reciente.' % len(inventory_risk_rows[:20]),
             })
-        alerts.append({
-            'severity': 'info',
-            'title': 'Inventarios pendientes',
-            'detail': 'La tab de inventarios sigue en espera de stock.quant para calcular cobertura y riesgo de quiebre.',
-        })
-        alerts.append({
-            'severity': 'info',
-            'title': 'Compras pendientes',
-            'detail': 'La tab de compras sigue en espera de purchase.order para lead time, OTIF y spend por proveedor.',
-        })
+        if inventory_overstock_rows:
+            alerts.append({
+                'severity': 'warn',
+                'title': 'Sobrestock detectado',
+                'detail': '%s SKUs superan la cobertura maxima del canal de producto.' % len(inventory_overstock_rows[:20]),
+            })
+        products_without_channel = len([
+            item for item in selected_products
+            if not item.get('product_channel_id')
+        ])
+        if products_without_channel:
+            alerts.append({
+                'severity': 'info',
+                'title': 'Productos sin canal de producto',
+                'detail': '%s SKUs siguen sin clasificacion logistica para inventarios y compras.' % products_without_channel,
+            })
+        if total_late_lines:
+            alerts.append({
+                'severity': 'warn',
+                'title': 'Compras atrasadas',
+                'detail': '%s lineas de compra siguen vencidas y con saldo pendiente por recibir.' % total_late_lines,
+            })
+        if supplier_concentration_pct >= 55.0:
+            alerts.append({
+                'severity': 'warn',
+                'title': 'Concentracion por proveedor',
+                'detail': 'El proveedor principal concentra %.1f%% del spend del periodo.' % supplier_concentration_pct,
+            })
 
         return {
             'summary': {
@@ -3431,11 +3869,70 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'next_month_blend': next_month_blend,
                 'runrate_annual': round(next_month_blend * 12.0, 2),
             },
-            'alerts': alerts,
-            'pending_tabs': {
-                'inventarios': True,
-                'compras': True,
+            'inventory': {
+                'summary': {
+                    'on_hand_units': round(total_on_hand, 2),
+                    'available_units': round(total_available, 2),
+                    'reserved_units': round(total_reserved, 2),
+                    'inventory_value': round(total_inventory_value, 2),
+                    'risk_count': len(inventory_risk_rows),
+                    'overstock_count': len(inventory_overstock_rows),
+                    'avg_coverage_days': avg_coverage_days,
+                    'dormant_pct': round(_safe_pct(dormant_count, len(inventory_rotation_rows)), 1) if inventory_rotation_rows else 0.0,
+                },
+                'coverage_distribution': [
+                    {'label': label, 'value': coverage_buckets.get(label, 0)}
+                    for label in ['Sin stock', 'Bajo minimo', 'En rango', 'Sobrestock', 'Sin demanda']
+                ],
+                'brand_stock_mix': [
+                    {'name': name, 'value': round(value, 2)}
+                    for name, value in sorted(inventory_brand_mix.items(), key=lambda entry: entry[1], reverse=True)
+                ],
+                'product_channel_mix': [
+                    {'name': name, 'value': round(value, 2)}
+                    for name, value in sorted(inventory_channel_mix.items(), key=lambda entry: entry[1], reverse=True)
+                ],
+                'risk_rows': sorted(
+                    inventory_risk_rows,
+                    key=lambda row: ((row['coverage_days'] if row['coverage_days'] is not None else -1), row['available']),
+                )[:30],
+                'overstock_rows': sorted(
+                    inventory_overstock_rows,
+                    key=lambda row: row['coverage_days'] if row['coverage_days'] is not None else 0,
+                    reverse=True,
+                )[:30],
+                'rotation_rows': sorted(
+                    inventory_rotation_rows,
+                    key=lambda row: (row['days_since_last'], row['inventory_value']),
+                    reverse=True,
+                )[:30],
             },
+            'purchases': {
+                'summary': {
+                    'open_orders': len(open_order_rows),
+                    'open_amount': round(total_open_amount, 2),
+                    'period_spend': round(total_period_spend, 2),
+                    'avg_lead_time_days': round(sum(total_lead_times) / len(total_lead_times), 1) if total_lead_times else 0.0,
+                    'late_lines': total_late_lines,
+                    'supplier_concentration_pct': supplier_concentration_pct,
+                },
+                'spend_series': spend_series,
+                'supplier_rows': supplier_rows[:20],
+                'open_orders': sorted(
+                    open_order_rows,
+                    key=lambda row: (0 if row['is_late'] else 1, -row['open_amount']),
+                )[:20],
+                'backlog_rows': sorted(
+                    backlog_rows,
+                    key=lambda row: (0 if row['is_late'] else 1, -row['open_amount']),
+                )[:30],
+                'leadtime_rows': sorted(
+                    [row for row in supplier_rows if row['avg_lead_time_days'] > 0],
+                    key=lambda row: row['avg_lead_time_days'],
+                    reverse=True,
+                )[:20],
+            },
+            'alerts': alerts,
             'notes_sources': [
                 {
                     'label': 'Demanda inferida',
@@ -3443,11 +3940,11 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 },
                 {
                     'label': 'Segmentacion',
-                    'detail': 'Marca y canal reutilizan Zoraen Commercial para no duplicar catálogos.',
+                    'detail': 'Marca, canal comercial y canal de producto reutilizan Zoraen Commercial para no duplicar catalogos.',
                 },
                 {
-                    'label': 'Pendientes',
-                    'detail': 'Inventarios y Compras quedan visibles pero pendientes hasta conectar stock y purchase.',
+                    'label': 'Supply',
+                    'detail': 'Inventarios y Compras leen stock.quant, purchase.order.line y recepciones para consolidar cobertura, backlog y lead time.',
                 },
             ],
         }
@@ -4228,6 +4725,455 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 {
                     'label': 'White space y holes',
                     'detail': 'Se calculan como señal analítica. No representan visitas, rutas ni ejecución física en PDV.',
+                },
+            ],
+        }
+
+    @api.model
+    def get_pdv_hub_payload(self, filters=None):
+        normalized_filters = self._normalize_channel_filters(filters)
+        date_from = normalized_filters['date_from']
+        date_to = normalized_filters['date_to']
+        currency_symbol = self.env.company.currency_id.symbol or '$'
+        brands, product_brand_map = self._get_commercial_brand_map()
+        channel_setup = self._get_channel_setup_status()
+        order_lines = self._get_commercial_sale_order_lines(
+            date_from,
+            date_to,
+            list(product_brand_map.keys()),
+        )
+        filter_options = self._build_filter_options(order_lines, brands)
+
+        if not brands or not product_brand_map:
+            return self._build_empty_pdv_hub_payload(
+                filters,
+                filter_options=filter_options,
+                empty_message='No hay marcas comerciales activas para construir el hub PDV.',
+            )
+        if not channel_setup['has_channels'] or not channel_setup['has_assignments']:
+            return self._build_empty_pdv_hub_payload(
+                filters,
+                filter_options=filter_options,
+                empty_message=self._get_channel_empty_message(channel_setup),
+            )
+        if not order_lines:
+            return self._build_empty_pdv_hub_payload(
+                filters,
+                filter_options=filter_options,
+            )
+
+        filtered_lines = order_lines.filtered(
+            lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters)
+        )
+        if not filtered_lines:
+            return self._build_empty_pdv_hub_payload(
+                filters,
+                filter_options=filter_options,
+            )
+
+        commercial_payload = self.get_commercial_hub_payload(normalized_filters)
+        coverage_payload = self.get_coverage_dashboard_data(normalized_filters)
+        month_starts, month_labels = self._get_recent_month_labels(date_to)
+
+        pdv_map = {}
+        total_order_ids = set()
+
+        for line in filtered_lines:
+            order = line.order_id
+            partner = order.partner_id
+            commercial_partner = partner.commercial_partner_id or partner
+            product = line.product_id
+            if not order or not partner or not product or not commercial_partner:
+                continue
+
+            brand_info = product_brand_map.get(product.id)
+            if not brand_info:
+                continue
+
+            order_date = fields.Datetime.to_datetime(order.date_order).date() if order.date_order else date_to
+            amount = float(line.price_total or 0.0)
+            quantity = float(line.product_uom_qty or 0.0)
+            channel_name = self._resolve_partner_channel(partner)
+            subchain = self._infer_pdv_subchain(channel_name, partner.display_name)
+            month_key = order_date.replace(day=1)
+
+            pdv_entry = pdv_map.setdefault(
+                partner.id,
+                {
+                    'partner_id': partner.id,
+                    'client_full': commercial_partner.display_name or partner.display_name,
+                    'name_short': partner.display_name,
+                    'channel': channel_name or 'Sin canal',
+                    'subchain': subchain,
+                    'store_nbr': False,
+                    'rev': 0.0,
+                    'units': 0.0,
+                    'lines': 0,
+                    'order_ids': set(),
+                    'first_date': order_date,
+                    'last_date': order_date,
+                    'monthly_rev': {month_start: 0.0 for month_start in month_starts},
+                    'product_rows': {},
+                    'has_sellout': False,
+                    'sellin_q': 0.0,
+                    'sellin_u': 0.0,
+                    'sellout_q': 0.0,
+                    'sellout_u': 0.0,
+                    'sellthrough_q': None,
+                    'days_of_cover': None,
+                    'alerts': [],
+                    'status': 'active',
+                },
+            )
+            pdv_entry['rev'] += amount
+            pdv_entry['units'] += quantity
+            pdv_entry['lines'] += 1
+            pdv_entry['order_ids'].add(order.id)
+            pdv_entry['first_date'] = min(pdv_entry['first_date'], order_date)
+            pdv_entry['last_date'] = max(pdv_entry['last_date'], order_date)
+            if month_key in pdv_entry['monthly_rev']:
+                pdv_entry['monthly_rev'][month_key] += amount
+
+            product_row = pdv_entry['product_rows'].setdefault(
+                product.id,
+                {
+                    'name': product.display_name,
+                    'default_code': product.default_code or '',
+                    'rev': 0.0,
+                    'units': 0.0,
+                    'lines': 0,
+                    'brand': brand_info['brand_name'],
+                },
+            )
+            product_row['rev'] += amount
+            product_row['units'] += quantity
+            product_row['lines'] += 1
+            total_order_ids.add(order.id)
+
+        sellin_vs_sellout = commercial_payload.get('sellin_vs_sellout', {})
+        sellout_channel_map = {
+            'walmart': 'Walmart/Paiz',
+            'puma': 'PUMA Super 7',
+        }
+        for chain_key in ('walmart', 'puma'):
+            chain_payload = sellin_vs_sellout.get(chain_key, {})
+            for chain_row in chain_payload.get('by_pdv', []):
+                partner_id = chain_row.get('partner_id') or chain_row.get('store')
+                pdv_entry = pdv_map.get(partner_id)
+                if not pdv_entry:
+                    continue
+                pdv_entry['has_sellout'] = True
+                pdv_entry['sellin_q'] = round(chain_row.get('sellin_q', 0.0), 2)
+                pdv_entry['sellin_u'] = round(chain_row.get('sellin_u', 0.0), 2)
+                pdv_entry['sellout_q'] = round(chain_row.get('sellout_q', 0.0), 2)
+                pdv_entry['sellout_u'] = round(chain_row.get('sellout_u', 0.0), 2)
+                pdv_entry['sellthrough_q'] = chain_row.get('sellthrough_pct')
+                pdv_entry['days_of_cover'] = chain_row.get('days_of_cover')
+
+        ranking_rows = []
+        total_revenue = sum(entry['rev'] for entry in pdv_map.values())
+        for pdv_entry in pdv_map.values():
+            order_count = len(pdv_entry['order_ids'])
+            days_since_last = (date_to - pdv_entry['last_date']).days if pdv_entry['last_date'] else 0
+            days_since_first = (date_to - pdv_entry['first_date']).days if pdv_entry['first_date'] else 0
+            monthly_values = [
+                round(pdv_entry['monthly_rev'].get(month_start, 0.0), 2)
+                for month_start in month_starts
+            ]
+            current_month = monthly_values[-1] if monthly_values else 0.0
+            previous_month = monthly_values[-2] if len(monthly_values) > 1 else 0.0
+            if previous_month > 0:
+                mom_pct = round(((current_month - previous_month) / previous_month) * 100, 1)
+            else:
+                mom_pct = None
+
+            top_products = sorted(
+                [
+                    {
+                        'name': product_row['name'],
+                        'default_code': product_row['default_code'],
+                        'rev': round(product_row['rev'], 2),
+                        'units': round(product_row['units'], 2),
+                        'lines': product_row['lines'],
+                        'brand': product_row['brand'],
+                    }
+                    for product_row in pdv_entry['product_rows'].values()
+                ],
+                key=lambda item: item['rev'],
+                reverse=True,
+            )[:5]
+
+            alerts = []
+            if days_since_first <= 30:
+                alerts.append({
+                    'sev': 'info',
+                    'type': 'new',
+                    'msg': 'PDV recien activado (%sd)' % days_since_first,
+                })
+            if days_since_last >= 30:
+                alerts.append({
+                    'sev': 'warn',
+                    'type': 'dormant',
+                    'msg': 'Sin facturar hace %sd' % days_since_last,
+                })
+            if mom_pct is not None and mom_pct <= -30:
+                alerts.append({
+                    'sev': 'warn',
+                    'type': 'mom_drop',
+                    'msg': 'Cae %s%% MoM' % abs(int(round(mom_pct))),
+                })
+            if pdv_entry['has_sellout'] and pdv_entry['sellthrough_q'] is not None and pdv_entry['sellthrough_q'] < 40:
+                alerts.append({
+                    'sev': 'alert',
+                    'type': 'low_st',
+                    'msg': 'Sell-through %s%%' % round(pdv_entry['sellthrough_q'], 1),
+                })
+
+            if any(alert['type'] == 'low_st' for alert in alerts):
+                status = 'low_st'
+            elif any(alert['type'] == 'dormant' for alert in alerts):
+                status = 'dormant'
+            elif any(alert['type'] == 'new' for alert in alerts):
+                status = 'new'
+            else:
+                status = 'active'
+
+            pdv_entry['alerts'] = alerts
+            pdv_entry['status'] = status
+
+            detail_payload = {
+                'title': pdv_entry['name_short'],
+                'subtitle': '%s | %s' % (pdv_entry['channel'], pdv_entry['client_full']),
+                'currency_symbol': currency_symbol,
+                'summary_cards': [
+                    {'label': 'Venta', 'value': round(pdv_entry['rev'], 2), 'format': 'money'},
+                    {'label': 'Pedidos', 'value': order_count, 'format': 'count'},
+                    {'label': 'Unidades', 'value': round(pdv_entry['units'], 2), 'format': 'count'},
+                    {'label': 'Ticket', 'value': round(pdv_entry['rev'] / order_count, 2) if order_count else 0.0, 'format': 'money'},
+                ],
+                'channel_rows': [
+                    {
+                        'name': pdv_entry['channel'],
+                        'pdv_count': 1,
+                        'order_count': order_count,
+                        'units': round(pdv_entry['units'], 2),
+                        'revenue': round(pdv_entry['rev'], 2),
+                    },
+                ],
+                'secondary_title': 'Top productos',
+                'secondary_rows': [
+                    {
+                        'name': product_row['name'],
+                        'order_count': product_row['lines'],
+                        'units': round(product_row['units'], 2),
+                        'revenue': round(product_row['rev'], 2),
+                    }
+                    for product_row in top_products
+                ],
+                'customer_rows': [],
+            }
+
+            ranking_rows.append({
+                'partner_id': pdv_entry['partner_id'],
+                'client_full': pdv_entry['client_full'],
+                'name_short': pdv_entry['name_short'],
+                'channel': pdv_entry['channel'],
+                'subchain': pdv_entry['subchain'],
+                'store_nbr': pdv_entry['store_nbr'],
+                'rev': round(pdv_entry['rev'], 2),
+                'units': round(pdv_entry['units'], 2),
+                'invoices': order_count,
+                'lines': pdv_entry['lines'],
+                'avg_ticket': round(pdv_entry['rev'] / order_count, 2) if order_count else 0.0,
+                'avg_unit_price': round(pdv_entry['rev'] / pdv_entry['units'], 2) if pdv_entry['units'] else 0.0,
+                'first_date': fields.Date.to_string(pdv_entry['first_date']) if pdv_entry['first_date'] else '',
+                'last_date': fields.Date.to_string(pdv_entry['last_date']) if pdv_entry['last_date'] else '',
+                'days_since_last': days_since_last,
+                'days_since_first': days_since_first,
+                'monthly_rev': monthly_values,
+                'mom_pct': mom_pct,
+                'top_products': top_products,
+                'sellin_q': pdv_entry['sellin_q'],
+                'sellin_u': pdv_entry['sellin_u'],
+                'sellout_q': pdv_entry['sellout_q'],
+                'sellout_u': pdv_entry['sellout_u'],
+                'sellthrough_q': pdv_entry['sellthrough_q'],
+                'days_of_cover': pdv_entry['days_of_cover'],
+                'has_sellout': pdv_entry['has_sellout'],
+                'alerts': alerts,
+                'status': status,
+                'detail': detail_payload,
+            })
+
+        ranking_rows.sort(key=lambda item: item['rev'], reverse=True)
+
+        cumulative_revenue = 0.0
+        for index, row in enumerate(ranking_rows, start=1):
+            cumulative_revenue += row['rev']
+            cumulative_pct = (cumulative_revenue / total_revenue) * 100 if total_revenue else 0.0
+            if cumulative_pct <= 80:
+                abc = 'A'
+            elif cumulative_pct <= 95:
+                abc = 'B'
+            else:
+                abc = 'C'
+            row['rank'] = index
+            row['cum_pct'] = round(cumulative_pct, 1)
+            row['abc'] = abc
+
+        top_pdvs = ranking_rows[:10]
+        new_pdvs = sorted(
+            [row for row in ranking_rows if any(alert['type'] == 'new' for alert in row['alerts'])],
+            key=lambda row: row['days_since_first'],
+        )[:8]
+        dormant_pdvs = sorted(
+            [row for row in ranking_rows if any(alert['type'] == 'dormant' for alert in row['alerts'])],
+            key=lambda row: row['days_since_last'],
+            reverse=True,
+        )[:8]
+        alert_rows = sorted(
+            [row for row in ranking_rows if row['alerts']],
+            key=lambda row: (
+                0 if any(alert['sev'] == 'alert' for alert in row['alerts']) else 1,
+                0 if any(alert['type'] == 'dormant' for alert in row['alerts']) else 1,
+                -row['rev'],
+            ),
+        )
+
+        selected_channel_names = self._get_selected_channel_names(normalized_filters)
+        selected_or_all_channel_names = (
+            selected_channel_names or {row['channel'] for row in ranking_rows if row.get('channel')}
+        )
+        compare_channel_labels = sorted(selected_or_all_channel_names)
+        supported_compare_keys = [
+            chain_key
+            for chain_key, chain_label in sellout_channel_map.items()
+            if chain_label in selected_or_all_channel_names
+        ]
+        supported_compare_labels = [
+            sellout_channel_map[chain_key]
+            for chain_key in supported_compare_keys
+        ]
+        compare_rows = [
+            row for row in ranking_rows
+            if not compare_channel_labels or row['channel'] in compare_channel_labels
+        ]
+        compare_month_map = defaultdict(lambda: {'sellin_q': 0.0, 'sellout_q': 0.0})
+        compare_summary = {
+            'sellin_q': 0.0,
+            'sellout_q': 0.0,
+            'sellthrough_q_pct': 0.0,
+            'pdvs_with_data': 0,
+            'period': '%s al %s' % (
+                fields.Date.to_string(date_from),
+                fields.Date.to_string(date_to),
+            ),
+        }
+        for chain_key in supported_compare_keys:
+            chain_payload = sellin_vs_sellout.get(chain_key) or {}
+            summary_payload = chain_payload.get('summary') or {}
+            compare_summary['sellin_q'] += float(summary_payload.get('sellin_q') or 0.0)
+            compare_summary['sellout_q'] += float(summary_payload.get('sellout_q') or 0.0)
+            compare_summary['pdvs_with_data'] += int(summary_payload.get('pdvs_with_data') or 0)
+            for month_row in chain_payload.get('by_month', []):
+                month_bucket = compare_month_map[month_row.get('key') or month_row.get('label')]
+                month_bucket['label'] = month_row.get('label')
+                month_bucket['sellin_q'] += float(month_row.get('sellin_q') or 0.0)
+                month_bucket['sellout_q'] += float(month_row.get('sellout_q') or 0.0)
+        if compare_summary['sellin_q']:
+            compare_summary['sellthrough_q_pct'] = round(
+                compare_summary['sellout_q'] / compare_summary['sellin_q'] * 100, 1
+            )
+        compare_summary['sellin_q'] = round(compare_summary['sellin_q'], 2)
+        compare_summary['sellout_q'] = round(compare_summary['sellout_q'], 2)
+        compare_by_month = [
+            {
+                'key': month_key,
+                'label': month_vals.get('label') or month_key,
+                'sellin_q': round(month_vals['sellin_q'], 2),
+                'sellout_q': round(month_vals['sellout_q'], 2),
+            }
+            for month_key, month_vals in sorted(compare_month_map.items())
+        ]
+        compare_empty_message = ''
+        if compare_channel_labels and not compare_rows:
+            compare_empty_message = 'No hay PDVs para los canales filtrados.'
+        elif compare_channel_labels and not supported_compare_labels:
+            compare_empty_message = 'La seleccion actual no tiene dataset de sell-out disponible.'
+        elif not supported_compare_labels:
+            compare_empty_message = 'No hay canales con dataset de sell-out disponible en esta vista.'
+
+        otros_rows = [
+            row for row in ranking_rows
+            if row['channel'] not in ('Walmart/Paiz', 'PUMA Super 7')
+        ]
+        otros_channels = [
+            row for row in coverage_payload.get('coverage_by_channel', [])
+            if row.get('channel') not in ('Walmart/Paiz', 'PUMA Super 7')
+        ]
+
+        summary = commercial_payload.get('summary', {})
+        return {
+            'summary': {
+                'sync_label': summary.get('sync_label') or fields.Date.to_string(date_to),
+                'period_label': summary.get('period_label') or (
+                    '%s al %s' % (
+                        fields.Date.to_string(date_from),
+                        fields.Date.to_string(date_to),
+                    )
+                ),
+                'currency_symbol': currency_symbol,
+                'total_pdvs': len(ranking_rows),
+                'total_revenue': round(total_revenue, 2),
+                'order_count': len(total_order_ids),
+                'avg_ticket': round(total_revenue / len(total_order_ids), 2) if total_order_ids else 0.0,
+                'active_channel_count': len(coverage_payload.get('coverage_by_channel', [])),
+                'new_count': len(new_pdvs),
+                'dormant_count': len(dormant_pdvs),
+                'low_st_count': len([
+                    row for row in ranking_rows
+                    if any(alert['type'] == 'low_st' for alert in row['alerts'])
+                ]),
+                'alert_count': len(alert_rows),
+                'top_pdv_name': top_pdvs[0]['name_short'] if top_pdvs else '',
+                'top_pdv_revenue': top_pdvs[0]['rev'] if top_pdvs else 0.0,
+            },
+            'active_filters': self._serialize_active_filters(normalized_filters),
+            'filter_options': filter_options,
+            'empty_message': '',
+            'revenue_series': commercial_payload.get('revenue_series', []),
+            'channel_coverage': coverage_payload.get('coverage_by_channel', []),
+            'top_pdvs': top_pdvs,
+            'ranking_rows': ranking_rows,
+            'new_pdvs': new_pdvs,
+            'dormant_pdvs': dormant_pdvs,
+            'channel_compare': {
+                'channel_labels': compare_channel_labels,
+                'supported_channel_labels': supported_compare_labels,
+                'summary': compare_summary,
+                'by_month': compare_by_month,
+                'rows': compare_rows,
+                'empty_message': compare_empty_message,
+            },
+            'otros': {
+                'channels': otros_channels,
+                'rows': otros_rows,
+            },
+            'alerts': {
+                'rows': alert_rows,
+            },
+            'notes_sources': [
+                {
+                    'label': 'Odoo',
+                    'detail': 'PDV resume actividad por punto usando sale.order.line, sale.order y partners asignados a canales comerciales.',
+                },
+                {
+                    'label': 'Commercial',
+                    'detail': 'Marcas, canales y sell-in vs sell-out reutilizan Zoraen Commercial y el hub comercial sin cambiar su logica base.',
+                },
+                {
+                    'label': 'Alertas',
+                    'detail': 'Dormancia, alta reciente, caida mensual y bajo sell-through se usan como senales operativas del hub PDV.',
                 },
             ],
         }

@@ -28,6 +28,7 @@
                     <field name="sequence" invisible="1"/>
                     <field name="brand_count" invisible="1"/>
                     <field name="channel_count" invisible="1"/>
+                    <field name="product_channel_count" invisible="1"/>
                     <field name="prospect_count" invisible="1"/>
                     <field name="opportunity_count" invisible="1"/>
                     <field name="quotation_count" invisible="1"/>
@@ -108,6 +109,13 @@
                                         string="Canales"
                                         class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
                                     />
+                                    <button
+                                        name="action_open_product_channels"
+                                        type="object"
+                                        icon="fa-cubes"
+                                        string="Canales de producto"
+                                        class="btn zrn_planning_submodule_menu_btn zrn_planning_submodule_menu_btn_secondary"
+                                    />
                                 </div>
                             </div>
 
@@ -126,6 +134,10 @@
                                         <div class="d-flex justify-content-between py-2 border-bottom">
                                             <span>Canales activos</span>
                                             <strong><field name="channel_count"/></strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span>Canales de producto</span>
+                                            <strong><field name="product_channel_count"/></strong>
                                         </div>
                                         <div class="d-flex justify-content-between py-2 border-bottom">
                                             <span>Cotizaciones abiertas</span>
@@ -159,6 +171,7 @@
                                         <div class="mb-2">Usa marcas y canales para mantener cartera, pipeline y cotizaciones alineadas.</div>
                                         <button name="action_open_brands" type="object" string="Gestionar marcas" class="btn btn-secondary btn-sm mb-2"/>
                                         <button name="action_open_channels" type="object" string="Gestionar canales" class="btn btn-secondary btn-sm"/>
+                                        <button name="action_open_product_channels" type="object" string="Canales de producto" class="btn btn-secondary btn-sm mt-2"/>
                                     </div>
                                 </div>
                             </div>
@@ -312,6 +325,14 @@
         parent="menu_zrn_commercial_root"
         action="action_zrn_commercial_channels"
         sequence="15"
+    />
+
+    <menuitem
+        id="menu_zrn_commercial_product_channels_sub"
+        name="Canales de producto"
+        parent="menu_zrn_commercial_root"
+        action="action_zrn_commercial_product_channels"
+        sequence="18"
     />
 
     <menuitem

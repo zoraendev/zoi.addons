@@ -1,12 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="view_zrn_commercial_channel_search" model="ir.ui.view">
+        <field name="name">zrn_commercial.commercial.channel.search</field>
+        <field name="model">zrn_commercial.commercial.channel</field>
+        <field name="arch" type="xml">
+            <search string="Canales comerciales">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="owner_user_id"/>
+                <filter string="Activos" name="active_true" domain="[('active', '=', True)]"/>
+                <filter string="Inactivos" name="active_false" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
     <record id="view_zrn_commercial_channel_list" model="ir.ui.view">
         <field name="name">zrn_commercial.commercial.channel.list</field>
         <field name="model">zrn_commercial.commercial.channel</field>
         <field name="arch" type="xml">
             <tree string="Canales comerciales">
-                <field name="active" optional="show" widget="boolean_toggle"/>
+                <field name="active" optional="show"/>
                 <field name="name"/>
                 <field name="code" optional="show"/>
                 <field name="partner_count" string="Clientes / PDVs"/>
@@ -99,7 +113,9 @@
         <field name="res_model">zrn_commercial.commercial.channel</field>
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_zrn_commercial_channel_list"/>
+        <field name="search_view_id" ref="view_zrn_commercial_channel_search"/>
         <field name="target">current</field>
+        <field name="context">{'active_test': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Crea tu primer canal comercial

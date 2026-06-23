@@ -21,10 +21,10 @@ Addon dedicado a la capa comercial operativa:
     'depends': ['base', 'product', 'contacts', 'mail', 'crm', 'sale_management', 'sale_crm'],
     'data': [
         'security/ir.model.access.csv',
-        'data/commercial_channel_data.xml',
         'views/commercial_brand_import_views.xml',
         'views/commercial_brand_views.xml',
         'views/commercial_channel_views.xml',
+        'views/product_channel_views.xml',
         'views/commercial_home_views.xml',
         'views/commercial_flow_views.xml',
         'views/commercial_hub_views.xml',

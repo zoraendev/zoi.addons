@@ -47,6 +47,7 @@ class ZrnCommercialHome(ZrnCommercialNavigationMixin, models.Model):
     )
     brand_count = fields.Integer(compute='_compute_dashboard_counts')
     channel_count = fields.Integer(compute='_compute_dashboard_counts')
+    product_channel_count = fields.Integer(compute='_compute_dashboard_counts')
     prospect_count = fields.Integer(compute='_compute_dashboard_counts')
     opportunity_count = fields.Integer(compute='_compute_dashboard_counts')
     quotation_count = fields.Integer(compute='_compute_dashboard_counts')
@@ -55,12 +56,14 @@ class ZrnCommercialHome(ZrnCommercialNavigationMixin, models.Model):
     def _compute_dashboard_counts(self):
         brand_model = self.env['zrn_commercial.commercial.brand'].sudo()
         channel_model = self.env['zrn_commercial.commercial.channel'].sudo()
+        product_channel_model = self.env['zrn_commercial.product.channel'].sudo()
         lead_model = self.env['crm.lead'].sudo()
         order_model = self.env['sale.order'].sudo()
         today = fields.Date.today()
         for record in self:
             record.brand_count = brand_model.search_count([('active', '=', True)])
             record.channel_count = channel_model.search_count([('active', '=', True)])
+            record.product_channel_count = product_channel_model.search_count([('active', '=', True)])
             record.prospect_count = lead_model.search_count([('type', '=', 'lead'), ('active', '=', True)])
             record.opportunity_count = lead_model.search_count([('type', '=', 'opportunity'), ('active', '=', True)])
             record.quotation_count = order_model.search_count([('state', 'in', ['draft', 'sent'])])
@@ -83,6 +86,10 @@ class ZrnCommercialHome(ZrnCommercialNavigationMixin, models.Model):
         """
         self.ensure_one()
         return self._open_singleton_action('zrn_commercial.action_zrn_commercial_channels')
+
+    def action_open_product_channels(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_commercial.action_zrn_commercial_product_channels')
 
     def action_open_portfolio(self):
         """

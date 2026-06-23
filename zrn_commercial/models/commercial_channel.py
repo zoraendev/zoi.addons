@@ -85,39 +85,6 @@ class ZrnCommercialChannel(models.Model):
                 lambda link: not link.partner_id.activity_state or link.partner_id.activity_state == 'overdue'
             ))
 
-    @api.model
-    def _seed_default_channel_partners(self):
-        channel_partner_model = self.env['zrn_commercial.commercial.channel.partner'].sudo()
-        partner_model = self.env['res.partner'].sudo()
-        channels = self.sudo().search([])
-        default_map = {
-            'puma_super_7': ['SUPER 7', 'PUMA'],
-            'walmart_paiz': ['WALMART', 'PAIZ', 'WM SAN'],
-            'la_torre': ['LA TORRE'],
-            'b3': ['B3'],
-            'circle_k': ['CIRCLE K'],
-            'gta_msf': ['GTA', 'MSF', 'FRESH'],
-            'otros': ['OTROS', 'TIENDA'],
-        }
-
-        for channel in channels:
-            patterns = default_map.get(channel.code) or []
-            for pattern in patterns:
-                partners = partner_model.search([
-                    ('customer_rank', '>', 0),
-                    ('type', '!=', 'private'),
-                    ('name', '!=', False),
-                    ('name', 'ilike', pattern),
-                ], order='name asc, id asc')
-                for partner in partners:
-                    if channel_partner_model.search_count([('partner_id', '=', partner.id)]):
-                        continue
-                    channel_partner_model.create({
-                        'channel_id': channel.id,
-                        'partner_id': partner.id,
-                        'notes': 'Carga inicial automatica por coincidencia de nombre.',
-                    })
-
     def action_open_customers(self):
         self.ensure_one()
         action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_customers')
