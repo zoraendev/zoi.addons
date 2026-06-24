@@ -1,6 +1,7 @@
 @layer colors-dark {
-  :root,
-  html,
+  /* Selectores dark-mode: se activan solo cuando Odoo aplica html.dark
+     o el atributo data-theme="dark". El archivo se carga vía
+     web.assets_web_dark, pero los selectores deben ser precisos. */
   html.dark,
   html.dark *,
   html.dark :root,

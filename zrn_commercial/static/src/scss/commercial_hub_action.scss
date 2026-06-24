@@ -95,3 +95,55 @@
     width: 100%;
   }
 }
+
+/* ── Dark mode overrides ── */
+html.dark .o_action_manager .zrn_hub_workspace {
+  background: #111827;
+}
+
+html.dark .o_action_manager .zrn_hub_header {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+html.dark .o_action_manager .zrn_hub_header_main h1 {
+  color: #f3f4f6;
+}
+
+html.dark .o_action_manager .zrn_hub_kicker {
+  color: #9ca3af;
+}
+
+html.dark .o_action_manager .zrn_hub_switch.btn {
+  border-color: #374151;
+  background: #1f2937;
+  color: #d1d5db;
+}
+
+html.dark .o_action_manager .zrn_hub_switch.btn:hover,
+html.dark .o_action_manager .zrn_hub_switch.btn:focus {
+  border-color: #4b5563;
+  background: #374151;
+  color: #f3f4f6;
+}
+
+html.dark .o_action_manager .zrn_hub_switch_active.btn,
+html.dark .o_action_manager .zrn_hub_switch_active.btn:hover,
+html.dark .o_action_manager .zrn_hub_switch_active.btn:focus {
+  border-color: #bd1730;
+  background: #bd1730;
+  color: #ffffff;
+}
+
+html.dark .o_action_manager .zrn_hub_panel {
+  border-color: #374151;
+  background: #1f2937;
+}
+
+html.dark .o_action_manager .zrn_hub_panel_title {
+  color: #f3f4f6;
+}
+
+html.dark .o_action_manager .zrn_hub_panel_text {
+  color: #9ca3af;
+}

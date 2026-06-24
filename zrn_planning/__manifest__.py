@@ -39,6 +39,10 @@ Addon dedicado a planeacion operativa:
             'zrn_planning/static/zrn/css/colors.css',
             'zrn_planning/static/zrn/css/lib.css',
         ],
+        # Dark mode: Odoo solo inyecta estos assets cuando html.dark está activo
+        'web.assets_web_dark': [
+            'zrn_planning/static/zrn/css/colors-dark.css',
+        ],
     },
     'installable': True,
 }
