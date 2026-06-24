@@ -6,6 +6,16 @@ from datetime import timedelta
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from .rrhh_models import (
+    CHECKLIST_KEYS,
+    CHECKLIST_TEMPLATE,
+    NON_PREDICTIVE_FACTORS,
+    PREDICTOR_KEYS,
+    PREDICTOR_QUESTIONS,
+    RRHH_RISK_THRESHOLDS,
+    VALIDATED_PATTERN_LIBRARY,
+)
+
 
 class ZrnAnalyticsNavigationMixin:
     def _open_singleton_action(self, action_xmlid):
@@ -5177,3 +5187,401 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 },
             ],
         }
+
+    @api.model
+    def _coerce_bool(self, value):
+        return value in (True, 1, '1', 'true', 'True', 'on', 'yes')
+
+    @api.model
+    def _normalize_rrhh_filters(self, filters=None):
+        filters = filters or {}
+        selected_applicant_id = filters.get('selected_applicant_id') or filters.get('applicant_id')
+        try:
+            selected_applicant_id = int(selected_applicant_id) if selected_applicant_id else False
+        except (TypeError, ValueError):
+            selected_applicant_id = False
+        return {
+            'selected_applicant_id': selected_applicant_id,
+        }
+
+    @api.model
+    def _get_rrhh_applicants(self):
+        return self.env['hr.applicant'].with_context(active_test=False).search(
+            [('company_id', 'in', [False, self.env.company.id])],
+            order='create_date desc, id desc',
+        )
+
+    @api.model
+    def _serialize_rrhh_applicant(self, applicant):
+        if not applicant:
+            return False
+        return {
+            'id': applicant.id,
+            'name': applicant.partner_name or applicant.name or applicant.display_name,
+            'display_name': applicant.display_name,
+            'job_name': applicant.job_id.name or '',
+            'stage_name': applicant.stage_id.name or '',
+            'email': applicant.email_from or '',
+            'phone': applicant.partner_phone or applicant.partner_mobile or '',
+            'partner_name': applicant.partner_name or '',
+            'priority': applicant.priority or '0',
+            'create_date': fields.Datetime.to_string(applicant.create_date) if applicant.create_date else '',
+        }
+
+    @api.model
+    def _serialize_rrhh_predictor(self, predictor):
+        if not predictor:
+            return False
+        return {
+            'id': predictor.id,
+            'evaluation_date': fields.Date.to_string(predictor.evaluation_date) if predictor.evaluation_date else '',
+            'answered_count': predictor.answered_count,
+            'score_total': round(float(predictor.score_total or 0.0), 1),
+            'risk_level': predictor.risk_level or 'not_evaluated',
+            'risk_label': predictor.risk_label or 'Sin evaluar',
+            'summary_text': predictor.summary_text or '',
+            'notes': predictor.notes or '',
+            'factor_scores': {
+                'family': round(float(predictor.family_score or 0.0), 1),
+                'patrimony': round(float(predictor.patrimony_score or 0.0), 1),
+                'environment': round(float(predictor.environment_score or 0.0), 1),
+                'work_history': round(float(predictor.work_history_score or 0.0), 1),
+                'exam': round(float(predictor.exam_score or 0.0), 1),
+            },
+            'answers': {
+                key: getattr(predictor, key) or ''
+                for key in PREDICTOR_KEYS
+            },
+        }
+
+    @api.model
+    def _serialize_rrhh_checklist(self, checklist):
+        if not checklist:
+            return False
+        return {
+            'id': checklist.id,
+            'interview_date': fields.Date.to_string(checklist.interview_date) if checklist.interview_date else '',
+            'alert_count': checklist.alert_count,
+            'summary_text': checklist.summary_text or '',
+            'observations': checklist.observations or '',
+            'answers': {
+                key: bool(getattr(checklist, key))
+                for key in CHECKLIST_KEYS
+            },
+        }
+
+    @api.model
+    def _serialize_rrhh_patterns(self, pattern):
+        if not pattern:
+            return {
+                'matched_pattern_count': 0,
+                'severity_level': 'low',
+                'summary_text': 'Sin patrones validados para esta solicitud.',
+                'patterns': [
+                    {
+                        **item,
+                        'matched': False,
+                    }
+                    for item in VALIDATED_PATTERN_LIBRARY
+                ],
+                'current_patterns': [],
+            }
+        pattern_rows = []
+        current_rows = []
+        for item in VALIDATED_PATTERN_LIBRARY:
+            matched = bool(getattr(pattern, item['field'], False))
+            row = {
+                'key': item['key'],
+                'label': item['label'],
+                'strength': item['strength'],
+                'approved_pct': item['approved_pct'],
+                'rejected_pct': item['rejected_pct'],
+                'approved_detail': item['approved_detail'],
+                'rejected_detail': item['rejected_detail'],
+                'description': item['description'],
+                'matched': matched,
+            }
+            pattern_rows.append(row)
+            if matched:
+                current_rows.append(row)
+        return {
+            'id': pattern.id,
+            'matched_pattern_count': pattern.matched_pattern_count,
+            'severity_level': pattern.severity_level or 'low',
+            'summary_text': pattern.summary_text or '',
+            'patterns': pattern_rows,
+            'current_patterns': current_rows,
+        }
+
+    @api.model
+    def _build_rrhh_historical_rows(self, applicants, predictors, checklists, patterns):
+        predictor_by_applicant = {record.applicant_id.id: record for record in predictors}
+        checklist_by_applicant = {record.applicant_id.id: record for record in checklists}
+        pattern_by_applicant = {record.applicant_id.id: record for record in patterns}
+        rows = []
+        for applicant in applicants:
+            predictor = predictor_by_applicant.get(applicant.id)
+            checklist = checklist_by_applicant.get(applicant.id)
+            pattern = pattern_by_applicant.get(applicant.id)
+            current_patterns = self._serialize_rrhh_patterns(pattern)['current_patterns']
+            rows.append({
+                'applicant_id': applicant.id,
+                'name': applicant.partner_name or applicant.name or applicant.display_name,
+                'job_name': applicant.job_id.name or '',
+                'stage_name': applicant.stage_id.name or '',
+                'email': applicant.email_from or '',
+                'created_at': fields.Datetime.to_string(applicant.create_date) if applicant.create_date else '',
+                'has_predictor': bool(predictor),
+                'has_checklist': bool(checklist),
+                'has_pattern': bool(pattern),
+                'predictor_score': round(float(predictor.score_total or 0.0), 1) if predictor else 0.0,
+                'predictor_risk_level': predictor.risk_level if predictor else 'not_evaluated',
+                'predictor_risk_label': predictor.risk_label if predictor else 'Sin evaluar',
+                'checklist_alert_count': checklist.alert_count if checklist else 0,
+                'matched_pattern_count': pattern.matched_pattern_count if pattern else 0,
+                'pattern_severity': pattern.severity_level if pattern else 'low',
+                'pattern_labels': ', '.join(item['label'] for item in current_patterns) if current_patterns else '',
+            })
+        return rows
+
+    @api.model
+    def _get_rrhh_empty_payload(self, normalized_filters=None):
+        normalized_filters = normalized_filters or {'selected_applicant_id': False}
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(fields.Date.context_today(self)),
+                'applicant_count': 0,
+                'predictor_count': 0,
+                'checklist_count': 0,
+                'pattern_count': 0,
+                'high_risk_count': 0,
+                'pending_count': 0,
+            },
+            'active_filters': normalized_filters,
+            'applicant_options': [],
+            'current_applicant': False,
+            'current_predictor': False,
+            'current_checklist': False,
+            'current_patterns': self._serialize_rrhh_patterns(False),
+            'historical_rows': [],
+            'overview': {
+                'risk_distribution': [],
+                'stage_distribution': [],
+                'job_distribution': [],
+                'latest_rows': [],
+            },
+            'predictor_config': {
+                'questions': PREDICTOR_QUESTIONS,
+                'thresholds': RRHH_RISK_THRESHOLDS,
+            },
+            'checklist_template': {
+                'sections': CHECKLIST_TEMPLATE,
+            },
+            'validated_patterns': {
+                'non_predictive_factors': NON_PREDICTIVE_FACTORS,
+                'library': VALIDATED_PATTERN_LIBRARY,
+            },
+            'notes_sources': [
+                {
+                    'label': 'Odoo',
+                    'detail': 'Solicitudes y etapas desde hr.applicant, hr.job y hr_recruitment.',
+                },
+                {
+                    'label': 'Instrumentos RRHH',
+                    'detail': 'Predictor, checklist y patrones se persisten por solicitud dentro de zrn_analitics.',
+                },
+            ],
+            'empty_message': 'No hay solicitudes de reclutamiento para mostrar en RRHH.',
+        }
+
+    @api.model
+    def get_rrhh_hub_payload(self, filters=None):
+        normalized_filters = self._normalize_rrhh_filters(filters)
+        applicants = self._get_rrhh_applicants()
+        if not applicants:
+            return self._get_rrhh_empty_payload(normalized_filters)
+
+        selected_applicant_id = normalized_filters['selected_applicant_id']
+        selected_applicant = applicants.filtered(lambda applicant: applicant.id == selected_applicant_id)[:1]
+        if not selected_applicant:
+            selected_applicant = applicants[:1]
+            normalized_filters['selected_applicant_id'] = selected_applicant.id
+
+        predictors = self.env['zrn.rrhh.predictor'].search([('applicant_id', 'in', applicants.ids)])
+        checklists = self.env['zrn.rrhh.interview.checklist'].search([('applicant_id', 'in', applicants.ids)])
+        applicants_with_sources = applicants.filtered(
+            lambda applicant: applicant._zrn_rrhh_get_predictor() or applicant._zrn_rrhh_get_checklist()
+        )
+        if applicants_with_sources:
+            applicants_with_sources._zrn_rrhh_recompute_pattern_records()
+        patterns = self.env['zrn.rrhh.validated.pattern'].search([('applicant_id', 'in', applicants.ids)])
+
+        predictor_by_applicant = {record.applicant_id.id: record for record in predictors}
+        checklist_by_applicant = {record.applicant_id.id: record for record in checklists}
+        pattern_by_applicant = {record.applicant_id.id: record for record in patterns}
+        historical_rows = self._build_rrhh_historical_rows(applicants, predictors, checklists, patterns)
+
+        risk_counter = defaultdict(int)
+        for predictor in predictors:
+            risk_counter[predictor.risk_level or 'not_evaluated'] += 1
+        risk_distribution = [
+            {
+                'key': threshold['key'],
+                'label': threshold['label'],
+                'value': risk_counter.get(threshold['key'], 0),
+            }
+            for threshold in RRHH_RISK_THRESHOLDS
+        ]
+
+        stage_counter = defaultdict(int)
+        job_counter = defaultdict(int)
+        for applicant in applicants:
+            stage_counter[applicant.stage_id.name or 'Sin etapa'] += 1
+            job_counter[applicant.job_id.name or 'Sin puesto'] += 1
+        stage_distribution = [
+            {'label': label, 'value': value}
+            for label, value in sorted(stage_counter.items(), key=lambda item: (-item[1], item[0]))
+        ]
+        job_distribution = [
+            {'label': label, 'value': value}
+            for label, value in sorted(job_counter.items(), key=lambda item: (-item[1], item[0]))[:8]
+        ]
+
+        current_predictor = predictor_by_applicant.get(selected_applicant.id)
+        current_checklist = checklist_by_applicant.get(selected_applicant.id)
+        current_pattern = pattern_by_applicant.get(selected_applicant.id)
+
+        predictor_count = len(predictors)
+        checklist_count = len(checklists)
+        pattern_count = len(patterns)
+        completed_count = len([
+            row for row in historical_rows
+            if row['has_predictor'] and row['has_checklist'] and row['has_pattern']
+        ])
+
+        return {
+            'summary': {
+                'sync_label': fields.Date.to_string(fields.Date.context_today(self)),
+                'applicant_count': len(applicants),
+                'predictor_count': predictor_count,
+                'checklist_count': checklist_count,
+                'pattern_count': pattern_count,
+                'high_risk_count': len([
+                    predictor for predictor in predictors
+                    if predictor.risk_level in ('high', 'very_high')
+                ]),
+                'pending_count': max(len(applicants) - completed_count, 0),
+            },
+            'active_filters': normalized_filters,
+            'applicant_options': [
+                {
+                    'id': applicant.id,
+                    'name': applicant.partner_name or applicant.name or applicant.display_name,
+                    'job_name': applicant.job_id.name or '',
+                    'stage_name': applicant.stage_id.name or '',
+                }
+                for applicant in applicants
+            ],
+            'current_applicant': self._serialize_rrhh_applicant(selected_applicant),
+            'current_predictor': self._serialize_rrhh_predictor(current_predictor),
+            'current_checklist': self._serialize_rrhh_checklist(current_checklist),
+            'current_patterns': self._serialize_rrhh_patterns(current_pattern),
+            'historical_rows': historical_rows,
+            'overview': {
+                'risk_distribution': risk_distribution,
+                'stage_distribution': stage_distribution,
+                'job_distribution': job_distribution,
+                'latest_rows': historical_rows[:8],
+            },
+            'predictor_config': {
+                'questions': PREDICTOR_QUESTIONS,
+                'thresholds': RRHH_RISK_THRESHOLDS,
+            },
+            'checklist_template': {
+                'sections': CHECKLIST_TEMPLATE,
+            },
+            'validated_patterns': {
+                'non_predictive_factors': NON_PREDICTIVE_FACTORS,
+                'library': VALIDATED_PATTERN_LIBRARY,
+            },
+            'notes_sources': [
+                {
+                    'label': 'Odoo',
+                    'detail': 'Solicitudes, etapas y puestos provienen de hr.applicant y hr.job.',
+                },
+                {
+                    'label': 'Hub RRHH',
+                    'detail': 'Predictor, checklist y patrones viven amarrados a la solicitud para auditoria y seguimiento.',
+                },
+            ],
+            'empty_message': '',
+        }
+
+    @api.model
+    def _get_rrhh_applicant_or_raise(self, applicant_id):
+        try:
+            applicant_id = int(applicant_id)
+        except (TypeError, ValueError):
+            applicant_id = False
+        applicant = self.env['hr.applicant'].browse(applicant_id)
+        if not applicant.exists():
+            raise UserError('No se encontro la solicitud seleccionada para RRHH.')
+        return applicant
+
+    @api.model
+    def upsert_rrhh_predictor(self, applicant_id, values=None):
+        applicant = self._get_rrhh_applicant_or_raise(applicant_id)
+        values = values or {}
+        clean_vals = {
+            'evaluation_date': values.get('evaluation_date') or fields.Date.context_today(self),
+            'notes': (values.get('notes') or '').strip(),
+        }
+        for question in PREDICTOR_QUESTIONS:
+            raw_value = values.get(question['key'])
+            allowed_values = {option['value'] for option in question['options']}
+            if raw_value in (False, None, ''):
+                clean_vals[question['key']] = False
+                continue
+            normalized_value = str(raw_value)
+            clean_vals[question['key']] = normalized_value if normalized_value in allowed_values else False
+
+        predictor = self.env['zrn.rrhh.predictor'].search([('applicant_id', '=', applicant.id)], limit=1)
+        if predictor:
+            predictor.write(clean_vals)
+        else:
+            self.env['zrn.rrhh.predictor'].create({
+                'applicant_id': applicant.id,
+                'company_id': applicant.company_id.id or self.env.company.id,
+                **clean_vals,
+            })
+        applicant._zrn_rrhh_recompute_pattern_records()
+        return self.get_rrhh_hub_payload({'selected_applicant_id': applicant.id})
+
+    @api.model
+    def upsert_rrhh_checklist(self, applicant_id, values=None):
+        applicant = self._get_rrhh_applicant_or_raise(applicant_id)
+        values = values or {}
+        clean_vals = {
+            'interview_date': values.get('interview_date') or fields.Date.context_today(self),
+            'observations': (values.get('observations') or '').strip(),
+        }
+        for key in CHECKLIST_KEYS:
+            clean_vals[key] = self._coerce_bool(values.get(key))
+
+        checklist = self.env['zrn.rrhh.interview.checklist'].search([('applicant_id', '=', applicant.id)], limit=1)
+        if checklist:
+            checklist.write(clean_vals)
+        else:
+            self.env['zrn.rrhh.interview.checklist'].create({
+                'applicant_id': applicant.id,
+                'company_id': applicant.company_id.id or self.env.company.id,
+                **clean_vals,
+            })
+        applicant._zrn_rrhh_recompute_pattern_records()
+        return self.get_rrhh_hub_payload({'selected_applicant_id': applicant.id})
+
+    @api.model
+    def recompute_rrhh_patterns(self, applicant_id):
+        applicant = self._get_rrhh_applicant_or_raise(applicant_id)
+        applicant._zrn_rrhh_recompute_pattern_records()
+        return self.get_rrhh_hub_payload({'selected_applicant_id': applicant.id})

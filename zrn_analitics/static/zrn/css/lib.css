@@ -2141,9 +2141,209 @@
     overflow-y: auto;
   }
 
-  .zrn_analitics_pdv_sidebar.is-open {
-    transform: translateX(0);
+.zrn_analitics_pdv_sidebar.is-open {
+  transform: translateX(0);
+}
+
+.zrn_analitics_rrhh_content {
+  gap: 16px;
+}
+
+.zrn_analitics_rrhh_chart_wrap {
+  min-height: 280px;
+}
+
+.zrn_analitics_rrhh_action_bar,
+.zrn_analitics_rrhh_form_head,
+.zrn_analitics_rrhh_history_filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.zrn_analitics_rrhh_selector,
+.zrn_analitics_rrhh_field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.zrn_analitics_rrhh_field_wide {
+  flex: 1 1 360px;
+}
+
+.zrn_analitics_rrhh_field label,
+.zrn_analitics_rrhh_selector label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--zrn-analitics-text-soft);
+}
+
+.zrn_analitics_rrhh_factor_block {
+  border: 1px solid var(--zrn-analitics-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+  background: #fff;
+}
+
+.zrn_analitics_rrhh_factor_head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.zrn_analitics_rrhh_factor_badge,
+.zrn_analitics_rrhh_chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.zrn_analitics_rrhh_question + .zrn_analitics_rrhh_question {
+  margin-top: 14px;
+}
+
+.zrn_analitics_rrhh_question_label {
+  font-weight: 600;
+  color: var(--zrn-analitics-text-strong);
+  margin-bottom: 8px;
+}
+
+.zrn_analitics_rrhh_option_list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.zrn_analitics_rrhh_option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--zrn-analitics-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--zrn-analitics-surface);
+}
+
+.zrn_analitics_rrhh_option small {
+  margin-left: auto;
+  color: var(--zrn-analitics-text-soft);
+  font-weight: 600;
+}
+
+.zrn_analitics_rrhh_result_box {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--zrn-analitics-border);
+  border-left: 4px solid #bd1730;
+  border-radius: 8px;
+  background: #fff8f8;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zrn_analitics_rrhh_actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.zrn_analitics_rrhh_pattern_grid,
+.zrn_analitics_rrhh_checklist_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.zrn_analitics_rrhh_pattern_card,
+.zrn_analitics_rrhh_checklist_block {
+  border: 1px solid var(--zrn-analitics-border);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fff;
+}
+
+.zrn_analitics_rrhh_pattern_card.is-matched {
+  border-color: #bd1730;
+  background: #fff7f7;
+}
+
+.zrn_analitics_rrhh_pattern_head,
+.zrn_analitics_rrhh_pattern_stats,
+.zrn_analitics_rrhh_list_row,
+.zrn_analitics_rrhh_source_item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.zrn_analitics_rrhh_pattern_head span {
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--zrn-analitics-text-soft);
+}
+
+.zrn_analitics_rrhh_pattern_stats {
+  margin: 10px 0;
+  font-size: 12px;
+  color: var(--zrn-analitics-text-soft);
+}
+
+.zrn_analitics_rrhh_pattern_desc,
+.zrn_analitics_rrhh_check_help,
+.zrn_analitics_rrhh_source_item span {
+  font-size: 12px;
+  color: var(--zrn-analitics-text-soft);
+  line-height: 1.45;
+}
+
+.zrn_analitics_rrhh_check_item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-weight: 600;
+  color: var(--zrn-analitics-text-strong);
+}
+
+.zrn_analitics_rrhh_check_help {
+  padding-left: 24px;
+  margin: 6px 0 10px;
+}
+
+.zrn_analitics_rrhh_non_predictive,
+.zrn_analitics_rrhh_list,
+.zrn_analitics_rrhh_sources {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.zrn_analitics_rrhh_list_row {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--zrn-analitics-border);
+}
+
+@media (max-width: 768px) {
+  .zrn_analitics_rrhh_action_bar,
+  .zrn_analitics_rrhh_form_head,
+  .zrn_analitics_rrhh_history_filters {
+    flex-direction: column;
+    align-items: stretch;
   }
+}
 
   .zrn_analitics_pdv_sidebar_close {
     display: inline-flex;

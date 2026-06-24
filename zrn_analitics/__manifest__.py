@@ -18,7 +18,7 @@ Addon base para la capa analitica:
     'version': '0.1.1',
     'license': 'LGPL-3',
     'application': True,
-    'depends': ['base', 'web', 'sale', 'stock', 'purchase', 'zrn_commercial'],
+    'depends': ['base', 'web', 'sale', 'stock', 'purchase', 'hr', 'hr_recruitment', 'zrn_commercial'],
     'data': [
         'security/ir.model.access.csv',
         'views/analytics/placeholders/analytics_hub_views.xml',

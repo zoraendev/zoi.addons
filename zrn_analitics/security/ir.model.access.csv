@@ -1,2 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_zrn_analitics_home,zrn_analitics.home,model_zrn_analitics_home,base.group_user,1,1,1,1
+access_zrn_rrhh_predictor,zrn.rrhh.predictor,model_zrn_rrhh_predictor,base.group_user,1,1,1,1
+access_zrn_rrhh_validated_pattern,zrn.rrhh.validated.pattern,model_zrn_rrhh_validated_pattern,base.group_user,1,1,1,1
+access_zrn_rrhh_interview_checklist,zrn.rrhh.interview.checklist,model_zrn_rrhh_interview_checklist,base.group_user,1,1,1,1
