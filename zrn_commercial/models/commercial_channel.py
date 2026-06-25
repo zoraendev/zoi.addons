@@ -88,7 +88,11 @@ class ZrnCommercialChannel(models.Model):
     def action_open_customers(self):
         self.ensure_one()
         action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_customers')
-        action['domain'] = [('zrn_primary_channel_id', '=', self.id)]
+        partner_model = self.env['res.partner']
+        if 'zrn_primary_channel_id' in partner_model._fields:
+            action['domain'] = [('zrn_primary_channel_id', '=', self.id)]
+        else:
+            action['domain'] = [('id', 'in', self.partner_link_ids.mapped('partner_id').ids)]
         return action
 
     def action_open_opportunities(self):

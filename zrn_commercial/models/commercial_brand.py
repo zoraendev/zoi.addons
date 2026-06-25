@@ -120,16 +120,23 @@ class ZrnCommercialBrand(models.Model):
         lead_model = self.env['crm.lead'].sudo()
         partner_model = self.env['res.partner'].sudo()
         order_model = self.env['sale.order'].sudo()
+        partner_has_brand_profile = (
+            'zrn_primary_brand_id' in partner_model._fields
+            and 'zrn_brand_ids' in partner_model._fields
+        )
         for brand in self:
             brand.opportunity_count = lead_model.search_count([
                 ('zrn_brand_id', '=', brand.id),
                 ('type', '=', 'opportunity'),
             ])
-            brand.customer_count = partner_model.search_count([
-                '|',
-                ('zrn_primary_brand_id', '=', brand.id),
-                ('zrn_brand_ids', 'in', brand.id),
-            ])
+            if partner_has_brand_profile:
+                brand.customer_count = partner_model.search_count([
+                    '|',
+                    ('zrn_primary_brand_id', '=', brand.id),
+                    ('zrn_brand_ids', 'in', brand.id),
+                ])
+            else:
+                brand.customer_count = 0
             brand.quotation_count = order_model.search_count([
                 ('zrn_brand_id', '=', brand.id),
                 ('state', 'in', ['draft', 'sent', 'sale']),
@@ -336,8 +343,12 @@ class ZrnCommercialBrand(models.Model):
     def action_open_customers(self):
         self.ensure_one()
         action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_customers')
-        action['domain'] = ['|', ('zrn_primary_brand_id', '=', self.id), ('zrn_brand_ids', 'in', self.id)]
-        action['context'] = dict(self.env.context, default_zrn_primary_brand_id=self.id)
+        partner_fields = self.env['res.partner']._fields
+        if 'zrn_primary_brand_id' in partner_fields and 'zrn_brand_ids' in partner_fields:
+            action['domain'] = ['|', ('zrn_primary_brand_id', '=', self.id), ('zrn_brand_ids', 'in', self.id)]
+            action['context'] = dict(self.env.context, default_zrn_primary_brand_id=self.id)
+        else:
+            action['domain'] = [('id', '=', 0)]
         return action
 
     def action_open_quotations(self):
