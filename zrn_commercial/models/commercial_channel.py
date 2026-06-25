@@ -72,15 +72,23 @@ class ZrnCommercialChannel(models.Model):
     def _compute_related_counts(self):
         lead_model = self.env['crm.lead'].sudo()
         order_model = self.env['sale.order'].sudo()
+        lead_has_channel_field = 'zrn_channel_id' in lead_model._fields
+        order_has_channel_field = 'zrn_channel_id' in order_model._fields
         for channel in self:
-            channel.opportunity_count = lead_model.search_count([
-                ('zrn_channel_id', '=', channel.id),
-                ('type', '=', 'opportunity'),
-            ])
-            channel.quotation_count = order_model.search_count([
-                ('zrn_channel_id', '=', channel.id),
-                ('state', 'in', ['draft', 'sent', 'sale']),
-            ])
+            if lead_has_channel_field:
+                channel.opportunity_count = lead_model.search_count([
+                    ('zrn_channel_id', '=', channel.id),
+                    ('type', '=', 'opportunity'),
+                ])
+            else:
+                channel.opportunity_count = 0
+            if order_has_channel_field:
+                channel.quotation_count = order_model.search_count([
+                    ('zrn_channel_id', '=', channel.id),
+                    ('state', 'in', ['draft', 'sent', 'sale']),
+                ])
+            else:
+                channel.quotation_count = 0
             channel.account_without_followup_count = len(channel.partner_link_ids.filtered(
                 lambda link: not link.partner_id.activity_state or link.partner_id.activity_state == 'overdue'
             ))
@@ -98,15 +106,21 @@ class ZrnCommercialChannel(models.Model):
     def action_open_opportunities(self):
         self.ensure_one()
         action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_opportunities')
-        action['domain'] = [('zrn_channel_id', '=', self.id), ('type', '=', 'opportunity')]
-        action['context'] = dict(self.env.context, default_zrn_channel_id=self.id)
+        if 'zrn_channel_id' in self.env['crm.lead']._fields:
+            action['domain'] = [('zrn_channel_id', '=', self.id), ('type', '=', 'opportunity')]
+            action['context'] = dict(self.env.context, default_zrn_channel_id=self.id)
+        else:
+            action['domain'] = [('id', '=', 0)]
         return action
 
     def action_open_quotations(self):
         self.ensure_one()
         action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_quotations')
-        action['domain'] = [('zrn_channel_id', '=', self.id)]
-        action['context'] = dict(self.env.context, default_zrn_channel_id=self.id)
+        if 'zrn_channel_id' in self.env['sale.order']._fields:
+            action['domain'] = [('zrn_channel_id', '=', self.id)]
+            action['context'] = dict(self.env.context, default_zrn_channel_id=self.id)
+        else:
+            action['domain'] = [('id', '=', 0)]
         return action
 
 

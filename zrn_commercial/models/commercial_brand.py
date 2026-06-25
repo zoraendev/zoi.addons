@@ -120,15 +120,20 @@ class ZrnCommercialBrand(models.Model):
         lead_model = self.env['crm.lead'].sudo()
         partner_model = self.env['res.partner'].sudo()
         order_model = self.env['sale.order'].sudo()
+        lead_has_brand_field = 'zrn_brand_id' in lead_model._fields
+        order_has_brand_field = 'zrn_brand_id' in order_model._fields
         partner_has_brand_profile = (
             'zrn_primary_brand_id' in partner_model._fields
             and 'zrn_brand_ids' in partner_model._fields
         )
         for brand in self:
-            brand.opportunity_count = lead_model.search_count([
-                ('zrn_brand_id', '=', brand.id),
-                ('type', '=', 'opportunity'),
-            ])
+            if lead_has_brand_field:
+                brand.opportunity_count = lead_model.search_count([
+                    ('zrn_brand_id', '=', brand.id),
+                    ('type', '=', 'opportunity'),
+                ])
+            else:
+                brand.opportunity_count = 0
             if partner_has_brand_profile:
                 brand.customer_count = partner_model.search_count([
                     '|',
@@ -137,10 +142,13 @@ class ZrnCommercialBrand(models.Model):
                 ])
             else:
                 brand.customer_count = 0
-            brand.quotation_count = order_model.search_count([
-                ('zrn_brand_id', '=', brand.id),
-                ('state', 'in', ['draft', 'sent', 'sale']),
-            ])
+            if order_has_brand_field:
+                brand.quotation_count = order_model.search_count([
+                    ('zrn_brand_id', '=', brand.id),
+                    ('state', 'in', ['draft', 'sent', 'sale']),
+                ])
+            else:
+                brand.quotation_count = 0
 
     @api.constrains('logo')
     def _check_logo_file(self):
@@ -336,8 +344,11 @@ class ZrnCommercialBrand(models.Model):
     def action_open_opportunities(self):
         self.ensure_one()
         action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_opportunities')
-        action['domain'] = [('zrn_brand_id', '=', self.id), ('type', '=', 'opportunity')]
-        action['context'] = dict(self.env.context, default_zrn_brand_id=self.id)
+        if 'zrn_brand_id' in self.env['crm.lead']._fields:
+            action['domain'] = [('zrn_brand_id', '=', self.id), ('type', '=', 'opportunity')]
+            action['context'] = dict(self.env.context, default_zrn_brand_id=self.id)
+        else:
+            action['domain'] = [('id', '=', 0)]
         return action
 
     def action_open_customers(self):
@@ -354,8 +365,11 @@ class ZrnCommercialBrand(models.Model):
     def action_open_quotations(self):
         self.ensure_one()
         action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_quotations')
-        action['domain'] = [('zrn_brand_id', '=', self.id)]
-        action['context'] = dict(self.env.context, default_zrn_brand_id=self.id)
+        if 'zrn_brand_id' in self.env['sale.order']._fields:
+            action['domain'] = [('zrn_brand_id', '=', self.id)]
+            action['context'] = dict(self.env.context, default_zrn_brand_id=self.id)
+        else:
+            action['domain'] = [('id', '=', 0)]
         return action
 
 

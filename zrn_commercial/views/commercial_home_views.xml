@@ -161,7 +161,7 @@
                                                         <field name="name" string="Oportunidad"/>
                                                         <field name="expected_revenue" string="Ingreso esperado"/>
                                                         <field name="stage_id" string="Etapa"/>
-                                                        <field name="zrn_brand_id" string="Marca"/>
+                                                        <field name="user_id" string="Responsable"/>
                                                     </tree>
                                                 </field>
                                             </div>
