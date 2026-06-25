@@ -35,7 +35,9 @@
   --zrn-analitics-shadow-soft: 0 8px 22px rgba(15, 23, 42, 0.06);
   --zrn-analitics-shadow-button: 0 6px 14px rgba(31, 78, 163, 0.18);
 }
-
+/* Sobreescrituras de modo oscuro: Odoo aplica html.dark cuando el usuario
+   activa dark mode. Se incluye data-theme como fallback explícito. */
+html.dark,
 html.dark[data-theme="dark"] {
   color-scheme: dark;
   --zrn-analitics-brand-700: #8db6f2;
