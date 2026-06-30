@@ -1831,7 +1831,7 @@
                     </div>
 
                     <!-- Summary Cards -->
-                    <t t-set="chain_payload" t-value="commercialPayload.sellin_vs_sellout[state.sellinChain]"/>
+                    <t t-set="chain_payload" t-value="(commercialPayload.sellin_vs_sellout || {})[state.sellinChain] || {summary: {}}"/>
                     <div class="row g-2 mb-3">
                         <div class="col-6 col-md-3">
                             <div class="border rounded p-3 text-center bg-light">
