@@ -129,16 +129,17 @@
                                         <i class="fa fa-archive" style="margin-right:4px;"/>
                                         <span>Archivar filtrados</span>
                                     </button>
-                                    <button
-                                        name="action_archive_selected_lots"
-                                        type="object"
-                                        confirm="Se archivaran unicamente los lotes seleccionados. Desea continuar?"
-                                        invisible="selected_line_count == 0"
-                                        class="btn zrn_planning_production_report_table_toolbar_btn zrn_planning_production_report_table_toolbar_btn_primary"
-                                    >
-                                        <i class="fa fa-archive" style="margin-right:4px;"/>
-                                        <span>Archivar seleccionados</span>
-                                    </button>
+                                     <button
+                                         name="action_archive_selected_lots"
+                                         type="object"
+                                         confirm="Se archivaran unicamente los lotes seleccionados (Maximo 500). Desea continuar?"
+                                         invisible="selected_line_count == 0"
+                                         class="btn zrn_planning_production_report_table_toolbar_btn zrn_planning_production_report_table_toolbar_btn_primary"
+                                     >
+                                         <i class="fa fa-archive" style="margin-right:4px;"/>
+                                         <span>Archivar seleccionados</span>
+                                     </button>
+
                                     <button
                                         name="action_unarchive_filtered_lots"
                                         type="object"
@@ -153,7 +154,7 @@
                             <div class="zrn_planning_production_report_table_placeholder">
                                 <field name="line_ids" nolabel="1">
                                     <tree string="Lotes filtrados" create="0" delete="0" editable="bottom">
-                                        <field name="is_selected" string="" optional="show"/>
+                                        <field name="is_selected" string=" " width="40px" nolabel="1"/>
                                         <field name="name" string="Lote"/>
                                         <field name="lot_state"
                                                string="Estado"
