@@ -2,13 +2,19 @@
 
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { onMounted, onPatched, onWillUnmount } from "@odoo/owl";
 import { formView } from "@web/views/form/form_view";
 import { FormController } from "@web/views/form/form_controller";
+import { getSharedProcessingView } from "./analytics_processing_view";
 
 class ZrnAnalyticsFormController extends FormController {
   setup() {
     super.setup();
     this.orm = useService("orm");
+    this.processingView = getSharedProcessingView();
+    onMounted(() => this.syncProcessingView());
+    onPatched(() => this.syncProcessingView());
+    onWillUnmount(() => this.processingView.destroy());
   }
 
   get modelParams() {
@@ -25,10 +31,23 @@ class ZrnAnalyticsFormController extends FormController {
   }
 
   async openAnalyticsAction(methodName) {
+    const canLeave = await this.processingView.confirmDiscardIfNeeded();
+    if (!canLeave) {
+      return;
+    }
     const action = await this.orm.call(this.props.resModel, methodName, [
       [this.model.root.resId],
     ]);
     await this.actionService.doAction(action);
+  }
+
+  syncProcessingView() {
+    const root = this.el?.querySelector("[data-zrn-processing-root='1']");
+    if (root) {
+      this.processingView.mount(root);
+      return;
+    }
+    this.processingView.unmount();
   }
 
   openButton1() {

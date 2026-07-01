@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_zrn_analitics_home_form_processing" model="ir.ui.view">
+        <field name="name">zrn_analitics.home.form.processing</field>
+        <field name="model">zrn_analitics.home</field>
+        <field name="inherit_id" ref="zrn_analitics.view_zrn_analitics_home_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="zrn_analitics_shell" invisible="page_key != 'processing'">
+                    <div class="zrn_analitics_header zrn_analitics_header_workspace">
+                        <div>
+                            <div class="zrn_analitics_kicker">Procesamiento</div>
+                            <div class="oe_title">
+                                <h1>Datasets temporales</h1>
+                            </div>
+                            <div class="zrn_analitics_intro">
+                                Carga archivos locales, define columnas utilizable como dataset y ejecuta consultas SQL en memoria sin guardar nada en Odoo.
+                            </div>
+                            <div class="zrn_processing_warning">
+                                El archivo y la consulta viven solo en esta sesion del navegador. Si sales, recargas o cierras la pagina, se perderan.
+                            </div>
+                        </div>
+                        <div class="zrn_analitics_header_actions">
+                            <button
+                                name="action_open_home"
+                                type="object"
+                                icon="fa-arrow-left"
+                                string="Volver al centro"
+                                class="btn zrn_analitics_back_btn zrn_processing_leave_btn"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="zrn_processing_app" data-zrn-processing-root="1">
+                        <div class="zrn_processing_panel">
+                            <div class="zrn_processing_panel_head">
+                                <strong>Carga de archivo</strong>
+                                <span>Vista principal de procesamiento</span>
+                            </div>
+                            <div class="zrn_processing_panel_body">
+                                <div class="zrn_processing_field">
+                                    <div class="o_form_label">Archivo local</div>
+                                    <input
+                                        type="file"
+                                        class="form-control"
+                                        data-action="file"
+                                        accept=".csv,.json,.xml,.xls,.xlsx,.xlsm"
+                                    />
+                                    <div class="zrn_processing_field_hint">
+                                        Carga el archivo aqui y, al procesarlo, se mostraran el editor SQL, el overview y los resultados.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

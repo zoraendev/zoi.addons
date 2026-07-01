@@ -25,11 +25,15 @@ Addon base para la capa analitica:
         'views/analytics/analytics_home_views.xml',
         'views/analytics/placeholders/analytics_overview_views.xml',
         'views/analytics/placeholders/analytics_workspace_views.xml',
+        'views/analytics/placeholders/analytics_processing_views.xml',
         'views/analytics/placeholders/analytics_scenarios_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
             'zrn_analitics/static/lib/echarts/echarts.min.js',
+            'zrn_analitics/static/lib/xlsx/xlsx.full.min.js',
+            'zrn_analitics/static/lib/alasql/alasql.min.js',
+            'zrn_analitics/static/src/js/analytics_processing_view.js',
             'zrn_analitics/static/src/js/analytics_form_view.js',
             'zrn_analitics/static/src/js/analytics_hub_action.js',
             'zrn_analitics/static/src/xml/analytics_form_view.xml',

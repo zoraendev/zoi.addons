@@ -13,6 +13,12 @@
         <field name="page_key">workspace</field>
     </record>
 
+    <record id="zrn_analitics_processing_default" model="zrn_analitics.home">
+        <field name="name">Zoraen Analytics</field>
+        <field name="sequence">25</field>
+        <field name="page_key">processing</field>
+    </record>
+
     <record id="zrn_analitics_scenarios_default" model="zrn_analitics.home">
         <field name="name">Zoraen Analytics</field>
         <field name="sequence">30</field>
@@ -40,7 +46,7 @@
         <field name="view_id" ref="view_zrn_analitics_home_form"/>
         <field name="res_id" ref="zrn_analitics_home_default"/>
         <field name="target">current</field>
-        <field name="context" eval="{'active_id': ref('zrn_analitics_home_default'), 'active_ids': [ref('zrn_analitics_home_default'), ref('zrn_analitics_workspace_default'), ref('zrn_analitics_scenarios_default')]}"/>
+        <field name="context" eval="{'active_id': ref('zrn_analitics_home_default'), 'active_ids': [ref('zrn_analitics_home_default'), ref('zrn_analitics_workspace_default'), ref('zrn_analitics_processing_default'), ref('zrn_analitics_scenarios_default')]}"/>
     </record>
 
     <record id="action_zrn_analitics_workspace" model="ir.actions.act_window">
@@ -50,7 +56,17 @@
         <field name="view_id" ref="view_zrn_analitics_home_form"/>
         <field name="res_id" ref="zrn_analitics_workspace_default"/>
         <field name="target">current</field>
-        <field name="context" eval="{'active_id': ref('zrn_analitics_workspace_default'), 'active_ids': [ref('zrn_analitics_home_default'), ref('zrn_analitics_workspace_default'), ref('zrn_analitics_scenarios_default')]}"/>
+        <field name="context" eval="{'active_id': ref('zrn_analitics_workspace_default'), 'active_ids': [ref('zrn_analitics_home_default'), ref('zrn_analitics_workspace_default'), ref('zrn_analitics_processing_default'), ref('zrn_analitics_scenarios_default')]}"/>
+    </record>
+
+    <record id="action_zrn_analitics_processing" model="ir.actions.act_window">
+        <field name="name">Procesamiento</field>
+        <field name="res_model">zrn_analitics.home</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_zrn_analitics_home_form"/>
+        <field name="res_id" ref="zrn_analitics_processing_default"/>
+        <field name="target">current</field>
+        <field name="context" eval="{'active_id': ref('zrn_analitics_processing_default'), 'active_ids': [ref('zrn_analitics_home_default'), ref('zrn_analitics_workspace_default'), ref('zrn_analitics_processing_default'), ref('zrn_analitics_scenarios_default')]}"/>
     </record>
 
     <record id="action_zrn_analitics_scenarios" model="ir.actions.act_window">
@@ -60,7 +76,7 @@
         <field name="view_id" ref="view_zrn_analitics_home_form"/>
         <field name="res_id" ref="zrn_analitics_scenarios_default"/>
         <field name="target">current</field>
-        <field name="context" eval="{'active_id': ref('zrn_analitics_scenarios_default'), 'active_ids': [ref('zrn_analitics_home_default'), ref('zrn_analitics_workspace_default'), ref('zrn_analitics_scenarios_default')]}"/>
+        <field name="context" eval="{'active_id': ref('zrn_analitics_scenarios_default'), 'active_ids': [ref('zrn_analitics_home_default'), ref('zrn_analitics_workspace_default'), ref('zrn_analitics_processing_default'), ref('zrn_analitics_scenarios_default')]}"/>
     </record>
 
     <menuitem
@@ -77,6 +93,14 @@
         parent="menu_zrn_analitics_root"
         sequence="20"
         action="action_zrn_analitics_hubs"
+    />
+
+    <menuitem
+        id="menu_zrn_analitics_processing"
+        name="Procesamiento"
+        parent="menu_zrn_analitics_root"
+        sequence="25"
+        action="action_zrn_analitics_processing"
     />
 
     <menuitem
