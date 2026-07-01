@@ -34,7 +34,7 @@ class ZrnCommercialHomeController extends FormController {
     // Ciclo de vida Owl: montaje de vista en el DOM
     onMounted(() => {
       window.addEventListener("resize", this._chartResizeHandler);
-      this.el?.addEventListener("click", this._boundChartClick);
+      this.rootRef.el?.addEventListener("click", this._boundChartClick);
       this.loadAndRenderCharts();
     });
 
@@ -46,7 +46,7 @@ class ZrnCommercialHomeController extends FormController {
     // Ciclo de vida Owl: destrucción del componente, limpieza de listeners e instancias
     onWillUnmount(() => {
       window.removeEventListener("resize", this._chartResizeHandler);
-      this.el?.removeEventListener("click", this._boundChartClick);
+      this.rootRef.el?.removeEventListener("click", this._boundChartClick);
       this.disposeAllCharts();
     });
   }
@@ -77,7 +77,7 @@ class ZrnCommercialHomeController extends FormController {
    */
   onChartSwitchClick(event) {
     const button = event.target.closest(".zrn_planning_home_chart_type");
-    if (!button || !this.el?.contains(button)) {
+    if (!button || !this.rootRef.el?.contains(button)) {
       return;
     }
     event.preventDefault();
@@ -96,13 +96,13 @@ class ZrnCommercialHomeController extends FormController {
    * Instancia/Actualiza cada una de las 4 gráficas del dashboard con los datos del payload
    */
   renderCharts() {
-    if (!this.el || !window.echarts) {
+    if (!this.rootRef.el || !window.echarts) {
       CHART_KEYS.forEach((key) => this.toggleEmptyState(key, true));
       return;
     }
     CHART_KEYS.forEach((chartKey) => {
       const payload = this._chartPayload?.[chartKey];
-      const container = this.el.querySelector(
+      const container = this.rootRef.el.querySelector(
         `[data-zrn-commercial-chart="${chartKey}"]`,
       );
       if (!container) {
@@ -138,7 +138,7 @@ class ZrnCommercialHomeController extends FormController {
    * Obtiene el tipo de gráfica actualmente seleccionado para una key dada
    */
   getChartType(chartKey) {
-    const activeButton = this.el?.querySelector(
+    const activeButton = this.rootRef.el?.querySelector(
       `[data-chart-key="${chartKey}"] .zrn_planning_home_chart_type.is-active`,
     );
     return activeButton?.dataset?.zrnChartType || "bar";
@@ -245,10 +245,10 @@ class ZrnCommercialHomeController extends FormController {
    * Alterna la visibilidad del contenedor de la gráfica y el mensaje "Sin datos"
    */
   toggleEmptyState(chartKey, isEmpty) {
-    const container = this.el?.querySelector(
+    const container = this.rootRef.el?.querySelector(
       `[data-zrn-commercial-chart="${chartKey}"]`,
     );
-    const empty = this.el?.querySelector(
+    const empty = this.rootRef.el?.querySelector(
       `[data-zrn-commercial-chart-empty="${chartKey}"]`,
     );
     container?.classList.toggle("d-none", isEmpty);
