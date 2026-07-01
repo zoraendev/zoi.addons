@@ -21,7 +21,7 @@ class ZrnPlanningFormController extends FormController {
         return;
       }
       window.addEventListener("resize", this._homeChartResizeHandler);
-      this.el?.addEventListener("click", this._boundHomeChartClick);
+      this.rootRef.el?.addEventListener("click", this._boundHomeChartClick);
       this.loadAndRenderHomeCharts();
     });
 
@@ -34,7 +34,7 @@ class ZrnPlanningFormController extends FormController {
 
     onWillUnmount(() => {
       window.removeEventListener("resize", this._homeChartResizeHandler);
-      this.el?.removeEventListener("click", this._boundHomeChartClick);
+      this.rootRef.el?.removeEventListener("click", this._boundHomeChartClick);
       this.disposeHomeCharts();
     });
   }
@@ -105,7 +105,7 @@ class ZrnPlanningFormController extends FormController {
 
   onHomeChartClick(event) {
     const button = event.target.closest(".zrn_planning_home_chart_type");
-    if (!button || !this.el?.contains(button)) {
+    if (!button || !this.rootRef.el?.contains(button)) {
       return;
     }
     event.preventDefault();
@@ -120,7 +120,8 @@ class ZrnPlanningFormController extends FormController {
   }
 
   renderHomeCharts() {
-    if (!this.isPlanningHome || !this.el) {
+    const rootEl = this.rootRef.el;
+    if (!this.isPlanningHome || !rootEl) {
       return;
     }
     if (!window.echarts) {
@@ -130,7 +131,7 @@ class ZrnPlanningFormController extends FormController {
     }
     ["production", "supply"].forEach((chartKey) => {
       const payload = this._chartPayload?.[chartKey];
-      const container = this.el.querySelector(
+      const container = rootEl.querySelector(
         `[data-zrn-planning-chart="${chartKey}"]`,
       );
       if (!container) {
@@ -145,7 +146,10 @@ class ZrnPlanningFormController extends FormController {
       const chartType = this.getChartType(chartKey);
       let chart = this._chartInstances.get(chartKey);
       if (!chart) {
-        chart = window.echarts.init(container);
+        chart = window.echarts.init(container, null, {
+          width: 'auto',
+          height: 320
+        });
         this._chartInstances.set(chartKey, chart);
       }
       chart.setOption(this.buildHomeChartOption(payload, chartType), true);
@@ -154,7 +158,7 @@ class ZrnPlanningFormController extends FormController {
   }
 
   getChartType(chartKey) {
-    const activeButton = this.el?.querySelector(
+    const activeButton = this.rootRef.el?.querySelector(
       `[data-chart-key="${chartKey}"] .zrn_planning_home_chart_type.is-active`,
     );
     return activeButton?.dataset?.zrnChartType || "bar";
@@ -195,11 +199,28 @@ class ZrnPlanningFormController extends FormController {
       color: ["#5f8dd3", "#22a06b"],
       tooltip: { trigger: "axis" },
       legend: { top: 0, left: "left" },
-      grid: { top: 42, right: 12, bottom: 28, left: 44, containLabel: true },
+      grid: { top: 42, right: 12, bottom: 54, left: 44, containLabel: true },
       xAxis: {
         type: "category",
         data: payload.labels,
-        axisLabel: { interval: 0, rotate: payload.labels.length > 4 ? 20 : 0 },
+        axisLabel: {
+          interval: 0,
+          rotate: 15,
+          formatter: function (value) {
+            if (!value) return '';
+            // Si el nombre es muy largo, lo dividimos en palabras y saltamos línea cada 3 palabras
+            const words = value.split(' ');
+            let formatted = '';
+            for (let i = 0; i < words.length; i++) {
+              formatted += words[i] + ' ';
+              if ((i + 1) % 3 === 0) {
+                formatted += '\n';
+              }
+            }
+            return formatted.trim();
+          },
+          fontSize: 10,
+        },
       },
       yAxis: { type: "value" },
       series: [
@@ -207,12 +228,18 @@ class ZrnPlanningFormController extends FormController {
           name: generatedLabel,
           type: chartType,
           smooth: chartType === "line",
+          showSymbol: true,
+          symbol: "circle",
+          symbolSize: 8,
           data: payload.orders_generated,
         },
         {
           name: completedLabel,
           type: chartType,
           smooth: chartType === "line",
+          showSymbol: true,
+          symbol: "circle",
+          symbolSize: 8,
           data: payload.orders_completed,
         },
       ],
@@ -220,10 +247,10 @@ class ZrnPlanningFormController extends FormController {
   }
 
   toggleEmptyState(chartKey, isEmpty) {
-    const container = this.el?.querySelector(
+    const container = this.rootRef.el?.querySelector(
       `[data-zrn-planning-chart="${chartKey}"]`,
     );
-    const empty = this.el?.querySelector(
+    const empty = this.rootRef.el?.querySelector(
       `[data-zrn-planning-chart-empty="${chartKey}"]`,
     );
     container?.classList.toggle("d-none", isEmpty);

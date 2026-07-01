@@ -209,22 +209,22 @@ class ZrnCommercialHome(ZrnCommercialNavigationMixin, models.Model):
         prospects = lead_model.search(
             [('type', '=', 'lead'), ('active', '=', True)],
             order='create_date desc, id desc',
-            limit=7,
+            limit=15,
         )
         opportunities = lead_model.search(
             [('type', '=', 'opportunity'), ('active', '=', True)],
             order='create_date desc, id desc',
-            limit=7,
+            limit=15,
         )
         brands = brand_model.search(
             [('active', '=', True)],
             order='name',
-            limit=7,
+            limit=15,
         )
         channels = channel_model.search(
             [('active', '=', True)],
             order='name',
-            limit=7,
+            limit=15,
         )
         
         for record in self:

@@ -27,6 +27,7 @@ Addon dedicado a la capa comercial operativa:
         'views/product_channel_views.xml',
         'views/commercial_home_views.xml',
         'views/commercial_hub_views.xml',
+        'views/commercial_flow_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

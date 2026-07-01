@@ -192,7 +192,7 @@
                                 <div class="zrn_analitics_rrhh_list">
                                     <t t-foreach="rrhhPayload.overview.job_distribution" t-as="row" t-key="row.label">
                                         <div class="zrn_analitics_rrhh_list_row">
-                                            <span><t t-esc="row.label"/></span>
+                                            <span><t t-esc="row.label"/>:</span>
                                             <strong><t t-esc="formatCount(row.value)"/></strong>
                                         </div>
                                     </t>
@@ -200,7 +200,7 @@
                                 <div class="zrn_analitics_rrhh_sources">
                                     <t t-foreach="rrhhPayload.notes_sources" t-as="source" t-key="source.label">
                                         <div class="zrn_analitics_rrhh_source_item">
-                                            <strong><t t-esc="source.label"/></strong>
+                                            <strong><t t-esc="source.label"/>:</strong>
                                             <span><t t-esc="source.detail"/></span>
                                         </div>
                                     </t>

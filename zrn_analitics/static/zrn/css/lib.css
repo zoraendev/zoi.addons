@@ -2575,12 +2575,25 @@
 }
 
 .zrn_analitics_rrhh_pattern_head,
-.zrn_analitics_rrhh_pattern_stats,
-.zrn_analitics_rrhh_list_row,
-.zrn_analitics_rrhh_source_item {
+.zrn_analitics_rrhh_pattern_stats {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+}
+
+.zrn_analitics_rrhh_source_item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 4px !important;
+  margin-top: 8px !important;
+}
+
+.zrn_analitics_rrhh_list_row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .zrn_analitics_rrhh_pattern_head span {
@@ -2626,6 +2639,10 @@
 }
 
 .zrn_analitics_rrhh_list_row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--zrn-analitics-border);
 }

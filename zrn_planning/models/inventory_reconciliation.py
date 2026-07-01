@@ -176,7 +176,8 @@ class ZrnPlanningInventoryReconciliation(ZrnPlanningNavigationMixin, models.Mode
         action['context'] = {
             'active_test': False,
             'display_complete': True,
-            'search_default_group_by_product': 0,
+            'search_default_group_by_product': 1,
+            'search_default_on_hand': 1,
             'default_company_id': self.env.company.id,
         }
         return action
