@@ -2931,6 +2931,33 @@
     color: #1e5533 !important;
   }
 
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    th[data-name='is_selected'] {
+    padding: 0 !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    text-align: center !important;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_select_all_header_wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 100%;
+    min-height: 32px;
+    cursor: pointer;
+    user-select: none;
+    margin: 0 auto;
+  }
+
+  .o_form_view.zrn_planning_inventory_reconciliation_form
+    .zrn_select_all_header_wrapper:hover {
+    color: var(--z-color-brand, #714B67);
+  }
+
   .o_form_view.zrn_planning_production_report_form
     .zrn_planning_production_report_table_placeholder {
     display: flex;
