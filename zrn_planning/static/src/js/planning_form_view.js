@@ -26,6 +26,13 @@ class ZrnPlanningFormController extends FormController {
       if (this.isInventoryReconciliation) {
         this.rootRef.el?.addEventListener("click", this._boundReconciliationHeaderClick);
         this.renderSelectAllHeaderCheckbox();
+        // Polling de seguridad de 100ms para volver a pintar el checkbox del header
+        // si el ListRenderer de Odoo 17 reconstruye la tabla dinámicamente
+        this._reconciliationCheckboxInterval = setInterval(() => {
+          if (this.rootRef.el?.querySelector("th[data-name='is_selected']")) {
+            this.renderSelectAllHeaderCheckbox();
+          }
+        }, 100);
       }
     });
 
@@ -46,6 +53,9 @@ class ZrnPlanningFormController extends FormController {
       }
       if (this.isInventoryReconciliation) {
         this.rootRef.el?.removeEventListener("click", this._boundReconciliationHeaderClick);
+        if (this._reconciliationCheckboxInterval) {
+          clearInterval(this._reconciliationCheckboxInterval);
+        }
       }
     });
   }
@@ -221,7 +231,7 @@ class ZrnPlanningFormController extends FormController {
       }
       const chartType = this.getChartType(chartKey);
       let chart = this._chartInstances.get(chartKey);
-      if (!chart) {
+      if (!chart && document.body.contains(container)) {
         chart = window.echarts.init(container, null, {
           width: 'auto',
           height: 320
