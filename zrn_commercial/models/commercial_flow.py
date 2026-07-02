@@ -61,14 +61,16 @@ class ZrnCommercialCrmLead(models.Model):
         for lead in self:
             lead.zrn_followup_state = mapping.get(lead.activity_state, 'no_activity')
 
-    @api.constrains('type', 'active', 'zrn_brand_id', 'zrn_channel_id')
+    @api.constrains('type', 'active', 'zrn_brand_id', 'zrn_channel_id', 'stage_id')
     def _check_zrn_commercial_classification(self):
         for lead in self:
             if lead.type != 'opportunity' or not lead.active:
                 continue
-            if not lead.zrn_brand_id or not lead.zrn_channel_id:
+            # Solo exigimos marca y canal al llegar a la etapa Ganada (Won / id=4 o probability=100)
+            is_won = lead.probability == 100 or (lead.stage_id and lead.stage_id.is_won)
+            if is_won and (not lead.zrn_brand_id or not lead.zrn_channel_id):
                 raise ValidationError(
-                    'Las oportunidades deben tener marca comercial y canal comercial definidos.'
+                    'Las oportunidades ganadas deben tener marca comercial y canal comercial definidos.'
                 )
 
     def _prepare_customer_values(self, partner_name, is_company=False, parent_id=False):
@@ -91,9 +93,25 @@ class ZrnCommercialCrmLead(models.Model):
         })
         return context
 
-    def _handle_partner_assignment(self, force_partner_id=False, create_missing=True):
-        result = super()._handle_partner_assignment(force_partner_id=force_partner_id, create_missing=create_missing)
-        self._sync_zrn_partner_profile()
+    def _convert_opportunity_data(self, customer, team_id=False):
+        values = super()._convert_opportunity_data(customer, team_id=team_id)
+        self.env.cr.postcommit.add(self._sync_zrn_partner_profile)
+        return values
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for record in records:
+            if record.partner_id:
+                record._sync_zrn_partner_profile()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if 'partner_id' in vals or 'zrn_brand_id' in vals or 'zrn_channel_id' in vals:
+            for record in self:
+                if record.partner_id:
+                    record._sync_zrn_partner_profile()
         return result
 
     def _sync_zrn_partner_profile(self):
@@ -337,8 +355,9 @@ class ZrnCommercialSaleOrder(models.Model):
 
     def action_confirm(self):
         for order in self:
-            if not order.zrn_brand_id or not order.zrn_channel_id:
+            # Solo exigimos marca y canal si la venta proviene de un flujo de oportunidad CRM comercial
+            if order.opportunity_id and (not order.zrn_brand_id or not order.zrn_channel_id):
                 raise ValidationError(
-                    'No se puede confirmar una cotizacion sin marca comercial y canal comercial.'
+                    'No se puede confirmar una cotizacion comercial sin marca y canal comercial definidos.'
                 )
         return super().action_confirm()

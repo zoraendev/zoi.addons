@@ -16,4 +16,8 @@
         groups="base.group_no_one"
     />
 
+    <record id="menu_zrn_commercial_hubs" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
 </odoo>
