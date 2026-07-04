@@ -36,6 +36,8 @@ export class ZrnAnalyticsProcessingView {
     this.boundDocumentClick = this.handleDocumentClick.bind(this);
     this.chartInstance = null;
     this.chartRenderToken = 0;
+    this.scenarioChartInstance = null;
+    this.scenarioChartRenderToken = 0;
     this.registeredTableName = "";
     this.lastRegisteredSignature = "";
     this.navigationHandlers = {};
@@ -126,6 +128,9 @@ export class ZrnAnalyticsProcessingView {
         metricColumn: "",
         calculatedColumns: [],
         rules: [],
+        activeView: "table",
+        chartType: "bar",
+        textDelimiter: "|",
       },
       globalError: "",
     };
@@ -146,6 +151,7 @@ export class ZrnAnalyticsProcessingView {
     }
     this.detachListeners();
     this.disposeChart();
+    this.disposeScenarioChart();
     this.root.innerHTML = "";
     this.root = null;
   }
@@ -450,6 +456,25 @@ export class ZrnAnalyticsProcessingView {
     if (action === "scenario-metric-column" && event.type === "change") {
       this.state.scenarioState.metricColumn = source.value;
       this.render();
+      return;
+    }
+    if (action === "scenario-view" && event.type === "click") {
+      this.state.scenarioState.activeView = source.dataset.view || "table";
+      this.render();
+      return;
+    }
+    if (action === "scenario-chart-type" && event.type === "click") {
+      this.state.scenarioState.activeView = "chart";
+      this.state.scenarioState.chartType = source.dataset.chartType || "bar";
+      this.render();
+      return;
+    }
+    if (action === "scenario-text-delimiter" && event.type === "input") {
+      this.state.scenarioState.textDelimiter = String(source.value || "|").slice(0, 1) || "|";
+      return;
+    }
+    if (action === "scenario-export" && event.type === "click") {
+      this.exportScenarioData(source.dataset.format || "");
       return;
     }
     if (action === "scenario-add-formula" && event.type === "click") {
@@ -1096,7 +1121,10 @@ export class ZrnAnalyticsProcessingView {
     this.state.scenarioState.metricColumn = "";
     this.state.scenarioState.calculatedColumns = [];
     this.state.scenarioState.rules = [];
+    this.state.scenarioState.activeView = "table";
+    this.state.scenarioState.chartType = "bar";
     this.disposeChart();
+    this.disposeScenarioChart();
   }
 
   applyStructure(silent = false) {
@@ -1530,6 +1558,172 @@ export class ZrnAnalyticsProcessingView {
     };
   }
 
+  getScenarioChartData() {
+    const scenarioData = this.getScenarioPanelData();
+    if (scenarioData.error) {
+      return { error: scenarioData.error };
+    }
+    if (!scenarioData.summaryByGroup.length) {
+      return { error: "El escenario actual no tiene datos para graficar." };
+    }
+    return {
+      categories: scenarioData.summaryByGroup.map((item) => item.label),
+      baseValues: scenarioData.summaryByGroup.map((item) => item.baseTotal),
+      scenarioValues: scenarioData.summaryByGroup.map((item) => item.scenarioTotal),
+      differenceValues: scenarioData.summaryByGroup.map((item) => item.difference),
+      groupByColumn: scenarioData.groupByColumn,
+      metricColumn: scenarioData.metricColumn,
+    };
+  }
+
+  triggerDownload(content, filename, mimeType = "application/octet-stream") {
+    const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+  }
+
+  buildScenarioExportRows(scenarioData) {
+    return scenarioData.summaryByGroup.map((item) => ({
+      [scenarioData.groupByColumn || "grupo"]: item.label,
+      base: item.baseTotal,
+      escenario: item.scenarioTotal,
+      diferencia: item.difference,
+      porcentaje_cambio: item.changePct,
+      porcentaje_base: item.baseSharePct,
+      porcentaje_escenario: item.scenarioSharePct,
+    }));
+  }
+
+  exportScenarioTable(format, scenarioData) {
+    if (!scenarioData || scenarioData.error || !scenarioData.summaryByGroup?.length) {
+      return;
+    }
+    const exportRows = this.buildScenarioExportRows(scenarioData);
+    const fileBase = `escenario_${sanitizeIdentifier(scenarioData.metricColumn || "resumen")}`;
+    if (format === "xlsx") {
+      if (!window.XLSX) {
+        window.alert("La libreria XLSX no esta disponible para exportar Excel.");
+        return;
+      }
+      const worksheet = window.XLSX.utils.json_to_sheet(exportRows);
+      const workbook = window.XLSX.utils.book_new();
+      window.XLSX.utils.book_append_sheet(workbook, worksheet, "Escenario");
+      window.XLSX.writeFile(workbook, `${fileBase}.xlsx`);
+      return;
+    }
+
+    const headers = Object.keys(exportRows[0] || {});
+    if (format === "xml") {
+      const xmlRows = exportRows
+        .map(
+          (row) => `
+  <row>
+${headers
+  .map((header) => `    <${sanitizeIdentifier(header, "col")}>${escapeHtml(row[header] ?? "")}</${sanitizeIdentifier(header, "col")}>`)
+  .join("\n")}
+  </row>`,
+        )
+        .join("\n");
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<scenario>\n${xmlRows}\n</scenario>`;
+      this.triggerDownload(xml, `${fileBase}.xml`, "application/xml;charset=utf-8");
+      return;
+    }
+
+    const delimiter = format === "txt" ? this.state.scenarioState.textDelimiter || "|" : ",";
+    const lines = [
+      headers.join(delimiter),
+      ...exportRows.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header];
+            const safe = String(value ?? "");
+            if (safe.includes(delimiter) || safe.includes('"') || safe.includes("\n")) {
+              return `"${safe.replace(/"/g, '""')}"`;
+            }
+            return safe;
+          })
+          .join(delimiter),
+      ),
+    ].join("\n");
+    const extension = format === "txt" ? "txt" : "csv";
+    const mimeType = format === "txt" ? "text/plain;charset=utf-8" : "text/csv;charset=utf-8";
+    this.triggerDownload(lines, `${fileBase}.${extension}`, mimeType);
+  }
+
+  exportScenarioChart(format, scenarioData) {
+    if (!scenarioData || scenarioData.error) {
+      return;
+    }
+    const chartHost = this.root?.querySelector("[data-zrn-scenario-chart-root='1']");
+    if (!chartHost || !this.scenarioChartInstance) {
+      return;
+    }
+    const fileBase = `escenario_${sanitizeIdentifier(scenarioData.metricColumn || "grafica")}`;
+    const dataUrl = this.scenarioChartInstance.getDataURL({
+      type: "png",
+      pixelRatio: 2,
+      backgroundColor: "#ffffff",
+    });
+    if (format === "png") {
+      const anchor = document.createElement("a");
+      anchor.href = dataUrl;
+      anchor.download = `${fileBase}.png`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      return;
+    }
+    if (format === "pdf") {
+      const printWindow = window.open("", "_blank", "width=1200,height=800");
+      if (!printWindow) {
+        window.alert("No se pudo abrir la ventana para exportar PDF.");
+        return;
+      }
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${escapeHtml(fileBase)}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 24px; color: #1f2d3d; }
+              h1 { font-size: 18px; margin: 0 0 16px; }
+              img { width: 100%; max-width: 1100px; display: block; }
+            </style>
+          </head>
+          <body>
+            <h1>Escenario: ${escapeHtml(scenarioData.metricColumn || "comparativo")}</h1>
+            <img src="${dataUrl}" alt="Grafica de escenario" />
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      window.setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    }
+  }
+
+  exportScenarioData(format) {
+    const scenarioData = this.getScenarioPanelData();
+    if (scenarioData.error) {
+      window.alert(scenarioData.error);
+      return;
+    }
+    if (["xlsx", "csv", "xml", "txt"].includes(format)) {
+      this.exportScenarioTable(format, scenarioData);
+      return;
+    }
+    if (["png", "pdf"].includes(format)) {
+      this.exportScenarioChart(format, scenarioData);
+    }
+  }
+
   getChartData() {
     if (!this.state.queryState.rows.length) {
       return { error: "Ejecuta una consulta para generar la grafica." };
@@ -1586,10 +1780,23 @@ export class ZrnAnalyticsProcessingView {
     });
   }
 
-  buildChartOption(chartData) {
+  buildChartOption(chartData, config = {}) {
     const palette = ["#355d9a", "#5d8bd4", "#7aa9d8", "#6b8e5a", "#cf8d43", "#8f5d8a"];
-    const { type, categoryColumn, valueColumn, aggregate } = this.state.chartState;
+    const type = config.type || this.state.chartState.type;
+    const categoryColumn = config.categoryColumn || this.state.chartState.categoryColumn;
+    const valueColumn = config.valueColumn || this.state.chartState.valueColumn;
+    const aggregate = config.aggregate || this.state.chartState.aggregate;
+    const series = config.series;
     if (type === "pie") {
+      const pieData = series
+        ? chartData.categories.map((category, index) => ({
+            name: category,
+            value: series[0]?.data?.[index] || 0,
+          }))
+        : chartData.categories.map((category, index) => ({
+            name: category,
+            value: chartData.values[index],
+          }));
       return {
         color: palette,
         tooltip: { trigger: "item" },
@@ -1599,10 +1806,7 @@ export class ZrnAnalyticsProcessingView {
             type: "pie",
             radius: ["35%", "70%"],
             itemStyle: { borderRadius: 4 },
-            data: chartData.categories.map((category, index) => ({
-              name: category,
-              value: chartData.values[index],
-            })),
+            data: pieData,
           },
         ],
       };
@@ -1621,18 +1825,20 @@ export class ZrnAnalyticsProcessingView {
         type: "value",
         axisLabel: { color: "#58709a" },
       },
-      series: [
-        {
-          name: `${aggregate.toUpperCase()} ${valueColumn}`,
-          type,
-          smooth: type === "line",
-          data: chartData.values,
-          barMaxWidth: 42,
-        },
-      ],
+      series:
+        series ||
+        [
+          {
+            name: `${aggregate.toUpperCase()} ${valueColumn}`,
+            type,
+            smooth: type === "line",
+            data: chartData.values,
+            barMaxWidth: 42,
+          },
+        ],
       toolbox: { right: 0, feature: { saveAsImage: {} } },
       title: {
-        text: `${categoryColumn} vs ${aggregate.toUpperCase()} ${valueColumn}`,
+        text: config.title || `${categoryColumn} vs ${aggregate.toUpperCase()} ${valueColumn}`,
         textStyle: { fontSize: 12, fontWeight: 700, color: "#355d9a" },
       },
     };
@@ -1646,6 +1852,88 @@ export class ZrnAnalyticsProcessingView {
     this.chartRenderToken += 1;
   }
 
+  ensureScenarioChartRendered() {
+    if (!this.root || this.state.scenarioState.activeView !== "chart") {
+      this.disposeScenarioChart();
+      return;
+    }
+    const chartHost = this.root.querySelector("[data-zrn-scenario-chart-root='1']");
+    if (!chartHost || !window.echarts) {
+      return;
+    }
+    const chartData = this.getScenarioChartData();
+    if (chartData.error) {
+      this.disposeScenarioChart();
+      return;
+    }
+    const renderToken = ++this.scenarioChartRenderToken;
+    window.requestAnimationFrame(() => {
+      if (renderToken !== this.scenarioChartRenderToken || !this.root) {
+        return;
+      }
+      this.scenarioChartInstance =
+        window.echarts.getInstanceByDom(chartHost) ||
+        window.echarts.init(chartHost, null, { renderer: "canvas" });
+      const type = this.state.scenarioState.chartType || "bar";
+      const isPie = type === "pie";
+      const option = this.buildChartOption(
+        {
+          categories: chartData.categories,
+          values: chartData.scenarioValues,
+        },
+        {
+          type,
+          categoryColumn: chartData.groupByColumn,
+          valueColumn: chartData.metricColumn,
+          aggregate: "sum",
+          title: `${chartData.groupByColumn} vs escenario ${chartData.metricColumn}`,
+          series: isPie
+            ? [
+                {
+                  name: `Escenario ${chartData.metricColumn}`,
+                  type: "pie",
+                  radius: ["35%", "70%"],
+                  itemStyle: { borderRadius: 4 },
+                  data: chartData.categories.map((category, index) => ({
+                    name: category,
+                    value: chartData.scenarioValues[index],
+                  })),
+                },
+              ]
+            : [
+                {
+                  name: "Base",
+                  type,
+                  smooth: type === "line",
+                  data: chartData.baseValues,
+                  barMaxWidth: 32,
+                },
+                {
+                  name: "Escenario",
+                  type,
+                  smooth: type === "line",
+                  data: chartData.scenarioValues,
+                  barMaxWidth: 32,
+                },
+              ],
+        },
+      );
+      if (!isPie) {
+        option.legend = { top: 0 };
+      }
+      this.scenarioChartInstance.setOption(option, true);
+      this.scenarioChartInstance.resize();
+    });
+  }
+
+  disposeScenarioChart() {
+    if (this.scenarioChartInstance) {
+      this.scenarioChartInstance.dispose();
+      this.scenarioChartInstance = null;
+    }
+    this.scenarioChartRenderToken += 1;
+  }
+
   resetAll() {
     if (
       this.hasTransientData &&
@@ -1654,6 +1942,7 @@ export class ZrnAnalyticsProcessingView {
       return;
     }
     this.disposeChart();
+    this.disposeScenarioChart();
     this.dropRegisteredTable();
     this.state = this.getInitialState();
     this.render();
@@ -2408,6 +2697,94 @@ export class ZrnAnalyticsProcessingView {
     `;
   }
 
+  renderScenarioToolbar(scenarioData) {
+    const activeView = this.state.scenarioState.activeView || "table";
+    const chartType = this.state.scenarioState.chartType || "bar";
+    const hasData = !scenarioData.error && scenarioData.summaryByGroup?.length;
+    const exportButtons =
+      activeView === "table"
+        ? `
+            <div class="zrn_processing_scenario_exports">
+              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="xlsx" ${hasData ? "" : "disabled"}>
+                <i class="fa fa-file-excel-o"></i>
+                Excel
+              </button>
+              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="csv" ${hasData ? "" : "disabled"}>
+                <i class="fa fa-file-text-o"></i>
+                CSV
+              </button>
+              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="xml" ${hasData ? "" : "disabled"}>
+                <i class="fa fa-code"></i>
+                XML
+              </button>
+              <div class="zrn_processing_scenario_text_export">
+                <input
+                  type="text"
+                  class="form-control"
+                  maxlength="1"
+                  aria-label="Separador TXT"
+                  value="${escapeHtml(this.state.scenarioState.textDelimiter || "|")}"
+                  data-action="scenario-text-delimiter"
+                  ${hasData ? "" : "disabled"}
+                />
+                <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="txt" ${hasData ? "" : "disabled"}>
+                  <i class="fa fa-file-o"></i>
+                  TXT
+                </button>
+              </div>
+            </div>
+          `
+        : `
+            <div class="zrn_processing_scenario_exports">
+              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="png" ${hasData ? "" : "disabled"}>
+                <i class="fa fa-picture-o"></i>
+                PNG
+              </button>
+              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="pdf" ${hasData ? "" : "disabled"}>
+                <i class="fa fa-file-pdf-o"></i>
+                PDF
+              </button>
+            </div>
+          `;
+    const viewButtons = [
+      ["table", "table", "fa-table", "Tabla"],
+      ["chart", "bar", "fa-bar-chart", "Barras"],
+      ["chart", "line", "fa-line-chart", "Linea"],
+      ["chart", "pie", "fa-pie-chart", "Pie"],
+    ]
+      .map(([view, type, icon, label]) => {
+        const isActive = view === "table" ? activeView === "table" : activeView === "chart" && chartType === type;
+        const action = view === "table" ? "scenario-view" : "scenario-chart-type";
+        const attrs =
+          view === "table"
+            ? `data-action="${action}" data-view="table"`
+            : `data-action="${action}" data-chart-type="${type}"`;
+        return `
+          <button
+            type="button"
+            class="btn zrn_processing_scenario_view_btn ${isActive ? "is-active" : ""}"
+            ${attrs}
+            ${hasData ? "" : "disabled"}
+            aria-label="${escapeHtml(label)}"
+            title="${escapeHtml(label)}"
+          >
+            <i class="fa ${icon}"></i>
+          </button>
+        `;
+      })
+      .join("");
+    return `
+      <div class="zrn_processing_scenario_toolbar">
+        <div class="zrn_processing_scenario_toolbar_start">
+          ${exportButtons}
+        </div>
+        <div class="zrn_processing_scenario_toolbar_end">
+          <div class="zrn_processing_scenario_view_group">${viewButtons}</div>
+        </div>
+      </div>
+    `;
+  }
+
   renderTotalsPanel() {
     const scenarioData = this.getScenarioPanelData();
     const optionSets = scenarioData.optionSets || this.getScenarioOptionSets();
@@ -2423,16 +2800,6 @@ export class ZrnAnalyticsProcessingView {
           `<option value="${escapeHtml(column)}" ${this.state.scenarioState.metricColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
       )
       .join("");
-    const numericOptions = optionSets.numericColumns
-      .map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`)
-      .join("");
-    const conditionOptions = optionSets.conditionColumns
-      .map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`)
-      .join("");
-    const targetOptions = optionSets.targetColumns
-      .map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`)
-      .join("");
-
     const formulaRows = this.state.scenarioState.calculatedColumns.length
       ? this.state.scenarioState.calculatedColumns
           .map(
@@ -2699,6 +3066,7 @@ export class ZrnAnalyticsProcessingView {
           </div>
         `
       : "";
+    const scenarioChartData = this.state.scenarioState.activeView === "chart" ? this.getScenarioChartData() : null;
     const tableRows = scenarioData.error
       ? ""
       : scenarioData.summaryByGroup
@@ -2778,22 +3146,31 @@ export class ZrnAnalyticsProcessingView {
                       <strong>${scenarioData.deltaPercent === null ? "-" : `${this.formatMetric(scenarioData.deltaPercent, 2)}%`}</strong>
                     </div>
                   </div>
-                  <div class="zrn_processing_result_wrap zrn_processing_totals_table_wrap">
-                    <table class="o_list_table table table-sm zrn_processing_result_table">
-                      <thead>
-                        <tr>
-                          <th>${escapeHtml(scenarioData.groupByColumn || "Grupo")}</th>
-                          <th>Base</th>
-                          <th>Escenario</th>
-                          <th>Diferencia</th>
-                          <th>% cambio</th>
-                          <th>% base</th>
-                          <th>% escenario</th>
-                        </tr>
-                      </thead>
-                      <tbody>${tableRows}</tbody>
-                    </table>
-                  </div>
+                  ${
+                    this.state.scenarioState.activeView === "chart"
+                      ? `
+                          ${scenarioChartData?.error ? `<div class="zrn_processing_query_error">${escapeHtml(scenarioChartData.error)}</div>` : ""}
+                          ${scenarioChartData?.error ? "" : '<div class="zrn_processing_chart_canvas" data-zrn-scenario-chart-root="1"></div>'}
+                        `
+                      : `
+                          <div class="zrn_processing_result_wrap zrn_processing_totals_table_wrap">
+                            <table class="o_list_table table table-sm zrn_processing_result_table">
+                              <thead>
+                                <tr>
+                                  <th>${escapeHtml(scenarioData.groupByColumn || "Grupo")}</th>
+                                  <th>Base</th>
+                                  <th>Escenario</th>
+                                  <th>Diferencia</th>
+                                  <th>% cambio</th>
+                                  <th>% base</th>
+                                  <th>% escenario</th>
+                                </tr>
+                              </thead>
+                              <tbody>${tableRows}</tbody>
+                            </table>
+                          </div>
+                        `
+                  }
                 `
           }
         </div>
@@ -2827,11 +3204,13 @@ export class ZrnAnalyticsProcessingView {
     if (this.screenMode === "landing") {
       this.root.innerHTML = this.renderLanding();
       this.disposeChart();
+      this.disposeScenarioChart();
       return;
     }
 
     const sheet = this.selectedSheet;
     const table = this.selectedTable;
+    const scenarioData = this.getScenarioPanelData();
     this.root.innerHTML = `
       <div class="zrn_processing_app">
         ${this.state.globalError ? `<div class="zrn_processing_global_error">${escapeHtml(this.state.globalError)}</div>` : ""}
@@ -2854,6 +3233,7 @@ export class ZrnAnalyticsProcessingView {
               </section>
             `
             : `
+              ${this.renderScenarioToolbar(scenarioData)}
               ${this.renderOverviewPanel(sheet, table)}
               ${this.renderDatasetPanelEnhanced(sheet, table)}
               ${this.renderQueryPanel(table)}
@@ -2866,6 +3246,7 @@ export class ZrnAnalyticsProcessingView {
     `;
 
     this.ensureChartRendered();
+    this.ensureScenarioChartRendered();
   }
 }
 
