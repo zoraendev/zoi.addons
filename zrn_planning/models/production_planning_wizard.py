@@ -903,18 +903,16 @@ class ZrnPlanningProductionPlanningWizard(models.TransientModel):
                 if item.get('product_id')
             }
 
-        # Day names dictionary in Spanish
-        day_names_es = {
-            'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miercoles',
-            'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sabado', 'Sunday': 'Domingo'
-        }
+        # Day names array in Spanish indexed by weekday() (0=Lunes, 6=Domingo)
+        day_names_es_arr = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
 
         for line in candidate_lines:
             fecha_entrega = self._get_effective_line_date(line)
             if not fecha_entrega:
                 continue
             day_date = fields.Date.to_string(fecha_entrega)
-            day_name = day_names_es.get(fecha_entrega.strftime('%A'), fecha_entrega.strftime('%A'))
+            weekday_idx = fecha_entrega.weekday()
+            day_name = day_names_es_arr[weekday_idx] if 0 <= weekday_idx < 7 else 'Desconocido'
             day_key = day_date or day_name or ''
             
             client_name = line.order_id.partner_id.name or 'Punto de venta sin nombre'

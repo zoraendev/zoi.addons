@@ -388,6 +388,7 @@
         web_icon="zrn_commercial,static/description/icon.png"
     />
 
+
     <menuitem
         id="menu_zrn_commercial_home"
         name="Inicio"
@@ -438,4 +439,22 @@
         groups="base.group_no_one"
     />
 
+    <!-- Desactivar menus redundantes: acceso via dashboard interno -->
+    <record id="menu_zrn_commercial_brands_sub" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_channels_sub" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_product_channels_sub" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_portfolio" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_pricing" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
 </odoo>
+
