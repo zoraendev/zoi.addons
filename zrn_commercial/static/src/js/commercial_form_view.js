@@ -62,11 +62,16 @@ class ZrnCommercialHomeController extends FormController {
     // Optimización: Solo llamar a RPC si cambia el ID del registro o no hay caché
     if (this._currentResId !== resId || !this._chartPayload) {
       this._currentResId = resId;
-      this._chartPayload = await this.orm.call(
-        "zrn_commercial.home",
-        "get_home_chart_payload",
-        [[resId]],
-      );
+      try {
+        this._chartPayload = await this.orm.call(
+          "zrn_commercial.home",
+          "get_home_chart_payload",
+          [[resId]],
+        );
+      } catch (error) {
+        console.error("Error cargando datos de gráficos comerciales:", error);
+        this._chartPayload = null;
+      }
     }
     // Ejecutar renderizado en el siguiente frame de animación para asegurar DOM listo
     window.requestAnimationFrame(() => this.renderCharts());

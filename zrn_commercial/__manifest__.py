@@ -35,6 +35,11 @@ Addon dedicado a la capa comercial operativa:
             'zrn_analitics/static/lib/echarts/echarts.min.js',
             # Controlador JS para el rendering y control dinámico del dashboard comercial
             'zrn_commercial/static/src/js/commercial_form_view.js',
+            # Assets del Hub comercial
+            'zrn_commercial/static/src/js/commercial_hub_action.js',
+            'zrn_commercial/static/src/scss/commercial_hub_action.scss',
+            'zrn_commercial/static/src/xml/commercial_hub_action.xml',
+            'zrn_commercial/static/src/xml/hubs/*.xml',
         ],
     },
     'installable': True,

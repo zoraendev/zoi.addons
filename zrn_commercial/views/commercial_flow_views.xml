@@ -309,4 +309,27 @@
         action="action_zrn_commercial_reports_quotations"
         sequence="20"/>
 
+    <!-- Desactivar menus de flujo: acceso via botones del dashboard -->
+    <record id="menu_zrn_commercial_prospects" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_opportunities" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_customers" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_quotations" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_reports_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_reports_pipeline" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <record id="menu_zrn_commercial_reports_quotations" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
 </odoo>
