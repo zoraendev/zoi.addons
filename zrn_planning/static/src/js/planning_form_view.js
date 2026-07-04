@@ -14,28 +14,39 @@ class ZrnPlanningFormController extends FormController {
     this._chartInstances = new Map();
     this._homeChartResizeHandler = () => this.resizeHomeCharts();
     this._boundHomeChartClick = (event) => this.onHomeChartClick(event);
+    this._boundReconciliationHeaderClick = (event) => this.onReconciliationHeaderClick(event);
     this._currentHomeResId = null;
 
     onMounted(() => {
-      if (!this.isPlanningHome) {
-        return;
+      if (this.isPlanningHome) {
+        window.addEventListener("resize", this._homeChartResizeHandler);
+        this.rootRef.el?.addEventListener("click", this._boundHomeChartClick);
+        this.loadAndRenderHomeCharts();
       }
-      window.addEventListener("resize", this._homeChartResizeHandler);
-      this.rootRef.el?.addEventListener("click", this._boundHomeChartClick);
-      this.loadAndRenderHomeCharts();
+      if (this.isInventoryReconciliation) {
+        this.rootRef.el?.addEventListener("click", this._boundReconciliationHeaderClick);
+        this.renderSelectAllHeaderCheckbox();
+      }
     });
 
     onPatched(() => {
-      if (!this.isPlanningHome) {
-        return;
+      if (this.isPlanningHome) {
+        this.loadAndRenderHomeCharts();
       }
-      this.loadAndRenderHomeCharts();
+      if (this.isInventoryReconciliation) {
+        this.renderSelectAllHeaderCheckbox();
+      }
     });
 
     onWillUnmount(() => {
-      window.removeEventListener("resize", this._homeChartResizeHandler);
-      this.rootRef.el?.removeEventListener("click", this._boundHomeChartClick);
-      this.disposeHomeCharts();
+      if (this.isPlanningHome) {
+        window.removeEventListener("resize", this._homeChartResizeHandler);
+        this.rootRef.el?.removeEventListener("click", this._boundHomeChartClick);
+        this.disposeHomeCharts();
+      }
+      if (this.isInventoryReconciliation) {
+        this.rootRef.el?.removeEventListener("click", this._boundReconciliationHeaderClick);
+      }
     });
   }
 
@@ -85,6 +96,71 @@ class ZrnPlanningFormController extends FormController {
 
   get isPlanningHome() {
     return this.props.resModel === "zrn_planning.home";
+  }
+
+  get isInventoryReconciliation() {
+    return this.props.resModel === "zrn_planning.inventory.reconciliation";
+  }
+
+  renderSelectAllHeaderCheckbox() {
+    const headerCell = this.rootRef.el?.querySelector("th[data-name='is_selected']");
+    if (!headerCell) {
+      return;
+    }
+    const selectedCount = this.model?.root?.data?.selected_line_count || 0;
+    const isChecked = selectedCount > 0;
+
+    // Si ya existe, solo actualizar el icono
+    const existing = headerCell.querySelector(".zrn_select_all_header_wrapper");
+    if (existing) {
+      const icon = existing.querySelector("i");
+      if (icon) {
+        icon.className = isChecked ? "fa fa-check-square-o" : "fa fa-square-o";
+      }
+      return;
+    }
+
+    // Primera vez: limpiar contenido del th y crear el wrapper
+    headerCell.innerHTML = "";
+    const wrapper = document.createElement("div");
+    wrapper.className = "zrn_select_all_header_wrapper";
+
+    const icon = document.createElement("i");
+    icon.className = isChecked ? "fa fa-check-square-o" : "fa fa-square-o";
+
+    wrapper.appendChild(icon);
+    headerCell.appendChild(wrapper);
+  }
+
+  async onReconciliationHeaderClick(event) {
+    const wrapper = event.target.closest(".zrn_select_all_header_wrapper");
+    if (!wrapper) {
+      return;
+    }
+    // No detenemos stopPropagation/preventDefault para que el framework de Odoo no pierda rastro del evento si lo necesita,
+    // pero evitamos efectos nativos no deseados.
+    event.preventDefault();
+
+    const resId = this.model?.root?.resId;
+    if (!resId) {
+      return;
+    }
+
+    // Leemos el selected_line_count actual directamente del modelo de datos de Odoo
+    const selectedCount = this.model.root.data.selected_line_count || 0;
+
+    try {
+      if (selectedCount === 0) {
+        await this.orm.call("zrn_planning.inventory.reconciliation", "action_select_visible_lots", [[resId]]);
+      } else {
+        await this.orm.call("zrn_planning.inventory.reconciliation", "action_deselect_all_lots", [[resId]]);
+      }
+      // En Odoo 17, recargar el registro raiz del formulario se hace llamando a load() o reload() en la raíz.
+      // Odoo actualiza la vista tras recargar el record.
+      await this.model.root.load();
+    } catch (err) {
+      console.error("Error toggling reconciliation selection:", err);
+    }
   }
 
   async loadAndRenderHomeCharts() {

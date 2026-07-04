@@ -149,12 +149,32 @@ class ZrnPlanningInventoryReconciliation(ZrnPlanningNavigationMixin, models.Mode
     def action_archive_selected_lots(self):
         self.ensure_one()
         self._require_scope_for_mass_action()
-        lots = self._get_selected_lots().filtered('active')
+        selected_lines = self.line_ids.filtered('is_selected')
+        if len(selected_lines) > 500:
+            raise UserError(_('No puede archivar mas de 500 lotes a la vez para evitar sobrecargar el servidor. Lotes seleccionados actualmente: %s') % len(selected_lines))
+        lots = selected_lines.mapped('lot_id').filtered('active')
         if not lots:
             raise UserError(_('Seleccione al menos un lote activo para archivarlo.'))
         lots.action_archive()
         self._clear_line_selection()
         self._sync_lot_lines()
+        return self._open_singleton_action('zrn_planning.action_zrn_planning_inventory_reconciliation')
+
+    def action_select_visible_lots(self):
+        self.ensure_one()
+        # Selecciona las primeras 500 líneas visibles del cuadre
+        lines_to_select = self.line_ids[:500]
+        if lines_to_select:
+            lines_to_select.write({'is_selected': True})
+        # Deselecciona el resto si los hubiera
+        remaining_lines = self.line_ids[500:]
+        if remaining_lines:
+            remaining_lines.write({'is_selected': False})
+        return self._open_singleton_action('zrn_planning.action_zrn_planning_inventory_reconciliation')
+
+    def action_deselect_all_lots(self):
+        self.ensure_one()
+        self._clear_line_selection()
         return self._open_singleton_action('zrn_planning.action_zrn_planning_inventory_reconciliation')
 
     def action_unarchive_filtered_lots(self):
