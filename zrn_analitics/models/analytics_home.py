@@ -39,6 +39,9 @@ class ZrnAnalyticsNavigationMixin:
     def action_open_processing(self):
         return self._open_singleton_action('zrn_analitics.action_zrn_analitics_processing')
 
+    def action_open_processing_workspace(self):
+        return self._open_singleton_action('zrn_analitics.action_zrn_analitics_processing_workspace')
+
     def action_open_hubs_client(self):
         self.ensure_one()
         return {
@@ -76,6 +79,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             ('overview', 'Resumen'),
             ('workspace', 'Workspace'),
             ('processing', 'Procesamiento'),
+            ('processing_workspace', 'Procesamiento Workspace'),
             ('scenarios', 'Escenarios'),
         ],
         string='Pagina',
@@ -94,6 +98,10 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
     def action_open_processing(self):
         self.ensure_one()
         return self._open_singleton_action('zrn_analitics.action_zrn_analitics_processing')
+
+    def action_open_processing_workspace(self):
+        self.ensure_one()
+        return self._open_singleton_action('zrn_analitics.action_zrn_analitics_processing_workspace')
 
     def action_open_scenarios(self):
         self.ensure_one()
