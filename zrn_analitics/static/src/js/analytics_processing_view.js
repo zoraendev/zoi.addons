@@ -367,6 +367,11 @@ export class ZrnAnalyticsProcessingView {
         activeView: "table",
         tableName: "",
       },
+      queryBuilder: {
+        selectedColumns: [],
+        filters: [],
+        limit: 20,
+      },
       chartState: {
         type: "bar",
         categoryColumn: "",
@@ -539,9 +544,49 @@ export class ZrnAnalyticsProcessingView {
       this.resetAll();
       return;
     }
-    if (action === "sample-query" && event.type === "click") {
+    if (action === "builder-column" && event.type === "change") {
+      this.toggleBuilderColumn(source.value, Boolean(source.checked));
+      return;
+    }
+    if (action === "builder-add-filter" && event.type === "click") {
       event.preventDefault();
-      this.loadSampleQuery();
+      this.addBuilderFilter();
+      return;
+    }
+    if (action === "builder-remove-filter" && event.type === "click") {
+      event.preventDefault();
+      this.removeBuilderFilter(source.dataset.filterId);
+      return;
+    }
+    if (action === "builder-filter-column" && event.type === "change") {
+      this.updateBuilderFilter(source.dataset.filterId, "column", source.value);
+      return;
+    }
+    if (action === "builder-filter-operator" && event.type === "change") {
+      this.updateBuilderFilter(source.dataset.filterId, "operator", source.value);
+      return;
+    }
+    if (action === "builder-filter-value" && event.type === "input") {
+      this.updateBuilderFilter(source.dataset.filterId, "value", source.value);
+      return;
+    }
+    if (action === "builder-filter-value-to" && event.type === "input") {
+      this.updateBuilderFilter(source.dataset.filterId, "valueTo", source.value);
+      return;
+    }
+    if (action === "builder-limit" && event.type === "input") {
+      const nextLimit = Number(source.value || 20);
+      this.state.queryBuilder.limit = Number.isFinite(nextLimit) && nextLimit > 0 ? nextLimit : 20;
+      return;
+    }
+    if (action === "builder-generate" && event.type === "click") {
+      event.preventDefault();
+      this.applyNoCodeQuery();
+      return;
+    }
+    if (action === "builder-clear" && event.type === "click") {
+      event.preventDefault();
+      this.resetNoCodeQuery();
       return;
     }
     if (action === "sql-input" && event.type === "input") {
@@ -842,6 +887,7 @@ export class ZrnAnalyticsProcessingView {
     this.state.datasetConfig.structureDirty = true;
     this.state.datasetConfig.structureReady = false;
     this.state.datasetConfig.statusLabel = sheet.errors.length ? "Requiere ajustes" : "Pendiente de aplicar";
+    this.syncNoCodeQueryBuilder();
     if (key !== "alias") {
       this.render();
     }
@@ -985,13 +1031,204 @@ export class ZrnAnalyticsProcessingView {
     return "";
   }
 
-  loadSampleQuery() {
-    this.state.queryState.sql = this.buildSampleQuery(this.activeTableName);
+  buildSampleQuery(tableName) {
+    return `SELECT *\nFROM ${quoteSqlIdentifier(tableName)}\nLIMIT 20;`;
+  }
+
+  getBuilderColumns() {
+    const sheet = this.selectedSheet;
+    return sheet?.columns.filter((column) => column.use) || [];
+  }
+
+  getBuilderColumnByAlias(alias) {
+    return this.getBuilderColumns().find(
+      (column) => sanitizeIdentifier(column.alias, `column_${column.index + 1}`) === alias
+    );
+  }
+
+  getBuilderOperators(type) {
+    if (type === "number" || type === "date") {
+      return [
+        ["eq", "Igual"],
+        ["gt", "Mayor que"],
+        ["gte", "Mayor o igual"],
+        ["lt", "Menor que"],
+        ["lte", "Menor o igual"],
+        ["between", "Entre"],
+      ];
+    }
+    if (type === "boolean") {
+      return [["eq", "Igual"]];
+    }
+    return [
+      ["eq", "Igual"],
+      ["like", "Contiene"],
+      ["starts", "Empieza con"],
+      ["ends", "Termina con"],
+    ];
+  }
+
+  buildBuilderValue(column, value) {
+    const normalized = String(value ?? "").trim();
+    if (!normalized) {
+      return "";
+    }
+    if (column?.type === "number") {
+      const parsed = Number(normalized.replace(/,/g, ""));
+      return Number.isFinite(parsed) ? String(parsed) : "";
+    }
+    if (column?.type === "boolean") {
+      return /^(true|si|yes|1)$/i.test(normalized) ? "true" : "false";
+    }
+    return `'${normalized.replace(/'/g, "''")}'`;
+  }
+
+  syncNoCodeQueryBuilder() {
+    const columns = this.getBuilderColumns();
+    const allowedAliases = new Set(
+      columns.map((column) => sanitizeIdentifier(column.alias, `column_${column.index + 1}`))
+    );
+    const currentSelected = this.state.queryBuilder.selectedColumns.filter((alias) =>
+      allowedAliases.has(alias)
+    );
+    this.state.queryBuilder.selectedColumns = currentSelected.length
+      ? currentSelected
+      : Array.from(allowedAliases);
+
+    this.state.queryBuilder.filters = this.state.queryBuilder.filters
+      .filter((filter) => allowedAliases.has(filter.column))
+      .map((filter) => {
+        const column = this.getBuilderColumnByAlias(filter.column);
+        const operators = this.getBuilderOperators(column?.type);
+        const hasOperator = operators.some(([operator]) => operator === filter.operator);
+        return {
+          ...filter,
+          operator: hasOperator ? filter.operator : operators[0][0],
+        };
+      });
+  }
+
+  toggleBuilderColumn(alias, checked) {
+    const current = new Set(this.state.queryBuilder.selectedColumns);
+    if (checked) {
+      current.add(alias);
+    } else {
+      current.delete(alias);
+    }
+    this.state.queryBuilder.selectedColumns = Array.from(current);
+  }
+
+  addBuilderFilter() {
+    const firstColumn = this.getBuilderColumns()[0];
+    if (!firstColumn) {
+      return;
+    }
+    const alias = sanitizeIdentifier(firstColumn.alias, `column_${firstColumn.index + 1}`);
+    const operator = this.getBuilderOperators(firstColumn.type)[0][0];
+    this.state.queryBuilder.filters.push({
+      id: `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+      column: alias,
+      operator,
+      value: "",
+      valueTo: "",
+    });
     this.render();
   }
 
-  buildSampleQuery(tableName) {
-    return `SELECT *\nFROM ${quoteSqlIdentifier(tableName)}\nLIMIT 20;`;
+  removeBuilderFilter(filterId) {
+    this.state.queryBuilder.filters = this.state.queryBuilder.filters.filter(
+      (filter) => filter.id !== filterId
+    );
+    this.render();
+  }
+
+  updateBuilderFilter(filterId, key, value) {
+    const filter = this.state.queryBuilder.filters.find((item) => item.id === filterId);
+    if (!filter) {
+      return;
+    }
+    filter[key] = value;
+    if (key === "column") {
+      const column = this.getBuilderColumnByAlias(value);
+      filter.operator = this.getBuilderOperators(column?.type)[0][0];
+      filter.value = "";
+      filter.valueTo = "";
+    }
+    this.render();
+  }
+
+  buildNoCodeQuery() {
+    const columns = this.getBuilderColumns();
+    const selectedColumns = this.state.queryBuilder.selectedColumns.length
+      ? this.state.queryBuilder.selectedColumns
+      : columns.map((column) => sanitizeIdentifier(column.alias, `column_${column.index + 1}`));
+    const selectSql = selectedColumns.length
+      ? selectedColumns.map((alias) => quoteSqlIdentifier(alias)).join(", ")
+      : "*";
+
+    const whereParts = this.state.queryBuilder.filters
+      .map((filter) => {
+        const column = this.getBuilderColumnByAlias(filter.column);
+        if (!column) {
+          return "";
+        }
+        const identifier = quoteSqlIdentifier(filter.column);
+        const valueSql = this.buildBuilderValue(column, filter.value);
+        const valueToSql = this.buildBuilderValue(column, filter.valueTo);
+        if (!valueSql && filter.operator !== "between") {
+          return "";
+        }
+        if (filter.operator === "eq") {
+          return `${identifier} = ${valueSql}`;
+        }
+        if (filter.operator === "gt") {
+          return `${identifier} > ${valueSql}`;
+        }
+        if (filter.operator === "gte") {
+          return `${identifier} >= ${valueSql}`;
+        }
+        if (filter.operator === "lt") {
+          return `${identifier} < ${valueSql}`;
+        }
+        if (filter.operator === "lte") {
+          return `${identifier} <= ${valueSql}`;
+        }
+        if (filter.operator === "between") {
+          if (!valueSql || !valueToSql) {
+            return "";
+          }
+          return `${identifier} BETWEEN ${valueSql} AND ${valueToSql}`;
+        }
+        const rawValue = String(filter.value ?? "").trim().replace(/'/g, "''");
+        if (!rawValue) {
+          return "";
+        }
+        if (filter.operator === "starts") {
+          return `${identifier} LIKE '${rawValue}%'`;
+        }
+        if (filter.operator === "ends") {
+          return `${identifier} LIKE '%${rawValue}'`;
+        }
+        return `${identifier} LIKE '%${rawValue}%'`;
+      })
+      .filter(Boolean);
+
+    const whereSql = whereParts.length ? `\nWHERE ${whereParts.join("\n  AND ")}` : "";
+    const limitSql = this.state.queryBuilder.limit > 0 ? `\nLIMIT ${this.state.queryBuilder.limit};` : ";";
+    return `SELECT ${selectSql}\nFROM ${quoteSqlIdentifier(this.activeTableName)}${whereSql}${limitSql}`;
+  }
+
+  applyNoCodeQuery() {
+    this.state.queryState.sql = this.buildNoCodeQuery();
+    this.runQuery();
+  }
+
+  resetNoCodeQuery() {
+    this.state.queryBuilder.filters = [];
+    this.state.queryBuilder.limit = 20;
+    this.syncNoCodeQueryBuilder();
+    this.state.queryState.sql = this.buildSampleQuery(this.activeTableName);
+    this.render();
   }
 
   syncQueryStateWithSheet() {
@@ -1000,6 +1237,7 @@ export class ZrnAnalyticsProcessingView {
     if (!this.state.queryState.sql.trim() || this.state.queryState.sql.includes("FROM [")) {
       this.state.queryState.sql = sheet ? this.buildSampleQuery(sheet.tableName) : "";
     }
+    this.syncNoCodeQueryBuilder();
   }
 
   clearQueryResults() {
@@ -1336,17 +1574,74 @@ export class ZrnAnalyticsProcessingView {
         `
       : "";
 
-    const previewHead = activeColumns.map((column) => `<th>${escapeHtml(column.alias)}</th>`).join("");
-    const previewRows = sheet
-      ? sheet.previewRows
-          .map((row) => {
-            const cells = activeColumns
-              .map((column) => `<td>${escapeHtml(row[column.index] ?? "")}</td>`)
-              .join("");
-            return `<tr>${cells}</tr>`;
-          })
-          .join("")
-      : "";
+    const builderColumns = this.getBuilderColumns();
+    const builderColumnItems = builderColumns
+      .map((column) => {
+        const alias = sanitizeIdentifier(column.alias, `column_${column.index + 1}`);
+        const checked = this.state.queryBuilder.selectedColumns.includes(alias);
+        return `
+          <label class="zrn_processing_builder_column">
+            <input type="checkbox" data-action="builder-column" value="${escapeHtml(alias)}" ${checked ? "checked" : ""} />
+            <span>${escapeHtml(alias)}</span>
+            <small>${escapeHtml(column.originalLabel)}</small>
+          </label>
+        `;
+      })
+      .join("");
+    const builderFilterRows = this.state.queryBuilder.filters
+      .map((filter) => {
+        const column = this.getBuilderColumnByAlias(filter.column) || builderColumns[0];
+        const operators = this.getBuilderOperators(column?.type);
+        const needsRange = filter.operator === "between";
+        const valueInputType =
+          column?.type === "number" ? "number" : column?.type === "date" ? "date" : "text";
+        return `
+          <div class="zrn_processing_builder_filter_row">
+            <select class="form-select" data-action="builder-filter-column" data-filter-id="${filter.id}">
+              ${builderColumns
+                .map((item) => {
+                  const alias = sanitizeIdentifier(item.alias, `column_${item.index + 1}`);
+                  return `<option value="${escapeHtml(alias)}" ${filter.column === alias ? "selected" : ""}>${escapeHtml(alias)}</option>`;
+                })
+                .join("")}
+            </select>
+            <select class="form-select" data-action="builder-filter-operator" data-filter-id="${filter.id}">
+              ${operators
+                .map(
+                  ([operator, label]) =>
+                    `<option value="${operator}" ${filter.operator === operator ? "selected" : ""}>${label}</option>`
+                )
+                .join("")}
+            </select>
+            <input
+              type="${valueInputType}"
+              class="form-control"
+              data-action="builder-filter-value"
+              data-filter-id="${filter.id}"
+              value="${escapeHtml(filter.value)}"
+              placeholder="Valor"
+            />
+            ${
+              needsRange
+                ? `
+                  <input
+                    type="${valueInputType}"
+                    class="form-control"
+                    data-action="builder-filter-value-to"
+                    data-filter-id="${filter.id}"
+                    value="${escapeHtml(filter.valueTo)}"
+                    placeholder="Hasta"
+                  />
+                `
+                : '<div class="zrn_processing_builder_filter_spacer"></div>'
+            }
+            <button type="button" class="btn btn-secondary" data-action="builder-remove-filter" data-filter-id="${filter.id}">
+              Quitar
+            </button>
+          </div>
+        `;
+      })
+      .join("");
 
     const resultHead = resultColumns.map((column) => `<th>${escapeHtml(column)}</th>`).join("");
     const resultBody = resultRows
@@ -1555,13 +1850,6 @@ export class ZrnAnalyticsProcessingView {
                               data-action="table-start-row"
                               value="${previewStartLabel}"
                             />
-                            <div class="zrn_processing_field_hint">
-                              ${
-                                isSpreadsheet
-                                  ? "Para Excel puedes indicar la fila real donde empiezan los encabezados, por ejemplo la 18."
-                                  : "Configura la fila que contiene los encabezados del dataset temporal."
-                              }
-                            </div>
                           </div>
                           <div class="zrn_processing_field">
                             <label>Estado</label>
@@ -1578,7 +1866,6 @@ export class ZrnAnalyticsProcessingView {
                         </div>
                         <div class="zrn_processing_actions">
                           <button type="button" class="btn btn-primary" data-action="apply-structure">Aplicar estructura</button>
-                          <button type="button" class="btn btn-secondary" data-action="sample-query">Cargar query base</button>
                         </div>
                         <div class="zrn_processing_columns_wrap">
                           <table class="o_list_table table table-sm zrn_processing_columns">
@@ -1601,53 +1888,77 @@ export class ZrnAnalyticsProcessingView {
 
               <section class="zrn_processing_panel">
                 <div class="zrn_processing_panel_head">
-                  <strong>Preview estructural</strong>
-                  <span>Rango ${escapeHtml(rangeLabel)} desde fila ${previewStartLabel}</span>
+                  <strong>Consulta</strong>
+                  <span class="zrn_processing_head_meta">
+                    Constructor no-code y editor SQL
+                    <details class="zrn_processing_sql_help">
+                      <summary class="zrn_processing_sql_help_toggle" aria-label="Guia SQL">
+                        <i class="fa fa-info-circle"></i>
+                      </summary>
+                      <div class="zrn_processing_sql_help_popover">
+                        <strong>SQL permitido</strong>
+                        <span><code>SELECT</code>, <code>WHERE</code>, <code>GROUP BY</code>, <code>ORDER BY</code>, <code>LIMIT</code></span>
+                        <span>Filtros utiles: <code>=</code>, <code>LIKE</code>, <code>BETWEEN</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></span>
+                        <span>No se permiten <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>DROP</code>, <code>CREATE</code>, <code>ALTER</code>.</span>
+                      </div>
+                    </details>
+                  </span>
                 </div>
                 <div class="zrn_processing_panel_body">
-                  ${
-                    sheet && activeColumns.length
-                      ? `
-                        <div class="zrn_processing_preview_wrap">
-                          <table class="o_list_table table table-sm zrn_processing_preview_table">
-                            <thead><tr>${previewHead}</tr></thead>
-                            <tbody>${previewRows}</tbody>
-                          </table>
+                  <div class="zrn_processing_query_workspace">
+                    <div class="zrn_processing_query_builder">
+                      <div class="zrn_processing_query_hint">
+                        Tabla disponible: <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code>. Rango ${escapeHtml(rangeLabel)} desde fila ${previewStartLabel}.
+                      </div>
+                      <div class="zrn_processing_builder_section">
+                        <div class="zrn_processing_builder_title">Columnas a mostrar</div>
+                        <div class="zrn_processing_builder_columns">
+                          ${builderColumnItems || '<div class="zrn_processing_empty">No hay columnas activas disponibles.</div>'}
                         </div>
-                      `
-                      : '<div class="zrn_processing_empty">Aplica estructura para revisar el preview del dataset.</div>'
-                  }
-                </div>
-              </section>
-
-              <section class="zrn_processing_panel">
-                <div class="zrn_processing_panel_head">
-                  <strong>Editor SQL</strong>
-                  <span>Solo lectura: SELECT, WHERE, GROUP BY, ORDER BY y LIMIT</span>
-                </div>
-                <div class="zrn_processing_panel_body">
-                  <div class="zrn_processing_query_hint">
-                    Tabla disponible: <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code>. Se usan todas las filas hacia abajo dentro del rango ${escapeHtml(rangeLabel)}.
+                      </div>
+                      <div class="zrn_processing_builder_section">
+                        <div class="zrn_processing_builder_title">Filtros</div>
+                        <div class="zrn_processing_builder_filters">
+                          ${builderFilterRows || '<div class="zrn_processing_empty">No hay filtros agregados.</div>'}
+                        </div>
+                        <div class="zrn_processing_actions">
+                          <button type="button" class="btn btn-secondary" data-action="builder-add-filter">Agregar filtro</button>
+                        </div>
+                      </div>
+                      <div class="zrn_processing_builder_footer">
+                        <div class="zrn_processing_field">
+                          <label>Limite</label>
+                          <input type="number" min="1" class="form-control" data-action="builder-limit" value="${escapeHtml(this.state.queryBuilder.limit)}" />
+                        </div>
+                        <div class="zrn_processing_actions">
+                          <button type="button" class="btn btn-primary" data-action="builder-generate">Construir y ejecutar</button>
+                          <button type="button" class="btn btn-secondary" data-action="builder-clear">Limpiar builder</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="zrn_processing_query_editor">
+                      <div class="zrn_processing_query_toolbar">
+                        <button
+                          type="button"
+                          class="btn btn-primary zrn_processing_query_play"
+                          data-action="run-query"
+                          ${this.state.fileMeta.loaded ? "" : "disabled"}
+                          aria-label="${this.state.queryState.running ? "Ejecutando" : "Ejecutar SQL"}"
+                          title="${this.state.queryState.running ? "Ejecutando" : "Ejecutar SQL"}"
+                        >
+                          <i class="fa fa-play"></i>
+                        </button>
+                      </div>
+                      <textarea class="zrn_processing_query_area" data-action="sql-input" placeholder="SELECT * FROM [dataset] LIMIT 20;">${escapeHtml(
+                        this.state.queryState.sql
+                      )}</textarea>
+                      ${
+                        this.state.queryState.error
+                          ? `<div class="zrn_processing_query_error">${escapeHtml(this.state.queryState.error)}</div>`
+                          : ""
+                      }
+                    </div>
                   </div>
-                  <textarea class="zrn_processing_query_area" data-action="sql-input" placeholder="SELECT * FROM [dataset] LIMIT 20;">${escapeHtml(
-                    this.state.queryState.sql
-                  )}</textarea>
-                  <div class="zrn_processing_query_actions">
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      data-action="run-query"
-                      ${this.state.fileMeta.loaded ? "" : "disabled"}
-                    >
-                      ${this.state.queryState.running ? "Ejecutando..." : "Ejecutar"}
-                    </button>
-                    <div class="zrn_processing_helper">La estructura del dataset se aplica al ejecutar si aun esta pendiente.</div>
-                  </div>
-                  ${
-                    this.state.queryState.error
-                      ? `<div class="zrn_processing_query_error">${escapeHtml(this.state.queryState.error)}</div>`
-                      : ""
-                  }
                 </div>
               </section>
 
