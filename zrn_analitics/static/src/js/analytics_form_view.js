@@ -12,9 +12,27 @@ class ZrnAnalyticsFormController extends FormController {
     super.setup();
     this.orm = useService("orm");
     this.processingView = getSharedProcessingView();
+    this.processingView.setNavigationHandlers({
+      openWorkspace: () =>
+        this.openAnalyticsAction("action_open_processing_workspace", {
+          preserveProcessingState: true,
+          skipDiscardConfirm: true,
+        }),
+      openLanding: () =>
+        this.openAnalyticsAction("action_open_processing", {
+          preserveProcessingState: true,
+          skipDiscardConfirm: true,
+        }),
+    });
     onMounted(() => this.syncProcessingView());
     onPatched(() => this.syncProcessingView());
-    onWillUnmount(() => this.processingView.destroy());
+    onWillUnmount(() => {
+      if (this.processingView.consumePreserveState()) {
+        this.processingView.unmount();
+        return;
+      }
+      this.processingView.destroy();
+    });
   }
 
   get modelParams() {
@@ -30,15 +48,27 @@ class ZrnAnalyticsFormController extends FormController {
     return modelParams;
   }
 
-  async openAnalyticsAction(methodName) {
-    const canLeave = await this.processingView.confirmDiscardIfNeeded();
-    if (!canLeave) {
-      return;
+  async openAnalyticsAction(methodName, options = {}) {
+    if (!options.skipDiscardConfirm) {
+      const canLeave = await this.processingView.confirmDiscardIfNeeded();
+      if (!canLeave) {
+        return;
+      }
+    }
+    if (options.preserveProcessingState) {
+      this.processingView.preserveStateOnce();
     }
     const action = await this.orm.call(this.props.resModel, methodName, [
       [this.model.root.resId],
     ]);
-    await this.actionService.doAction(action);
+    try {
+      await this.actionService.doAction(action);
+    } catch (error) {
+      if (options.preserveProcessingState) {
+        this.processingView.cancelPreserveState();
+      }
+      throw error;
+    }
   }
 
   syncProcessingView() {

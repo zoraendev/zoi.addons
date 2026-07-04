@@ -12,10 +12,10 @@
                         <div>
                             <div class="zrn_analitics_kicker">Procesamiento</div>
                             <div class="oe_title">
-                                <h1>Datasets temporales</h1>
+                                <h1>Centro de carga</h1>
                             </div>
                             <div class="zrn_analitics_intro">
-                                Carga archivos locales, define columnas utilizable como dataset y ejecuta consultas SQL en memoria sin guardar nada en Odoo.
+                                Selecciona un archivo temporal para abrir el workspace de consultas, resultados y graficas.
                             </div>
                             <div class="zrn_processing_warning">
                                 El archivo y la consulta viven solo en esta sesion del navegador. Si sales, recargas o cierras la pagina, se perderan.
@@ -32,11 +32,18 @@
                         </div>
                     </div>
 
-                    <div class="zrn_processing_app" data-zrn-processing-root="1">
+                    <button
+                        name="action_open_processing_workspace"
+                        type="object"
+                        string="Abrir workspace temporal"
+                        class="btn btn-link zrn_processing_workspace_trigger"
+                    />
+
+                    <div class="zrn_processing_app" data-zrn-processing-root="1" data-zrn-processing-screen="landing">
                         <div class="zrn_processing_panel">
                             <div class="zrn_processing_panel_head">
                                 <strong>Carga de archivo</strong>
-                                <span>Vista principal de procesamiento</span>
+                                <span>Entrada principal de procesamiento</span>
                             </div>
                             <div class="zrn_processing_panel_body">
                                 <div class="zrn_processing_field">
@@ -48,12 +55,40 @@
                                         accept=".csv,.json,.xml,.xls,.xlsx,.xlsm"
                                     />
                                     <div class="zrn_processing_field_hint">
-                                        Carga el archivo aqui y, al procesarlo, se mostraran el editor SQL, el overview y los resultados.
+                                        Al cargar el archivo se abrira el workspace temporal de consultas y resultados.
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="zrn_analitics_shell" invisible="page_key != 'processing_workspace'">
+                    <div class="zrn_analitics_header zrn_analitics_header_workspace">
+                        <div>
+                            <div class="zrn_analitics_kicker">Procesamiento</div>
+                            <div class="oe_title">
+                                <h1>Workspace temporal</h1>
+                            </div>
+                            <div class="zrn_analitics_intro">
+                                Ejecuta consultas SQL sobre el archivo cargado y revisa resultados en tabla, JSON o grafica.
+                            </div>
+                            <div class="zrn_processing_warning">
+                                Esta vista usa un dataset temporal en navegador y no guarda el archivo en Odoo.
+                            </div>
+                        </div>
+                        <div class="zrn_analitics_header_actions">
+                            <button
+                                name="action_open_processing"
+                                type="object"
+                                icon="fa-arrow-left"
+                                string="Volver a carga"
+                                class="btn zrn_analitics_back_btn zrn_processing_leave_btn"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="zrn_processing_app" data-zrn-processing-root="1" data-zrn-processing-screen="workspace"></div>
                 </div>
             </xpath>
         </field>

@@ -4,6 +4,8 @@ const HEADER_SCAN_LIMIT = 25;
 const PREVIEW_ROW_LIMIT = 8;
 const QUERY_RESULT_LIMIT = 200;
 const SQL_TYPES = ["text", "number", "date", "boolean"];
+const READ_ONLY_SQL_PATTERN = /^\s*select\b/i;
+const FORBIDDEN_SQL_PATTERN = /\b(insert|update|delete|drop|create|alter|attach|truncate|replace|merge|grant|revoke)\b/i;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -34,7 +36,7 @@ function quoteSqlIdentifier(value) {
   return `[${String(value ?? "").replace(/]/g, "]]")}]`;
 }
 
-function buildRowSnippet(row) {
+function buildRowSnippet(row = []) {
   return row
     .slice(0, 5)
     .map((cell) => String(cell ?? "").trim())
@@ -46,13 +48,24 @@ function isRowEmpty(row = []) {
   return !row.some((cell) => String(cell ?? "").trim() !== "");
 }
 
+function formatBytes(size) {
+  const units = ["B", "KB", "MB", "GB"];
+  let value = Number(size || 0);
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value >= 100 || unitIndex === 0 ? Math.round(value) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+
 function inferColumnType(values) {
   for (const rawValue of values) {
     const value = String(rawValue ?? "").trim();
     if (!value) {
       continue;
     }
-    if (/^(true|false|si|no)$/i.test(value)) {
+    if (/^(true|false|si|no|yes)$/i.test(value)) {
       return "boolean";
     }
     if (!Number.isNaN(Number(value.replace(/,/g, "")))) {
@@ -122,11 +135,10 @@ function buildRowsFromObjects(records) {
       }
     }
   }
-  const header = columns;
-  const rows = records.map((record) =>
-    columns.map((column) => normalizeCellValue(record?.[column]))
-  );
-  return [header, ...rows];
+  return [
+    columns,
+    ...records.map((record) => columns.map((column) => normalizeCellValue(record?.[column]))),
+  ];
 }
 
 function extractJsonRows(text) {
@@ -138,13 +150,13 @@ function extractJsonRows(text) {
     return [["value"], ...payload.map((item) => [normalizeCellValue(item)])];
   }
   if (payload && typeof payload === "object") {
-    const arrayEntry = Object.values(payload).find(
+    const objectArray = Object.values(payload).find(
       (value) =>
         Array.isArray(value) &&
         value.every((item) => item && typeof item === "object" && !Array.isArray(item))
     );
-    if (arrayEntry) {
-      return buildRowsFromObjects(arrayEntry);
+    if (objectArray) {
+      return buildRowsFromObjects(objectArray);
     }
     return buildRowsFromObjects([payload]);
   }
@@ -169,19 +181,20 @@ function extractXmlRows(text) {
   const rowNodes = repeatedName
     ? directChildren.filter((node) => node.nodeName === repeatedName)
     : directChildren;
-  const records = rowNodes.map((node) => {
-    const record = {};
-    const children = Array.from(node.children);
-    if (!children.length) {
-      record.value = node.textContent?.trim() || "";
+  return buildRowsFromObjects(
+    rowNodes.map((node) => {
+      const record = {};
+      const children = Array.from(node.children);
+      if (!children.length) {
+        record.value = node.textContent?.trim() || "";
+        return record;
+      }
+      for (const child of children) {
+        record[child.nodeName] = child.textContent?.trim() || "";
+      }
       return record;
-    }
-    for (const child of children) {
-      record[child.nodeName] = child.textContent?.trim() || "";
-    }
-    return record;
-  });
-  return buildRowsFromObjects(records);
+    })
+  );
 }
 
 function coerceValueByType(value, type) {
@@ -191,7 +204,7 @@ function coerceValueByType(value, type) {
   }
   if (type === "number") {
     const parsed = Number(normalized.replace(/,/g, ""));
-    return Number.isNaN(parsed) ? normalized : parsed;
+    return Number.isNaN(parsed) ? null : parsed;
   }
   if (type === "boolean") {
     if (/^(true|si|yes|1)$/i.test(normalized)) {
@@ -202,36 +215,137 @@ function coerceValueByType(value, type) {
     }
     return normalized;
   }
-  if (type === "date") {
-    return normalized;
-  }
   return normalized;
+}
+
+function cloneRows(rows) {
+  return rows.map((row) => [...row]);
+}
+
+function buildFileIcon(extension) {
+  if (["xls", "xlsx", "xlsm"].includes(extension)) {
+    return "fa-file-excel-o";
+  }
+  if (["json", "xml"].includes(extension)) {
+    return "fa-file-code-o";
+  }
+  if (extension === "csv") {
+    return "fa-table";
+  }
+  return "fa-file-o";
+}
+
+function aggregateValues(values, aggregate) {
+  const numericValues = values.filter((value) => typeof value === "number" && !Number.isNaN(value));
+  if (aggregate === "count") {
+    return values.length;
+  }
+  if (!numericValues.length) {
+    return 0;
+  }
+  if (aggregate === "avg") {
+    return numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+  }
+  if (aggregate === "min") {
+    return Math.min(...numericValues);
+  }
+  if (aggregate === "max") {
+    return Math.max(...numericValues);
+  }
+  return numericValues.reduce((sum, value) => sum + value, 0);
+}
+
+function toChartNumber(value) {
+  if (typeof value === "number") {
+    return value;
+  }
+  const parsed = Number(String(value ?? "").replace(/,/g, ""));
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 export class ZrnAnalyticsProcessingView {
   constructor() {
     this.root = null;
-    this.state = this.getInitialState();
+    this.listenersAttached = false;
     this.boundHandleRootEvent = this.handleRootEvent.bind(this);
     this.boundBeforeUnload = this.handleBeforeUnload.bind(this);
     this.boundDocumentClick = this.handleDocumentClick.bind(this);
-    this.listenersAttached = false;
-    this.registeredTables = [];
+    this.chartInstance = null;
+    this.chartRenderToken = 0;
+    this.registeredTableName = "";
+    this.lastRegisteredSignature = "";
+    this.navigationHandlers = {};
+    this.preserveStateOnUnmount = false;
+    this.state = this.getInitialState();
+  }
+
+  setNavigationHandlers(handlers) {
+    this.navigationHandlers = handlers || {};
+  }
+
+  openWorkspaceRoute() {
+    if (this.navigationHandlers.openWorkspace) {
+      return this.navigationHandlers.openWorkspace();
+    }
+    const trigger = document.querySelector(".zrn_processing_workspace_trigger");
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+      return Promise.resolve();
+    }
+    return Promise.resolve();
+  }
+
+  preserveStateOnce() {
+    this.preserveStateOnUnmount = true;
+  }
+
+  cancelPreserveState() {
+    this.preserveStateOnUnmount = false;
+  }
+
+  consumePreserveState() {
+    const value = this.preserveStateOnUnmount;
+    this.preserveStateOnUnmount = false;
+    return value;
   }
 
   getInitialState() {
     return {
-      fileName: "",
-      fileExtension: "",
-      sheets: [],
-      selectedSheetId: "",
-      sqlQuery: "",
-      queryColumns: [],
-      queryRows: [],
-      queryJson: "",
-      queryError: "",
+      fileMeta: {
+        name: "",
+        extension: "",
+        sizeLabel: "",
+        iconClass: "fa-file-o",
+        activeSheetName: "",
+        totalSheets: 0,
+        loaded: false,
+      },
+      datasetConfig: {
+        sheets: [],
+        selectedSheetId: "",
+        structureReady: false,
+        structureDirty: false,
+        statusLabel: "Sin archivo",
+      },
+      queryState: {
+        sql: "",
+        running: false,
+        error: "",
+        columns: [],
+        rows: [],
+        json: "",
+        totalRows: 0,
+        activeView: "table",
+        tableName: "",
+      },
+      chartState: {
+        type: "bar",
+        categoryColumn: "",
+        valueColumn: "",
+        aggregate: "sum",
+        error: "",
+      },
       globalError: "",
-      resultCount: 0,
     };
   }
 
@@ -249,13 +363,14 @@ export class ZrnAnalyticsProcessingView {
       return;
     }
     this.detachListeners();
+    this.disposeChart();
     this.root.innerHTML = "";
     this.root = null;
   }
 
   destroy() {
     this.unmount();
-    this.dropRegisteredTables();
+    this.dropRegisteredTable();
     this.state = this.getInitialState();
   }
 
@@ -284,7 +399,24 @@ export class ZrnAnalyticsProcessingView {
   }
 
   get hasTransientData() {
-    return Boolean(this.state.fileName || this.state.sqlQuery.trim() || this.state.sheets.length);
+    return Boolean(
+      this.state.fileMeta.loaded ||
+        this.state.queryState.sql.trim() ||
+        this.state.queryState.rows.length ||
+        this.state.datasetConfig.sheets.length
+    );
+  }
+
+  get selectedSheet() {
+    return (
+      this.state.datasetConfig.sheets.find(
+        (sheet) => sheet.id === this.state.datasetConfig.selectedSheetId
+      ) || null
+    );
+  }
+
+  get activeTableName() {
+    return this.selectedSheet?.tableName || "dataset";
   }
 
   async confirmDiscardIfNeeded() {
@@ -292,7 +424,7 @@ export class ZrnAnalyticsProcessingView {
       return true;
     }
     return window.confirm(
-      "El archivo cargado y las consultas temporales se perderan al salir de esta pantalla. Deseas continuar?"
+      "El archivo temporal y el trabajo de esta sesion se perderan al salir. Deseas continuar?"
     );
   }
 
@@ -305,10 +437,7 @@ export class ZrnAnalyticsProcessingView {
   }
 
   handleDocumentClick(event) {
-    if (!this.root || !this.hasTransientData) {
-      return;
-    }
-    if (!(event.target instanceof Element)) {
+    if (!this.root || !this.hasTransientData || !(event.target instanceof Element)) {
       return;
     }
     const target = event.target.closest("button, a");
@@ -328,7 +457,7 @@ export class ZrnAnalyticsProcessingView {
     }
 
     const canLeave = window.confirm(
-      "El dataset temporal se perdera si sales o cambias de pantalla. Deseas continuar?"
+      "El archivo temporal se perdera si sales de Procesamiento. Deseas continuar?"
     );
     if (!canLeave) {
       event.preventDefault();
@@ -337,40 +466,35 @@ export class ZrnAnalyticsProcessingView {
     }
   }
 
-  get selectedSheet() {
-    return this.state.sheets.find((sheet) => sheet.id === this.state.selectedSheetId) || null;
-  }
-
   handleRootEvent(event) {
     const source = event.target.closest("[data-action]");
     const action = source?.dataset.action;
     if (!action) {
       return;
     }
+
     if (action === "file" && event.type === "change") {
       this.handleFileSelection(source);
       return;
     }
+    if (action === "back-to-processing" && event.type === "click") {
+      event.preventDefault();
+      if (this.navigationHandlers.openLanding) {
+        this.navigationHandlers.openLanding();
+      }
+      return;
+    }
     if (action === "sheet-select" && event.type === "change") {
-      this.state.selectedSheetId = source.value;
-      this.state.queryError = "";
-      this.render();
+      this.selectSheet(source.value);
       return;
     }
     if (action === "header-row" && event.type === "change") {
-      const sheet = this.selectedSheet;
-      if (!sheet) {
-        return;
-      }
-      sheet.headerRowIndex = Number(source.value || 0);
-      this.buildSheetStructure(sheet, { keepAliases: false });
-      this.state.queryError = "";
-      this.render();
+      this.updateHeaderRow(Number(source.value || 0));
       return;
     }
     if (action === "apply-structure" && event.type === "click") {
       event.preventDefault();
-      this.rebuildSelectedSheet();
+      this.applyStructure();
       return;
     }
     if (action === "reset-file" && event.type === "click") {
@@ -378,18 +502,13 @@ export class ZrnAnalyticsProcessingView {
       this.resetAll();
       return;
     }
-    if (action === "sql-input" && event.type === "input") {
-      this.state.sqlQuery = source.value;
-      return;
-    }
     if (action === "sample-query" && event.type === "click") {
       event.preventDefault();
-      const selectedSheet = this.selectedSheet;
-      if (!selectedSheet) {
-        return;
-      }
-      this.state.sqlQuery = `SELECT *\nFROM ${quoteSqlIdentifier(selectedSheet.tableName)}\nLIMIT 20;`;
-      this.render();
+      this.loadSampleQuery();
+      return;
+    }
+    if (action === "sql-input" && event.type === "input") {
+      this.state.queryState.sql = source.value;
       return;
     }
     if (action === "run-query" && event.type === "click") {
@@ -398,34 +517,41 @@ export class ZrnAnalyticsProcessingView {
       return;
     }
     if (action === "column-use" && event.type === "change") {
-      const sheet = this.selectedSheet;
-      if (!sheet) {
-        return;
-      }
-      const column = sheet.columns[Number(source.dataset.columnIndex)];
-      column.use = Boolean(source.checked);
-      sheet.errors = this.validateSheetStructure(sheet);
-      this.render();
+      this.updateColumnSetting(Number(source.dataset.columnIndex), "use", Boolean(source.checked));
       return;
     }
     if (action === "column-alias" && event.type === "input") {
-      const sheet = this.selectedSheet;
-      if (!sheet) {
-        return;
-      }
-      const column = sheet.columns[Number(source.dataset.columnIndex)];
-      column.alias = sanitizeIdentifier(source.value, `column_${column.index + 1}`);
-      sheet.errors = this.validateSheetStructure(sheet);
+      this.updateColumnSetting(Number(source.dataset.columnIndex), "alias", source.value);
       return;
     }
     if (action === "column-type" && event.type === "change") {
-      const sheet = this.selectedSheet;
-      if (!sheet) {
-        return;
-      }
-      const column = sheet.columns[Number(source.dataset.columnIndex)];
-      column.type = source.value;
+      this.updateColumnSetting(Number(source.dataset.columnIndex), "type", source.value);
       return;
+    }
+    if (action === "result-view" && event.type === "click") {
+      event.preventDefault();
+      this.state.queryState.activeView = source.dataset.view || "table";
+      this.render();
+      return;
+    }
+    if (action === "chart-type" && event.type === "change") {
+      this.state.chartState.type = source.value;
+      this.render();
+      return;
+    }
+    if (action === "chart-category" && event.type === "change") {
+      this.state.chartState.categoryColumn = source.value;
+      this.render();
+      return;
+    }
+    if (action === "chart-value" && event.type === "change") {
+      this.state.chartState.valueColumn = source.value;
+      this.render();
+      return;
+    }
+    if (action === "chart-aggregate" && event.type === "change") {
+      this.state.chartState.aggregate = source.value;
+      this.render();
     }
   }
 
@@ -434,53 +560,52 @@ export class ZrnAnalyticsProcessingView {
     if (!file) {
       return;
     }
-    try {
-      this.dropRegisteredTables();
-      const extension = (file.name.split(".").pop() || "").toLowerCase();
-      const sheets = await this.parseFile(file, extension);
-      if (!sheets.length) {
-        throw new Error("El archivo no genero ninguna tabla utilizable.");
+    if (this.state.fileMeta.loaded) {
+      const shouldReplace = window.confirm(
+        "Solo se permite un archivo por sesion. Cargar uno nuevo reemplazara el actual. Deseas continuar?"
+      );
+      if (!shouldReplace) {
+        input.value = "";
+        return;
       }
-      const usedNames = new Set();
-      this.state.fileName = file.name;
-      this.state.fileExtension = extension;
-      this.state.sheets = sheets.map((sheet, index) => {
-        const baseTableName = sanitizeIdentifier(sheet.name || `dataset_${index + 1}`, `dataset_${index + 1}`);
-        let tableName = baseTableName;
-        let suffix = 2;
-        while (usedNames.has(tableName)) {
-          tableName = `${baseTableName}_${suffix}`;
-          suffix += 1;
-        }
-        usedNames.add(tableName);
-        const enrichedSheet = {
-          ...sheet,
-          id: `${Date.now()}_${index}`,
-          tableName,
-          headerRowIndex: this.detectHeaderRow(sheet.rawRows),
-          columns: [],
-          errors: [],
-          previewRows: [],
-          dataRows: [],
-        };
-        this.buildSheetStructure(enrichedSheet, { keepAliases: false });
-        return enrichedSheet;
-      });
-      this.state.selectedSheetId = this.state.sheets[0].id;
-      this.state.sqlQuery = `SELECT *\nFROM ${quoteSqlIdentifier(this.state.sheets[0].tableName)}\nLIMIT 20;`;
-      this.state.queryColumns = [];
-      this.state.queryRows = [];
-      this.state.queryJson = "";
-      this.state.queryError = "";
-      this.state.globalError = "";
-      this.state.resultCount = 0;
-      this.registerTables();
+    }
+
+    try {
+      this.dropRegisteredTable();
+      this.disposeChart();
+      const extension = (file.name.split(".").pop() || "").toLowerCase();
+      const parsedSheets = await this.parseFile(file, extension);
+      if (!parsedSheets.length) {
+        throw new Error("El archivo no genero una tabla utilizable.");
+      }
+
+      const sheets = parsedSheets.map((sheet, index) => this.createSheetState(sheet, index));
+      this.state = this.getInitialState();
+      this.state.fileMeta = {
+        name: file.name,
+        extension,
+        sizeLabel: formatBytes(file.size),
+        iconClass: buildFileIcon(extension),
+        activeSheetName: sheets[0].name,
+        totalSheets: sheets.length,
+        loaded: true,
+      };
+      this.state.datasetConfig.sheets = sheets;
+      this.state.datasetConfig.selectedSheetId = sheets[0].id;
+      this.state.datasetConfig.statusLabel = "Archivo cargado";
+      this.state.queryState.tableName = sheets[0].tableName;
+      this.buildSheetStructure(sheets[0], { keepAliases: false });
+      this.state.datasetConfig.structureDirty = true;
+      this.state.queryState.sql = this.buildSampleQuery(sheets[0].tableName);
+      this.syncQueryStateWithSheet();
+      if (this.screenMode === "landing") {
+        await this.openWorkspaceRoute();
+        return;
+      }
       this.render();
     } catch (error) {
-      this.state = {
-        ...this.getInitialState(),
-        globalError: error.message || "No se pudo procesar el archivo.",
-      };
+      this.state = this.getInitialState();
+      this.state.globalError = error.message || "No se pudo procesar el archivo.";
       this.render();
     } finally {
       input.value = "";
@@ -534,11 +659,27 @@ export class ZrnAnalyticsProcessingView {
     }));
   }
 
+  createSheetState(sheet, index) {
+    const tableName = sanitizeIdentifier(sheet.name || `dataset_${index + 1}`, "dataset");
+    return {
+      id: `${Date.now()}_${index}`,
+      name: sheet.name || `Hoja ${index + 1}`,
+      tableName,
+      rawRows: cloneRows(sheet.rawRows || []),
+      headerRowIndex: this.detectHeaderRow(sheet.rawRows || []),
+      columns: [],
+      previewRows: [],
+      dataRowsCount: 0,
+      errors: [],
+      structureApplied: false,
+      structureDirty: true,
+    };
+  }
+
   detectHeaderRow(rawRows) {
     let bestIndex = 0;
     let bestScore = -1;
-    const scanRows = rawRows.slice(0, HEADER_SCAN_LIMIT);
-    scanRows.forEach((row, index) => {
+    rawRows.slice(0, HEADER_SCAN_LIMIT).forEach((row, index) => {
       const nonEmptyCells = row.filter((cell) => String(cell ?? "").trim() !== "").length;
       if (!nonEmptyCells) {
         return;
@@ -553,36 +694,32 @@ export class ZrnAnalyticsProcessingView {
   }
 
   buildSheetStructure(sheet, { keepAliases }) {
-    const rawRows = sheet.rawRows || [];
-    const headerRow = rawRows[sheet.headerRowIndex] || [];
-    const trailingRows = rawRows.slice(sheet.headerRowIndex + 1).filter((row) => !isRowEmpty(row));
+    const headerRow = sheet.rawRows[sheet.headerRowIndex] || [];
+    const dataRows = sheet.rawRows.slice(sheet.headerRowIndex + 1).filter((row) => !isRowEmpty(row));
     const maxColumns = Math.max(
       headerRow.length,
-      ...trailingRows.slice(0, PREVIEW_ROW_LIMIT).map((row) => row.length),
+      ...dataRows.slice(0, PREVIEW_ROW_LIMIT).map((row) => row.length),
       0
     );
-    const previousColumns = new Map(
-      (sheet.columns || []).map((column) => [column.index, column])
-    );
+    const previousColumns = new Map((sheet.columns || []).map((column) => [column.index, column]));
     sheet.columns = Array.from({ length: maxColumns }).map((_, index) => {
       const previous = previousColumns.get(index);
       const originalLabel = String(headerRow[index] ?? "").trim() || `Columna ${index + 1}`;
-      const sampleValues = trailingRows.slice(0, 15).map((row) => row[index]);
-      const aliasBase = sanitizeIdentifier(originalLabel, `column_${index + 1}`);
+      const sampleValues = dataRows.slice(0, 20).map((row) => row[index]);
       return {
         index,
         originalLabel,
         use: previous ? previous.use : true,
-        alias:
-          keepAliases && previous
-            ? sanitizeIdentifier(previous.alias, aliasBase)
-            : aliasBase,
+        alias: keepAliases && previous ? previous.alias : sanitizeIdentifier(originalLabel, `column_${index + 1}`),
         type: previous?.type || inferColumnType(sampleValues),
       };
     });
-    sheet.previewRows = trailingRows.slice(0, PREVIEW_ROW_LIMIT);
-    sheet.dataRows = trailingRows;
+    sheet.previewRows = dataRows.slice(0, PREVIEW_ROW_LIMIT);
+    sheet.dataRowsCount = dataRows.length;
     sheet.errors = this.validateSheetStructure(sheet);
+    sheet.structureDirty = true;
+    this.state.datasetConfig.statusLabel = sheet.errors.length ? "Requiere ajustes" : "Pendiente de aplicar";
+    this.state.datasetConfig.structureReady = false;
   }
 
   validateSheetStructure(sheet) {
@@ -598,146 +735,465 @@ export class ZrnAnalyticsProcessingView {
     if (!activeColumns.length) {
       errors.push("Activa al menos una columna para construir el dataset.");
     }
-    const aliases = activeColumns.map((column) => column.alias).filter(Boolean);
-    if (aliases.length !== activeColumns.length) {
+    const aliases = activeColumns.map((column) =>
+      sanitizeIdentifier(column.alias, `column_${column.index + 1}`)
+    );
+    if (aliases.some((alias) => !alias)) {
       errors.push("Todas las columnas activas deben tener un alias SQL.");
     }
     if (new Set(aliases).size !== aliases.length) {
-      errors.push("Los alias de columnas activas deben ser unicos.");
+      errors.push("Los alias SQL de las columnas activas deben ser unicos.");
     }
     return errors;
   }
 
-  rebuildSelectedSheet() {
+  updateHeaderRow(index) {
     const sheet = this.selectedSheet;
     if (!sheet) {
       return;
     }
-    this.buildSheetStructure(sheet, { keepAliases: true });
-    this.registerTables();
-    this.state.queryError = "";
+    sheet.headerRowIndex = index;
+    this.buildSheetStructure(sheet, { keepAliases: false });
+    this.clearQueryResults();
+    this.syncQueryStateWithSheet();
     this.render();
   }
 
-  buildDatasetRows(sheet) {
-    if (sheet.errors.length) {
-      return [];
-    }
-    const activeColumns = sheet.columns.filter((column) => column.use);
-    return sheet.dataRows.map((row) => {
-      const record = {};
-      activeColumns.forEach((column) => {
-        record[column.alias] = coerceValueByType(row[column.index], column.type);
-      });
-      return record;
-    });
-  }
-
-  dropRegisteredTables() {
-    if (!window.alasql) {
-      this.registeredTables = [];
+  updateColumnSetting(index, key, value) {
+    const sheet = this.selectedSheet;
+    if (!sheet) {
       return;
     }
-    for (const tableName of this.registeredTables) {
-      try {
-        window.alasql(`DROP TABLE IF EXISTS ${quoteSqlIdentifier(tableName)}`);
-      } catch {
-        // Ignore leftover temp tables from prior states.
-      }
-    }
-    this.registeredTables = [];
-  }
-
-  registerTables() {
-    if (!window.alasql) {
-      this.state.globalError = "La libreria SQL no esta disponible.";
+    const column = sheet.columns[index];
+    if (!column) {
       return;
     }
-    this.dropRegisteredTables();
-    for (const sheet of this.state.sheets) {
-      if (sheet.errors.length) {
-        continue;
-      }
-      const rows = this.buildDatasetRows(sheet);
-      window.alasql(`CREATE TABLE ${quoteSqlIdentifier(sheet.tableName)}`);
-      window.alasql.tables[sheet.tableName].data = rows;
-      this.registeredTables.push(sheet.tableName);
-    }
-  }
-
-  runQuery() {
-    if (!window.alasql) {
-      this.state.queryError = "La libreria SQL no esta disponible.";
+    column[key] = value;
+    sheet.errors = this.validateSheetStructure(sheet);
+    sheet.structureDirty = true;
+    sheet.structureApplied = false;
+    this.state.datasetConfig.structureDirty = true;
+    this.state.datasetConfig.structureReady = false;
+    this.state.datasetConfig.statusLabel = sheet.errors.length ? "Requiere ajustes" : "Pendiente de aplicar";
+    if (key !== "alias") {
       this.render();
-      return;
     }
-    this.registerTables();
-    if (!this.registeredTables.length) {
-      this.state.queryError = "No hay tablas validas disponibles para consultar.";
-      this.state.queryColumns = [];
-      this.state.queryRows = [];
-      this.state.queryJson = "";
-      this.state.resultCount = 0;
-      this.render();
+  }
+
+  selectSheet(sheetId) {
+    this.state.datasetConfig.selectedSheetId = sheetId;
+    const sheet = this.selectedSheet;
+    if (!sheet.columns.length) {
+      this.buildSheetStructure(sheet, { keepAliases: false });
+    }
+    this.state.fileMeta.activeSheetName = sheet?.name || "";
+    this.state.datasetConfig.structureReady = Boolean(
+      sheet && sheet.structureApplied && !sheet.structureDirty && !sheet.errors.length
+    );
+    this.state.datasetConfig.structureDirty = Boolean(sheet?.structureDirty);
+    this.state.datasetConfig.statusLabel = sheet?.errors.length
+      ? "Requiere ajustes"
+      : this.state.datasetConfig.structureReady
+        ? "Dataset listo"
+        : "Pendiente de aplicar";
+    this.syncQueryStateWithSheet();
+    this.clearQueryResults();
+    this.render();
+  }
+
+  applyStructure(silent = false) {
+    const sheet = this.selectedSheet;
+    if (!sheet) {
       return;
     }
     try {
-      const rawResult = window.alasql(this.state.sqlQuery);
-      const resultRows = Array.isArray(rawResult)
-        ? rawResult.slice(0, QUERY_RESULT_LIMIT)
-        : [{ resultado: rawResult }];
-      this.state.queryColumns = resultRows.length ? Object.keys(resultRows[0]) : [];
-      this.state.queryRows = resultRows;
-      this.state.queryJson = JSON.stringify(resultRows, null, 2);
-      this.state.resultCount = Array.isArray(rawResult) ? rawResult.length : 1;
-      this.state.queryError = "";
-      this.render();
+      sheet.errors = this.validateSheetStructure(sheet);
+      if (sheet.errors.length) {
+        this.state.datasetConfig.statusLabel = "Requiere ajustes";
+        if (!silent) {
+          this.render();
+        }
+        return;
+      }
+      this.registerSelectedSheet();
+      sheet.structureApplied = true;
+      sheet.structureDirty = false;
+      this.state.datasetConfig.structureDirty = false;
+      this.state.datasetConfig.structureReady = true;
+      this.state.datasetConfig.statusLabel = "Dataset listo";
+      this.state.queryState.tableName = sheet.tableName;
+      if (!this.state.queryState.sql.trim()) {
+        this.state.queryState.sql = this.buildSampleQuery(sheet.tableName);
+      }
+      if (!silent) {
+        this.render();
+      }
     } catch (error) {
-      this.state.queryError = error.message || "La consulta no pudo ejecutarse.";
-      this.state.queryColumns = [];
-      this.state.queryRows = [];
-      this.state.queryJson = "";
-      this.state.resultCount = 0;
+      this.state.queryState.error = error.message || "No se pudo preparar el dataset temporal.";
+      this.state.datasetConfig.statusLabel = "Requiere ajustes";
+      if (!silent) {
+        this.render();
+      }
+    }
+  }
+
+  buildDatasetRecords(sheet) {
+    const activeColumns = sheet.columns.filter((column) => column.use);
+    return sheet.rawRows
+      .slice(sheet.headerRowIndex + 1)
+      .filter((row) => !isRowEmpty(row))
+      .map((row) => {
+        const record = {};
+        activeColumns.forEach((column) => {
+          const alias = sanitizeIdentifier(column.alias, `column_${column.index + 1}`);
+          record[alias] = coerceValueByType(row[column.index], column.type);
+        });
+        return record;
+      });
+  }
+
+  buildDatasetSignature(sheet) {
+    return JSON.stringify({
+      id: sheet.id,
+      headerRowIndex: sheet.headerRowIndex,
+      columns: sheet.columns.map((column) => ({
+        use: column.use,
+        alias: sanitizeIdentifier(column.alias, `column_${column.index + 1}`),
+        type: column.type,
+      })),
+    });
+  }
+
+  dropRegisteredTable() {
+    if (!window.alasql || !this.registeredTableName) {
+      this.registeredTableName = "";
+      this.lastRegisteredSignature = "";
+      return;
+    }
+    try {
+      window.alasql(`DROP TABLE IF EXISTS ${quoteSqlIdentifier(this.registeredTableName)}`);
+    } catch {
+      // Ignore stale temporary table errors.
+    }
+    this.registeredTableName = "";
+    this.lastRegisteredSignature = "";
+  }
+
+  registerSelectedSheet() {
+    const sheet = this.selectedSheet;
+    if (!sheet) {
+      return;
+    }
+    if (!window.alasql) {
+      throw new Error("La libreria SQL no esta disponible.");
+    }
+    const signature = this.buildDatasetSignature(sheet);
+    if (this.registeredTableName === sheet.tableName && this.lastRegisteredSignature === signature) {
+      return;
+    }
+    this.dropRegisteredTable();
+    const records = this.buildDatasetRecords(sheet);
+    window.alasql(`CREATE TABLE ${quoteSqlIdentifier(sheet.tableName)}`);
+    window.alasql.tables[sheet.tableName].data = records;
+    this.registeredTableName = sheet.tableName;
+    this.lastRegisteredSignature = signature;
+  }
+
+  validateReadOnlyQuery(sql) {
+    const normalized = String(sql || "").trim();
+    if (!normalized) {
+      return "Escribe una consulta SQL para ejecutar.";
+    }
+    if (!READ_ONLY_SQL_PATTERN.test(normalized)) {
+      return "Solo se permiten consultas SELECT en esta version.";
+    }
+    if (FORBIDDEN_SQL_PATTERN.test(normalized)) {
+      return "La consulta contiene instrucciones no soportadas. Usa solo SQL de lectura.";
+    }
+    return "";
+  }
+
+  loadSampleQuery() {
+    this.state.queryState.sql = this.buildSampleQuery(this.activeTableName);
+    this.render();
+  }
+
+  buildSampleQuery(tableName) {
+    return `SELECT *\nFROM ${quoteSqlIdentifier(tableName)}\nLIMIT 20;`;
+  }
+
+  syncQueryStateWithSheet() {
+    const sheet = this.selectedSheet;
+    this.state.queryState.tableName = sheet?.tableName || "";
+    if (!this.state.queryState.sql.trim() || this.state.queryState.sql.includes("FROM [")) {
+      this.state.queryState.sql = sheet ? this.buildSampleQuery(sheet.tableName) : "";
+    }
+  }
+
+  clearQueryResults() {
+    this.state.queryState.error = "";
+    this.state.queryState.columns = [];
+    this.state.queryState.rows = [];
+    this.state.queryState.json = "";
+    this.state.queryState.totalRows = 0;
+    this.state.chartState.error = "";
+    this.disposeChart();
+  }
+
+  runQuery() {
+    const queryError = this.validateReadOnlyQuery(this.state.queryState.sql);
+    if (queryError) {
+      this.state.queryState.error = queryError;
+      this.clearQueryResults();
+      this.state.queryState.error = queryError;
+      this.render();
+      return;
+    }
+
+    try {
+      this.state.queryState.running = true;
+      this.state.queryState.error = "";
+      this.applyStructure(true);
+      if (!this.state.datasetConfig.structureReady) {
+        return;
+      }
+      const rawResult = window.alasql(this.state.queryState.sql);
+      const resultRows = Array.isArray(rawResult) ? rawResult : [{ resultado: rawResult }];
+      const previewRows = resultRows.slice(0, QUERY_RESULT_LIMIT);
+      this.state.queryState.columns = previewRows.length ? Object.keys(previewRows[0]) : [];
+      this.state.queryState.rows = previewRows;
+      this.state.queryState.json = JSON.stringify(previewRows, null, 2);
+      this.state.queryState.totalRows = Array.isArray(rawResult) ? rawResult.length : 1;
+      this.state.queryState.activeView = this.state.queryState.activeView || "table";
+      this.syncChartDefaults();
+      this.state.chartState.error = "";
+    } catch (error) {
+      this.clearQueryResults();
+      this.state.queryState.error = error.message || "La consulta no pudo ejecutarse.";
+    } finally {
+      this.state.queryState.running = false;
       this.render();
     }
+  }
+
+  syncChartDefaults() {
+    const chartColumns = this.state.queryState.columns;
+    const numericColumns = chartColumns.filter((column) =>
+      this.state.queryState.rows.some((row) => toChartNumber(row[column]) !== null)
+    );
+    if (!chartColumns.length || !numericColumns.length) {
+      this.state.chartState.categoryColumn = "";
+      this.state.chartState.valueColumn = "";
+      return;
+    }
+    if (!chartColumns.includes(this.state.chartState.categoryColumn)) {
+      this.state.chartState.categoryColumn = chartColumns[0];
+    }
+    if (!numericColumns.includes(this.state.chartState.valueColumn)) {
+      this.state.chartState.valueColumn = numericColumns[0];
+    }
+  }
+
+  getChartData() {
+    if (!this.state.queryState.rows.length) {
+      return { error: "Ejecuta una consulta para generar la grafica." };
+    }
+    const { categoryColumn, valueColumn, aggregate } = this.state.chartState;
+    if (!categoryColumn || !valueColumn) {
+      return { error: "Selecciona las columnas para configurar la grafica." };
+    }
+    const grouped = new Map();
+    this.state.queryState.rows.forEach((row) => {
+      const key = String(row[categoryColumn] ?? "(sin valor)");
+      const current = grouped.get(key) || [];
+      current.push(aggregate === "count" ? 1 : toChartNumber(row[valueColumn]));
+      grouped.set(key, current);
+    });
+    const categories = [];
+    const values = [];
+    grouped.forEach((rawValues, key) => {
+      categories.push(key);
+      values.push(aggregateValues(rawValues, aggregate));
+    });
+    if (!categories.length) {
+      return { error: "El resultado actual no contiene datos graficables." };
+    }
+    return { categories, values };
+  }
+
+  ensureChartRendered() {
+    if (!this.root || this.state.queryState.activeView !== "chart") {
+      this.disposeChart();
+      return;
+    }
+    const chartHost = this.root.querySelector("[data-zrn-chart-root='1']");
+    if (!chartHost || !window.echarts) {
+      return;
+    }
+    const chartData = this.getChartData();
+    this.state.chartState.error = chartData.error || "";
+    if (chartData.error) {
+      this.disposeChart();
+      return;
+    }
+
+    const renderToken = ++this.chartRenderToken;
+    window.requestAnimationFrame(() => {
+      if (renderToken !== this.chartRenderToken || !this.root) {
+        return;
+      }
+      this.chartInstance =
+        window.echarts.getInstanceByDom(chartHost) ||
+        window.echarts.init(chartHost, null, { renderer: "canvas" });
+      const option = this.buildChartOption(chartData);
+      this.chartInstance.setOption(option, true);
+      this.chartInstance.resize();
+    });
+  }
+
+  buildChartOption(chartData) {
+    const palette = ["#355d9a", "#5d8bd4", "#7aa9d8", "#6b8e5a", "#cf8d43", "#8f5d8a"];
+    const { type, categoryColumn, valueColumn, aggregate } = this.state.chartState;
+    if (type === "pie") {
+      return {
+        color: palette,
+        tooltip: { trigger: "item" },
+        legend: { bottom: 0 },
+        series: [
+          {
+            type: "pie",
+            radius: ["35%", "70%"],
+            itemStyle: { borderRadius: 4 },
+            data: chartData.categories.map((category, index) => ({
+              name: category,
+              value: chartData.values[index],
+            })),
+          },
+        ],
+      };
+    }
+
+    return {
+      color: palette,
+      tooltip: { trigger: "axis" },
+      grid: { left: 48, right: 18, top: 20, bottom: 40, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: chartData.categories,
+        axisLabel: { color: "#58709a" },
+      },
+      yAxis: {
+        type: "value",
+        axisLabel: { color: "#58709a" },
+      },
+      series: [
+        {
+          name: `${aggregate.toUpperCase()} ${valueColumn}`,
+          type,
+          smooth: type === "line",
+          data: chartData.values,
+          barMaxWidth: 42,
+        },
+      ],
+      toolbox: {
+        right: 0,
+        feature: { saveAsImage: {} },
+      },
+      title: {
+        text: `${categoryColumn} vs ${aggregate.toUpperCase()} ${valueColumn}`,
+        textStyle: { fontSize: 12, fontWeight: 700, color: "#355d9a" },
+      },
+    };
+  }
+
+  disposeChart() {
+    if (this.chartInstance) {
+      this.chartInstance.dispose();
+      this.chartInstance = null;
+    }
+    this.chartRenderToken += 1;
   }
 
   resetAll() {
     if (
       this.hasTransientData &&
-      !window.confirm("Se eliminara el archivo temporal y la consulta actual. Deseas continuar?")
+      !window.confirm("Se eliminara el archivo temporal, la consulta y los resultados. Deseas continuar?")
     ) {
       return;
     }
-    this.dropRegisteredTables();
+    this.disposeChart();
+    this.dropRegisteredTable();
     this.state = this.getInitialState();
     this.render();
+  }
+
+  get screenMode() {
+    return this.root?.dataset?.zrnProcessingScreen || "workspace";
+  }
+
+  renderLanding() {
+    return `
+      <div class="zrn_processing_landing">
+        <section class="zrn_processing_panel">
+          <div class="zrn_processing_panel_head">
+            <strong>Carga de archivo</strong>
+            <span>Un archivo temporal por sesion</span>
+          </div>
+          <div class="zrn_processing_panel_body">
+            <label class="zrn_processing_dropzone zrn_processing_dropzone_main">
+              <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
+              <span class="zrn_processing_dropzone_icon"><i class="fa fa-upload"></i></span>
+              <strong>Cargar archivo para procesar</strong>
+              <span>Al cargarlo se abrira el workspace de queries, resultados y graficas.</span>
+            </label>
+            <div class="zrn_processing_hint_strip">
+              Formatos permitidos: csv, json, xml, xls, xlsx, xlsm.
+            </div>
+          </div>
+        </section>
+      </div>
+    `;
   }
 
   render() {
     if (!this.root) {
       return;
     }
-    const selectedSheet = this.selectedSheet;
-    const tableList = this.state.sheets.length
-      ? this.state.sheets
-          .map(
-            (sheet) => `
-              <li>
-                <span class="zrn_processing_table_name">${escapeHtml(sheet.tableName)}</span>
-                <span class="zrn_processing_table_rows">${sheet.dataRows.length} filas base</span>
-              </li>
-            `
-          )
-          .join("")
-      : '<div class="zrn_processing_empty">Carga un archivo para crear tablas temporales.</div>';
 
-    const headerOptions = selectedSheet
-      ? selectedSheet.rawRows
+    if (this.screenMode === "landing") {
+      this.root.innerHTML = this.renderLanding();
+      this.disposeChart();
+      return;
+    }
+
+    const sheet = this.selectedSheet;
+    const activeColumns = sheet?.columns.filter((column) => column.use) || [];
+    const tableName = sheet?.tableName || "dataset";
+    const resultColumns = this.state.queryState.columns;
+    const resultRows = this.state.queryState.rows;
+    const numericResultColumns = resultColumns.filter((column) =>
+      resultRows.some((row) => toChartNumber(row[column]) !== null)
+    );
+    const resultTabs = [
+      ["table", "Tabla"],
+      ["json", "JSON"],
+      ["chart", "Grafica"],
+    ];
+
+    const overviewStatusClass = sheet?.errors.length
+      ? "is-danger"
+      : this.state.datasetConfig.structureReady
+        ? "is-ready"
+        : this.state.fileMeta.loaded
+          ? "is-pending"
+          : "";
+
+    const headerOptions = sheet
+      ? sheet.rawRows
           .slice(0, HEADER_SCAN_LIMIT)
           .map(
             (row, index) => `
-              <option value="${index}" ${selectedSheet.headerRowIndex === index ? "selected" : ""}>
+              <option value="${index}" ${sheet.headerRowIndex === index ? "selected" : ""}>
                 Fila ${index + 1}: ${escapeHtml(buildRowSnippet(row) || "(sin contenido)")}
               </option>
             `
@@ -745,14 +1201,12 @@ export class ZrnAnalyticsProcessingView {
           .join("")
       : "";
 
-    const columnRows = selectedSheet
-      ? selectedSheet.columns
+    const columnRows = sheet
+      ? sheet.columns
           .map(
             (column, index) => `
               <tr>
-                <td><input type="checkbox" data-action="column-use" data-column-index="${index}" ${
-                  column.use ? "checked" : ""
-                } /></td>
+                <td><input type="checkbox" data-action="column-use" data-column-index="${index}" ${column.use ? "checked" : ""} /></td>
                 <td>${escapeHtml(column.originalLabel)}</td>
                 <td>
                   <input
@@ -776,15 +1230,11 @@ export class ZrnAnalyticsProcessingView {
           .join("")
       : "";
 
-    const previewHead = selectedSheet?.columns
-      .filter((column) => column.use)
-      .map((column) => `<th>${escapeHtml(column.alias)}</th>`)
-      .join("");
-    const previewRows = selectedSheet
-      ? selectedSheet.previewRows
+    const previewHead = activeColumns.map((column) => `<th>${escapeHtml(column.alias)}</th>`).join("");
+    const previewRows = sheet
+      ? sheet.previewRows
           .map((row) => {
-            const cells = selectedSheet.columns
-              .filter((column) => column.use)
+            const cells = activeColumns
               .map((column) => `<td>${escapeHtml(row[column.index] ?? "")}</td>`)
               .join("");
             return `<tr>${cells}</tr>`;
@@ -792,109 +1242,217 @@ export class ZrnAnalyticsProcessingView {
           .join("")
       : "";
 
-    const resultHead = this.state.queryColumns
-      .map((column) => `<th>${escapeHtml(column)}</th>`)
-      .join("");
-    const resultRows = this.state.queryRows
+    const resultHead = resultColumns.map((column) => `<th>${escapeHtml(column)}</th>`).join("");
+    const resultBody = resultRows
       .map((row) => {
-        const cells = this.state.queryColumns
+        const cells = resultColumns
           .map((column) => `<td>${escapeHtml(row[column] ?? "")}</td>`)
           .join("");
         return `<tr>${cells}</tr>`;
       })
       .join("");
-    const resultJson = this.state.queryJson
-      ? escapeHtml(this.state.queryJson)
+
+    const resultTabButtons = resultTabs
+      .map(
+        ([key, label]) => `
+          <button
+            type="button"
+            class="btn zrn_processing_result_tab ${this.state.queryState.activeView === key ? "is-active" : ""}"
+            data-action="result-view"
+            data-view="${key}"
+            ${key === "chart" && !resultRows.length ? "disabled" : ""}
+          >
+            ${label}
+          </button>
+        `
+      )
+      .join("");
+
+    const chartConfig = resultRows.length
+      ? `
+          <div class="zrn_processing_chart_form">
+            <div class="zrn_processing_field">
+              <label>Tipo</label>
+              <select class="form-select" data-action="chart-type">
+                <option value="bar" ${this.state.chartState.type === "bar" ? "selected" : ""}>Barra</option>
+                <option value="line" ${this.state.chartState.type === "line" ? "selected" : ""}>Linea</option>
+                <option value="pie" ${this.state.chartState.type === "pie" ? "selected" : ""}>Pie</option>
+              </select>
+            </div>
+            <div class="zrn_processing_field">
+              <label>Eje X</label>
+              <select class="form-select" data-action="chart-category">
+                ${resultColumns
+                  .map(
+                    (column) =>
+                      `<option value="${escapeHtml(column)}" ${this.state.chartState.categoryColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`
+                  )
+                  .join("")}
+              </select>
+            </div>
+            <div class="zrn_processing_field">
+              <label>Metrica Y</label>
+              <select class="form-select" data-action="chart-value">
+                ${numericResultColumns
+                  .map(
+                    (column) =>
+                      `<option value="${escapeHtml(column)}" ${this.state.chartState.valueColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`
+                  )
+                  .join("")}
+              </select>
+            </div>
+            <div class="zrn_processing_field">
+              <label>Agregacion</label>
+              <select class="form-select" data-action="chart-aggregate">
+                ${["sum", "avg", "count", "min", "max"]
+                  .map(
+                    (aggregate) =>
+                      `<option value="${aggregate}" ${this.state.chartState.aggregate === aggregate ? "selected" : ""}>${aggregate.toUpperCase()}</option>`
+                  )
+                  .join("")}
+              </select>
+            </div>
+          </div>
+        `
       : "";
+
+    const chartPreview = this.state.queryState.activeView === "chart" ? this.getChartData() : null;
+    this.state.chartState.error = chartPreview?.error || "";
+
+    const resultContent =
+      this.state.queryState.activeView === "json"
+        ? this.state.queryState.json
+          ? `<div class="zrn_processing_result_json_wrap"><pre class="zrn_processing_result_json">${escapeHtml(
+              this.state.queryState.json
+            )}</pre></div>`
+          : '<div class="zrn_processing_result_empty">Ejecuta una consulta para ver el JSON.</div>'
+        : this.state.queryState.activeView === "chart"
+          ? `
+              ${chartConfig}
+              ${
+                chartPreview?.error
+                  ? `<div class="zrn_processing_query_error">${escapeHtml(chartPreview.error)}</div>`
+                  : ""
+              }
+              ${chartPreview?.error ? "" : '<div class="zrn_processing_chart_canvas" data-zrn-chart-root="1"></div>'}
+            `
+          : resultColumns.length
+            ? `
+                <div class="zrn_processing_result_wrap">
+                  <table class="zrn_processing_result_table">
+                    <thead><tr>${resultHead}</tr></thead>
+                    <tbody>${resultBody}</tbody>
+                  </table>
+                </div>
+              `
+            : '<div class="zrn_processing_result_empty">Ejecuta una consulta para ver resultados.</div>';
 
     this.root.innerHTML = `
       <div class="zrn_processing_app">
-        ${this.state.globalError ? `<div class="zrn_processing_global_error">${escapeHtml(this.state.globalError)}</div>` : ""}
+        ${
+          this.state.globalError
+            ? `<div class="zrn_processing_global_error">${escapeHtml(this.state.globalError)}</div>`
+            : ""
+        }
         <div class="zrn_processing_grid">
           <div class="zrn_processing_main">
             <section class="zrn_processing_panel">
               <div class="zrn_processing_panel_head">
                 <strong>Carga de archivo</strong>
-                <span>Soporta csv, json, xml, xls, xlsx y xlsm</span>
+                <span>${this.state.fileMeta.loaded ? "Un archivo activo por sesion" : "Soporta csv, json, xml, xls, xlsx y xlsm"}</span>
               </div>
               <div class="zrn_processing_panel_body">
-                <div class="zrn_processing_field_grid">
-                  <div class="zrn_processing_field">
-                    <label>Archivo local</label>
-                    <input
-                      type="file"
-                      class="form-control"
-                      data-action="file"
-                      accept=".csv,.json,.xml,.xls,.xlsx,.xlsm"
-                    />
-                    <div class="zrn_processing_field_hint">
-                      ${this.state.fileName ? `Cargado: ${escapeHtml(this.state.fileName)}` : "El archivo no se almacena en Odoo."}
-                    </div>
-                  </div>
-                  <div class="zrn_processing_field">
-                    <label>Hoja o tabla activa</label>
-                    <select class="form-select" data-action="sheet-select" ${selectedSheet ? "" : "disabled"}>
-                      ${(this.state.sheets || [])
-                        .map(
-                          (sheet) => `
-                            <option value="${sheet.id}" ${this.state.selectedSheetId === sheet.id ? "selected" : ""}>
-                              ${escapeHtml(sheet.name)}
-                            </option>
-                          `
-                        )
-                        .join("")}
-                    </select>
-                    <div class="zrn_processing_field_hint">
-                      ${selectedSheet ? `Tabla SQL: ${escapeHtml(selectedSheet.tableName)}` : "Crea al menos una tabla temporal para consultar."}
-                    </div>
-                  </div>
-                </div>
-                <div class="zrn_processing_actions">
-                  <button type="button" class="btn btn-primary" data-action="sample-query" ${selectedSheet ? "" : "disabled"}>
-                    Cargar query base
-                  </button>
-                  <button type="button" class="btn btn-secondary" data-action="reset-file" ${this.hasTransientData ? "" : "disabled"}>
-                    Limpiar sesion
-                  </button>
-                </div>
+                ${
+                  !this.state.fileMeta.loaded
+                    ? `
+                      <div class="zrn_processing_empty_state">
+                        <div class="zrn_processing_empty">No hay archivo temporal cargado en esta sesion.</div>
+                        <button type="button" class="btn btn-primary zrn_processing_leave_btn" data-action="back-to-processing">
+                          Volver a la pantalla de carga
+                        </button>
+                      </div>
+                    `
+                    : `
+                      <div class="zrn_processing_file_overview">
+                        <div class="zrn_processing_file_icon">
+                          <i class="fa ${escapeHtml(this.state.fileMeta.iconClass)}"></i>
+                        </div>
+                        <div class="zrn_processing_file_copy">
+                          <div class="zrn_processing_file_name">${escapeHtml(this.state.fileMeta.name)}</div>
+                          <div class="zrn_processing_helper">
+                            ${escapeHtml(this.state.fileMeta.extension.toUpperCase())} · ${escapeHtml(this.state.fileMeta.sizeLabel)} · ${this.state.fileMeta.totalSheets} origen(es)
+                          </div>
+                        </div>
+                        <div class="zrn_processing_file_actions">
+                          <label class="btn btn-secondary zrn_processing_replace_btn">
+                            Reemplazar archivo
+                            <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
+                          </label>
+                          <button type="button" class="btn btn-secondary" data-action="reset-file">Limpiar sesion</button>
+                        </div>
+                      </div>
+                    `
+                }
+                ${
+                  this.state.fileMeta.loaded
+                    ? `
+                      <div class="zrn_processing_field_grid zrn_processing_file_meta_grid">
+                        <div class="zrn_processing_field">
+                          <label>Hoja activa</label>
+                          <select class="form-select" data-action="sheet-select">
+                            ${this.state.datasetConfig.sheets
+                              .map(
+                                (currentSheet) => `
+                                  <option value="${currentSheet.id}" ${this.state.datasetConfig.selectedSheetId === currentSheet.id ? "selected" : ""}>
+                                    ${escapeHtml(currentSheet.name)}
+                                  </option>
+                                `
+                              )
+                              .join("")}
+                          </select>
+                        </div>
+                        <div class="zrn_processing_field">
+                          <label>Tabla SQL</label>
+                          <input type="text" class="form-control" value="${escapeHtml(tableName)}" disabled="disabled" />
+                        </div>
+                      </div>
+                    `
+                    : `
+                      <div class="zrn_processing_hint_strip">
+                        Formatos permitidos: csv, json, xml, xls, xlsx, xlsm.
+                      </div>
+                    `
+                }
               </div>
             </section>
 
             <section class="zrn_processing_panel">
               <div class="zrn_processing_panel_head">
-                <strong>Definicion de dataset</strong>
-                <span>Selecciona encabezado, columnas y tipos antes de consultar</span>
+                <strong>Dataset temporal</strong>
+                <span>${sheet ? `${sheet.dataRowsCount} filas detectadas` : "Sin estructura"}</span>
               </div>
               <div class="zrn_processing_panel_body">
                 ${
-                  selectedSheet
+                  sheet
                     ? `
-                      <div class="zrn_processing_sheet_note">
-                        Ajusta la fila de cabecera para archivos con lineas informativas antes del dataset, como el ejemplo de Retail Link.
-                      </div>
                       ${
-                        selectedSheet.errors.length
-                          ? `<div class="zrn_processing_sheet_errors">${selectedSheet.errors
-                              .map((error) => escapeHtml(error))
-                              .join("<br/>")}</div>`
+                        sheet.errors.length
+                          ? `<div class="zrn_processing_sheet_errors">${sheet.errors.map((error) => escapeHtml(error)).join("<br/>")}</div>`
                           : ""
                       }
                       <div class="zrn_processing_field_grid">
                         <div class="zrn_processing_field">
                           <label>Fila de encabezado</label>
-                          <select class="form-select" data-action="header-row">
-                            ${headerOptions}
-                          </select>
+                          <select class="form-select" data-action="header-row">${headerOptions}</select>
                         </div>
                         <div class="zrn_processing_field">
-                          <label>Tabla SQL expuesta</label>
-                          <input type="text" class="form-control" value="${escapeHtml(selectedSheet.tableName)}" disabled="disabled" />
+                          <label>Estado</label>
+                          <div class="zrn_processing_status_inline ${overviewStatusClass}">${escapeHtml(this.state.datasetConfig.statusLabel)}</div>
                         </div>
                       </div>
                       <div class="zrn_processing_actions">
-                        <button type="button" class="btn btn-primary" data-action="apply-structure">
-                          Aplicar estructura
-                        </button>
+                        <button type="button" class="btn btn-primary" data-action="apply-structure">Aplicar estructura</button>
+                        <button type="button" class="btn btn-secondary" data-action="sample-query">Cargar query base</button>
                       </div>
                       <div class="zrn_processing_columns_wrap">
                         <table class="zrn_processing_columns">
@@ -906,13 +1464,11 @@ export class ZrnAnalyticsProcessingView {
                               <th>Tipo</th>
                             </tr>
                           </thead>
-                          <tbody>
-                            ${columnRows}
-                          </tbody>
+                          <tbody>${columnRows}</tbody>
                         </table>
                       </div>
                     `
-                    : '<div class="zrn_processing_empty">Carga un archivo para definir columnas y alias del dataset.</div>'
+                    : '<div class="zrn_processing_empty">Carga un archivo para definir columnas y tipos.</div>'
                 }
               </div>
             </section>
@@ -920,56 +1476,42 @@ export class ZrnAnalyticsProcessingView {
             <section class="zrn_processing_panel">
               <div class="zrn_processing_panel_head">
                 <strong>Editor SQL</strong>
-                <span>Consulta en memoria las tablas temporales cargadas</span>
+                <span>Solo lectura: SELECT, WHERE, GROUP BY, ORDER BY y LIMIT</span>
               </div>
               <div class="zrn_processing_panel_body">
+                <div class="zrn_processing_query_hint">
+                  Tabla disponible: <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code>
+                </div>
                 <textarea class="zrn_processing_query_area" data-action="sql-input" placeholder="SELECT * FROM [dataset] LIMIT 20;">${escapeHtml(
-                  this.state.sqlQuery
+                  this.state.queryState.sql
                 )}</textarea>
                 <div class="zrn_processing_query_actions">
-                  <button type="button" class="btn btn-primary" data-action="run-query" ${
-                    this.registeredTables.length ? "" : "disabled"
-                  }>
-                    Ejecutar query
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    data-action="run-query"
+                    ${this.state.fileMeta.loaded ? "" : "disabled"}
+                  >
+                    ${this.state.queryState.running ? "Ejecutando..." : "Ejecutar"}
                   </button>
-                  <div class="zrn_processing_helper">Usa los nombres SQL listados en la derecha o la tabla activa seleccionada.</div>
+                  <div class="zrn_processing_helper">La estructura del dataset se aplica al ejecutar si aun esta pendiente.</div>
                 </div>
                 ${
-                  this.state.queryError
-                    ? `<div class="zrn_processing_query_error">${escapeHtml(this.state.queryError)}</div>`
+                  this.state.queryState.error
+                    ? `<div class="zrn_processing_query_error">${escapeHtml(this.state.queryState.error)}</div>`
                     : ""
                 }
-                <div class="zrn_processing_result_meta">
-                  <span><strong>Resultados</strong> ${this.state.resultCount} fila(s)</span>
-                  <span>Preview maximo: ${QUERY_RESULT_LIMIT}</span>
-                </div>
-                <div class="zrn_processing_result_views">
-                  <div class="zrn_processing_result_panel">
-                    <div class="zrn_processing_result_head">Vista tabla</div>
-                    <div class="zrn_processing_result_wrap">
-                      ${
-                        this.state.queryColumns.length
-                          ? `
-                            <table class="zrn_processing_result_table">
-                              <thead><tr>${resultHead}</tr></thead>
-                              <tbody>${resultRows}</tbody>
-                            </table>
-                          `
-                          : '<div class="zrn_processing_result_empty">Ejecuta una consulta para ver resultados.</div>'
-                      }
-                    </div>
-                  </div>
-                  <div class="zrn_processing_result_panel">
-                    <div class="zrn_processing_result_head">Vista JSON</div>
-                    <div class="zrn_processing_result_json_wrap">
-                      ${
-                        resultJson
-                          ? `<pre class="zrn_processing_result_json">${resultJson}</pre>`
-                          : '<div class="zrn_processing_result_empty">Ejecuta una consulta para ver el JSON.</div>'
-                      }
-                    </div>
-                  </div>
-                </div>
+              </div>
+            </section>
+
+            <section class="zrn_processing_panel">
+              <div class="zrn_processing_panel_head">
+                <strong>Resultados</strong>
+                <span>${this.state.queryState.totalRows} fila(s) · preview maximo ${QUERY_RESULT_LIMIT}</span>
+              </div>
+              <div class="zrn_processing_panel_body">
+                <div class="zrn_processing_result_tabs">${resultTabButtons}</div>
+                <div class="zrn_processing_result_stage">${resultContent}</div>
               </div>
             </section>
           </div>
@@ -977,26 +1519,34 @@ export class ZrnAnalyticsProcessingView {
           <aside class="zrn_processing_side">
             <section class="zrn_processing_panel">
               <div class="zrn_processing_panel_head">
-                <strong>Estado temporal</strong>
-                <span>Resumen de la sesion actual</span>
+                <strong>Resumen del archivo</strong>
+                <span>Estado de la sesion</span>
               </div>
               <div class="zrn_processing_panel_body">
                 <div class="zrn_processing_status_grid">
                   <div class="zrn_processing_status_item">
                     <small>Archivo</small>
-                    <strong>${escapeHtml(this.state.fileName || "Sin cargar")}</strong>
+                    <strong>${escapeHtml(this.state.fileMeta.loaded ? this.state.fileMeta.name : "Sin cargar")}</strong>
                   </div>
                   <div class="zrn_processing_status_item">
                     <small>Formato</small>
-                    <strong>${escapeHtml((this.state.fileExtension || "-").toUpperCase())}</strong>
-                  </div>
-                  <div class="zrn_processing_status_item">
-                    <small>Tablas SQL</small>
-                    <strong>${this.registeredTables.length}</strong>
+                    <strong>${escapeHtml((this.state.fileMeta.extension || "-").toUpperCase())}</strong>
                   </div>
                   <div class="zrn_processing_status_item">
                     <small>Hoja activa</small>
-                    <strong>${escapeHtml(selectedSheet?.name || "-")}</strong>
+                    <strong>${escapeHtml(this.state.fileMeta.activeSheetName || "-")}</strong>
+                  </div>
+                  <div class="zrn_processing_status_item">
+                    <small>Columnas activas</small>
+                    <strong>${activeColumns.length}</strong>
+                  </div>
+                  <div class="zrn_processing_status_item">
+                    <small>Filas detectadas</small>
+                    <strong>${sheet?.dataRowsCount || 0}</strong>
+                  </div>
+                  <div class="zrn_processing_status_item">
+                    <small>Dataset</small>
+                    <strong>${escapeHtml(this.state.datasetConfig.statusLabel)}</strong>
                   </div>
                 </div>
               </div>
@@ -1004,45 +1554,45 @@ export class ZrnAnalyticsProcessingView {
 
             <section class="zrn_processing_panel">
               <div class="zrn_processing_panel_head">
-                <strong>Tablas disponibles</strong>
-                <span>Referencialas directo en SQL</span>
+                <strong>Preview estructural</strong>
+                <span>${sheet ? "Muestra del dataset activo" : "Sin preview"}</span>
               </div>
               <div class="zrn_processing_panel_body">
-                <ul class="zrn_processing_table_list">${tableList}</ul>
+                ${
+                  sheet && activeColumns.length
+                    ? `
+                      <div class="zrn_processing_preview_wrap">
+                        <table class="zrn_processing_preview_table">
+                          <thead><tr>${previewHead}</tr></thead>
+                          <tbody>${previewRows}</tbody>
+                        </table>
+                      </div>
+                    `
+                    : '<div class="zrn_processing_empty">Aplica estructura para revisar el preview del dataset.</div>'
+                }
               </div>
             </section>
 
             <section class="zrn_processing_panel">
               <div class="zrn_processing_panel_head">
-                <strong>Preview estructural</strong>
-                <span>${selectedSheet ? `${selectedSheet.dataRows.length} filas detectadas` : "Sin preview"}</span>
+                <strong>Ayuda SQL</strong>
+                <span>Referencia rapida</span>
               </div>
               <div class="zrn_processing_panel_body">
-                ${
-                  selectedSheet && selectedSheet.columns.filter((column) => column.use).length
-                    ? `
-                      <div class="zrn_processing_preview_head">
-                        <div class="zrn_processing_helper">Se muestran las primeras ${PREVIEW_ROW_LIMIT} filas utiles despues del encabezado.</div>
-                      </div>
-                      <div class="zrn_processing_preview_wrap">
-                        <table class="zrn_processing_preview_table">
-                          <thead>
-                            <tr>${previewHead}</tr>
-                          </thead>
-                          <tbody>
-                            ${previewRows}
-                          </tbody>
-                        </table>
-                      </div>
-                    `
-                    : '<div class="zrn_processing_empty">No hay preview disponible para la hoja actual.</div>'
-                }
+                <ul class="zrn_processing_table_list">
+                  <li><strong>Tabla:</strong> <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code></li>
+                  <li><strong>Permitido:</strong> SELECT, WHERE, GROUP BY, ORDER BY, LIMIT</li>
+                  <li><strong>Agregados:</strong> COUNT, SUM, AVG, MIN, MAX</li>
+                  <li><strong>No permitido:</strong> INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, ATTACH</li>
+                </ul>
               </div>
             </section>
           </aside>
         </div>
       </div>
     `;
+
+    this.ensureChartRendered();
   }
 }
 
@@ -1055,37 +1605,51 @@ export function getSharedProcessingView() {
   return sharedProcessingView;
 }
 
-function syncSharedProcessingRoot() {
+function syncStandaloneProcessingRoot() {
   if (typeof document === "undefined") {
     return;
   }
-  const view = getSharedProcessingView();
   const root = document.querySelector("[data-zrn-processing-root='1']");
-  if (root) {
-    if (view.root !== root) {
-      view.mount(root);
-    }
+  const view = getSharedProcessingView();
+  if (root && view.root !== root) {
+    view.mount(root);
     return;
   }
-  if (view.root) {
+  if (!root && view.root) {
     view.unmount();
   }
 }
 
-function bootstrapSharedProcessingView() {
+function bootstrapStandaloneProcessingRoot() {
   if (typeof window === "undefined" || typeof document === "undefined") {
     return;
   }
-  const runSync = () => syncSharedProcessingRoot();
+  let scheduled = false;
+  const scheduleSync = () => {
+    if (scheduled) {
+      return;
+    }
+    scheduled = true;
+    window.requestAnimationFrame(() => {
+      scheduled = false;
+      syncStandaloneProcessingRoot();
+    });
+  };
 
-  if (document.readyState === "complete" || document.readyState === "interactive") {
-    runSync();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scheduleSync, { once: true });
   } else {
-    document.addEventListener("DOMContentLoaded", runSync, { once: true });
+    scheduleSync();
   }
 
-  window.addEventListener("load", runSync);
-  window.setInterval(runSync, 800);
+  const observerTarget = document.body || document.documentElement;
+  if (!observerTarget) {
+    return;
+  }
+  const observer = new MutationObserver(() => {
+    scheduleSync();
+  });
+  observer.observe(observerTarget, { childList: true, subtree: true });
 }
 
-bootstrapSharedProcessingView();
+bootstrapStandaloneProcessingRoot();
