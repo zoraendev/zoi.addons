@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class ZrnPlanningMfgPlan(models.Model):
@@ -659,3 +659,27 @@ class PurchaseOrderLine(models.Model):
         readonly=True,
         copy=False,
     )
+
+
+class StockMoveLine(models.Model):
+    """Herencia de stock.move.line para validar lotes archivados.
+
+    Esta validacion SOLO se aplica a movimientos de materia prima
+    vinculados a ordenes de fabricacion generadas desde el planeador
+    de abastecimiento de Zoraen Planning (zrn_prodigyn_plan_id).
+    No afecta movimientos de stock nativos ni OFs creadas manualmente.
+    """
+    _inherit = 'stock.move.line'
+
+    @api.constrains('lot_id')
+    def _check_lot_not_archived(self):
+        for line in self:
+            if not line.lot_id or line.lot_id.active:
+                continue
+            # Solo validamos en movimientos de materia prima de una OF de Zoraen Planning
+            production = line.move_id.raw_material_production_id
+            if production and production.zrn_prodigyn_plan_id:
+                raise ValidationError(_(
+                    "El lote '%s' esta archivado y no puede utilizarse en una orden de "
+                    "fabricacion generada por el planeador de Zoraen Planning."
+                ) % line.lot_id.name)
