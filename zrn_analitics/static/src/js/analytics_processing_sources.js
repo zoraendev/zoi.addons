@@ -29,16 +29,26 @@ export async function parseLocalSource(file) {
 
 export async function parseGoogleSheetSource(url) {
   const normalized = normalizeGoogleSheetUrl(url);
-  const response = await fetch(normalized.exportUrl, {
-    method: "GET",
-    mode: "cors",
-    credentials: "omit",
+  const response = await fetch("/zrn_analitics/google_sheet/metadata", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({ url: normalized.cleanUrl }),
   });
-  if (!response.ok) {
-    throw new Error("No se pudo leer el Google Sheet publico. Verifica la URL y los permisos.");
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
   }
-  const arrayBuffer = await response.arrayBuffer();
-  const parsedSheets = parseWorkbook(arrayBuffer);
+  if (!response.ok || !payload.success) {
+    throw new Error(
+      payload.error || "No se pudo leer el Google Sheet publico. Verifica la URL y los permisos.",
+    );
+  }
+  const parsedSheets = payload.sheets || [];
   if (!parsedSheets.length) {
     throw new Error("El Google Sheet no devolvio hojas utilizables.");
   }
@@ -56,6 +66,27 @@ export async function parseGoogleSheetSource(url) {
     },
     sheets: parsedSheets,
   };
+}
+
+export async function fetchGoogleSheetSheet(url, sheetIndex) {
+  const response = await fetch("/zrn_analitics/google_sheet/sheet", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({ url, sheet_index: sheetIndex }),
+  });
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+  if (!response.ok || !payload.success || !payload.sheet) {
+    throw new Error(payload.error || "No se pudo cargar la hoja seleccionada.");
+  }
+  return payload.sheet;
 }
 
 export async function parseSourceFile(file, extension) {
@@ -121,10 +152,8 @@ export function normalizeGoogleSheetUrl(rawUrl) {
     throw new Error("No se encontro el identificador del Google Sheet en la URL.");
   }
   const spreadsheetId = match[1];
-  const exportUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
   return {
     spreadsheetId,
-    exportUrl,
     cleanUrl: value,
     label: `Google Sheet ${spreadsheetId.slice(0, 8)}`,
   };

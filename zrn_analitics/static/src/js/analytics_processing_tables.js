@@ -28,6 +28,19 @@ export function createSheetState(sheet, index) {
     rawRows,
     tables,
     selectedTableId: tables[0]?.id || "",
+    loaded: true,
+  };
+}
+
+export function createDeferredSheetState(sheet, index) {
+  return {
+    id: `${Date.now()}_${index}`,
+    name: sheet.name || `Hoja ${index + 1}`,
+    rawRows: [],
+    tables: [],
+    selectedTableId: "",
+    remoteIndex: Number.isFinite(sheet.index) ? sheet.index : index,
+    loaded: false,
   };
 }
 
@@ -49,44 +62,97 @@ export function detectHeaderRow(rawRows) {
 }
 
 export function detectTables(rawRows) {
-  const blocks = [];
-  let blockStart = -1;
-  for (let index = 0; index < rawRows.length; index += 1) {
-    const row = rawRows[index] || [];
-    if (!isRowEmpty(row)) {
-      if (blockStart === -1) {
-        blockStart = index;
+  const occupied = new Set();
+  const maxColumns = Math.max(...rawRows.map((row) => row.length), 0);
+  rawRows.forEach((row, rowIndex) => {
+    for (let columnIndex = 0; columnIndex < maxColumns; columnIndex += 1) {
+      if (String(row[columnIndex] ?? "").trim() !== "") {
+        occupied.add(`${rowIndex}:${columnIndex}`);
       }
-      continue;
     }
-    if (blockStart !== -1) {
-      blocks.push([blockStart, index - 1]);
-      blockStart = -1;
+  });
+
+  const components = [];
+  const visited = new Set();
+  occupied.forEach((key) => {
+    if (visited.has(key)) {
+      return;
     }
-  }
-  if (blockStart !== -1) {
-    blocks.push([blockStart, rawRows.length - 1]);
-  }
-  return blocks
-    .filter(([start, end]) => end >= start)
-    .map(([start, end], index) => {
-      const blockRows = rawRows.slice(start, end + 1);
-      const headerOffset = detectHeaderRow(blockRows);
-      const headerIndex = start + headerOffset;
+    const queue = [key];
+    visited.add(key);
+    const cells = [];
+    while (queue.length) {
+      const current = queue.shift();
+      const [rowIndex, columnIndex] = current.split(":").map(Number);
+      cells.push([rowIndex, columnIndex]);
+      [
+        [rowIndex - 1, columnIndex],
+        [rowIndex + 1, columnIndex],
+        [rowIndex, columnIndex - 1],
+        [rowIndex, columnIndex + 1],
+      ].forEach(([nextRow, nextColumn]) => {
+        const nextKey = `${nextRow}:${nextColumn}`;
+        if (occupied.has(nextKey) && !visited.has(nextKey)) {
+          visited.add(nextKey);
+          queue.push(nextKey);
+        }
+      });
+    }
+    components.push(cells);
+  });
+
+  return components
+    .map((cells, index) => {
+      const rowIndexes = cells.map(([rowIndex]) => rowIndex);
+      const columnIndexes = cells.map(([, columnIndex]) => columnIndex);
+      const minRow = Math.min(...rowIndexes);
+      const maxRow = Math.max(...rowIndexes);
+      const minColumn = Math.min(...columnIndexes);
+      const maxColumn = Math.max(...columnIndexes);
+      const height = maxRow - minRow + 1;
+      const width = maxColumn - minColumn + 1;
+      if (height < 3 || width < 2 || cells.length < 5) {
+        return null;
+      }
+      const rowCounts = Array.from({ length: height }, (_, offset) =>
+        cells.filter(([rowIndex]) => rowIndex === minRow + offset).length,
+      );
+      const firstRow = rawRows[minRow] || [];
+      const componentTitle = firstRow
+        .slice(minColumn, maxColumn + 1)
+        .map((cell) => String(cell ?? "").trim())
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      const hasTitleRow = rowCounts[0] === 1 && rowCounts[1] >= 2;
+      const headerIndex = hasTitleRow ? minRow + 1 : minRow;
       const headerRow = rawRows[headerIndex] || [];
-      const startColumnIndex = getFirstNonEmptyColumnIndex(headerRow);
+      const startColumnIndex = Math.max(
+        minColumn,
+        getFirstNonEmptyColumnIndex(headerRow.slice(minColumn, maxColumn + 1)) + minColumn,
+      );
       const endColumnIndex = Math.max(
         startColumnIndex,
-        getLastNonEmptyColumnIndex(headerRow),
+        Math.min(
+          maxColumn,
+          getLastNonEmptyColumnIndex(headerRow.slice(minColumn, maxColumn + 1)) + minColumn,
+        ),
       );
       return {
-        name: `tabla_${index + 1}`,
+        name: componentTitle || `tabla_${index + 1}`,
         tableStartRowIndex: headerIndex,
-        tableEndRowIndex: end,
+        tableEndRowIndex: maxRow,
         tableStartColumnIndex: startColumnIndex,
         tableEndColumnIndex: endColumnIndex,
+        hasEndRow: true,
+        headerAxis: "row",
       };
-    });
+    })
+    .filter(Boolean)
+    .sort((left, right) =>
+      left.tableStartRowIndex - right.tableStartRowIndex ||
+      left.tableStartColumnIndex - right.tableStartColumnIndex,
+    );
 }
 
 export function createTableState(rawRows, sheetName, tableDef, tableIndex) {
@@ -103,6 +169,8 @@ export function createTableState(rawRows, sheetName, tableDef, tableIndex) {
       tableDef.tableEndRowIndex ?? Math.max(0, (rawRows || []).length - 1),
     tableStartColumnIndex: tableDef.tableStartColumnIndex || 0,
     tableEndColumnIndex: tableDef.tableEndColumnIndex || 0,
+    hasEndRow: tableDef.hasEndRow ?? true,
+    headerAxis: tableDef.headerAxis || "row",
     columns: [],
     previewRows: [],
     dataRowsCount: 0,
@@ -128,48 +196,86 @@ export function buildFallbackTable(rawRows) {
     tableEndRowIndex: Math.max(0, rawRows.length - 1),
     tableStartColumnIndex: startColumnIndex,
     tableEndColumnIndex: endColumnIndex,
+    hasEndRow: true,
+    headerAxis: "row",
   };
 }
 
 export function buildTableStructure(table, rawRows, { keepAliases }) {
-  const headerRow = rawRows[table.tableStartRowIndex] || [];
   const startColumnIndex = Math.max(0, Number(table.tableStartColumnIndex || 0));
   const endColumnIndex = Math.max(
     startColumnIndex,
     Number(table.tableEndColumnIndex || startColumnIndex),
   );
   const startRowIndex = Math.max(0, Number(table.tableStartRowIndex || 0));
-  const endRowIndex = Math.max(startRowIndex, Number(table.tableEndRowIndex || startRowIndex));
-  const selectedColumnIndexes = Array.from(
-    { length: endColumnIndex - startColumnIndex + 1 },
-    (_, index) => startColumnIndex + index,
-  );
-  const dataRows = rawRows
-    .slice(startRowIndex + 1, endRowIndex + 1)
-    .filter((row) =>
-      selectedColumnIndexes.some((columnIndex) => String(row[columnIndex] ?? "").trim() !== ""),
-    );
+  const endRowIndex = getEffectiveEndRowIndex(table, rawRows);
   const previousColumns = new Map((table.columns || []).map((column) => [column.index, column]));
-  table.columns = selectedColumnIndexes.map((sourceIndex, index) => {
-    const previous = previousColumns.get(sourceIndex);
-    const originalLabel =
-      String(headerRow[sourceIndex] ?? "").trim() || `Columna ${getColumnLabel(sourceIndex)}`;
-    const sampleValues = dataRows.slice(0, 20).map((row) => row[sourceIndex]);
-    return {
-      index: sourceIndex,
-      tablePosition: index,
-      columnLabel: getColumnLabel(sourceIndex),
-      originalLabel,
-      use: previous ? previous.use : true,
-      alias:
-        keepAliases && previous
-          ? previous.alias
-          : sanitizeIdentifier(originalLabel, `column_${index + 1}`),
-      type: previous?.type || inferColumnType(sampleValues),
-    };
-  });
-  table.previewRows = dataRows.slice(0, PREVIEW_ROW_LIMIT);
-  table.dataRowsCount = dataRows.length;
+
+  if (table.headerAxis === "column") {
+    const selectedRowIndexes = Array.from(
+      { length: endRowIndex - startRowIndex + 1 },
+      (_, index) => startRowIndex + index,
+    );
+    const dataColumnIndexes = Array.from(
+      { length: Math.max(0, endColumnIndex - startColumnIndex) },
+      (_, index) => startColumnIndex + index + 1,
+    ).filter((columnIndex) =>
+      selectedRowIndexes.some((rowIndex) => String(rawRows[rowIndex]?.[columnIndex] ?? "").trim() !== ""),
+    );
+    table.columns = selectedRowIndexes.map((sourceIndex, index) => {
+      const previous = previousColumns.get(sourceIndex);
+      const originalLabel =
+        String(rawRows[sourceIndex]?.[startColumnIndex] ?? "").trim() || `Fila ${sourceIndex + 1}`;
+      const sampleValues = dataColumnIndexes.slice(0, 20).map(
+        (columnIndex) => rawRows[sourceIndex]?.[columnIndex],
+      );
+      return {
+        index: sourceIndex,
+        tablePosition: index,
+        columnLabel: `F${sourceIndex + 1}`,
+        originalLabel,
+        use: previous ? previous.use : true,
+        alias:
+          keepAliases && previous
+            ? previous.alias
+            : sanitizeIdentifier(originalLabel, `column_${index + 1}`),
+        type: previous?.type || inferColumnType(sampleValues),
+      };
+    });
+    table.dataRowsCount = dataColumnIndexes.length;
+    table.previewRows = buildDatasetRecords(table, rawRows).slice(0, PREVIEW_ROW_LIMIT);
+  } else {
+    const headerRow = rawRows[startRowIndex] || [];
+    const selectedColumnIndexes = Array.from(
+      { length: endColumnIndex - startColumnIndex + 1 },
+      (_, index) => startColumnIndex + index,
+    );
+    const dataRows = rawRows
+      .slice(startRowIndex + 1, endRowIndex + 1)
+      .filter((row) =>
+        selectedColumnIndexes.some((columnIndex) => String(row[columnIndex] ?? "").trim() !== ""),
+      );
+    table.columns = selectedColumnIndexes.map((sourceIndex, index) => {
+      const previous = previousColumns.get(sourceIndex);
+      const originalLabel =
+        String(headerRow[sourceIndex] ?? "").trim() || `Columna ${getColumnLabel(sourceIndex)}`;
+      const sampleValues = dataRows.slice(0, 20).map((row) => row[sourceIndex]);
+      return {
+        index: sourceIndex,
+        tablePosition: index,
+        columnLabel: getColumnLabel(sourceIndex),
+        originalLabel,
+        use: previous ? previous.use : true,
+        alias:
+          keepAliases && previous
+            ? previous.alias
+            : sanitizeIdentifier(originalLabel, `column_${index + 1}`),
+        type: previous?.type || inferColumnType(sampleValues),
+      };
+    });
+    table.previewRows = dataRows.slice(0, PREVIEW_ROW_LIMIT);
+    table.dataRowsCount = dataRows.length;
+  }
   table.errors = validateTableStructure(table, rawRows);
   table.structureDirty = true;
 }
@@ -181,9 +287,13 @@ export function validateTableStructure(table, rawRows) {
     return errors;
   }
   if (table.tableStartRowIndex < 0 || table.tableStartRowIndex >= rawRows.length) {
-    errors.push("Configura una fila de encabezado valida.");
+    errors.push(
+      table.headerAxis === "column"
+        ? "Configura una fila inicial valida."
+        : "Configura una fila de encabezado valida.",
+    );
   }
-  if (table.tableEndRowIndex < table.tableStartRowIndex + 1) {
+  if (table.hasEndRow && table.tableEndRowIndex < table.tableStartRowIndex + 1) {
     errors.push("La fila final debe estar debajo del encabezado.");
   }
   if (
@@ -191,6 +301,9 @@ export function validateTableStructure(table, rawRows) {
     table.tableEndColumnIndex < table.tableStartColumnIndex
   ) {
     errors.push("Configura un rango de columnas valido.");
+  }
+  if (table.headerAxis === "column" && table.tableEndColumnIndex <= table.tableStartColumnIndex) {
+    errors.push("Cuando el encabezado es por columna, deja al menos una columna de datos a la derecha.");
   }
   const activeColumns = (table.columns || []).filter((column) => column.use);
   if (!activeColumns.length) {
@@ -210,8 +323,30 @@ export function validateTableStructure(table, rawRows) {
 
 export function buildDatasetRecords(table, rawRows) {
   const activeColumns = table.columns.filter((column) => column.use);
+  if (table.headerAxis === "column") {
+    const endRowIndex = getEffectiveEndRowIndex(table, rawRows);
+    const dataColumnIndexes = Array.from(
+      { length: Math.max(0, table.tableEndColumnIndex - table.tableStartColumnIndex) },
+      (_, index) => table.tableStartColumnIndex + index + 1,
+    );
+    return dataColumnIndexes
+      .filter((columnIndex) =>
+        Array.from({ length: endRowIndex - table.tableStartRowIndex + 1 }, (_, offset) =>
+          table.tableStartRowIndex + offset,
+        ).some((rowIndex) => String(rawRows[rowIndex]?.[columnIndex] ?? "").trim() !== ""),
+      )
+      .map((columnIndex) => {
+        const record = {};
+        activeColumns.forEach((column) => {
+          const alias = sanitizeIdentifier(column.alias, `column_${column.index + 1}`);
+          record[alias] = coerceValueByType(rawRows[column.index]?.[columnIndex], column.type);
+        });
+        return record;
+      });
+  }
+  const endRowIndex = getEffectiveEndRowIndex(table, rawRows);
   return rawRows
-    .slice(table.tableStartRowIndex + 1, table.tableEndRowIndex + 1)
+    .slice(table.tableStartRowIndex + 1, endRowIndex + 1)
     .filter((row) =>
       activeColumns.some((column) => String(row[column.index] ?? "").trim() !== ""),
     )
@@ -223,4 +358,24 @@ export function buildDatasetRecords(table, rawRows) {
       });
       return record;
     });
+}
+
+export function getEffectiveEndRowIndex(table, rawRows) {
+  const lastRowIndex = Math.max(0, rawRows.length - 1);
+  if (table.hasEndRow) {
+    return Math.max(
+      table.tableStartRowIndex,
+      Math.min(lastRowIndex, Number(table.tableEndRowIndex || table.tableStartRowIndex)),
+    );
+  }
+  for (let rowIndex = lastRowIndex; rowIndex > table.tableStartRowIndex; rowIndex -= 1) {
+    const row = rawRows[rowIndex] || [];
+    const hasValue = row
+      .slice(table.tableStartColumnIndex, table.tableEndColumnIndex + 1)
+      .some((cell) => String(cell ?? "").trim() !== "");
+    if (hasValue) {
+      return rowIndex;
+    }
+  }
+  return table.tableStartRowIndex;
 }

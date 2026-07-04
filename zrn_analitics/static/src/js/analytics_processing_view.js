@@ -13,14 +13,17 @@ import {
   toChartNumber,
 } from "./analytics_processing_utils";
 import {
+  fetchGoogleSheetSheet,
   parseGoogleSheetSource,
   parseLocalSource,
 } from "./analytics_processing_sources";
 import {
   buildDatasetRecords,
   buildTableStructure,
+  createDeferredSheetState,
   createSheetState,
   createTableState,
+  getEffectiveEndRowIndex,
   validateTableStructure,
 } from "./analytics_processing_tables";
 
@@ -44,16 +47,16 @@ export class ZrnAnalyticsProcessingView {
     this.navigationHandlers = handlers || {};
   }
 
-  openWorkspaceRoute() {
+  async openWorkspaceRoute() {
     if (this.navigationHandlers.openWorkspace) {
-      return this.navigationHandlers.openWorkspace();
+      await this.navigationHandlers.openWorkspace();
+      return;
     }
     const trigger = document.querySelector(".zrn_processing_workspace_trigger");
     if (trigger instanceof HTMLElement) {
       trigger.click();
-      return Promise.resolve();
+      return;
     }
-    return Promise.resolve();
   }
 
   preserveStateOnce() {
@@ -85,10 +88,12 @@ export class ZrnAnalyticsProcessingView {
       sourceInput: {
         googleSheetUrl: "",
         mode: "",
+        loading: false,
       },
       datasetConfig: {
         sheets: [],
         selectedSheetId: "",
+        loadingSheetId: "",
         structureReady: false,
         structureDirty: false,
         statusLabel: "Sin origen",
@@ -312,6 +317,14 @@ export class ZrnAnalyticsProcessingView {
       this.updateTableRange("tableEndRowIndex", Number(source.value || 1) - 1);
       return;
     }
+    if (action === "table-toggle-end" && event.type === "change") {
+      this.updateTableFlag("hasEndRow", Boolean(source.checked));
+      return;
+    }
+    if (action === "table-header-axis" && event.type === "change") {
+      this.updateTableFlag("headerAxis", source.checked ? "column" : "row");
+      return;
+    }
     if (action === "table-start-column" && event.type === "change") {
       this.updateTableRange("tableStartColumnIndex", Number(source.value || 0));
       return;
@@ -457,18 +470,26 @@ export class ZrnAnalyticsProcessingView {
       }
     }
     try {
+      this.state.sourceInput.loading = true;
+      this.state.globalError = "";
+      this.render();
       await this.loadParsedSource(
         await parseGoogleSheetSource(this.state.sourceInput.googleSheetUrl),
       );
     } catch (error) {
       this.setErrorState(error);
+    } finally {
+      this.state.sourceInput.loading = false;
+      this.render();
     }
   }
 
   async loadParsedSource(parsedSource) {
     this.dropRegisteredTable();
     this.disposeChart();
-    const sheets = (parsedSource.sheets || []).map((sheet, index) => createSheetState(sheet, index));
+    const sheets = (parsedSource.sheets || []).map((sheet, index) =>
+      sheet.rawRows ? createSheetState(sheet, index) : createDeferredSheetState(sheet, index),
+    );
     if (!sheets.length) {
       throw new Error("El origen no genero hojas utilizables.");
     }
@@ -486,28 +507,42 @@ export class ZrnAnalyticsProcessingView {
     this.state.sourceInput.googleSheetUrl = parsedSource.sourceMeta.url || "";
     this.state.datasetConfig.sheets = sheets;
     this.state.datasetConfig.selectedSheetId = sheets[0].id;
+    this.state.datasetConfig.loadingSheetId = sheets[0].loaded ? "" : sheets[0].id;
     this.state.datasetConfig.statusLabel = "Origen cargado";
-    this.state.queryState.tableName = sheets[0].tables[0]?.tableName || "";
-    this.syncQueryStateWithTable();
+    await this.ensureSelectedSheetLoaded();
+    this.state.datasetConfig.loadingSheetId = "";
+    this.state.queryState.tableName = this.selectedTable?.tableName || "";
+    this.syncQueryStateWithTable(true);
     if (this.screenMode === "landing") {
-      await this.openWorkspaceRoute();
+      try {
+        await this.openWorkspaceRoute();
+      } catch (error) {
+        console.warn("No se pudo abrir la vista workspace de procesamiento.", error);
+      }
+      if (this.root && this.screenMode === "landing") {
+        this.root.dataset.zrnProcessingScreen = "workspace";
+        this.render();
+      }
       return;
     }
     this.render();
   }
 
   setErrorState(error) {
-    this.state = this.getInitialState();
     this.state.globalError = error.message || "No se pudo cargar el origen.";
     this.render();
   }
 
-  selectSheet(sheetId) {
+  async selectSheet(sheetId) {
     this.state.datasetConfig.selectedSheetId = sheetId;
     const sheet = this.selectedSheet;
     if (!sheet) {
       return;
     }
+    this.state.datasetConfig.loadingSheetId = sheet.loaded ? "" : sheet.id;
+    this.render();
+    await this.ensureSelectedSheetLoaded();
+    this.state.datasetConfig.loadingSheetId = "";
     if (!sheet.selectedTableId && sheet.tables[0]) {
       sheet.selectedTableId = sheet.tables[0].id;
     }
@@ -515,6 +550,25 @@ export class ZrnAnalyticsProcessingView {
     this.clearQueryResults();
     this.syncQueryStateWithTable();
     this.render();
+  }
+
+  async ensureSelectedSheetLoaded() {
+    const sheet = this.selectedSheet;
+    if (!sheet || sheet.loaded || this.state.sourceMeta.type !== "google_sheet") {
+      return;
+    }
+    const loadedSheet = await fetchGoogleSheetSheet(
+      this.state.sourceInput.googleSheetUrl || this.state.sourceMeta.url,
+      sheet.remoteIndex || 0,
+    );
+    const hydrated = createSheetState(loadedSheet, sheet.remoteIndex || 0);
+    hydrated.id = sheet.id;
+    hydrated.remoteIndex = sheet.remoteIndex;
+    hydrated.loaded = true;
+    const index = this.state.datasetConfig.sheets.findIndex((item) => item.id === sheet.id);
+    if (index >= 0) {
+      this.state.datasetConfig.sheets[index] = hydrated;
+    }
   }
 
   selectTable(tableId) {
@@ -545,6 +599,8 @@ export class ZrnAnalyticsProcessingView {
         tableEndRowIndex: baseTable?.tableEndRowIndex || Math.max(1, sheet.rawRows.length - 1),
         tableStartColumnIndex: baseTable?.tableStartColumnIndex || 0,
         tableEndColumnIndex: baseTable?.tableEndColumnIndex || 0,
+        hasEndRow: baseTable?.hasEndRow ?? true,
+        headerAxis: baseTable?.headerAxis || "row",
       },
       index,
     );
@@ -622,6 +678,31 @@ export class ZrnAnalyticsProcessingView {
     this.render();
   }
 
+  updateTableFlag(key, value) {
+    const table = this.selectedTable;
+    const rawRows = this.selectedSheet?.rawRows;
+    if (!table || !rawRows) {
+      return;
+    }
+    table[key] = value;
+    if (key === "hasEndRow" && !value) {
+      table.tableEndRowIndex = rawRows.length - 1;
+    }
+    if (key === "headerAxis") {
+      if (value === "column" && table.tableEndColumnIndex <= table.tableStartColumnIndex) {
+        table.tableEndColumnIndex = Math.min(
+          Math.max(table.tableStartColumnIndex + 1, table.tableEndColumnIndex + 1),
+          Math.max(...rawRows.map((row) => row.length), 1) - 1,
+        );
+      }
+    }
+    buildTableStructure(table, rawRows, { keepAliases: false });
+    this.refreshDatasetStatus();
+    this.clearQueryResults();
+    this.syncQueryStateWithTable(true);
+    this.render();
+  }
+
   updateColumnSetting(index, key, value) {
     const table = this.selectedTable;
     const rawRows = this.selectedSheet?.rawRows;
@@ -668,6 +749,8 @@ export class ZrnAnalyticsProcessingView {
       tableEndRowIndex: table.tableEndRowIndex,
       tableStartColumnIndex: table.tableStartColumnIndex,
       tableEndColumnIndex: table.tableEndColumnIndex,
+      hasEndRow: table.hasEndRow,
+      headerAxis: table.headerAxis,
       columns: table.columns.map((column) => ({
         use: column.use,
         alias: sanitizeIdentifier(column.alias, `column_${column.index + 1}`),
@@ -1174,8 +1257,14 @@ export class ZrnAnalyticsProcessingView {
   renderLanding() {
     const isLocal = this.state.sourceInput.mode === "local_file";
     const isGoogle = this.state.sourceInput.mode === "google_sheet";
+    const isLoadingGoogle = Boolean(this.state.sourceInput.loading);
     return `
       <div class="zrn_processing_landing">
+        ${
+          this.state.globalError
+            ? `<div class="zrn_processing_global_error">${escapeHtml(this.state.globalError)}</div>`
+            : ""
+        }
         <section class="zrn_processing_panel">
           <div class="zrn_processing_panel_head">
             <strong>Origen temporal</strong>
@@ -1212,17 +1301,27 @@ export class ZrnAnalyticsProcessingView {
                         data-action="google-sheet-url"
                         value="${escapeHtml(this.state.sourceInput.googleSheetUrl)}"
                         placeholder="https://docs.google.com/spreadsheets/d/..."
+                        ${isLoadingGoogle ? "disabled" : ""}
                       />
                     </div>
                     <div class="zrn_processing_actions">
-                      <button type="button" class="btn btn-primary" data-action="google-sheet-connect">Conectar</button>
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        data-action="google-sheet-connect"
+                        ${isLoadingGoogle ? "disabled" : ""}
+                      >${isLoadingGoogle ? "Conectando..." : "Conectar"}</button>
                     </div>
                   </div>
                 `
                 : ""
             }
             <div class="zrn_processing_hint_strip">
-              El origen vive solo en esta sesion del navegador. Si sales o recargas la pagina, se pierde.
+              ${
+                isLoadingGoogle
+                  ? "Leyendo hojas publicas del Google Sheet..."
+                  : "El origen vive solo en esta sesion del navegador. Si sales o recargas la pagina, se pierde."
+              }
             </div>
           </div>
         </section>
@@ -1455,6 +1554,204 @@ export class ZrnAnalyticsProcessingView {
     `;
   }
 
+  renderDatasetPanelEnhanced(sheet, table) {
+    const isSheetLoading =
+      Boolean(sheet) && this.state.datasetConfig.loadingSheetId === sheet?.id;
+    const tableErrors = table?.errors || [];
+    const overviewStatusClass = tableErrors.length
+      ? "is-danger"
+      : this.state.datasetConfig.structureReady
+        ? "is-ready"
+        : this.state.sourceMeta.loaded
+          ? "is-pending"
+          : "";
+    const maxSheetColumns = sheet
+      ? Math.max(...sheet.rawRows.map((row) => row.length), 0)
+      : 0;
+    const effectiveEndRowIndex = table ? getEffectiveEndRowIndex(table, sheet.rawRows) : 0;
+    const isColumnHeader = table?.headerAxis === "column";
+    const startColumnOptions = table
+      ? Array.from({ length: maxSheetColumns }, (_, index) => {
+          const rowLabel = !isColumnHeader ? sheet.rawRows[table.tableStartRowIndex]?.[index] : "";
+          const optionLabel = rowLabel
+            ? `${getColumnLabel(index)} / ${String(rowLabel).trim().slice(0, 36)}`
+            : getColumnLabel(index);
+          return `<option value="${index}" ${index === table.tableStartColumnIndex ? "selected" : ""}>${escapeHtml(optionLabel)}</option>`;
+        }).join("")
+      : "";
+    const endColumnOptions = table
+      ? Array.from({ length: maxSheetColumns }, (_, index) => {
+          const rowLabel = !isColumnHeader ? sheet.rawRows[table.tableStartRowIndex]?.[index] : "";
+          const optionLabel = rowLabel
+            ? `${getColumnLabel(index)} / ${String(rowLabel).trim().slice(0, 36)}`
+            : getColumnLabel(index);
+          return `<option value="${index}" ${index === table.tableEndColumnIndex ? "selected" : ""}>${escapeHtml(optionLabel)}</option>`;
+        }).join("")
+      : "";
+    const tableList = (sheet?.tables || [])
+      .map((currentTable) => {
+        const activeClass = currentTable.id === sheet.selectedTableId ? "is-active" : "";
+        const title = escapeHtml(currentTable.name);
+        const removeButton =
+          sheet.tables.length > 1
+            ? `
+                <button
+                  type="button"
+                  class="zrn_processing_table_tab_remove"
+                  data-action="table-remove"
+                  data-table-id="${currentTable.id}"
+                  title="Quitar tabla"
+                  aria-label="Quitar tabla"
+                >
+                  <i class="fa fa-times"></i>
+                </button>
+              `
+            : "";
+        return `
+          <div class="zrn_processing_table_tab ${activeClass}">
+            <button
+              type="button"
+              class="zrn_processing_table_tab_main"
+              data-action="table-select"
+              value="${currentTable.id}"
+              title="${title}"
+              aria-label="${title}"
+            >
+              <strong>${title}</strong>
+            </button>
+            ${removeButton}
+          </div>
+        `;
+      })
+      .join("");
+    const columnRows = table
+      ? table.columns
+          .map(
+            (column, index) => `
+              <tr>
+                <td><input type="checkbox" data-action="column-use" data-column-index="${index}" ${column.use ? "checked" : ""} /></td>
+                <td>${escapeHtml(column.columnLabel)} / ${escapeHtml(column.originalLabel)}</td>
+                <td>
+                  <input type="text" class="form-control" data-action="column-alias" data-column-index="${index}" value="${escapeHtml(column.alias)}" />
+                </td>
+                <td>
+                  <select class="form-select" data-action="column-type" data-column-index="${index}">
+                    ${SQL_TYPES.map(
+                      (type) =>
+                        `<option value="${type}" ${column.type === type ? "selected" : ""}>${type}</option>`,
+                    ).join("")}
+                  </select>
+                </td>
+              </tr>
+            `,
+          )
+          .join("")
+      : "";
+    const bodyContent = isSheetLoading
+      ? `
+          <div class="zrn_processing_dataset_loader" aria-live="polite">
+            <div class="zrn_processing_dataset_spinner" aria-hidden="true"></div>
+            <div class="zrn_processing_dataset_loader_text">
+              Cargando estructura de la hoja <strong>${escapeHtml(sheet?.name || "")}</strong>...
+            </div>
+          </div>
+        `
+      : table
+        ? `
+            ${tableErrors.length ? `<div class="zrn_processing_sheet_errors">${tableErrors.map((error) => escapeHtml(error)).join("<br/>")}</div>` : ""}
+            <div class="zrn_processing_dataset_layout">
+              <div class="zrn_processing_table_sidebar">
+                <div class="zrn_processing_table_stack_head">
+                  <strong>Tablas</strong>
+                  <button type="button" class="btn btn-secondary" data-action="table-add">Crear tabla</button>
+                </div>
+                <div class="zrn_processing_table_tabs">${tableList}</div>
+              </div>
+              <div class="zrn_processing_table_editor">
+                <div class="zrn_processing_range_grid zrn_processing_range_grid_extended">
+                  <div class="zrn_processing_field">
+                    <label>Nombre visible</label>
+                    <input type="text" class="form-control" data-action="table-name" value="${escapeHtml(table.name)}" />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Tabla SQL</label>
+                    <input type="text" class="form-control" data-action="table-sql-name" value="${escapeHtml(table.tableName)}" />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>${isColumnHeader ? "Fila inicial" : "Fila de encabezado"}</label>
+                    <input type="number" min="1" max="${sheet.rawRows.length || 1}" class="form-control" data-action="table-start-row" value="${table.tableStartRowIndex + 1}" />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Fila final</label>
+                    <div class="zrn_processing_inline_toggle">
+                      <label class="form-check">
+                        <input type="checkbox" class="form-check-input" data-action="table-toggle-end" ${table.hasEndRow ? "checked" : ""} />
+                        <span class="form-check-label">Usar fila final</span>
+                      </label>
+                    </div>
+                    <input
+                      type="number"
+                      min="${table.tableStartRowIndex + 1}"
+                      max="${sheet.rawRows.length || 1}"
+                      class="form-control"
+                      data-action="table-end-row"
+                      value="${effectiveEndRowIndex + 1}"
+                      ${table.hasEndRow ? "" : "disabled"}
+                    />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Encabezado</label>
+                    <div class="zrn_processing_inline_toggle">
+                      <label class="form-check">
+                        <input type="checkbox" class="form-check-input" data-action="table-header-axis" ${isColumnHeader ? "checked" : ""} />
+                        <span class="form-check-label">Por columna</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>${isColumnHeader ? "Columna de encabezado" : "Columna inicial"}</label>
+                    <select class="form-select" data-action="table-start-column">${startColumnOptions}</select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>${isColumnHeader ? "Columna final de datos" : "Columna final"}</label>
+                    <select class="form-select" data-action="table-end-column">${endColumnOptions}</select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Estado</label>
+                    <div class="zrn_processing_status_inline ${overviewStatusClass}">${escapeHtml(this.state.datasetConfig.statusLabel)}</div>
+                  </div>
+                </div>
+                <div class="zrn_processing_actions">
+                  <button type="button" class="btn btn-primary" data-action="apply-structure">Aplicar estructura</button>
+                </div>
+                <div class="zrn_processing_columns_wrap">
+                  <table class="o_list_table table table-sm zrn_processing_columns">
+                    <thead>
+                      <tr>
+                        <th>Usar</th>
+                        <th>Origen</th>
+                        <th>Alias SQL</th>
+                        <th>Tipo</th>
+                      </tr>
+                    </thead>
+                    <tbody>${columnRows}</tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          `
+        : '<div class="zrn_processing_empty">Carga un origen para definir tablas y columnas.</div>';
+    return `
+      <section class="zrn_processing_panel">
+        <div class="zrn_processing_panel_head">
+          <strong>Dataset temporal</strong>
+          <span>${isSheetLoading ? "Cargando hoja..." : table ? `${table.dataRowsCount} filas detectadas` : "Sin estructura"}</span>
+        </div>
+        <div class="zrn_processing_panel_body">${bodyContent}</div>
+      </section>
+    `;
+  }
+
   renderQueryPanel(table) {
     const builderColumns = this.getBuilderColumns();
     const builderColumnItems = builderColumns
@@ -1514,7 +1811,7 @@ export class ZrnAnalyticsProcessingView {
             Constructor no-code y editor SQL
             <details class="zrn_processing_sql_help">
               <summary class="zrn_processing_sql_help_toggle" aria-label="Guia SQL">
-                <i class="fa fa-info-circle"></i>
+                <i class="oi oi-info"></i>
               </summary>
               <div class="zrn_processing_sql_help_popover">
                 <strong>SQL permitido</strong>
@@ -1758,7 +2055,7 @@ export class ZrnAnalyticsProcessingView {
             `
             : `
               ${this.renderOverviewPanel(sheet, table)}
-              ${this.renderDatasetPanel(sheet, table)}
+              ${this.renderDatasetPanelEnhanced(sheet, table)}
               ${this.renderQueryPanel(table)}
               ${this.renderResultPanel()}
               ${this.renderHelpPanel()}
