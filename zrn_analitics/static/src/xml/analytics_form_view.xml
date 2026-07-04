@@ -3,9 +3,9 @@
     <t t-name="zrn_analitics.FormView" t-inherit="web.FormView" t-inherit-mode="primary">
         <xpath expr="//Layout" position="inside">
             <t t-set-slot="control-panel-navigation-additional">
-                <div class="zrn_analitics_cp_actions">
-                    <button type="button" class="btn zrn_analitics_cp_btn zrn_analitics_cp_btn_ghost" t-on-click="openHome">
-                        Analytics
+                <div class="zrn_analitics_cp_actions" t-if="showHeaderBackButton">
+                    <button type="button" class="btn zrn_analitics_cp_btn zrn_analitics_cp_btn_ghost zrn_processing_leave_btn" t-on-click="openHeaderBack">
+                        <t t-esc="headerBackLabel"/>
                     </button>
                 </div>
             </t>

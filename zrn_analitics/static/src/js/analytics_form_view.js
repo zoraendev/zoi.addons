@@ -103,6 +103,27 @@ class ZrnAnalyticsFormController extends FormController {
   openHome() {
     return this.openAnalyticsAction("action_open_home");
   }
+
+  get currentPageKey() {
+    return this.model?.root?.data?.page_key || "";
+  }
+
+  get showHeaderBackButton() {
+    return ["processing", "processing_workspace"].includes(this.currentPageKey);
+  }
+
+  get headerBackLabel() {
+    return this.currentPageKey === "processing_workspace"
+      ? "Volver a carga"
+      : "Volver al centro";
+  }
+
+  openHeaderBack() {
+    if (this.currentPageKey === "processing_workspace") {
+      return this.openAnalyticsAction("action_open_processing");
+    }
+    return this.openAnalyticsAction("action_open_home");
+  }
 }
 
 ZrnAnalyticsFormController.template = "zrn_analitics.FormView";

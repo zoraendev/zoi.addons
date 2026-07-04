@@ -59,6 +59,35 @@ function formatBytes(size) {
   return `${value >= 100 || unitIndex === 0 ? Math.round(value) : value.toFixed(1)} ${units[unitIndex]}`;
 }
 
+function getColumnLabel(index) {
+  let value = index + 1;
+  let label = "";
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    label = String.fromCharCode(65 + remainder) + label;
+    value = Math.floor((value - 1) / 26);
+  }
+  return label;
+}
+
+function getLastNonEmptyColumnIndex(row = []) {
+  for (let index = row.length - 1; index >= 0; index -= 1) {
+    if (String(row[index] ?? "").trim()) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function getFirstNonEmptyColumnIndex(row = []) {
+  for (let index = 0; index < row.length; index += 1) {
+    if (String(row[index] ?? "").trim()) {
+      return index;
+    }
+  }
+  return 0;
+}
+
 function inferColumnType(values) {
   for (const rawValue of values) {
     const value = String(rawValue ?? "").trim();
@@ -488,8 +517,16 @@ export class ZrnAnalyticsProcessingView {
       this.selectSheet(source.value);
       return;
     }
-    if (action === "header-row" && event.type === "change") {
-      this.updateHeaderRow(Number(source.value || 0));
+    if (action === "table-start-row" && event.type === "change") {
+      this.updateTableRange("tableStartRowIndex", Number(source.value || 1) - 1);
+      return;
+    }
+    if (action === "table-start-column" && event.type === "change") {
+      this.updateTableRange("tableStartColumnIndex", Number(source.value || 0));
+      return;
+    }
+    if (action === "table-end-column" && event.type === "change") {
+      this.updateTableRange("tableEndColumnIndex", Number(source.value || 0));
       return;
     }
     if (action === "apply-structure" && event.type === "click") {
@@ -661,12 +698,21 @@ export class ZrnAnalyticsProcessingView {
 
   createSheetState(sheet, index) {
     const tableName = sanitizeIdentifier(sheet.name || `dataset_${index + 1}`, "dataset");
+    const detectedStartRowIndex = this.detectHeaderRow(sheet.rawRows || []);
+    const detectedHeaderRow = (sheet.rawRows || [])[detectedStartRowIndex] || [];
+    const detectedStartColumnIndex = getFirstNonEmptyColumnIndex(detectedHeaderRow);
+    const detectedEndColumnIndex = Math.max(
+      detectedStartColumnIndex,
+      getLastNonEmptyColumnIndex(detectedHeaderRow)
+    );
     return {
       id: `${Date.now()}_${index}`,
       name: sheet.name || `Hoja ${index + 1}`,
       tableName,
       rawRows: cloneRows(sheet.rawRows || []),
-      headerRowIndex: this.detectHeaderRow(sheet.rawRows || []),
+      tableStartRowIndex: detectedStartRowIndex,
+      tableStartColumnIndex: detectedStartColumnIndex,
+      tableEndColumnIndex: detectedEndColumnIndex,
       columns: [],
       previewRows: [],
       dataRowsCount: 0,
@@ -694,23 +740,35 @@ export class ZrnAnalyticsProcessingView {
   }
 
   buildSheetStructure(sheet, { keepAliases }) {
-    const headerRow = sheet.rawRows[sheet.headerRowIndex] || [];
-    const dataRows = sheet.rawRows.slice(sheet.headerRowIndex + 1).filter((row) => !isRowEmpty(row));
-    const maxColumns = Math.max(
-      headerRow.length,
-      ...dataRows.slice(0, PREVIEW_ROW_LIMIT).map((row) => row.length),
-      0
+    const headerRow = sheet.rawRows[sheet.tableStartRowIndex] || [];
+    const startColumnIndex = Math.max(0, Number(sheet.tableStartColumnIndex || 0));
+    const endColumnIndex = Math.max(startColumnIndex, Number(sheet.tableEndColumnIndex || startColumnIndex));
+    const selectedColumnIndexes = Array.from(
+      { length: endColumnIndex - startColumnIndex + 1 },
+      (_, index) => startColumnIndex + index
     );
+    const dataRows = sheet.rawRows
+      .slice(sheet.tableStartRowIndex + 1)
+      .filter((row) =>
+        selectedColumnIndexes.some((columnIndex) => String(row[columnIndex] ?? "").trim() !== "")
+      );
+    const maxColumns = selectedColumnIndexes.length;
     const previousColumns = new Map((sheet.columns || []).map((column) => [column.index, column]));
     sheet.columns = Array.from({ length: maxColumns }).map((_, index) => {
-      const previous = previousColumns.get(index);
-      const originalLabel = String(headerRow[index] ?? "").trim() || `Columna ${index + 1}`;
-      const sampleValues = dataRows.slice(0, 20).map((row) => row[index]);
+      const sourceIndex = selectedColumnIndexes[index];
+      const previous = previousColumns.get(sourceIndex);
+      const originalLabel = String(headerRow[sourceIndex] ?? "").trim() || `Columna ${getColumnLabel(sourceIndex)}`;
+      const sampleValues = dataRows.slice(0, 20).map((row) => row[sourceIndex]);
       return {
-        index,
+        index: sourceIndex,
+        tablePosition: index,
+        columnLabel: getColumnLabel(sourceIndex),
         originalLabel,
         use: previous ? previous.use : true,
-        alias: keepAliases && previous ? previous.alias : sanitizeIdentifier(originalLabel, `column_${index + 1}`),
+        alias:
+          keepAliases && previous
+            ? previous.alias
+            : sanitizeIdentifier(originalLabel, `column_${index + 1}`),
         type: previous?.type || inferColumnType(sampleValues),
       };
     });
@@ -728,8 +786,11 @@ export class ZrnAnalyticsProcessingView {
       errors.push("La hoja esta vacia.");
       return errors;
     }
-    if (sheet.headerRowIndex < 0 || sheet.headerRowIndex >= sheet.rawRows.length) {
-      errors.push("Selecciona una fila de encabezado valida.");
+    if (sheet.tableStartRowIndex < 0 || sheet.tableStartRowIndex >= sheet.rawRows.length) {
+      errors.push("Configura una fila inicial valida para la tabla.");
+    }
+    if (sheet.tableStartColumnIndex < 0 || sheet.tableEndColumnIndex < sheet.tableStartColumnIndex) {
+      errors.push("Configura un rango de columnas valido.");
     }
     const activeColumns = (sheet.columns || []).filter((column) => column.use);
     if (!activeColumns.length) {
@@ -747,12 +808,18 @@ export class ZrnAnalyticsProcessingView {
     return errors;
   }
 
-  updateHeaderRow(index) {
+  updateTableRange(key, value) {
     const sheet = this.selectedSheet;
     if (!sheet) {
       return;
     }
-    sheet.headerRowIndex = index;
+    sheet[key] = value;
+    if (key === "tableStartColumnIndex" && sheet.tableEndColumnIndex < value) {
+      sheet.tableEndColumnIndex = value;
+    }
+    if (key === "tableEndColumnIndex" && value < sheet.tableStartColumnIndex) {
+      sheet.tableStartColumnIndex = value;
+    }
     this.buildSheetStructure(sheet, { keepAliases: false });
     this.clearQueryResults();
     this.syncQueryStateWithSheet();
@@ -839,9 +906,12 @@ export class ZrnAnalyticsProcessingView {
 
   buildDatasetRecords(sheet) {
     const activeColumns = sheet.columns.filter((column) => column.use);
+    const selectedIndexes = sheet.columns.map((column) => column.index);
     return sheet.rawRows
-      .slice(sheet.headerRowIndex + 1)
-      .filter((row) => !isRowEmpty(row))
+      .slice(sheet.tableStartRowIndex + 1)
+      .filter((row) =>
+        selectedIndexes.some((columnIndex) => String(row[columnIndex] ?? "").trim() !== "")
+      )
       .map((row) => {
         const record = {};
         activeColumns.forEach((column) => {
@@ -855,7 +925,9 @@ export class ZrnAnalyticsProcessingView {
   buildDatasetSignature(sheet) {
     return JSON.stringify({
       id: sheet.id,
-      headerRowIndex: sheet.headerRowIndex,
+      tableStartRowIndex: sheet.tableStartRowIndex,
+      tableStartColumnIndex: sheet.tableStartColumnIndex,
+      tableEndColumnIndex: sheet.tableEndColumnIndex,
       columns: sheet.columns.map((column) => ({
         use: column.use,
         alias: sanitizeIdentifier(column.alias, `column_${column.index + 1}`),
@@ -1188,18 +1260,37 @@ export class ZrnAnalyticsProcessingView {
           ? "is-pending"
           : "";
 
-    const headerOptions = sheet
-      ? sheet.rawRows
-          .slice(0, HEADER_SCAN_LIMIT)
-          .map(
-            (row, index) => `
-              <option value="${index}" ${sheet.headerRowIndex === index ? "selected" : ""}>
-                Fila ${index + 1}: ${escapeHtml(buildRowSnippet(row) || "(sin contenido)")}
-              </option>
-            `
-          )
-          .join("")
+    const maxSheetColumns = sheet
+      ? Math.max(...sheet.rawRows.map((row) => row.length), 0)
+      : 0;
+    const startColumnOptions = sheet
+      ? Array.from({ length: maxSheetColumns }, (_, index) => {
+          const rowLabel = sheet.rawRows[sheet.tableStartRowIndex]?.[index];
+          const optionLabel = rowLabel
+            ? `${getColumnLabel(index)} / ${String(rowLabel).trim().slice(0, 36)}`
+            : getColumnLabel(index);
+          return `<option value="${index}" ${index === sheet.tableStartColumnIndex ? "selected" : ""}>${escapeHtml(
+            optionLabel
+          )}</option>`;
+        }).join("")
       : "";
+    const endColumnOptions = sheet
+      ? Array.from({ length: maxSheetColumns }, (_, index) => {
+          const rowLabel = sheet.rawRows[sheet.tableStartRowIndex]?.[index];
+          const optionLabel = rowLabel
+            ? `${getColumnLabel(index)} / ${String(rowLabel).trim().slice(0, 36)}`
+            : getColumnLabel(index);
+          return `<option value="${index}" ${index === sheet.tableEndColumnIndex ? "selected" : ""}>${escapeHtml(
+            optionLabel
+          )}</option>`;
+        }).join("")
+      : "";
+    const rangeLabel = sheet
+      ? `${getColumnLabel(sheet.tableStartColumnIndex)}:${getColumnLabel(sheet.tableEndColumnIndex)}`
+      : "-";
+    const previewStartLabel = sheet ? sheet.tableStartRowIndex + 1 : "-";
+    const dataStartLabel = sheet ? sheet.tableStartRowIndex + 2 : "-";
+    const isSpreadsheet = ["xls", "xlsx", "xlsm"].includes(this.state.fileMeta.extension);
 
     const columnRows = sheet
       ? sheet.columns
@@ -1207,7 +1298,7 @@ export class ZrnAnalyticsProcessingView {
             (column, index) => `
               <tr>
                 <td><input type="checkbox" data-action="column-use" data-column-index="${index}" ${column.use ? "checked" : ""} /></td>
-                <td>${escapeHtml(column.originalLabel)}</td>
+                <td>${escapeHtml(column.columnLabel)} / ${escapeHtml(column.originalLabel)}</td>
                 <td>
                   <input
                     type="text"
@@ -1228,6 +1319,21 @@ export class ZrnAnalyticsProcessingView {
             `
           )
           .join("")
+      : "";
+
+    const fileDetailRows = this.state.fileMeta.loaded
+      ? `
+          <tr><th>Archivo</th><td>${escapeHtml(this.state.fileMeta.name)}</td></tr>
+          <tr><th>Formato</th><td>${escapeHtml(this.state.fileMeta.extension.toUpperCase())}</td></tr>
+          <tr><th>Hoja activa</th><td>${escapeHtml(this.state.fileMeta.activeSheetName || "-")}</td></tr>
+          <tr><th>Tabla SQL</th><td><code>${escapeHtml(tableName)}</code></td></tr>
+          <tr><th>Fila de encabezado</th><td>${previewStartLabel}</td></tr>
+          <tr><th>Columnas</th><td>${escapeHtml(rangeLabel)}</td></tr>
+          <tr><th>Datos desde</th><td>Fila ${dataStartLabel}</td></tr>
+          <tr><th>Filas detectadas</th><td>${sheet?.dataRowsCount || 0}</td></tr>
+          <tr><th>Columnas activas</th><td>${activeColumns.length}</td></tr>
+          <tr><th>Estado</th><td>${escapeHtml(this.state.datasetConfig.statusLabel)}</td></tr>
+        `
       : "";
 
     const previewHead = activeColumns.map((column) => `<th>${escapeHtml(column.alias)}</th>`).join("");
@@ -1339,7 +1445,7 @@ export class ZrnAnalyticsProcessingView {
           : resultColumns.length
             ? `
                 <div class="zrn_processing_result_wrap">
-                  <table class="zrn_processing_result_table">
+                  <table class="o_list_table table table-sm zrn_processing_result_table">
                     <thead><tr>${resultHead}</tr></thead>
                     <tbody>${resultBody}</tbody>
                   </table>
@@ -1354,241 +1460,224 @@ export class ZrnAnalyticsProcessingView {
             ? `<div class="zrn_processing_global_error">${escapeHtml(this.state.globalError)}</div>`
             : ""
         }
-        <div class="zrn_processing_grid">
-          <div class="zrn_processing_main">
-            <section class="zrn_processing_panel">
-              <div class="zrn_processing_panel_head">
-                <strong>Carga de archivo</strong>
-                <span>${this.state.fileMeta.loaded ? "Un archivo activo por sesion" : "Soporta csv, json, xml, xls, xlsx y xlsm"}</span>
-              </div>
-              <div class="zrn_processing_panel_body">
-                ${
-                  !this.state.fileMeta.loaded
-                    ? `
-                      <div class="zrn_processing_empty_state">
-                        <div class="zrn_processing_empty">No hay archivo temporal cargado en esta sesion.</div>
-                        <button type="button" class="btn btn-primary zrn_processing_leave_btn" data-action="back-to-processing">
-                          Volver a la pantalla de carga
-                        </button>
+        ${
+          !this.state.fileMeta.loaded
+            ? `
+              <section class="zrn_processing_panel">
+                <div class="zrn_processing_panel_head">
+                  <strong>Carga pendiente</strong>
+                  <span>Sin archivo activo</span>
+                </div>
+                <div class="zrn_processing_panel_body">
+                  <div class="zrn_processing_empty_state">
+                    <div class="zrn_processing_empty">No hay archivo temporal cargado en esta sesion.</div>
+                  </div>
+                </div>
+              </section>
+            `
+            : `
+              <section class="zrn_processing_panel zrn_processing_overview_panel">
+                <div class="zrn_processing_panel_head">
+                  <strong>Resumen del archivo</strong>
+                  <span>Un archivo activo por sesion</span>
+                </div>
+                <div class="zrn_processing_panel_body">
+                  <div class="zrn_processing_overview_top">
+                    <div class="zrn_processing_file_overview">
+                      <div class="zrn_processing_file_icon">
+                        <i class="fa ${escapeHtml(this.state.fileMeta.iconClass)}"></i>
                       </div>
-                    `
-                    : `
-                      <div class="zrn_processing_file_overview">
-                        <div class="zrn_processing_file_icon">
-                          <i class="fa ${escapeHtml(this.state.fileMeta.iconClass)}"></i>
+                      <div class="zrn_processing_file_copy">
+                        <div class="zrn_processing_file_name">${escapeHtml(this.state.fileMeta.name)}</div>
+                        <div class="zrn_processing_helper">
+                          ${escapeHtml(this.state.fileMeta.extension.toUpperCase())} / ${escapeHtml(this.state.fileMeta.sizeLabel)} / ${this.state.fileMeta.totalSheets} origen(es)
                         </div>
-                        <div class="zrn_processing_file_copy">
-                          <div class="zrn_processing_file_name">${escapeHtml(this.state.fileMeta.name)}</div>
-                          <div class="zrn_processing_helper">
-                            ${escapeHtml(this.state.fileMeta.extension.toUpperCase())} · ${escapeHtml(this.state.fileMeta.sizeLabel)} · ${this.state.fileMeta.totalSheets} origen(es)
+                      </div>
+                    </div>
+                    <div class="zrn_processing_file_actions">
+                      <label class="btn btn-secondary zrn_processing_replace_btn">
+                        Reemplazar archivo
+                        <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
+                      </label>
+                      <button type="button" class="btn btn-secondary" data-action="reset-file">Limpiar sesion</button>
+                    </div>
+                  </div>
+                  <div class="zrn_processing_field_grid zrn_processing_overview_controls">
+                    <div class="zrn_processing_field">
+                      <label>Hoja activa</label>
+                      <select class="form-select" data-action="sheet-select">
+                        ${this.state.datasetConfig.sheets
+                          .map(
+                            (currentSheet) => `
+                              <option value="${currentSheet.id}" ${this.state.datasetConfig.selectedSheetId === currentSheet.id ? "selected" : ""}>
+                                ${escapeHtml(currentSheet.name)}
+                              </option>
+                            `
+                          )
+                          .join("")}
+                      </select>
+                    </div>
+                    <div class="zrn_processing_field">
+                      <label>Tabla SQL</label>
+                      <input type="text" class="form-control" value="${escapeHtml(tableName)}" disabled="disabled" />
+                    </div>
+                  </div>
+                  <div class="zrn_processing_file_details_wrap">
+                    <table class="o_list_table table table-sm zrn_processing_file_details_table">
+                      <tbody>${fileDetailRows}</tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <section class="zrn_processing_panel">
+                <div class="zrn_processing_panel_head">
+                  <strong>Dataset temporal</strong>
+                  <span>${sheet ? `${sheet.dataRowsCount} filas detectadas` : "Sin estructura"}</span>
+                </div>
+                <div class="zrn_processing_panel_body">
+                  ${
+                    sheet
+                      ? `
+                        ${
+                          sheet.errors.length
+                            ? `<div class="zrn_processing_sheet_errors">${sheet.errors.map((error) => escapeHtml(error)).join("<br/>")}</div>`
+                            : ""
+                        }
+                        <div class="zrn_processing_range_grid">
+                          <div class="zrn_processing_field">
+                            <label>Fila de encabezado</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="${sheet.rawRows.length || 1}"
+                              class="form-control"
+                              data-action="table-start-row"
+                              value="${previewStartLabel}"
+                            />
+                            <div class="zrn_processing_field_hint">
+                              ${
+                                isSpreadsheet
+                                  ? "Para Excel puedes indicar la fila real donde empiezan los encabezados, por ejemplo la 18."
+                                  : "Configura la fila que contiene los encabezados del dataset temporal."
+                              }
+                            </div>
+                          </div>
+                          <div class="zrn_processing_field">
+                            <label>Estado</label>
+                            <div class="zrn_processing_status_inline ${overviewStatusClass}">${escapeHtml(this.state.datasetConfig.statusLabel)}</div>
+                          </div>
+                          <div class="zrn_processing_field">
+                            <label>Columna inicial</label>
+                            <select class="form-select" data-action="table-start-column">${startColumnOptions}</select>
+                          </div>
+                          <div class="zrn_processing_field">
+                            <label>Columna final</label>
+                            <select class="form-select" data-action="table-end-column">${endColumnOptions}</select>
                           </div>
                         </div>
-                        <div class="zrn_processing_file_actions">
-                          <label class="btn btn-secondary zrn_processing_replace_btn">
-                            Reemplazar archivo
-                            <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
-                          </label>
-                          <button type="button" class="btn btn-secondary" data-action="reset-file">Limpiar sesion</button>
+                        <div class="zrn_processing_actions">
+                          <button type="button" class="btn btn-primary" data-action="apply-structure">Aplicar estructura</button>
+                          <button type="button" class="btn btn-secondary" data-action="sample-query">Cargar query base</button>
                         </div>
-                      </div>
-                    `
-                }
-                ${
-                  this.state.fileMeta.loaded
-                    ? `
-                      <div class="zrn_processing_field_grid zrn_processing_file_meta_grid">
-                        <div class="zrn_processing_field">
-                          <label>Hoja activa</label>
-                          <select class="form-select" data-action="sheet-select">
-                            ${this.state.datasetConfig.sheets
-                              .map(
-                                (currentSheet) => `
-                                  <option value="${currentSheet.id}" ${this.state.datasetConfig.selectedSheetId === currentSheet.id ? "selected" : ""}>
-                                    ${escapeHtml(currentSheet.name)}
-                                  </option>
-                                `
-                              )
-                              .join("")}
-                          </select>
+                        <div class="zrn_processing_columns_wrap">
+                          <table class="o_list_table table table-sm zrn_processing_columns">
+                            <thead>
+                              <tr>
+                                <th>Usar</th>
+                                <th>Origen</th>
+                                <th>Alias SQL</th>
+                                <th>Tipo</th>
+                              </tr>
+                            </thead>
+                            <tbody>${columnRows}</tbody>
+                          </table>
                         </div>
-                        <div class="zrn_processing_field">
-                          <label>Tabla SQL</label>
-                          <input type="text" class="form-control" value="${escapeHtml(tableName)}" disabled="disabled" />
-                        </div>
-                      </div>
-                    `
-                    : `
-                      <div class="zrn_processing_hint_strip">
-                        Formatos permitidos: csv, json, xml, xls, xlsx, xlsm.
-                      </div>
-                    `
-                }
-              </div>
-            </section>
-
-            <section class="zrn_processing_panel">
-              <div class="zrn_processing_panel_head">
-                <strong>Dataset temporal</strong>
-                <span>${sheet ? `${sheet.dataRowsCount} filas detectadas` : "Sin estructura"}</span>
-              </div>
-              <div class="zrn_processing_panel_body">
-                ${
-                  sheet
-                    ? `
-                      ${
-                        sheet.errors.length
-                          ? `<div class="zrn_processing_sheet_errors">${sheet.errors.map((error) => escapeHtml(error)).join("<br/>")}</div>`
-                          : ""
-                      }
-                      <div class="zrn_processing_field_grid">
-                        <div class="zrn_processing_field">
-                          <label>Fila de encabezado</label>
-                          <select class="form-select" data-action="header-row">${headerOptions}</select>
-                        </div>
-                        <div class="zrn_processing_field">
-                          <label>Estado</label>
-                          <div class="zrn_processing_status_inline ${overviewStatusClass}">${escapeHtml(this.state.datasetConfig.statusLabel)}</div>
-                        </div>
-                      </div>
-                      <div class="zrn_processing_actions">
-                        <button type="button" class="btn btn-primary" data-action="apply-structure">Aplicar estructura</button>
-                        <button type="button" class="btn btn-secondary" data-action="sample-query">Cargar query base</button>
-                      </div>
-                      <div class="zrn_processing_columns_wrap">
-                        <table class="zrn_processing_columns">
-                          <thead>
-                            <tr>
-                              <th>Usar</th>
-                              <th>Origen</th>
-                              <th>Alias SQL</th>
-                              <th>Tipo</th>
-                            </tr>
-                          </thead>
-                          <tbody>${columnRows}</tbody>
-                        </table>
-                      </div>
-                    `
-                    : '<div class="zrn_processing_empty">Carga un archivo para definir columnas y tipos.</div>'
-                }
-              </div>
-            </section>
-
-            <section class="zrn_processing_panel">
-              <div class="zrn_processing_panel_head">
-                <strong>Editor SQL</strong>
-                <span>Solo lectura: SELECT, WHERE, GROUP BY, ORDER BY y LIMIT</span>
-              </div>
-              <div class="zrn_processing_panel_body">
-                <div class="zrn_processing_query_hint">
-                  Tabla disponible: <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code>
+                      `
+                      : '<div class="zrn_processing_empty">Carga un archivo para definir columnas y tipos.</div>'
+                  }
                 </div>
-                <textarea class="zrn_processing_query_area" data-action="sql-input" placeholder="SELECT * FROM [dataset] LIMIT 20;">${escapeHtml(
-                  this.state.queryState.sql
-                )}</textarea>
-                <div class="zrn_processing_query_actions">
-                  <button
-                    type="button"
-                    class="btn btn-primary"
-                    data-action="run-query"
-                    ${this.state.fileMeta.loaded ? "" : "disabled"}
-                  >
-                    ${this.state.queryState.running ? "Ejecutando..." : "Ejecutar"}
-                  </button>
-                  <div class="zrn_processing_helper">La estructura del dataset se aplica al ejecutar si aun esta pendiente.</div>
+              </section>
+
+              <section class="zrn_processing_panel">
+                <div class="zrn_processing_panel_head">
+                  <strong>Preview estructural</strong>
+                  <span>Rango ${escapeHtml(rangeLabel)} desde fila ${previewStartLabel}</span>
                 </div>
-                ${
-                  this.state.queryState.error
-                    ? `<div class="zrn_processing_query_error">${escapeHtml(this.state.queryState.error)}</div>`
-                    : ""
-                }
-              </div>
-            </section>
-
-            <section class="zrn_processing_panel">
-              <div class="zrn_processing_panel_head">
-                <strong>Resultados</strong>
-                <span>${this.state.queryState.totalRows} fila(s) · preview maximo ${QUERY_RESULT_LIMIT}</span>
-              </div>
-              <div class="zrn_processing_panel_body">
-                <div class="zrn_processing_result_tabs">${resultTabButtons}</div>
-                <div class="zrn_processing_result_stage">${resultContent}</div>
-              </div>
-            </section>
-          </div>
-
-          <aside class="zrn_processing_side">
-            <section class="zrn_processing_panel">
-              <div class="zrn_processing_panel_head">
-                <strong>Resumen del archivo</strong>
-                <span>Estado de la sesion</span>
-              </div>
-              <div class="zrn_processing_panel_body">
-                <div class="zrn_processing_status_grid">
-                  <div class="zrn_processing_status_item">
-                    <small>Archivo</small>
-                    <strong>${escapeHtml(this.state.fileMeta.loaded ? this.state.fileMeta.name : "Sin cargar")}</strong>
-                  </div>
-                  <div class="zrn_processing_status_item">
-                    <small>Formato</small>
-                    <strong>${escapeHtml((this.state.fileMeta.extension || "-").toUpperCase())}</strong>
-                  </div>
-                  <div class="zrn_processing_status_item">
-                    <small>Hoja activa</small>
-                    <strong>${escapeHtml(this.state.fileMeta.activeSheetName || "-")}</strong>
-                  </div>
-                  <div class="zrn_processing_status_item">
-                    <small>Columnas activas</small>
-                    <strong>${activeColumns.length}</strong>
-                  </div>
-                  <div class="zrn_processing_status_item">
-                    <small>Filas detectadas</small>
-                    <strong>${sheet?.dataRowsCount || 0}</strong>
-                  </div>
-                  <div class="zrn_processing_status_item">
-                    <small>Dataset</small>
-                    <strong>${escapeHtml(this.state.datasetConfig.statusLabel)}</strong>
-                  </div>
+                <div class="zrn_processing_panel_body">
+                  ${
+                    sheet && activeColumns.length
+                      ? `
+                        <div class="zrn_processing_preview_wrap">
+                          <table class="o_list_table table table-sm zrn_processing_preview_table">
+                            <thead><tr>${previewHead}</tr></thead>
+                            <tbody>${previewRows}</tbody>
+                          </table>
+                        </div>
+                      `
+                      : '<div class="zrn_processing_empty">Aplica estructura para revisar el preview del dataset.</div>'
+                  }
                 </div>
-              </div>
-            </section>
+              </section>
 
-            <section class="zrn_processing_panel">
-              <div class="zrn_processing_panel_head">
-                <strong>Preview estructural</strong>
-                <span>${sheet ? "Muestra del dataset activo" : "Sin preview"}</span>
-              </div>
-              <div class="zrn_processing_panel_body">
-                ${
-                  sheet && activeColumns.length
-                    ? `
-                      <div class="zrn_processing_preview_wrap">
-                        <table class="zrn_processing_preview_table">
-                          <thead><tr>${previewHead}</tr></thead>
-                          <tbody>${previewRows}</tbody>
-                        </table>
-                      </div>
-                    `
-                    : '<div class="zrn_processing_empty">Aplica estructura para revisar el preview del dataset.</div>'
-                }
-              </div>
-            </section>
+              <section class="zrn_processing_panel">
+                <div class="zrn_processing_panel_head">
+                  <strong>Editor SQL</strong>
+                  <span>Solo lectura: SELECT, WHERE, GROUP BY, ORDER BY y LIMIT</span>
+                </div>
+                <div class="zrn_processing_panel_body">
+                  <div class="zrn_processing_query_hint">
+                    Tabla disponible: <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code>. Se usan todas las filas hacia abajo dentro del rango ${escapeHtml(rangeLabel)}.
+                  </div>
+                  <textarea class="zrn_processing_query_area" data-action="sql-input" placeholder="SELECT * FROM [dataset] LIMIT 20;">${escapeHtml(
+                    this.state.queryState.sql
+                  )}</textarea>
+                  <div class="zrn_processing_query_actions">
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      data-action="run-query"
+                      ${this.state.fileMeta.loaded ? "" : "disabled"}
+                    >
+                      ${this.state.queryState.running ? "Ejecutando..." : "Ejecutar"}
+                    </button>
+                    <div class="zrn_processing_helper">La estructura del dataset se aplica al ejecutar si aun esta pendiente.</div>
+                  </div>
+                  ${
+                    this.state.queryState.error
+                      ? `<div class="zrn_processing_query_error">${escapeHtml(this.state.queryState.error)}</div>`
+                      : ""
+                  }
+                </div>
+              </section>
 
-            <section class="zrn_processing_panel">
-              <div class="zrn_processing_panel_head">
-                <strong>Ayuda SQL</strong>
-                <span>Referencia rapida</span>
-              </div>
-              <div class="zrn_processing_panel_body">
-                <ul class="zrn_processing_table_list">
-                  <li><strong>Tabla:</strong> <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code></li>
-                  <li><strong>Permitido:</strong> SELECT, WHERE, GROUP BY, ORDER BY, LIMIT</li>
-                  <li><strong>Agregados:</strong> COUNT, SUM, AVG, MIN, MAX</li>
-                  <li><strong>No permitido:</strong> INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, ATTACH</li>
-                </ul>
-              </div>
-            </section>
-          </aside>
-        </div>
+              <section class="zrn_processing_panel">
+                <div class="zrn_processing_panel_head">
+                  <strong>Resultados</strong>
+                  <span>${this.state.queryState.totalRows} fila(s) / preview maximo ${QUERY_RESULT_LIMIT}</span>
+                </div>
+                <div class="zrn_processing_panel_body">
+                  <div class="zrn_processing_result_tabs">${resultTabButtons}</div>
+                  <div class="zrn_processing_result_stage">${resultContent}</div>
+                </div>
+              </section>
+
+              <section class="zrn_processing_panel">
+                <div class="zrn_processing_panel_head">
+                  <strong>Ayuda SQL</strong>
+                  <span>Referencia rapida</span>
+                </div>
+                <div class="zrn_processing_panel_body">
+                  <ul class="zrn_processing_table_list">
+                    <li><strong>Tabla:</strong> <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code></li>
+                    <li><strong>Permitido:</strong> SELECT, WHERE, GROUP BY, ORDER BY, LIMIT</li>
+                    <li><strong>Agregados:</strong> COUNT, SUM, AVG, MIN, MAX</li>
+                    <li><strong>No permitido:</strong> INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, ATTACH</li>
+                  </ul>
+                </div>
+              </section>
+            `
+        }
       </div>
     `;
 

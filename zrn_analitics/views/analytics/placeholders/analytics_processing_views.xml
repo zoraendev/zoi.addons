@@ -10,7 +10,6 @@
                 <div class="zrn_analitics_shell" invisible="page_key != 'processing'">
                     <div class="zrn_analitics_header zrn_analitics_header_workspace">
                         <div>
-                            <div class="zrn_analitics_kicker">Procesamiento</div>
                             <div class="oe_title">
                                 <h1>Centro de carga</h1>
                             </div>
@@ -20,15 +19,6 @@
                             <div class="zrn_processing_warning">
                                 El archivo y la consulta viven solo en esta sesion del navegador. Si sales, recargas o cierras la pagina, se perderan.
                             </div>
-                        </div>
-                        <div class="zrn_analitics_header_actions">
-                            <button
-                                name="action_open_home"
-                                type="object"
-                                icon="fa-arrow-left"
-                                string="Volver al centro"
-                                class="btn zrn_analitics_back_btn zrn_processing_leave_btn"
-                            />
                         </div>
                     </div>
 
@@ -63,31 +53,7 @@
                     </div>
                 </div>
 
-                <div class="zrn_analitics_shell" invisible="page_key != 'processing_workspace'">
-                    <div class="zrn_analitics_header zrn_analitics_header_workspace">
-                        <div>
-                            <div class="zrn_analitics_kicker">Procesamiento</div>
-                            <div class="oe_title">
-                                <h1>Workspace temporal</h1>
-                            </div>
-                            <div class="zrn_analitics_intro">
-                                Ejecuta consultas SQL sobre el archivo cargado y revisa resultados en tabla, JSON o grafica.
-                            </div>
-                            <div class="zrn_processing_warning">
-                                Esta vista usa un dataset temporal en navegador y no guarda el archivo en Odoo.
-                            </div>
-                        </div>
-                        <div class="zrn_analitics_header_actions">
-                            <button
-                                name="action_open_processing"
-                                type="object"
-                                icon="fa-arrow-left"
-                                string="Volver a carga"
-                                class="btn zrn_analitics_back_btn zrn_processing_leave_btn"
-                            />
-                        </div>
-                    </div>
-
+                <div class="zrn_analitics_shell zrn_processing_shell_mode" invisible="page_key != 'processing_workspace'">
                     <div class="zrn_processing_app" data-zrn-processing-root="1" data-zrn-processing-screen="workspace"></div>
                 </div>
             </xpath>
