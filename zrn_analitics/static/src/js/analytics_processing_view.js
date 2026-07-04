@@ -1,296 +1,28 @@
 /** @odoo-module **/
 
-const HEADER_SCAN_LIMIT = 25;
-const PREVIEW_ROW_LIMIT = 8;
-const QUERY_RESULT_LIMIT = 200;
-const SQL_TYPES = ["text", "number", "date", "boolean"];
-const READ_ONLY_SQL_PATTERN = /^\s*select\b/i;
-const FORBIDDEN_SQL_PATTERN = /\b(insert|update|delete|drop|create|alter|attach|truncate|replace|merge|grant|revoke)\b/i;
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function sanitizeIdentifier(value, fallback = "column") {
-  let normalized = String(value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^A-Za-z0-9_]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .toLowerCase();
-  if (!normalized) {
-    normalized = fallback;
-  }
-  if (/^[0-9]/.test(normalized)) {
-    normalized = `${fallback}_${normalized}`;
-  }
-  return normalized;
-}
-
-function quoteSqlIdentifier(value) {
-  return `[${String(value ?? "").replace(/]/g, "]]")}]`;
-}
-
-function buildRowSnippet(row = []) {
-  return row
-    .slice(0, 5)
-    .map((cell) => String(cell ?? "").trim())
-    .filter(Boolean)
-    .join(" | ");
-}
-
-function isRowEmpty(row = []) {
-  return !row.some((cell) => String(cell ?? "").trim() !== "");
-}
-
-function formatBytes(size) {
-  const units = ["B", "KB", "MB", "GB"];
-  let value = Number(size || 0);
-  let unitIndex = 0;
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-  return `${value >= 100 || unitIndex === 0 ? Math.round(value) : value.toFixed(1)} ${units[unitIndex]}`;
-}
-
-function getColumnLabel(index) {
-  let value = index + 1;
-  let label = "";
-  while (value > 0) {
-    const remainder = (value - 1) % 26;
-    label = String.fromCharCode(65 + remainder) + label;
-    value = Math.floor((value - 1) / 26);
-  }
-  return label;
-}
-
-function getLastNonEmptyColumnIndex(row = []) {
-  for (let index = row.length - 1; index >= 0; index -= 1) {
-    if (String(row[index] ?? "").trim()) {
-      return index;
-    }
-  }
-  return -1;
-}
-
-function getFirstNonEmptyColumnIndex(row = []) {
-  for (let index = 0; index < row.length; index += 1) {
-    if (String(row[index] ?? "").trim()) {
-      return index;
-    }
-  }
-  return 0;
-}
-
-function inferColumnType(values) {
-  for (const rawValue of values) {
-    const value = String(rawValue ?? "").trim();
-    if (!value) {
-      continue;
-    }
-    if (/^(true|false|si|no|yes)$/i.test(value)) {
-      return "boolean";
-    }
-    if (!Number.isNaN(Number(value.replace(/,/g, "")))) {
-      return "number";
-    }
-    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(value) || /^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(value)) {
-      return "date";
-    }
-    return "text";
-  }
-  return "text";
-}
-
-function normalizeCellValue(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-  if (typeof value === "object") {
-    return JSON.stringify(value);
-  }
-  return String(value);
-}
-
-function parseCsvLine(line) {
-  const row = [];
-  let current = "";
-  let inQuotes = false;
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-    if (character === '"') {
-      if (inQuotes && line[index + 1] === '"') {
-        current += '"';
-        index += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-    if (character === "," && !inQuotes) {
-      row.push(current);
-      current = "";
-      continue;
-    }
-    current += character;
-  }
-  row.push(current);
-  return row;
-}
-
-function parseCsvText(text) {
-  return text
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .filter((line) => line.length || text.includes("\n"))
-    .map((line) => parseCsvLine(line));
-}
-
-function buildRowsFromObjects(records) {
-  const columns = [];
-  const seen = new Set();
-  for (const record of records) {
-    for (const key of Object.keys(record || {})) {
-      if (!seen.has(key)) {
-        seen.add(key);
-        columns.push(key);
-      }
-    }
-  }
-  return [
-    columns,
-    ...records.map((record) => columns.map((column) => normalizeCellValue(record?.[column]))),
-  ];
-}
-
-function extractJsonRows(text) {
-  const payload = JSON.parse(text);
-  if (Array.isArray(payload)) {
-    if (payload.every((item) => item && typeof item === "object" && !Array.isArray(item))) {
-      return buildRowsFromObjects(payload);
-    }
-    return [["value"], ...payload.map((item) => [normalizeCellValue(item)])];
-  }
-  if (payload && typeof payload === "object") {
-    const objectArray = Object.values(payload).find(
-      (value) =>
-        Array.isArray(value) &&
-        value.every((item) => item && typeof item === "object" && !Array.isArray(item))
-    );
-    if (objectArray) {
-      return buildRowsFromObjects(objectArray);
-    }
-    return buildRowsFromObjects([payload]);
-  }
-  return [["value"], [normalizeCellValue(payload)]];
-}
-
-function extractXmlRows(text) {
-  const xml = new DOMParser().parseFromString(text, "application/xml");
-  if (xml.querySelector("parsererror")) {
-    throw new Error("No se pudo interpretar el XML.");
-  }
-  const root = xml.documentElement;
-  const directChildren = Array.from(root.children);
-  if (!directChildren.length) {
-    return [[root.nodeName], [root.textContent?.trim() || ""]];
-  }
-  const counts = directChildren.reduce((accumulator, node) => {
-    accumulator[node.nodeName] = (accumulator[node.nodeName] || 0) + 1;
-    return accumulator;
-  }, {});
-  const repeatedName = Object.keys(counts).find((name) => counts[name] > 1);
-  const rowNodes = repeatedName
-    ? directChildren.filter((node) => node.nodeName === repeatedName)
-    : directChildren;
-  return buildRowsFromObjects(
-    rowNodes.map((node) => {
-      const record = {};
-      const children = Array.from(node.children);
-      if (!children.length) {
-        record.value = node.textContent?.trim() || "";
-        return record;
-      }
-      for (const child of children) {
-        record[child.nodeName] = child.textContent?.trim() || "";
-      }
-      return record;
-    })
-  );
-}
-
-function coerceValueByType(value, type) {
-  const normalized = String(value ?? "").trim();
-  if (!normalized) {
-    return null;
-  }
-  if (type === "number") {
-    const parsed = Number(normalized.replace(/,/g, ""));
-    return Number.isNaN(parsed) ? null : parsed;
-  }
-  if (type === "boolean") {
-    if (/^(true|si|yes|1)$/i.test(normalized)) {
-      return true;
-    }
-    if (/^(false|no|0)$/i.test(normalized)) {
-      return false;
-    }
-    return normalized;
-  }
-  return normalized;
-}
-
-function cloneRows(rows) {
-  return rows.map((row) => [...row]);
-}
-
-function buildFileIcon(extension) {
-  if (["xls", "xlsx", "xlsm"].includes(extension)) {
-    return "fa-file-excel-o";
-  }
-  if (["json", "xml"].includes(extension)) {
-    return "fa-file-code-o";
-  }
-  if (extension === "csv") {
-    return "fa-table";
-  }
-  return "fa-file-o";
-}
-
-function aggregateValues(values, aggregate) {
-  const numericValues = values.filter((value) => typeof value === "number" && !Number.isNaN(value));
-  if (aggregate === "count") {
-    return values.length;
-  }
-  if (!numericValues.length) {
-    return 0;
-  }
-  if (aggregate === "avg") {
-    return numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
-  }
-  if (aggregate === "min") {
-    return Math.min(...numericValues);
-  }
-  if (aggregate === "max") {
-    return Math.max(...numericValues);
-  }
-  return numericValues.reduce((sum, value) => sum + value, 0);
-}
-
-function toChartNumber(value) {
-  if (typeof value === "number") {
-    return value;
-  }
-  const parsed = Number(String(value ?? "").replace(/,/g, ""));
-  return Number.isNaN(parsed) ? null : parsed;
-}
+import {
+  QUERY_RESULT_LIMIT,
+  SQL_TYPES,
+  READ_ONLY_SQL_PATTERN,
+  FORBIDDEN_SQL_PATTERN,
+  aggregateValues,
+  escapeHtml,
+  getColumnLabel,
+  quoteSqlIdentifier,
+  sanitizeIdentifier,
+  toChartNumber,
+} from "./analytics_processing_utils";
+import {
+  parseGoogleSheetSource,
+  parseLocalSource,
+} from "./analytics_processing_sources";
+import {
+  buildDatasetRecords,
+  buildTableStructure,
+  createSheetState,
+  createTableState,
+  validateTableStructure,
+} from "./analytics_processing_tables";
 
 export class ZrnAnalyticsProcessingView {
   constructor() {
@@ -340,21 +72,26 @@ export class ZrnAnalyticsProcessingView {
 
   getInitialState() {
     return {
-      fileMeta: {
+      sourceMeta: {
+        type: "",
         name: "",
         extension: "",
         sizeLabel: "",
-        iconClass: "fa-file-o",
-        activeSheetName: "",
+        iconClass: "fa-database",
         totalSheets: 0,
         loaded: false,
+        url: "",
+      },
+      sourceInput: {
+        googleSheetUrl: "",
+        mode: "",
       },
       datasetConfig: {
         sheets: [],
         selectedSheetId: "",
         structureReady: false,
         structureDirty: false,
-        statusLabel: "Sin archivo",
+        statusLabel: "Sin origen",
       },
       queryState: {
         sql: "",
@@ -434,23 +171,31 @@ export class ZrnAnalyticsProcessingView {
 
   get hasTransientData() {
     return Boolean(
-      this.state.fileMeta.loaded ||
+      this.state.sourceMeta.loaded ||
         this.state.queryState.sql.trim() ||
         this.state.queryState.rows.length ||
-        this.state.datasetConfig.sheets.length
+        this.state.datasetConfig.sheets.length,
     );
   }
 
   get selectedSheet() {
     return (
       this.state.datasetConfig.sheets.find(
-        (sheet) => sheet.id === this.state.datasetConfig.selectedSheetId
+        (sheet) => sheet.id === this.state.datasetConfig.selectedSheetId,
       ) || null
     );
   }
 
+  get selectedTable() {
+    const sheet = this.selectedSheet;
+    if (!sheet) {
+      return null;
+    }
+    return sheet.tables.find((table) => table.id === sheet.selectedTableId) || null;
+  }
+
   get activeTableName() {
-    return this.selectedSheet?.tableName || "dataset";
+    return this.selectedTable?.tableName || "dataset";
   }
 
   async confirmDiscardIfNeeded() {
@@ -458,7 +203,7 @@ export class ZrnAnalyticsProcessingView {
       return true;
     }
     return window.confirm(
-      "El archivo temporal y el trabajo de esta sesion se perderan al salir. Deseas continuar?"
+      "El origen temporal y el trabajo de esta sesion se perderan al salir. Deseas continuar?",
     );
   }
 
@@ -484,14 +229,14 @@ export class ZrnAnalyticsProcessingView {
       }
     } else if (
       !target.closest(
-        ".zrn_processing_leave_btn, .o_control_panel, .o_main_navbar, .o_menu_sections, .o_breadcrumb, .o_pager"
+        ".zrn_processing_leave_btn, .o_control_panel, .o_main_navbar, .o_menu_sections, .o_breadcrumb, .o_pager",
       )
     ) {
       return;
     }
 
     const canLeave = window.confirm(
-      "El archivo temporal se perdera si sales de Procesamiento. Deseas continuar?"
+      "El origen temporal se perdera si sales de Procesamiento. Deseas continuar?",
     );
     if (!canLeave) {
       event.preventDefault();
@@ -511,6 +256,21 @@ export class ZrnAnalyticsProcessingView {
       this.handleFileSelection(source);
       return;
     }
+    if (action === "source-mode" && event.type === "click") {
+      event.preventDefault();
+      this.state.sourceInput.mode = source.dataset.mode || "";
+      this.render();
+      return;
+    }
+    if (action === "google-sheet-url" && event.type === "input") {
+      this.state.sourceInput.googleSheetUrl = source.value;
+      return;
+    }
+    if (action === "google-sheet-connect" && event.type === "click") {
+      event.preventDefault();
+      this.handleGoogleSheetConnect();
+      return;
+    }
     if (action === "back-to-processing" && event.type === "click") {
       event.preventDefault();
       if (this.navigationHandlers.openLanding) {
@@ -522,8 +282,34 @@ export class ZrnAnalyticsProcessingView {
       this.selectSheet(source.value);
       return;
     }
+    if (action === "table-select" && (event.type === "change" || event.type === "click")) {
+      this.selectTable(source.value);
+      return;
+    }
+    if (action === "table-add" && event.type === "click") {
+      event.preventDefault();
+      this.addTableDefinition();
+      return;
+    }
+    if (action === "table-remove" && event.type === "click") {
+      event.preventDefault();
+      this.removeTableDefinition(source.dataset.tableId);
+      return;
+    }
+    if (action === "table-name" && event.type === "input") {
+      this.updateTableMeta("name", source.value);
+      return;
+    }
+    if (action === "table-sql-name" && event.type === "input") {
+      this.updateTableMeta("tableName", source.value);
+      return;
+    }
     if (action === "table-start-row" && event.type === "change") {
       this.updateTableRange("tableStartRowIndex", Number(source.value || 1) - 1);
+      return;
+    }
+    if (action === "table-end-row" && event.type === "change") {
+      this.updateTableRange("tableEndRowIndex", Number(source.value || 1) - 1);
       return;
     }
     if (action === "table-start-column" && event.type === "change") {
@@ -539,7 +325,7 @@ export class ZrnAnalyticsProcessingView {
       this.applyStructure();
       return;
     }
-    if (action === "reset-file" && event.type === "click") {
+    if (action === "reset-source" && event.type === "click") {
       event.preventDefault();
       this.resetAll();
       return;
@@ -576,7 +362,8 @@ export class ZrnAnalyticsProcessingView {
     }
     if (action === "builder-limit" && event.type === "input") {
       const nextLimit = Number(source.value || 20);
-      this.state.queryBuilder.limit = Number.isFinite(nextLimit) && nextLimit > 0 ? nextLimit : 20;
+      this.state.queryBuilder.limit =
+        Number.isFinite(nextLimit) && nextLimit > 0 ? nextLimit : 20;
       return;
     }
     if (action === "builder-generate" && event.type === "click") {
@@ -642,339 +429,246 @@ export class ZrnAnalyticsProcessingView {
     if (!file) {
       return;
     }
-    if (this.state.fileMeta.loaded) {
+    if (this.state.sourceMeta.loaded) {
       const shouldReplace = window.confirm(
-        "Solo se permite un archivo por sesion. Cargar uno nuevo reemplazara el actual. Deseas continuar?"
+        "Cargar un nuevo origen reemplazara el dataset temporal actual. Deseas continuar?",
       );
       if (!shouldReplace) {
         input.value = "";
         return;
       }
     }
-
     try {
-      this.dropRegisteredTable();
-      this.disposeChart();
-      const extension = (file.name.split(".").pop() || "").toLowerCase();
-      const parsedSheets = await this.parseFile(file, extension);
-      if (!parsedSheets.length) {
-        throw new Error("El archivo no genero una tabla utilizable.");
-      }
-
-      const sheets = parsedSheets.map((sheet, index) => this.createSheetState(sheet, index));
-      this.state = this.getInitialState();
-      this.state.fileMeta = {
-        name: file.name,
-        extension,
-        sizeLabel: formatBytes(file.size),
-        iconClass: buildFileIcon(extension),
-        activeSheetName: sheets[0].name,
-        totalSheets: sheets.length,
-        loaded: true,
-      };
-      this.state.datasetConfig.sheets = sheets;
-      this.state.datasetConfig.selectedSheetId = sheets[0].id;
-      this.state.datasetConfig.statusLabel = "Archivo cargado";
-      this.state.queryState.tableName = sheets[0].tableName;
-      this.buildSheetStructure(sheets[0], { keepAliases: false });
-      this.state.datasetConfig.structureDirty = true;
-      this.state.queryState.sql = this.buildSampleQuery(sheets[0].tableName);
-      this.syncQueryStateWithSheet();
-      if (this.screenMode === "landing") {
-        await this.openWorkspaceRoute();
-        return;
-      }
-      this.render();
+      await this.loadParsedSource(await parseLocalSource(file));
     } catch (error) {
-      this.state = this.getInitialState();
-      this.state.globalError = error.message || "No se pudo procesar el archivo.";
-      this.render();
+      this.setErrorState(error);
     } finally {
       input.value = "";
     }
   }
 
-  async parseFile(file, extension) {
-    if (["xls", "xlsx", "xlsm"].includes(extension)) {
-      return this.parseWorkbook(await file.arrayBuffer());
-    }
-    if (extension === "csv") {
-      return [
-        {
-          name: file.name.replace(/\.[^.]+$/, "") || "dataset",
-          rawRows: parseCsvText(await file.text()),
-        },
-      ];
-    }
-    if (extension === "json") {
-      return [
-        {
-          name: file.name.replace(/\.[^.]+$/, "") || "dataset",
-          rawRows: extractJsonRows(await file.text()),
-        },
-      ];
-    }
-    if (extension === "xml") {
-      return [
-        {
-          name: file.name.replace(/\.[^.]+$/, "") || "dataset",
-          rawRows: extractXmlRows(await file.text()),
-        },
-      ];
-    }
-    throw new Error("Formato no soportado. Usa csv, json, xml, xls, xlsx o xlsm.");
-  }
-
-  parseWorkbook(arrayBuffer) {
-    if (!window.XLSX) {
-      throw new Error("La libreria de hojas de calculo no esta disponible.");
-    }
-    const workbook = window.XLSX.read(arrayBuffer, { type: "array", cellDates: false });
-    return workbook.SheetNames.map((sheetName) => ({
-      name: sheetName,
-      rawRows: window.XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-        header: 1,
-        raw: false,
-        defval: "",
-        blankrows: true,
-      }),
-    }));
-  }
-
-  createSheetState(sheet, index) {
-    const tableName = sanitizeIdentifier(sheet.name || `dataset_${index + 1}`, "dataset");
-    const detectedStartRowIndex = this.detectHeaderRow(sheet.rawRows || []);
-    const detectedHeaderRow = (sheet.rawRows || [])[detectedStartRowIndex] || [];
-    const detectedStartColumnIndex = getFirstNonEmptyColumnIndex(detectedHeaderRow);
-    const detectedEndColumnIndex = Math.max(
-      detectedStartColumnIndex,
-      getLastNonEmptyColumnIndex(detectedHeaderRow)
-    );
-    return {
-      id: `${Date.now()}_${index}`,
-      name: sheet.name || `Hoja ${index + 1}`,
-      tableName,
-      rawRows: cloneRows(sheet.rawRows || []),
-      tableStartRowIndex: detectedStartRowIndex,
-      tableStartColumnIndex: detectedStartColumnIndex,
-      tableEndColumnIndex: detectedEndColumnIndex,
-      columns: [],
-      previewRows: [],
-      dataRowsCount: 0,
-      errors: [],
-      structureApplied: false,
-      structureDirty: true,
-    };
-  }
-
-  detectHeaderRow(rawRows) {
-    let bestIndex = 0;
-    let bestScore = -1;
-    rawRows.slice(0, HEADER_SCAN_LIMIT).forEach((row, index) => {
-      const nonEmptyCells = row.filter((cell) => String(cell ?? "").trim() !== "").length;
-      if (!nonEmptyCells) {
+  async handleGoogleSheetConnect() {
+    if (this.state.sourceMeta.loaded) {
+      const shouldReplace = window.confirm(
+        "Conectar un Google Sheet reemplazara el dataset temporal actual. Deseas continuar?",
+      );
+      if (!shouldReplace) {
         return;
       }
-      const score = nonEmptyCells + Math.min(buildRowSnippet(row).length / 40, 1);
-      if (score > bestScore) {
-        bestScore = score;
-        bestIndex = index;
-      }
-    });
-    return bestIndex;
-  }
-
-  buildSheetStructure(sheet, { keepAliases }) {
-    const headerRow = sheet.rawRows[sheet.tableStartRowIndex] || [];
-    const startColumnIndex = Math.max(0, Number(sheet.tableStartColumnIndex || 0));
-    const endColumnIndex = Math.max(startColumnIndex, Number(sheet.tableEndColumnIndex || startColumnIndex));
-    const selectedColumnIndexes = Array.from(
-      { length: endColumnIndex - startColumnIndex + 1 },
-      (_, index) => startColumnIndex + index
-    );
-    const dataRows = sheet.rawRows
-      .slice(sheet.tableStartRowIndex + 1)
-      .filter((row) =>
-        selectedColumnIndexes.some((columnIndex) => String(row[columnIndex] ?? "").trim() !== "")
+    }
+    try {
+      await this.loadParsedSource(
+        await parseGoogleSheetSource(this.state.sourceInput.googleSheetUrl),
       );
-    const maxColumns = selectedColumnIndexes.length;
-    const previousColumns = new Map((sheet.columns || []).map((column) => [column.index, column]));
-    sheet.columns = Array.from({ length: maxColumns }).map((_, index) => {
-      const sourceIndex = selectedColumnIndexes[index];
-      const previous = previousColumns.get(sourceIndex);
-      const originalLabel = String(headerRow[sourceIndex] ?? "").trim() || `Columna ${getColumnLabel(sourceIndex)}`;
-      const sampleValues = dataRows.slice(0, 20).map((row) => row[sourceIndex]);
-      return {
-        index: sourceIndex,
-        tablePosition: index,
-        columnLabel: getColumnLabel(sourceIndex),
-        originalLabel,
-        use: previous ? previous.use : true,
-        alias:
-          keepAliases && previous
-            ? previous.alias
-            : sanitizeIdentifier(originalLabel, `column_${index + 1}`),
-        type: previous?.type || inferColumnType(sampleValues),
-      };
-    });
-    sheet.previewRows = dataRows.slice(0, PREVIEW_ROW_LIMIT);
-    sheet.dataRowsCount = dataRows.length;
-    sheet.errors = this.validateSheetStructure(sheet);
-    sheet.structureDirty = true;
-    this.state.datasetConfig.statusLabel = sheet.errors.length ? "Requiere ajustes" : "Pendiente de aplicar";
-    this.state.datasetConfig.structureReady = false;
+    } catch (error) {
+      this.setErrorState(error);
+    }
   }
 
-  validateSheetStructure(sheet) {
-    const errors = [];
-    if (!sheet.rawRows.length) {
-      errors.push("La hoja esta vacia.");
-      return errors;
+  async loadParsedSource(parsedSource) {
+    this.dropRegisteredTable();
+    this.disposeChart();
+    const sheets = (parsedSource.sheets || []).map((sheet, index) => createSheetState(sheet, index));
+    if (!sheets.length) {
+      throw new Error("El origen no genero hojas utilizables.");
     }
-    if (sheet.tableStartRowIndex < 0 || sheet.tableStartRowIndex >= sheet.rawRows.length) {
-      errors.push("Configura una fila inicial valida para la tabla.");
+    this.state = this.getInitialState();
+    this.state.sourceMeta = {
+      type: parsedSource.sourceType,
+      name: parsedSource.sourceLabel,
+      extension: parsedSource.sourceMeta.extension,
+      sizeLabel: parsedSource.sourceMeta.sizeLabel,
+      iconClass: parsedSource.sourceMeta.iconClass,
+      totalSheets: parsedSource.sourceMeta.totalSheets,
+      loaded: true,
+      url: parsedSource.sourceMeta.url || "",
+    };
+    this.state.sourceInput.googleSheetUrl = parsedSource.sourceMeta.url || "";
+    this.state.datasetConfig.sheets = sheets;
+    this.state.datasetConfig.selectedSheetId = sheets[0].id;
+    this.state.datasetConfig.statusLabel = "Origen cargado";
+    this.state.queryState.tableName = sheets[0].tables[0]?.tableName || "";
+    this.syncQueryStateWithTable();
+    if (this.screenMode === "landing") {
+      await this.openWorkspaceRoute();
+      return;
     }
-    if (sheet.tableStartColumnIndex < 0 || sheet.tableEndColumnIndex < sheet.tableStartColumnIndex) {
-      errors.push("Configura un rango de columnas valido.");
-    }
-    const activeColumns = (sheet.columns || []).filter((column) => column.use);
-    if (!activeColumns.length) {
-      errors.push("Activa al menos una columna para construir el dataset.");
-    }
-    const aliases = activeColumns.map((column) =>
-      sanitizeIdentifier(column.alias, `column_${column.index + 1}`)
-    );
-    if (aliases.some((alias) => !alias)) {
-      errors.push("Todas las columnas activas deben tener un alias SQL.");
-    }
-    if (new Set(aliases).size !== aliases.length) {
-      errors.push("Los alias SQL de las columnas activas deben ser unicos.");
-    }
-    return errors;
+    this.render();
   }
 
-  updateTableRange(key, value) {
+  setErrorState(error) {
+    this.state = this.getInitialState();
+    this.state.globalError = error.message || "No se pudo cargar el origen.";
+    this.render();
+  }
+
+  selectSheet(sheetId) {
+    this.state.datasetConfig.selectedSheetId = sheetId;
     const sheet = this.selectedSheet;
     if (!sheet) {
       return;
     }
-    sheet[key] = value;
-    if (key === "tableStartColumnIndex" && sheet.tableEndColumnIndex < value) {
-      sheet.tableEndColumnIndex = value;
+    if (!sheet.selectedTableId && sheet.tables[0]) {
+      sheet.selectedTableId = sheet.tables[0].id;
     }
-    if (key === "tableEndColumnIndex" && value < sheet.tableStartColumnIndex) {
-      sheet.tableStartColumnIndex = value;
-    }
-    this.buildSheetStructure(sheet, { keepAliases: false });
+    this.refreshDatasetStatus();
     this.clearQueryResults();
-    this.syncQueryStateWithSheet();
+    this.syncQueryStateWithTable();
+    this.render();
+  }
+
+  selectTable(tableId) {
+    const sheet = this.selectedSheet;
+    if (!sheet) {
+      return;
+    }
+    sheet.selectedTableId = tableId;
+    this.refreshDatasetStatus();
+    this.clearQueryResults();
+    this.syncQueryStateWithTable(true);
+    this.render();
+  }
+
+  addTableDefinition() {
+    const sheet = this.selectedSheet;
+    if (!sheet) {
+      return;
+    }
+    const index = sheet.tables.length;
+    const baseTable = this.selectedTable;
+    const newTable = createTableState(
+      sheet.rawRows,
+      sheet.name,
+      {
+        name: `tabla_${index + 1}`,
+        tableStartRowIndex: baseTable?.tableStartRowIndex || 0,
+        tableEndRowIndex: baseTable?.tableEndRowIndex || Math.max(1, sheet.rawRows.length - 1),
+        tableStartColumnIndex: baseTable?.tableStartColumnIndex || 0,
+        tableEndColumnIndex: baseTable?.tableEndColumnIndex || 0,
+      },
+      index,
+    );
+    sheet.tables.push(newTable);
+    sheet.selectedTableId = newTable.id;
+    this.refreshDatasetStatus();
+    this.clearQueryResults();
+    this.syncQueryStateWithTable(true);
+    this.render();
+  }
+
+  removeTableDefinition(tableId) {
+    const sheet = this.selectedSheet;
+    if (!sheet || sheet.tables.length <= 1) {
+      return;
+    }
+    const currentTable = this.selectedTable;
+    if (
+      currentTable?.id === tableId &&
+      !window.confirm("Se eliminara la definicion de tabla seleccionada. Deseas continuar?")
+    ) {
+      return;
+    }
+    sheet.tables = sheet.tables.filter((table) => table.id !== tableId);
+    if (!sheet.tables.some((table) => table.id === sheet.selectedTableId)) {
+      sheet.selectedTableId = sheet.tables[0]?.id || "";
+    }
+    this.refreshDatasetStatus();
+    this.clearQueryResults();
+    this.syncQueryStateWithTable(true);
+    this.render();
+  }
+
+  updateTableMeta(key, value) {
+    const table = this.selectedTable;
+    if (!table) {
+      return;
+    }
+    if (key === "tableName") {
+      table.tableName = sanitizeIdentifier(value, "dataset");
+    } else {
+      table[key] = value;
+    }
+    table.errors = validateTableStructure(table, this.selectedSheet?.rawRows || []);
+    table.structureDirty = true;
+    table.structureApplied = false;
+    this.refreshDatasetStatus();
+    this.syncQueryStateWithTable();
+    this.render();
+  }
+
+  updateTableRange(key, value) {
+    const table = this.selectedTable;
+    const rawRows = this.selectedSheet?.rawRows;
+    if (!table || !rawRows) {
+      return;
+    }
+    table[key] = value;
+    if (key === "tableStartColumnIndex" && table.tableEndColumnIndex < value) {
+      table.tableEndColumnIndex = value;
+    }
+    if (key === "tableEndColumnIndex" && value < table.tableStartColumnIndex) {
+      table.tableStartColumnIndex = value;
+    }
+    if (key === "tableStartRowIndex" && table.tableEndRowIndex <= value) {
+      table.tableEndRowIndex = Math.min(rawRows.length - 1, value + 1);
+    }
+    if (key === "tableEndRowIndex" && value <= table.tableStartRowIndex) {
+      table.tableStartRowIndex = Math.max(0, value - 1);
+    }
+    buildTableStructure(table, rawRows, { keepAliases: false });
+    this.refreshDatasetStatus();
+    this.clearQueryResults();
+    this.syncQueryStateWithTable();
     this.render();
   }
 
   updateColumnSetting(index, key, value) {
-    const sheet = this.selectedSheet;
-    if (!sheet) {
+    const table = this.selectedTable;
+    const rawRows = this.selectedSheet?.rawRows;
+    if (!table || !rawRows) {
       return;
     }
-    const column = sheet.columns[index];
+    const column = table.columns[index];
     if (!column) {
       return;
     }
     column[key] = value;
-    sheet.errors = this.validateSheetStructure(sheet);
-    sheet.structureDirty = true;
-    sheet.structureApplied = false;
-    this.state.datasetConfig.structureDirty = true;
-    this.state.datasetConfig.structureReady = false;
-    this.state.datasetConfig.statusLabel = sheet.errors.length ? "Requiere ajustes" : "Pendiente de aplicar";
+    table.errors = validateTableStructure(table, rawRows);
+    table.structureDirty = true;
+    table.structureApplied = false;
+    this.refreshDatasetStatus();
     this.syncNoCodeQueryBuilder();
     if (key !== "alias") {
       this.render();
     }
   }
 
-  selectSheet(sheetId) {
-    this.state.datasetConfig.selectedSheetId = sheetId;
-    const sheet = this.selectedSheet;
-    if (!sheet.columns.length) {
-      this.buildSheetStructure(sheet, { keepAliases: false });
-    }
-    this.state.fileMeta.activeSheetName = sheet?.name || "";
-    this.state.datasetConfig.structureReady = Boolean(
-      sheet && sheet.structureApplied && !sheet.structureDirty && !sheet.errors.length
+  refreshDatasetStatus() {
+    const table = this.selectedTable;
+    const ready = Boolean(
+      table && table.structureApplied && !table.structureDirty && !table.errors.length,
     );
-    this.state.datasetConfig.structureDirty = Boolean(sheet?.structureDirty);
-    this.state.datasetConfig.statusLabel = sheet?.errors.length
+    this.state.datasetConfig.structureReady = ready;
+    this.state.datasetConfig.structureDirty = Boolean(table?.structureDirty);
+    this.state.datasetConfig.statusLabel = table?.errors.length
       ? "Requiere ajustes"
-      : this.state.datasetConfig.structureReady
+      : ready
         ? "Dataset listo"
-        : "Pendiente de aplicar";
-    this.syncQueryStateWithSheet();
-    this.clearQueryResults();
-    this.render();
+        : this.state.sourceMeta.loaded
+          ? "Pendiente de aplicar"
+          : "Sin origen";
   }
 
-  applyStructure(silent = false) {
-    const sheet = this.selectedSheet;
-    if (!sheet) {
-      return;
-    }
-    try {
-      sheet.errors = this.validateSheetStructure(sheet);
-      if (sheet.errors.length) {
-        this.state.datasetConfig.statusLabel = "Requiere ajustes";
-        if (!silent) {
-          this.render();
-        }
-        return;
-      }
-      this.registerSelectedSheet();
-      sheet.structureApplied = true;
-      sheet.structureDirty = false;
-      this.state.datasetConfig.structureDirty = false;
-      this.state.datasetConfig.structureReady = true;
-      this.state.datasetConfig.statusLabel = "Dataset listo";
-      this.state.queryState.tableName = sheet.tableName;
-      if (!this.state.queryState.sql.trim()) {
-        this.state.queryState.sql = this.buildSampleQuery(sheet.tableName);
-      }
-      if (!silent) {
-        this.render();
-      }
-    } catch (error) {
-      this.state.queryState.error = error.message || "No se pudo preparar el dataset temporal.";
-      this.state.datasetConfig.statusLabel = "Requiere ajustes";
-      if (!silent) {
-        this.render();
-      }
-    }
-  }
-
-  buildDatasetRecords(sheet) {
-    const activeColumns = sheet.columns.filter((column) => column.use);
-    const selectedIndexes = sheet.columns.map((column) => column.index);
-    return sheet.rawRows
-      .slice(sheet.tableStartRowIndex + 1)
-      .filter((row) =>
-        selectedIndexes.some((columnIndex) => String(row[columnIndex] ?? "").trim() !== "")
-      )
-      .map((row) => {
-        const record = {};
-        activeColumns.forEach((column) => {
-          const alias = sanitizeIdentifier(column.alias, `column_${column.index + 1}`);
-          record[alias] = coerceValueByType(row[column.index], column.type);
-        });
-        return record;
-      });
-  }
-
-  buildDatasetSignature(sheet) {
+  buildDatasetSignature(table) {
     return JSON.stringify({
-      id: sheet.id,
-      tableStartRowIndex: sheet.tableStartRowIndex,
-      tableStartColumnIndex: sheet.tableStartColumnIndex,
-      tableEndColumnIndex: sheet.tableEndColumnIndex,
-      columns: sheet.columns.map((column) => ({
+      id: table.id,
+      name: table.name,
+      tableName: table.tableName,
+      tableStartRowIndex: table.tableStartRowIndex,
+      tableEndRowIndex: table.tableEndRowIndex,
+      tableStartColumnIndex: table.tableStartColumnIndex,
+      tableEndColumnIndex: table.tableEndColumnIndex,
+      columns: table.columns.map((column) => ({
         use: column.use,
         alias: sanitizeIdentifier(column.alias, `column_${column.index + 1}`),
         type: column.type,
@@ -997,23 +691,24 @@ export class ZrnAnalyticsProcessingView {
     this.lastRegisteredSignature = "";
   }
 
-  registerSelectedSheet() {
-    const sheet = this.selectedSheet;
-    if (!sheet) {
+  registerSelectedTable() {
+    const table = this.selectedTable;
+    const rawRows = this.selectedSheet?.rawRows;
+    if (!table || !rawRows) {
       return;
     }
     if (!window.alasql) {
       throw new Error("La libreria SQL no esta disponible.");
     }
-    const signature = this.buildDatasetSignature(sheet);
-    if (this.registeredTableName === sheet.tableName && this.lastRegisteredSignature === signature) {
+    const signature = this.buildDatasetSignature(table);
+    if (this.registeredTableName === table.tableName && this.lastRegisteredSignature === signature) {
       return;
     }
     this.dropRegisteredTable();
-    const records = this.buildDatasetRecords(sheet);
-    window.alasql(`CREATE TABLE ${quoteSqlIdentifier(sheet.tableName)}`);
-    window.alasql.tables[sheet.tableName].data = records;
-    this.registeredTableName = sheet.tableName;
+    const records = buildDatasetRecords(table, rawRows);
+    window.alasql(`CREATE TABLE ${quoteSqlIdentifier(table.tableName)}`);
+    window.alasql.tables[table.tableName].data = records;
+    this.registeredTableName = table.tableName;
     this.lastRegisteredSignature = signature;
   }
 
@@ -1036,13 +731,13 @@ export class ZrnAnalyticsProcessingView {
   }
 
   getBuilderColumns() {
-    const sheet = this.selectedSheet;
-    return sheet?.columns.filter((column) => column.use) || [];
+    const table = this.selectedTable;
+    return table?.columns.filter((column) => column.use) || [];
   }
 
   getBuilderColumnByAlias(alias) {
     return this.getBuilderColumns().find(
-      (column) => sanitizeIdentifier(column.alias, `column_${column.index + 1}`) === alias
+      (column) => sanitizeIdentifier(column.alias, `column_${column.index + 1}`) === alias,
     );
   }
 
@@ -1086,10 +781,10 @@ export class ZrnAnalyticsProcessingView {
   syncNoCodeQueryBuilder() {
     const columns = this.getBuilderColumns();
     const allowedAliases = new Set(
-      columns.map((column) => sanitizeIdentifier(column.alias, `column_${column.index + 1}`))
+      columns.map((column) => sanitizeIdentifier(column.alias, `column_${column.index + 1}`)),
     );
     const currentSelected = this.state.queryBuilder.selectedColumns.filter((alias) =>
-      allowedAliases.has(alias)
+      allowedAliases.has(alias),
     );
     this.state.queryBuilder.selectedColumns = currentSelected.length
       ? currentSelected
@@ -1137,7 +832,7 @@ export class ZrnAnalyticsProcessingView {
 
   removeBuilderFilter(filterId) {
     this.state.queryBuilder.filters = this.state.queryBuilder.filters.filter(
-      (filter) => filter.id !== filterId
+      (filter) => filter.id !== filterId,
     );
     this.render();
   }
@@ -1214,7 +909,8 @@ export class ZrnAnalyticsProcessingView {
       .filter(Boolean);
 
     const whereSql = whereParts.length ? `\nWHERE ${whereParts.join("\n  AND ")}` : "";
-    const limitSql = this.state.queryBuilder.limit > 0 ? `\nLIMIT ${this.state.queryBuilder.limit};` : ";";
+    const limitSql =
+      this.state.queryBuilder.limit > 0 ? `\nLIMIT ${this.state.queryBuilder.limit};` : ";";
     return `SELECT ${selectSql}\nFROM ${quoteSqlIdentifier(this.activeTableName)}${whereSql}${limitSql}`;
   }
 
@@ -1231,11 +927,15 @@ export class ZrnAnalyticsProcessingView {
     this.render();
   }
 
-  syncQueryStateWithSheet() {
-    const sheet = this.selectedSheet;
-    this.state.queryState.tableName = sheet?.tableName || "";
-    if (!this.state.queryState.sql.trim() || this.state.queryState.sql.includes("FROM [")) {
-      this.state.queryState.sql = sheet ? this.buildSampleQuery(sheet.tableName) : "";
+  syncQueryStateWithTable(forceSql = false) {
+    const table = this.selectedTable;
+    this.state.queryState.tableName = table?.tableName || "";
+    if (
+      forceSql ||
+      !this.state.queryState.sql.trim() ||
+      this.state.queryState.sql.includes("FROM [")
+    ) {
+      this.state.queryState.sql = table ? this.buildSampleQuery(table.tableName) : "";
     }
     this.syncNoCodeQueryBuilder();
   }
@@ -1250,10 +950,44 @@ export class ZrnAnalyticsProcessingView {
     this.disposeChart();
   }
 
+  applyStructure(silent = false) {
+    const table = this.selectedTable;
+    const rawRows = this.selectedSheet?.rawRows;
+    if (!table || !rawRows) {
+      return;
+    }
+    try {
+      table.errors = validateTableStructure(table, rawRows);
+      if (table.errors.length) {
+        this.refreshDatasetStatus();
+        if (!silent) {
+          this.render();
+        }
+        return;
+      }
+      this.registerSelectedTable();
+      table.structureApplied = true;
+      table.structureDirty = false;
+      this.refreshDatasetStatus();
+      this.state.queryState.tableName = table.tableName;
+      if (!this.state.queryState.sql.trim()) {
+        this.state.queryState.sql = this.buildSampleQuery(table.tableName);
+      }
+      if (!silent) {
+        this.render();
+      }
+    } catch (error) {
+      this.state.queryState.error = error.message || "No se pudo preparar el dataset temporal.";
+      this.refreshDatasetStatus();
+      if (!silent) {
+        this.render();
+      }
+    }
+  }
+
   runQuery() {
     const queryError = this.validateReadOnlyQuery(this.state.queryState.sql);
     if (queryError) {
-      this.state.queryState.error = queryError;
       this.clearQueryResults();
       this.state.queryState.error = queryError;
       this.render();
@@ -1289,7 +1023,7 @@ export class ZrnAnalyticsProcessingView {
   syncChartDefaults() {
     const chartColumns = this.state.queryState.columns;
     const numericColumns = chartColumns.filter((column) =>
-      this.state.queryState.rows.some((row) => toChartNumber(row[column]) !== null)
+      this.state.queryState.rows.some((row) => toChartNumber(row[column]) !== null),
     );
     if (!chartColumns.length || !numericColumns.length) {
       this.state.chartState.categoryColumn = "";
@@ -1355,8 +1089,7 @@ export class ZrnAnalyticsProcessingView {
       this.chartInstance =
         window.echarts.getInstanceByDom(chartHost) ||
         window.echarts.init(chartHost, null, { renderer: "canvas" });
-      const option = this.buildChartOption(chartData);
-      this.chartInstance.setOption(option, true);
+      this.chartInstance.setOption(this.buildChartOption(chartData), true);
       this.chartInstance.resize();
     });
   }
@@ -1405,10 +1138,7 @@ export class ZrnAnalyticsProcessingView {
           barMaxWidth: 42,
         },
       ],
-      toolbox: {
-        right: 0,
-        feature: { saveAsImage: {} },
-      },
+      toolbox: { right: 0, feature: { saveAsImage: {} } },
       title: {
         text: `${categoryColumn} vs ${aggregate.toUpperCase()} ${valueColumn}`,
         textStyle: { fontSize: 12, fontWeight: 700, color: "#355d9a" },
@@ -1427,7 +1157,7 @@ export class ZrnAnalyticsProcessingView {
   resetAll() {
     if (
       this.hasTransientData &&
-      !window.confirm("Se eliminara el archivo temporal, la consulta y los resultados. Deseas continuar?")
+      !window.confirm("Se eliminara el origen temporal, la consulta y los resultados. Deseas continuar?")
     ) {
       return;
     }
@@ -1442,22 +1172,57 @@ export class ZrnAnalyticsProcessingView {
   }
 
   renderLanding() {
+    const isLocal = this.state.sourceInput.mode === "local_file";
+    const isGoogle = this.state.sourceInput.mode === "google_sheet";
     return `
       <div class="zrn_processing_landing">
         <section class="zrn_processing_panel">
           <div class="zrn_processing_panel_head">
-            <strong>Carga de archivo</strong>
-            <span>Un archivo temporal por sesion</span>
+            <strong>Origen temporal</strong>
+            <span>Archivo local o Google Sheets publico</span>
           </div>
           <div class="zrn_processing_panel_body">
-            <label class="zrn_processing_dropzone zrn_processing_dropzone_main">
-              <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
-              <span class="zrn_processing_dropzone_icon"><i class="fa fa-upload"></i></span>
-              <strong>Cargar archivo para procesar</strong>
-              <span>Al cargarlo se abrira el workspace de queries, resultados y graficas.</span>
-            </label>
+            <div class="zrn_processing_entry_bar">
+              <label class="zrn_processing_source_tile ${isLocal ? "is-active" : ""}">
+                <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
+                <span class="zrn_processing_source_tile_icon"><i class="fa fa-upload"></i></span>
+                <strong>Cargar archivo</strong>
+                <small>CSV, JSON, XML y Excel</small>
+              </label>
+              <button
+                type="button"
+                class="zrn_processing_source_tile ${isGoogle ? "is-active" : ""}"
+                data-action="source-mode"
+                data-mode="google_sheet"
+              >
+                <span class="zrn_processing_source_tile_icon"><i class="fa fa-table"></i></span>
+                <strong>Google Sheet</strong>
+                <small>URL publica por sesion</small>
+              </button>
+            </div>
+            ${
+              isGoogle
+                ? `
+                  <div class="zrn_processing_source_inline">
+                    <div class="zrn_processing_field zrn_processing_source_url_field">
+                      <label>URL publica</label>
+                      <input
+                        type="url"
+                        class="form-control"
+                        data-action="google-sheet-url"
+                        value="${escapeHtml(this.state.sourceInput.googleSheetUrl)}"
+                        placeholder="https://docs.google.com/spreadsheets/d/..."
+                      />
+                    </div>
+                    <div class="zrn_processing_actions">
+                      <button type="button" class="btn btn-primary" data-action="google-sheet-connect">Conectar</button>
+                    </div>
+                  </div>
+                `
+                : ""
+            }
             <div class="zrn_processing_hint_strip">
-              Formatos permitidos: csv, json, xml, xls, xlsx, xlsm.
+              El origen vive solo en esta sesion del navegador. Si sales o recargas la pagina, se pierde.
             </div>
           </div>
         </section>
@@ -1465,115 +1230,232 @@ export class ZrnAnalyticsProcessingView {
     `;
   }
 
-  render() {
-    if (!this.root) {
-      return;
-    }
+  renderOverviewPanel(sheet, table) {
+    const sourceTypeLabel =
+      this.state.sourceMeta.type === "google_sheet" ? "Google Sheets publico" : "Archivo local";
+    const tableCount = sheet?.tables.length || 0;
+    return `
+      <section class="zrn_processing_panel zrn_processing_overview_panel">
+        <div class="zrn_processing_panel_head">
+          <strong>Origen activo</strong>
+          <span>${sourceTypeLabel}</span>
+        </div>
+        <div class="zrn_processing_panel_body">
+          <div class="zrn_processing_overview_top">
+            <div class="zrn_processing_file_overview">
+              <div class="zrn_processing_file_icon">
+                <i class="fa ${escapeHtml(this.state.sourceMeta.iconClass)}"></i>
+              </div>
+              <div class="zrn_processing_file_copy">
+                <div class="zrn_processing_file_name">${escapeHtml(this.state.sourceMeta.name)}</div>
+                <div class="zrn_processing_helper">
+                  ${escapeHtml(sourceTypeLabel)} / ${escapeHtml(this.state.sourceMeta.sizeLabel)} / ${this.state.sourceMeta.totalSheets} hoja(s)
+                </div>
+              </div>
+            </div>
+            <div class="zrn_processing_file_actions">
+              <label class="btn btn-secondary zrn_processing_replace_btn">
+                Reemplazar archivo
+                <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
+              </label>
+              <button type="button" class="btn btn-secondary" data-action="back-to-processing">Volver a carga</button>
+              <button type="button" class="btn btn-secondary" data-action="reset-source">Limpiar sesion</button>
+            </div>
+          </div>
+          <div class="zrn_processing_field_grid zrn_processing_overview_controls">
+            <div class="zrn_processing_field">
+              <label>Hoja activa</label>
+              <select class="form-select" data-action="sheet-select">
+                ${this.state.datasetConfig.sheets
+                  .map(
+                    (currentSheet) => `
+                      <option value="${currentSheet.id}" ${this.state.datasetConfig.selectedSheetId === currentSheet.id ? "selected" : ""}>
+                        ${escapeHtml(currentSheet.name)}
+                      </option>
+                    `,
+                  )
+                  .join("")}
+              </select>
+            </div>
+            <div class="zrn_processing_field">
+              <label>Tabla activa</label>
+              <select class="form-select" data-action="table-select">
+                ${(sheet?.tables || [])
+                  .map(
+                    (currentTable) => `
+                      <option value="${currentTable.id}" ${sheet.selectedTableId === currentTable.id ? "selected" : ""}>
+                        ${escapeHtml(currentTable.name)}
+                      </option>
+                    `,
+                  )
+                  .join("")}
+              </select>
+            </div>
+            <div class="zrn_processing_field">
+              <label>Tabla SQL</label>
+              <input type="text" class="form-control" value="${escapeHtml(table?.tableName || "")}" disabled="disabled" />
+            </div>
+          </div>
+          <div class="zrn_processing_file_details_wrap">
+            <table class="o_list_table table table-sm zrn_processing_file_details_table">
+              <tbody>
+                <tr><th>Origen</th><td>${escapeHtml(this.state.sourceMeta.name)}</td></tr>
+                <tr><th>Tipo</th><td>${escapeHtml(sourceTypeLabel)}</td></tr>
+                <tr><th>Hoja</th><td>${escapeHtml(sheet?.name || "-")}</td></tr>
+                <tr><th>Tablas detectadas</th><td>${tableCount}</td></tr>
+                <tr><th>Tabla activa</th><td>${escapeHtml(table?.name || "-")}</td></tr>
+                <tr><th>Estado</th><td>${escapeHtml(this.state.datasetConfig.statusLabel)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    `;
+  }
 
-    if (this.screenMode === "landing") {
-      this.root.innerHTML = this.renderLanding();
-      this.disposeChart();
-      return;
-    }
-
-    const sheet = this.selectedSheet;
-    const activeColumns = sheet?.columns.filter((column) => column.use) || [];
-    const tableName = sheet?.tableName || "dataset";
-    const resultColumns = this.state.queryState.columns;
-    const resultRows = this.state.queryState.rows;
-    const numericResultColumns = resultColumns.filter((column) =>
-      resultRows.some((row) => toChartNumber(row[column]) !== null)
-    );
-    const resultTabs = [
-      ["table", "Tabla"],
-      ["json", "JSON"],
-      ["chart", "Grafica"],
-    ];
-
-    const overviewStatusClass = sheet?.errors.length
+  renderDatasetPanel(sheet, table) {
+    const tableErrors = table?.errors || [];
+    const overviewStatusClass = tableErrors.length
       ? "is-danger"
       : this.state.datasetConfig.structureReady
         ? "is-ready"
-        : this.state.fileMeta.loaded
+        : this.state.sourceMeta.loaded
           ? "is-pending"
           : "";
-
     const maxSheetColumns = sheet
       ? Math.max(...sheet.rawRows.map((row) => row.length), 0)
       : 0;
-    const startColumnOptions = sheet
+    const startColumnOptions = table
       ? Array.from({ length: maxSheetColumns }, (_, index) => {
-          const rowLabel = sheet.rawRows[sheet.tableStartRowIndex]?.[index];
+          const rowLabel = sheet.rawRows[table.tableStartRowIndex]?.[index];
           const optionLabel = rowLabel
             ? `${getColumnLabel(index)} / ${String(rowLabel).trim().slice(0, 36)}`
             : getColumnLabel(index);
-          return `<option value="${index}" ${index === sheet.tableStartColumnIndex ? "selected" : ""}>${escapeHtml(
-            optionLabel
-          )}</option>`;
+          return `<option value="${index}" ${index === table.tableStartColumnIndex ? "selected" : ""}>${escapeHtml(optionLabel)}</option>`;
         }).join("")
       : "";
-    const endColumnOptions = sheet
+    const endColumnOptions = table
       ? Array.from({ length: maxSheetColumns }, (_, index) => {
-          const rowLabel = sheet.rawRows[sheet.tableStartRowIndex]?.[index];
+          const rowLabel = sheet.rawRows[table.tableStartRowIndex]?.[index];
           const optionLabel = rowLabel
             ? `${getColumnLabel(index)} / ${String(rowLabel).trim().slice(0, 36)}`
             : getColumnLabel(index);
-          return `<option value="${index}" ${index === sheet.tableEndColumnIndex ? "selected" : ""}>${escapeHtml(
-            optionLabel
-          )}</option>`;
+          return `<option value="${index}" ${index === table.tableEndColumnIndex ? "selected" : ""}>${escapeHtml(optionLabel)}</option>`;
         }).join("")
       : "";
-    const rangeLabel = sheet
-      ? `${getColumnLabel(sheet.tableStartColumnIndex)}:${getColumnLabel(sheet.tableEndColumnIndex)}`
-      : "-";
-    const previewStartLabel = sheet ? sheet.tableStartRowIndex + 1 : "-";
-    const dataStartLabel = sheet ? sheet.tableStartRowIndex + 2 : "-";
-    const isSpreadsheet = ["xls", "xlsx", "xlsm"].includes(this.state.fileMeta.extension);
-
-    const columnRows = sheet
-      ? sheet.columns
+    const tableList = (sheet?.tables || [])
+      .map(
+        (currentTable) => `
+          <div class="zrn_processing_table_card ${currentTable.id === sheet.selectedTableId ? "is-active" : ""}">
+            <button type="button" class="zrn_processing_table_card_main" data-action="table-select" value="${currentTable.id}">
+              <strong>${escapeHtml(currentTable.name)}</strong>
+              <small>${escapeHtml(currentTable.tableName)} · ${currentTable.dataRowsCount} filas</small>
+            </button>
+            ${
+              sheet.tables.length > 1
+                ? `<button type="button" class="btn btn-secondary btn-sm" data-action="table-remove" data-table-id="${currentTable.id}">Quitar</button>`
+                : ""
+            }
+          </div>
+        `,
+      )
+      .join("");
+    const columnRows = table
+      ? table.columns
           .map(
             (column, index) => `
               <tr>
                 <td><input type="checkbox" data-action="column-use" data-column-index="${index}" ${column.use ? "checked" : ""} /></td>
                 <td>${escapeHtml(column.columnLabel)} / ${escapeHtml(column.originalLabel)}</td>
                 <td>
-                  <input
-                    type="text"
-                    class="form-control"
-                    data-action="column-alias"
-                    data-column-index="${index}"
-                    value="${escapeHtml(column.alias)}"
-                  />
+                  <input type="text" class="form-control" data-action="column-alias" data-column-index="${index}" value="${escapeHtml(column.alias)}" />
                 </td>
                 <td>
                   <select class="form-select" data-action="column-type" data-column-index="${index}">
                     ${SQL_TYPES.map(
-                      (type) => `<option value="${type}" ${column.type === type ? "selected" : ""}>${type}</option>`
+                      (type) =>
+                        `<option value="${type}" ${column.type === type ? "selected" : ""}>${type}</option>`,
                     ).join("")}
                   </select>
                 </td>
               </tr>
-            `
+            `,
           )
           .join("")
       : "";
+    return `
+      <section class="zrn_processing_panel">
+        <div class="zrn_processing_panel_head">
+          <strong>Dataset temporal</strong>
+          <span>${table ? `${table.dataRowsCount} filas detectadas` : "Sin estructura"}</span>
+        </div>
+        <div class="zrn_processing_panel_body">
+          ${
+            table
+              ? `
+                ${tableErrors.length ? `<div class="zrn_processing_sheet_errors">${tableErrors.map((error) => escapeHtml(error)).join("<br/>")}</div>` : ""}
+                <div class="zrn_processing_table_stack">
+                  <div class="zrn_processing_table_stack_head">
+                    <strong>Tablas de la hoja</strong>
+                    <button type="button" class="btn btn-secondary" data-action="table-add">Crear tabla</button>
+                  </div>
+                  <div class="zrn_processing_table_list">${tableList}</div>
+                </div>
+                <div class="zrn_processing_range_grid zrn_processing_range_grid_extended">
+                  <div class="zrn_processing_field">
+                    <label>Nombre visible</label>
+                    <input type="text" class="form-control" data-action="table-name" value="${escapeHtml(table.name)}" />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Tabla SQL</label>
+                    <input type="text" class="form-control" data-action="table-sql-name" value="${escapeHtml(table.tableName)}" />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Fila de encabezado</label>
+                    <input type="number" min="1" max="${sheet.rawRows.length || 1}" class="form-control" data-action="table-start-row" value="${table.tableStartRowIndex + 1}" />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Fila final</label>
+                    <input type="number" min="1" max="${sheet.rawRows.length || 1}" class="form-control" data-action="table-end-row" value="${table.tableEndRowIndex + 1}" />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Columna inicial</label>
+                    <select class="form-select" data-action="table-start-column">${startColumnOptions}</select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Columna final</label>
+                    <select class="form-select" data-action="table-end-column">${endColumnOptions}</select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Estado</label>
+                    <div class="zrn_processing_status_inline ${overviewStatusClass}">${escapeHtml(this.state.datasetConfig.statusLabel)}</div>
+                  </div>
+                </div>
+                <div class="zrn_processing_actions">
+                  <button type="button" class="btn btn-primary" data-action="apply-structure">Aplicar estructura</button>
+                </div>
+                <div class="zrn_processing_columns_wrap">
+                  <table class="o_list_table table table-sm zrn_processing_columns">
+                    <thead>
+                      <tr>
+                        <th>Usar</th>
+                        <th>Origen</th>
+                        <th>Alias SQL</th>
+                        <th>Tipo</th>
+                      </tr>
+                    </thead>
+                    <tbody>${columnRows}</tbody>
+                  </table>
+                </div>
+              `
+              : '<div class="zrn_processing_empty">Carga un origen para definir tablas y columnas.</div>'
+          }
+        </div>
+      </section>
+    `;
+  }
 
-    const fileDetailRows = this.state.fileMeta.loaded
-      ? `
-          <tr><th>Archivo</th><td>${escapeHtml(this.state.fileMeta.name)}</td></tr>
-          <tr><th>Formato</th><td>${escapeHtml(this.state.fileMeta.extension.toUpperCase())}</td></tr>
-          <tr><th>Hoja activa</th><td>${escapeHtml(this.state.fileMeta.activeSheetName || "-")}</td></tr>
-          <tr><th>Tabla SQL</th><td><code>${escapeHtml(tableName)}</code></td></tr>
-          <tr><th>Fila de encabezado</th><td>${previewStartLabel}</td></tr>
-          <tr><th>Columnas</th><td>${escapeHtml(rangeLabel)}</td></tr>
-          <tr><th>Datos desde</th><td>Fila ${dataStartLabel}</td></tr>
-          <tr><th>Filas detectadas</th><td>${sheet?.dataRowsCount || 0}</td></tr>
-          <tr><th>Columnas activas</th><td>${activeColumns.length}</td></tr>
-          <tr><th>Estado</th><td>${escapeHtml(this.state.datasetConfig.statusLabel)}</td></tr>
-        `
-      : "";
-
+  renderQueryPanel(table) {
     const builderColumns = this.getBuilderColumns();
     const builderColumnItems = builderColumns
       .map((column) => {
@@ -1609,40 +1491,111 @@ export class ZrnAnalyticsProcessingView {
               ${operators
                 .map(
                   ([operator, label]) =>
-                    `<option value="${operator}" ${filter.operator === operator ? "selected" : ""}>${label}</option>`
+                    `<option value="${operator}" ${filter.operator === operator ? "selected" : ""}>${label}</option>`,
                 )
                 .join("")}
             </select>
-            <input
-              type="${valueInputType}"
-              class="form-control"
-              data-action="builder-filter-value"
-              data-filter-id="${filter.id}"
-              value="${escapeHtml(filter.value)}"
-              placeholder="Valor"
-            />
+            <input type="${valueInputType}" class="form-control" data-action="builder-filter-value" data-filter-id="${filter.id}" value="${escapeHtml(filter.value)}" placeholder="Valor" />
             ${
               needsRange
-                ? `
-                  <input
-                    type="${valueInputType}"
-                    class="form-control"
-                    data-action="builder-filter-value-to"
-                    data-filter-id="${filter.id}"
-                    value="${escapeHtml(filter.valueTo)}"
-                    placeholder="Hasta"
-                  />
-                `
+                ? `<input type="${valueInputType}" class="form-control" data-action="builder-filter-value-to" data-filter-id="${filter.id}" value="${escapeHtml(filter.valueTo)}" placeholder="Hasta" />`
                 : '<div class="zrn_processing_builder_filter_spacer"></div>'
             }
-            <button type="button" class="btn btn-secondary" data-action="builder-remove-filter" data-filter-id="${filter.id}">
-              Quitar
-            </button>
+            <button type="button" class="btn btn-secondary" data-action="builder-remove-filter" data-filter-id="${filter.id}">Quitar</button>
           </div>
         `;
       })
       .join("");
+    return `
+      <section class="zrn_processing_panel">
+        <div class="zrn_processing_panel_head">
+          <strong>Consulta</strong>
+          <span class="zrn_processing_head_meta">
+            Constructor no-code y editor SQL
+            <details class="zrn_processing_sql_help">
+              <summary class="zrn_processing_sql_help_toggle" aria-label="Guia SQL">
+                <i class="fa fa-info-circle"></i>
+              </summary>
+              <div class="zrn_processing_sql_help_popover">
+                <strong>SQL permitido</strong>
+                <span><code>SELECT</code>, <code>WHERE</code>, <code>GROUP BY</code>, <code>ORDER BY</code>, <code>LIMIT</code></span>
+                <span>Una tabla activa por consulta en esta version.</span>
+                <span>No se permiten <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>DROP</code>, <code>CREATE</code>, <code>ALTER</code>.</span>
+              </div>
+            </details>
+          </span>
+        </div>
+        <div class="zrn_processing_panel_body">
+          <div class="zrn_processing_query_workspace">
+            <div class="zrn_processing_query_builder">
+              <div class="zrn_processing_query_hint">
+                Tabla disponible: <code>${escapeHtml(table?.tableName || "dataset")}</code>. Activa columnas y filtros sobre la tabla seleccionada.
+              </div>
+              <div class="zrn_processing_builder_section">
+                <div class="zrn_processing_builder_title">Columnas a mostrar</div>
+                <div class="zrn_processing_builder_columns">
+                  ${builderColumnItems || '<div class="zrn_processing_empty">No hay columnas activas disponibles.</div>'}
+                </div>
+              </div>
+              <div class="zrn_processing_builder_section">
+                <div class="zrn_processing_builder_title">Filtros</div>
+                <div class="zrn_processing_builder_filters">
+                  ${builderFilterRows || '<div class="zrn_processing_empty">No hay filtros agregados.</div>'}
+                </div>
+                <div class="zrn_processing_actions">
+                  <button type="button" class="btn btn-secondary" data-action="builder-add-filter">Agregar filtro</button>
+                </div>
+              </div>
+              <div class="zrn_processing_builder_footer">
+                <div class="zrn_processing_field">
+                  <label>Limite</label>
+                  <input type="number" min="1" class="form-control" data-action="builder-limit" value="${escapeHtml(this.state.queryBuilder.limit)}" />
+                </div>
+                <div class="zrn_processing_actions">
+                  <button type="button" class="btn btn-primary" data-action="builder-generate">Construir y ejecutar</button>
+                  <button type="button" class="btn btn-secondary" data-action="builder-clear">Limpiar builder</button>
+                </div>
+              </div>
+            </div>
+            <div class="zrn_processing_query_editor">
+              <div class="zrn_processing_query_toolbar">
+                <button
+                  type="button"
+                  class="btn btn-primary zrn_processing_query_play"
+                  data-action="run-query"
+                  ${this.state.sourceMeta.loaded ? "" : "disabled"}
+                  aria-label="${this.state.queryState.running ? "Ejecutando" : "Ejecutar SQL"}"
+                  title="${this.state.queryState.running ? "Ejecutando" : "Ejecutar SQL"}"
+                >
+                  <i class="fa fa-play"></i>
+                </button>
+              </div>
+              <textarea class="zrn_processing_query_area" data-action="sql-input" placeholder="SELECT * FROM [dataset] LIMIT 20;">${escapeHtml(
+                this.state.queryState.sql,
+              )}</textarea>
+              ${
+                this.state.queryState.error
+                  ? `<div class="zrn_processing_query_error">${escapeHtml(this.state.queryState.error)}</div>`
+                  : ""
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
 
+  renderResultPanel() {
+    const resultColumns = this.state.queryState.columns;
+    const resultRows = this.state.queryState.rows;
+    const numericResultColumns = resultColumns.filter((column) =>
+      resultRows.some((row) => toChartNumber(row[column]) !== null),
+    );
+    const resultTabs = [
+      ["table", "Tabla"],
+      ["json", "JSON"],
+      ["chart", "Grafica"],
+    ];
     const resultHead = resultColumns.map((column) => `<th>${escapeHtml(column)}</th>`).join("");
     const resultBody = resultRows
       .map((row) => {
@@ -1652,7 +1605,6 @@ export class ZrnAnalyticsProcessingView {
         return `<tr>${cells}</tr>`;
       })
       .join("");
-
     const resultTabButtons = resultTabs
       .map(
         ([key, label]) => `
@@ -1665,10 +1617,9 @@ export class ZrnAnalyticsProcessingView {
           >
             ${label}
           </button>
-        `
+        `,
       )
       .join("");
-
     const chartConfig = resultRows.length
       ? `
           <div class="zrn_processing_chart_form">
@@ -1686,7 +1637,7 @@ export class ZrnAnalyticsProcessingView {
                 ${resultColumns
                   .map(
                     (column) =>
-                      `<option value="${escapeHtml(column)}" ${this.state.chartState.categoryColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`
+                      `<option value="${escapeHtml(column)}" ${this.state.chartState.categoryColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
                   )
                   .join("")}
               </select>
@@ -1697,7 +1648,7 @@ export class ZrnAnalyticsProcessingView {
                 ${numericResultColumns
                   .map(
                     (column) =>
-                      `<option value="${escapeHtml(column)}" ${this.state.chartState.valueColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`
+                      `<option value="${escapeHtml(column)}" ${this.state.chartState.valueColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
                   )
                   .join("")}
               </select>
@@ -1708,7 +1659,7 @@ export class ZrnAnalyticsProcessingView {
                 ${["sum", "avg", "count", "min", "max"]
                   .map(
                     (aggregate) =>
-                      `<option value="${aggregate}" ${this.state.chartState.aggregate === aggregate ? "selected" : ""}>${aggregate.toUpperCase()}</option>`
+                      `<option value="${aggregate}" ${this.state.chartState.aggregate === aggregate ? "selected" : ""}>${aggregate.toUpperCase()}</option>`,
                   )
                   .join("")}
               </select>
@@ -1716,25 +1667,17 @@ export class ZrnAnalyticsProcessingView {
           </div>
         `
       : "";
-
     const chartPreview = this.state.queryState.activeView === "chart" ? this.getChartData() : null;
     this.state.chartState.error = chartPreview?.error || "";
-
     const resultContent =
       this.state.queryState.activeView === "json"
         ? this.state.queryState.json
-          ? `<div class="zrn_processing_result_json_wrap"><pre class="zrn_processing_result_json">${escapeHtml(
-              this.state.queryState.json
-            )}</pre></div>`
+          ? `<div class="zrn_processing_result_json_wrap"><pre class="zrn_processing_result_json">${escapeHtml(this.state.queryState.json)}</pre></div>`
           : '<div class="zrn_processing_result_empty">Ejecuta una consulta para ver el JSON.</div>'
         : this.state.queryState.activeView === "chart"
           ? `
               ${chartConfig}
-              ${
-                chartPreview?.error
-                  ? `<div class="zrn_processing_query_error">${escapeHtml(chartPreview.error)}</div>`
-                  : ""
-              }
+              ${chartPreview?.error ? `<div class="zrn_processing_query_error">${escapeHtml(chartPreview.error)}</div>` : ""}
               ${chartPreview?.error ? "" : '<div class="zrn_processing_chart_canvas" data-zrn-chart-root="1"></div>'}
             `
           : resultColumns.length
@@ -1747,246 +1690,78 @@ export class ZrnAnalyticsProcessingView {
                 </div>
               `
             : '<div class="zrn_processing_result_empty">Ejecuta una consulta para ver resultados.</div>';
+    return `
+      <section class="zrn_processing_panel">
+        <div class="zrn_processing_panel_head">
+          <strong>Resultados</strong>
+          <span>${this.state.queryState.totalRows} fila(s) / preview maximo ${QUERY_RESULT_LIMIT}</span>
+        </div>
+        <div class="zrn_processing_panel_body">
+          <div class="zrn_processing_result_tabs">${resultTabButtons}</div>
+          <div class="zrn_processing_result_stage">${resultContent}</div>
+        </div>
+      </section>
+    `;
+  }
 
+  renderHelpPanel() {
+    return `
+      <section class="zrn_processing_panel">
+        <div class="zrn_processing_panel_head">
+          <strong>Ayuda SQL</strong>
+          <span>Referencia rapida</span>
+        </div>
+        <div class="zrn_processing_panel_body">
+          <ul class="zrn_processing_table_list_plain">
+            <li><strong>Tabla:</strong> <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code></li>
+            <li><strong>Permitido:</strong> SELECT, WHERE, GROUP BY, ORDER BY, LIMIT</li>
+            <li><strong>Agregados:</strong> COUNT, SUM, AVG, MIN, MAX</li>
+            <li><strong>No permitido:</strong> INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, ATTACH</li>
+          </ul>
+        </div>
+      </section>
+    `;
+  }
+
+  render() {
+    if (!this.root) {
+      return;
+    }
+    if (this.screenMode === "landing") {
+      this.root.innerHTML = this.renderLanding();
+      this.disposeChart();
+      return;
+    }
+
+    const sheet = this.selectedSheet;
+    const table = this.selectedTable;
     this.root.innerHTML = `
       <div class="zrn_processing_app">
+        ${this.state.globalError ? `<div class="zrn_processing_global_error">${escapeHtml(this.state.globalError)}</div>` : ""}
         ${
-          this.state.globalError
-            ? `<div class="zrn_processing_global_error">${escapeHtml(this.state.globalError)}</div>`
-            : ""
-        }
-        ${
-          !this.state.fileMeta.loaded
+          !this.state.sourceMeta.loaded
             ? `
               <section class="zrn_processing_panel">
                 <div class="zrn_processing_panel_head">
-                  <strong>Carga pendiente</strong>
-                  <span>Sin archivo activo</span>
+                  <strong>Origen pendiente</strong>
+                  <span>Sin dataset activo</span>
                 </div>
                 <div class="zrn_processing_panel_body">
                   <div class="zrn_processing_empty_state">
-                    <div class="zrn_processing_empty">No hay archivo temporal cargado en esta sesion.</div>
+                    <div class="zrn_processing_empty">No hay origen temporal cargado en esta sesion.</div>
+                    <div class="zrn_processing_actions">
+                      <button type="button" class="btn btn-secondary" data-action="back-to-processing">Volver a carga</button>
+                    </div>
                   </div>
                 </div>
               </section>
             `
             : `
-              <section class="zrn_processing_panel zrn_processing_overview_panel">
-                <div class="zrn_processing_panel_head">
-                  <strong>Resumen del archivo</strong>
-                  <span>Un archivo activo por sesion</span>
-                </div>
-                <div class="zrn_processing_panel_body">
-                  <div class="zrn_processing_overview_top">
-                    <div class="zrn_processing_file_overview">
-                      <div class="zrn_processing_file_icon">
-                        <i class="fa ${escapeHtml(this.state.fileMeta.iconClass)}"></i>
-                      </div>
-                      <div class="zrn_processing_file_copy">
-                        <div class="zrn_processing_file_name">${escapeHtml(this.state.fileMeta.name)}</div>
-                        <div class="zrn_processing_helper">
-                          ${escapeHtml(this.state.fileMeta.extension.toUpperCase())} / ${escapeHtml(this.state.fileMeta.sizeLabel)} / ${this.state.fileMeta.totalSheets} origen(es)
-                        </div>
-                      </div>
-                    </div>
-                    <div class="zrn_processing_file_actions">
-                      <label class="btn btn-secondary zrn_processing_replace_btn">
-                        Reemplazar archivo
-                        <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
-                      </label>
-                      <button type="button" class="btn btn-secondary" data-action="reset-file">Limpiar sesion</button>
-                    </div>
-                  </div>
-                  <div class="zrn_processing_field_grid zrn_processing_overview_controls">
-                    <div class="zrn_processing_field">
-                      <label>Hoja activa</label>
-                      <select class="form-select" data-action="sheet-select">
-                        ${this.state.datasetConfig.sheets
-                          .map(
-                            (currentSheet) => `
-                              <option value="${currentSheet.id}" ${this.state.datasetConfig.selectedSheetId === currentSheet.id ? "selected" : ""}>
-                                ${escapeHtml(currentSheet.name)}
-                              </option>
-                            `
-                          )
-                          .join("")}
-                      </select>
-                    </div>
-                    <div class="zrn_processing_field">
-                      <label>Tabla SQL</label>
-                      <input type="text" class="form-control" value="${escapeHtml(tableName)}" disabled="disabled" />
-                    </div>
-                  </div>
-                  <div class="zrn_processing_file_details_wrap">
-                    <table class="o_list_table table table-sm zrn_processing_file_details_table">
-                      <tbody>${fileDetailRows}</tbody>
-                    </table>
-                  </div>
-                </div>
-              </section>
-
-              <section class="zrn_processing_panel">
-                <div class="zrn_processing_panel_head">
-                  <strong>Dataset temporal</strong>
-                  <span>${sheet ? `${sheet.dataRowsCount} filas detectadas` : "Sin estructura"}</span>
-                </div>
-                <div class="zrn_processing_panel_body">
-                  ${
-                    sheet
-                      ? `
-                        ${
-                          sheet.errors.length
-                            ? `<div class="zrn_processing_sheet_errors">${sheet.errors.map((error) => escapeHtml(error)).join("<br/>")}</div>`
-                            : ""
-                        }
-                        <div class="zrn_processing_range_grid">
-                          <div class="zrn_processing_field">
-                            <label>Fila de encabezado</label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="${sheet.rawRows.length || 1}"
-                              class="form-control"
-                              data-action="table-start-row"
-                              value="${previewStartLabel}"
-                            />
-                          </div>
-                          <div class="zrn_processing_field">
-                            <label>Estado</label>
-                            <div class="zrn_processing_status_inline ${overviewStatusClass}">${escapeHtml(this.state.datasetConfig.statusLabel)}</div>
-                          </div>
-                          <div class="zrn_processing_field">
-                            <label>Columna inicial</label>
-                            <select class="form-select" data-action="table-start-column">${startColumnOptions}</select>
-                          </div>
-                          <div class="zrn_processing_field">
-                            <label>Columna final</label>
-                            <select class="form-select" data-action="table-end-column">${endColumnOptions}</select>
-                          </div>
-                        </div>
-                        <div class="zrn_processing_actions">
-                          <button type="button" class="btn btn-primary" data-action="apply-structure">Aplicar estructura</button>
-                        </div>
-                        <div class="zrn_processing_columns_wrap">
-                          <table class="o_list_table table table-sm zrn_processing_columns">
-                            <thead>
-                              <tr>
-                                <th>Usar</th>
-                                <th>Origen</th>
-                                <th>Alias SQL</th>
-                                <th>Tipo</th>
-                              </tr>
-                            </thead>
-                            <tbody>${columnRows}</tbody>
-                          </table>
-                        </div>
-                      `
-                      : '<div class="zrn_processing_empty">Carga un archivo para definir columnas y tipos.</div>'
-                  }
-                </div>
-              </section>
-
-              <section class="zrn_processing_panel">
-                <div class="zrn_processing_panel_head">
-                  <strong>Consulta</strong>
-                  <span class="zrn_processing_head_meta">
-                    Constructor no-code y editor SQL
-                    <details class="zrn_processing_sql_help">
-                      <summary class="zrn_processing_sql_help_toggle" aria-label="Guia SQL">
-                        <i class="fa fa-info-circle"></i>
-                      </summary>
-                      <div class="zrn_processing_sql_help_popover">
-                        <strong>SQL permitido</strong>
-                        <span><code>SELECT</code>, <code>WHERE</code>, <code>GROUP BY</code>, <code>ORDER BY</code>, <code>LIMIT</code></span>
-                        <span>Filtros utiles: <code>=</code>, <code>LIKE</code>, <code>BETWEEN</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></span>
-                        <span>No se permiten <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>DROP</code>, <code>CREATE</code>, <code>ALTER</code>.</span>
-                      </div>
-                    </details>
-                  </span>
-                </div>
-                <div class="zrn_processing_panel_body">
-                  <div class="zrn_processing_query_workspace">
-                    <div class="zrn_processing_query_builder">
-                      <div class="zrn_processing_query_hint">
-                        Tabla disponible: <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code>. Rango ${escapeHtml(rangeLabel)} desde fila ${previewStartLabel}.
-                      </div>
-                      <div class="zrn_processing_builder_section">
-                        <div class="zrn_processing_builder_title">Columnas a mostrar</div>
-                        <div class="zrn_processing_builder_columns">
-                          ${builderColumnItems || '<div class="zrn_processing_empty">No hay columnas activas disponibles.</div>'}
-                        </div>
-                      </div>
-                      <div class="zrn_processing_builder_section">
-                        <div class="zrn_processing_builder_title">Filtros</div>
-                        <div class="zrn_processing_builder_filters">
-                          ${builderFilterRows || '<div class="zrn_processing_empty">No hay filtros agregados.</div>'}
-                        </div>
-                        <div class="zrn_processing_actions">
-                          <button type="button" class="btn btn-secondary" data-action="builder-add-filter">Agregar filtro</button>
-                        </div>
-                      </div>
-                      <div class="zrn_processing_builder_footer">
-                        <div class="zrn_processing_field">
-                          <label>Limite</label>
-                          <input type="number" min="1" class="form-control" data-action="builder-limit" value="${escapeHtml(this.state.queryBuilder.limit)}" />
-                        </div>
-                        <div class="zrn_processing_actions">
-                          <button type="button" class="btn btn-primary" data-action="builder-generate">Construir y ejecutar</button>
-                          <button type="button" class="btn btn-secondary" data-action="builder-clear">Limpiar builder</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="zrn_processing_query_editor">
-                      <div class="zrn_processing_query_toolbar">
-                        <button
-                          type="button"
-                          class="btn btn-primary zrn_processing_query_play"
-                          data-action="run-query"
-                          ${this.state.fileMeta.loaded ? "" : "disabled"}
-                          aria-label="${this.state.queryState.running ? "Ejecutando" : "Ejecutar SQL"}"
-                          title="${this.state.queryState.running ? "Ejecutando" : "Ejecutar SQL"}"
-                        >
-                          <i class="fa fa-play"></i>
-                        </button>
-                      </div>
-                      <textarea class="zrn_processing_query_area" data-action="sql-input" placeholder="SELECT * FROM [dataset] LIMIT 20;">${escapeHtml(
-                        this.state.queryState.sql
-                      )}</textarea>
-                      ${
-                        this.state.queryState.error
-                          ? `<div class="zrn_processing_query_error">${escapeHtml(this.state.queryState.error)}</div>`
-                          : ""
-                      }
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section class="zrn_processing_panel">
-                <div class="zrn_processing_panel_head">
-                  <strong>Resultados</strong>
-                  <span>${this.state.queryState.totalRows} fila(s) / preview maximo ${QUERY_RESULT_LIMIT}</span>
-                </div>
-                <div class="zrn_processing_panel_body">
-                  <div class="zrn_processing_result_tabs">${resultTabButtons}</div>
-                  <div class="zrn_processing_result_stage">${resultContent}</div>
-                </div>
-              </section>
-
-              <section class="zrn_processing_panel">
-                <div class="zrn_processing_panel_head">
-                  <strong>Ayuda SQL</strong>
-                  <span>Referencia rapida</span>
-                </div>
-                <div class="zrn_processing_panel_body">
-                  <ul class="zrn_processing_table_list">
-                    <li><strong>Tabla:</strong> <code>${escapeHtml(this.state.queryState.tableName || "dataset")}</code></li>
-                    <li><strong>Permitido:</strong> SELECT, WHERE, GROUP BY, ORDER BY, LIMIT</li>
-                    <li><strong>Agregados:</strong> COUNT, SUM, AVG, MIN, MAX</li>
-                    <li><strong>No permitido:</strong> INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, ATTACH</li>
-                  </ul>
-                </div>
-              </section>
+              ${this.renderOverviewPanel(sheet, table)}
+              ${this.renderDatasetPanel(sheet, table)}
+              ${this.renderQueryPanel(table)}
+              ${this.renderResultPanel()}
+              ${this.renderHelpPanel()}
             `
         }
       </div>
