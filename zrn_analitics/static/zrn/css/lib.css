@@ -790,6 +790,136 @@
   font-size: 13px;
 }
 
+.zrn_processing_totals_grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.zrn_processing_scenario_hint {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--zrn-analitics-line);
+  border-radius: 8px;
+  background: var(--zrn-analitics-surface-soft);
+}
+
+.zrn_processing_scenario_hint strong {
+  color: var(--zrn-analitics-brand-700);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.zrn_processing_scenario_hint span {
+  color: var(--zrn-analitics-text-soft);
+  font-size: 13px;
+}
+
+.zrn_processing_scenario_section {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.zrn_processing_scenario_section_head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zrn_processing_scenario_row {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--zrn-analitics-line);
+  border-radius: 8px;
+}
+
+.zrn_processing_scenario_row_head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zrn_processing_scenario_grid {
+  display: grid;
+  gap: 12px;
+}
+
+.zrn_processing_scenario_grid_formula {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.zrn_processing_scenario_grid_rule {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.zrn_processing_scenario_remove {
+  color: #c0392b;
+  padding: 0;
+  min-width: 28px;
+}
+
+.zrn_processing_scenario_remove:hover,
+.zrn_processing_scenario_remove:focus {
+  color: #a93226;
+}
+
+.zrn_processing_scenario_warnings {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.zrn_processing_scenario_warning {
+  padding: 10px 12px;
+  border: 1px solid #ead39c;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #8a6d1d;
+  font-size: 13px;
+}
+
+.zrn_processing_totals_kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.zrn_processing_total_kpi {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--zrn-analitics-line);
+  border-radius: 8px;
+  background: var(--zrn-analitics-surface-soft);
+}
+
+.zrn_processing_total_kpi span {
+  color: var(--zrn-analitics-text-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.zrn_processing_total_kpi strong {
+  color: var(--zrn-analitics-text);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.zrn_processing_totals_table_wrap {
+  max-height: 360px;
+}
+
 @keyframes zrn-processing-spin {
   to {
     transform: rotate(360deg);
@@ -1024,17 +1154,53 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 10px 0 6px;
   border: 1px solid var(--zrn-analitics-line);
   border-radius: 999px;
   background: var(--zrn-analitics-surface-soft);
   color: var(--zrn-analitics-brand-700);
   cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
 }
 
 .zrn_processing_sql_help_toggle::-webkit-details-marker {
   display: none;
+}
+
+.zrn_processing_sql_help_toggle:hover,
+.zrn_processing_sql_help_toggle:focus {
+  border-color: var(--zrn-analitics-brand-400);
+  background: var(--zrn-analitics-brand-050);
+  color: var(--zrn-analitics-brand-800);
+}
+
+.zrn_processing_sql_help_toggle:active {
+  transform: translateY(1px);
+}
+
+.zrn_processing_sql_help_icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(53, 93, 154, 0.1);
+  color: inherit;
+  font-size: 12px;
+}
+
+.zrn_processing_sql_help_label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .zrn_processing_sql_help_popover {
@@ -1044,7 +1210,7 @@
   z-index: 10;
   min-width: 260px;
   max-width: 320px;
-  display: none;
+  display: grid;
   gap: 6px;
   padding: 12px;
   border: 1px solid var(--zrn-analitics-line);
@@ -1054,6 +1220,15 @@
   font-size: 12px;
   line-height: 1.5;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top right;
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 180ms ease;
 }
 
 .zrn_processing_sql_help_popover strong {
@@ -1064,14 +1239,18 @@
 .zrn_processing_sql_help[open] .zrn_processing_sql_help_popover,
 .zrn_processing_sql_help:hover .zrn_processing_sql_help_popover,
 .zrn_processing_sql_help:focus-within .zrn_processing_sql_help_popover {
-  display: grid;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
 }
 
 .zrn_processing_query_workspace {
   display: grid;
-  grid-template-columns: minmax(320px, 1.15fr) minmax(320px, 0.95fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   min-width: 0;
+  align-items: start;
 }
 
 .zrn_processing_query_builder,
@@ -1080,6 +1259,11 @@
 .zrn_processing_builder_filters {
   display: grid;
   gap: 12px;
+  min-width: 0;
+}
+
+.zrn_processing_query_builder,
+.zrn_processing_query_editor {
   min-width: 0;
 }
 
@@ -1096,7 +1280,10 @@
 }
 
 .zrn_processing_builder_columns {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .zrn_processing_builder_column {
@@ -1108,6 +1295,11 @@
   border: 1px solid var(--zrn-analitics-line);
   border-radius: 8px;
   background: var(--zrn-analitics-surface-soft);
+}
+
+.zrn_processing_query_hint {
+  width: min(100%, 50%);
+  min-width: 320px;
 }
 
 .zrn_processing_builder_column input {
@@ -2518,12 +2710,20 @@
   .zrn_processing_dataset_layout,
   .zrn_processing_overview_top,
   .zrn_processing_range_grid,
+  .zrn_processing_totals_grid,
   .zrn_processing_query_workspace,
   .zrn_processing_builder_columns,
   .zrn_processing_builder_filter_row,
   .zrn_processing_builder_footer,
+  .zrn_processing_scenario_grid_formula,
+  .zrn_processing_scenario_grid_rule,
   .zrn_processing_table_tab {
     grid-template-columns: 1fr;
+  }
+
+  .zrn_processing_query_hint {
+    width: 100%;
+    min-width: 0;
   }
 
   .zrn_analitics_panel_wide {

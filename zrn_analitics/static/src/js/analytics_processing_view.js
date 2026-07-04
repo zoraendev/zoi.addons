@@ -121,6 +121,12 @@ export class ZrnAnalyticsProcessingView {
         aggregate: "sum",
         error: "",
       },
+      scenarioState: {
+        groupByColumn: "",
+        metricColumn: "",
+        calculatedColumns: [],
+        rules: [],
+      },
       globalError: "",
     };
   }
@@ -434,6 +440,62 @@ export class ZrnAnalyticsProcessingView {
     if (action === "chart-aggregate" && event.type === "change") {
       this.state.chartState.aggregate = source.value;
       this.render();
+      return;
+    }
+    if (action === "scenario-group-column" && event.type === "change") {
+      this.state.scenarioState.groupByColumn = source.value;
+      this.render();
+      return;
+    }
+    if (action === "scenario-metric-column" && event.type === "change") {
+      this.state.scenarioState.metricColumn = source.value;
+      this.render();
+      return;
+    }
+    if (action === "scenario-add-formula" && event.type === "click") {
+      this.state.scenarioState.calculatedColumns.push(this.createScenarioCalculatedColumn());
+      this.render();
+      return;
+    }
+    if (action === "scenario-remove-formula" && event.type === "click") {
+      const formulaId = source.dataset.formulaId || "";
+      this.state.scenarioState.calculatedColumns =
+        this.state.scenarioState.calculatedColumns.filter((item) => item.id !== formulaId);
+      this.render();
+      return;
+    }
+    if (action === "scenario-formula-field" && (event.type === "change" || event.type === "input")) {
+      const formulaId = source.dataset.formulaId || "";
+      const field = source.dataset.field || "";
+      const formula = this.state.scenarioState.calculatedColumns.find((item) => item.id === formulaId);
+      if (formula && field) {
+        formula[field] = source.type === "checkbox" ? source.checked : source.value;
+        this.syncScenarioDefaults();
+        this.render();
+      }
+      return;
+    }
+    if (action === "scenario-add-rule" && event.type === "click") {
+      this.state.scenarioState.rules.push(this.createScenarioRule());
+      this.render();
+      return;
+    }
+    if (action === "scenario-remove-rule" && event.type === "click") {
+      const ruleId = source.dataset.ruleId || "";
+      this.state.scenarioState.rules = this.state.scenarioState.rules.filter((item) => item.id !== ruleId);
+      this.syncScenarioDefaults();
+      this.render();
+      return;
+    }
+    if (action === "scenario-rule-field" && (event.type === "change" || event.type === "input")) {
+      const ruleId = source.dataset.ruleId || "";
+      const field = source.dataset.field || "";
+      const rule = this.state.scenarioState.rules.find((item) => item.id === ruleId);
+      if (rule && field) {
+        rule[field] = source.type === "checkbox" ? source.checked : source.value;
+        this.syncScenarioDefaults();
+        this.render();
+      }
     }
   }
 
@@ -1030,6 +1092,10 @@ export class ZrnAnalyticsProcessingView {
     this.state.queryState.json = "";
     this.state.queryState.totalRows = 0;
     this.state.chartState.error = "";
+    this.state.scenarioState.groupByColumn = "";
+    this.state.scenarioState.metricColumn = "";
+    this.state.scenarioState.calculatedColumns = [];
+    this.state.scenarioState.rules = [];
     this.disposeChart();
   }
 
@@ -1087,12 +1153,14 @@ export class ZrnAnalyticsProcessingView {
       const rawResult = window.alasql(this.state.queryState.sql);
       const resultRows = Array.isArray(rawResult) ? rawResult : [{ resultado: rawResult }];
       const previewRows = resultRows.slice(0, QUERY_RESULT_LIMIT);
+      const previousColumns = [...this.state.queryState.columns];
       this.state.queryState.columns = previewRows.length ? Object.keys(previewRows[0]) : [];
       this.state.queryState.rows = previewRows;
       this.state.queryState.json = JSON.stringify(previewRows, null, 2);
       this.state.queryState.totalRows = Array.isArray(rawResult) ? rawResult.length : 1;
       this.state.queryState.activeView = this.state.queryState.activeView || "table";
       this.syncChartDefaults();
+      this.syncScenarioDefaults(previousColumns);
       this.state.chartState.error = "";
     } catch (error) {
       this.clearQueryResults();
@@ -1119,6 +1187,347 @@ export class ZrnAnalyticsProcessingView {
     if (!numericColumns.includes(this.state.chartState.valueColumn)) {
       this.state.chartState.valueColumn = numericColumns[0];
     }
+  }
+
+  createScenarioCalculatedColumn() {
+    return {
+      id: `scenario_formula_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      enabled: true,
+      name: `calculo_${this.state.scenarioState.calculatedColumns.length + 1}`,
+      leftColumn: "",
+      operator: "*",
+      rightColumn: "",
+    };
+  }
+
+  createScenarioRule() {
+    return {
+      id: `scenario_rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      enabled: true,
+      name: `Regla ${this.state.scenarioState.rules.length + 1}`,
+      conditionColumn: "",
+      conditionOperator: "eq",
+      conditionValue: "",
+      targetColumn: "",
+      actionType: "add",
+      actionValue: "",
+      outputColumnMode: "replace",
+      outputColumnName: "",
+    };
+  }
+
+  getQueryNumericColumns(rows = this.state.queryState.rows, columns = this.state.queryState.columns) {
+    return columns.filter((column) => rows.some((row) => toChartNumber(row[column]) !== null));
+  }
+
+  getScenarioOptionSets() {
+    const resultColumns = this.state.queryState.columns;
+    const numericColumns = this.getQueryNumericColumns();
+    const calculatedColumns = [];
+    const usedCalculated = new Set();
+    this.state.scenarioState.calculatedColumns.forEach((item) => {
+      const name = String(item.name || "").trim();
+      if (name && !usedCalculated.has(name)) {
+        usedCalculated.add(name);
+        calculatedColumns.push(name);
+      }
+    });
+    const ruleOutputColumns = [];
+    const usedRuleOutputs = new Set();
+    this.state.scenarioState.rules.forEach((item) => {
+      const name =
+        item.outputColumnMode === "new_column" ? String(item.outputColumnName || "").trim() : "";
+      if (name && !usedRuleOutputs.has(name)) {
+        usedRuleOutputs.add(name);
+        ruleOutputColumns.push(name);
+      }
+    });
+    return {
+      resultColumns,
+      numericColumns,
+      groupColumns: resultColumns,
+      conditionColumns: [...resultColumns, ...calculatedColumns, ...ruleOutputColumns],
+      metricColumns: [...numericColumns, ...calculatedColumns, ...ruleOutputColumns],
+      targetColumns: [...numericColumns, ...calculatedColumns, ...ruleOutputColumns],
+    };
+  }
+
+  syncScenarioDefaults() {
+    const optionSets = this.getScenarioOptionSets();
+    if (!this.state.queryState.rows.length || !optionSets.resultColumns.length) {
+      this.state.scenarioState.groupByColumn = "";
+      this.state.scenarioState.metricColumn = "";
+      this.state.scenarioState.calculatedColumns = [];
+      this.state.scenarioState.rules = [];
+      return;
+    }
+
+    if (!optionSets.groupColumns.includes(this.state.scenarioState.groupByColumn)) {
+      this.state.scenarioState.groupByColumn = optionSets.groupColumns[0] || "";
+    }
+    if (!optionSets.metricColumns.includes(this.state.scenarioState.metricColumn)) {
+      this.state.scenarioState.metricColumn = optionSets.metricColumns[0] || "";
+    }
+
+    this.state.scenarioState.calculatedColumns.forEach((item) => {
+      if (!optionSets.numericColumns.includes(item.leftColumn)) {
+        item.leftColumn = "";
+      }
+      if (!optionSets.numericColumns.includes(item.rightColumn)) {
+        item.rightColumn = "";
+      }
+    });
+
+    const liveOptions = this.getScenarioOptionSets();
+    this.state.scenarioState.rules.forEach((item) => {
+      if (!liveOptions.conditionColumns.includes(item.conditionColumn)) {
+        item.conditionColumn = "";
+      }
+      if (!liveOptions.targetColumns.includes(item.targetColumn)) {
+        item.targetColumn = "";
+      }
+      if (item.outputColumnMode !== "new_column") {
+        item.outputColumnName = "";
+      }
+    });
+
+    const refreshedOptions = this.getScenarioOptionSets();
+    if (!refreshedOptions.metricColumns.includes(this.state.scenarioState.metricColumn)) {
+      this.state.scenarioState.metricColumn = refreshedOptions.metricColumns[0] || "";
+    }
+  }
+
+  formatMetric(value, decimals = 2) {
+    if (!Number.isFinite(value)) {
+      return "-";
+    }
+    return new Intl.NumberFormat("es-GT", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+  }
+
+  evaluateScenarioFormula(operator, leftValue, rightValue) {
+    switch (operator) {
+      case "+":
+        return leftValue + rightValue;
+      case "-":
+        return leftValue - rightValue;
+      case "*":
+        return leftValue * rightValue;
+      case "/":
+        return rightValue === 0 ? null : leftValue / rightValue;
+      default:
+        return null;
+    }
+  }
+
+  evaluateScenarioCondition(row, rule) {
+    const currentValue = row?.[rule.conditionColumn];
+    const compareValue = rule.conditionValue;
+    const numericCurrent = toChartNumber(currentValue);
+    const numericCompare = toChartNumber(compareValue);
+
+    switch (rule.conditionOperator) {
+      case "eq":
+        if (numericCurrent !== null && numericCompare !== null) {
+          return numericCurrent === numericCompare;
+        }
+        return String(currentValue ?? "").toLowerCase() === String(compareValue ?? "").toLowerCase();
+      case "neq":
+        if (numericCurrent !== null && numericCompare !== null) {
+          return numericCurrent !== numericCompare;
+        }
+        return String(currentValue ?? "").toLowerCase() !== String(compareValue ?? "").toLowerCase();
+      case "contains":
+        return String(currentValue ?? "").toLowerCase().includes(String(compareValue ?? "").toLowerCase());
+      case "gt":
+        return numericCurrent !== null && numericCompare !== null && numericCurrent > numericCompare;
+      case "gte":
+        return numericCurrent !== null && numericCompare !== null && numericCurrent >= numericCompare;
+      case "lt":
+        return numericCurrent !== null && numericCompare !== null && numericCurrent < numericCompare;
+      case "lte":
+        return numericCurrent !== null && numericCompare !== null && numericCurrent <= numericCompare;
+      default:
+        return false;
+    }
+  }
+
+  applyScenarioAction(currentValue, actionType, actionValue) {
+    const currentNumber = toChartNumber(currentValue);
+    const deltaNumber = toChartNumber(actionValue);
+    if (currentNumber === null || deltaNumber === null) {
+      return null;
+    }
+
+    switch (actionType) {
+      case "add":
+        return currentNumber + deltaNumber;
+      case "subtract":
+        return currentNumber - deltaNumber;
+      case "multiply":
+        return currentNumber * deltaNumber;
+      case "set":
+        return deltaNumber;
+      case "percent_delta":
+        return currentNumber * (1 + deltaNumber / 100);
+      default:
+        return null;
+    }
+  }
+
+  getScenarioPanelData() {
+    const rows = this.state.queryState.rows;
+    if (!rows.length) {
+      return { error: "Ejecuta una consulta para habilitar escenarios sobre ese resultado." };
+    }
+
+    const warnings = [];
+    const baseRows = rows.map((row) => ({ ...row }));
+    const duplicateNames = new Set();
+    const usedNames = new Set(this.state.queryState.columns);
+    const numericSourceColumns = this.getQueryNumericColumns();
+
+    this.state.scenarioState.calculatedColumns.forEach((formula) => {
+      if (!formula.enabled) {
+        return;
+      }
+      const formulaName = String(formula.name || "").trim();
+      if (!formulaName || !formula.leftColumn || !formula.rightColumn) {
+        warnings.push(`La columna calculada "${formula.name || "sin nombre"}" esta incompleta.`);
+        return;
+      }
+      if (usedNames.has(formulaName)) {
+        if (!duplicateNames.has(formulaName)) {
+          warnings.push(`La columna calculada "${formulaName}" esta duplicada y se omitio.`);
+          duplicateNames.add(formulaName);
+        }
+        return;
+      }
+      if (
+        !numericSourceColumns.includes(formula.leftColumn) ||
+        !numericSourceColumns.includes(formula.rightColumn)
+      ) {
+        warnings.push(`La columna calculada "${formulaName}" referencia columnas no numericas.`);
+        return;
+      }
+      let divisionByZero = false;
+      baseRows.forEach((row) => {
+        const leftValue = toChartNumber(row[formula.leftColumn]) || 0;
+        const rightValue = toChartNumber(row[formula.rightColumn]) || 0;
+        const result = this.evaluateScenarioFormula(formula.operator, leftValue, rightValue);
+        if (result === null && formula.operator === "/") {
+          divisionByZero = true;
+        }
+        row[formulaName] = result;
+      });
+      if (divisionByZero) {
+        warnings.push(`La columna calculada "${formulaName}" encontro divisiones entre cero.`);
+      }
+      usedNames.add(formulaName);
+    });
+
+    const scenarioRows = baseRows.map((row) => ({ ...row }));
+    this.state.scenarioState.rules.forEach((rule) => {
+      if (!rule.enabled) {
+        return;
+      }
+      const ruleName = String(rule.name || "Regla").trim();
+      if (!rule.conditionColumn || !rule.targetColumn || !String(rule.actionValue || "").trim()) {
+        warnings.push(`${ruleName} esta incompleta y no se aplico.`);
+        return;
+      }
+      const targetOnNewColumn = rule.outputColumnMode === "new_column";
+      const outputColumnName = String(rule.outputColumnName || "").trim();
+      const targetColumnName = targetOnNewColumn ? outputColumnName : rule.targetColumn;
+      if (targetOnNewColumn && !outputColumnName) {
+        warnings.push(`${ruleName} necesita un nombre de columna de salida.`);
+        return;
+      }
+      const targetIsNumeric = scenarioRows.some((row) => toChartNumber(row[rule.targetColumn]) !== null);
+      if (!targetIsNumeric) {
+        warnings.push(`${ruleName} apunta a una columna no numerica.`);
+        return;
+      }
+      if (targetOnNewColumn) {
+        baseRows.forEach((row) => {
+          row[targetColumnName] = toChartNumber(row[rule.targetColumn]);
+        });
+        scenarioRows.forEach((row) => {
+          row[targetColumnName] = toChartNumber(row[rule.targetColumn]);
+        });
+      }
+      scenarioRows.forEach((row) => {
+        if (!this.evaluateScenarioCondition(row, rule)) {
+          return;
+        }
+        const nextValue = this.applyScenarioAction(row[targetColumnName], rule.actionType, rule.actionValue);
+        if (nextValue !== null) {
+          row[targetColumnName] = nextValue;
+        }
+      });
+    });
+
+    const optionSets = this.getScenarioOptionSets();
+    const groupByColumn = optionSets.groupColumns.includes(this.state.scenarioState.groupByColumn)
+      ? this.state.scenarioState.groupByColumn
+      : optionSets.groupColumns[0] || "";
+    const metricColumn = optionSets.metricColumns.includes(this.state.scenarioState.metricColumn)
+      ? this.state.scenarioState.metricColumn
+      : optionSets.metricColumns[0] || "";
+
+    if (!metricColumn) {
+      return {
+        error: "Necesitas al menos una columna numerica para correr escenarios.",
+        warnings,
+        optionSets,
+      };
+    }
+
+    const summaryMap = new Map();
+    baseRows.forEach((baseRow, index) => {
+      const scenarioRow = scenarioRows[index] || {};
+      const label = String(baseRow[groupByColumn] ?? "(sin valor)");
+      const entry = summaryMap.get(label) || { label, baseTotal: 0, scenarioTotal: 0 };
+      entry.baseTotal += toChartNumber(baseRow[metricColumn]) || 0;
+      entry.scenarioTotal += toChartNumber(scenarioRow[metricColumn]) || 0;
+      summaryMap.set(label, entry);
+    });
+
+    const totalBase = baseRows.reduce((sum, row) => sum + (toChartNumber(row[metricColumn]) || 0), 0);
+    const totalScenario = scenarioRows.reduce(
+      (sum, row) => sum + (toChartNumber(row[metricColumn]) || 0),
+      0,
+    );
+    const deltaValue = totalScenario - totalBase;
+    const deltaPercent = totalBase !== 0 ? (deltaValue / totalBase) * 100 : null;
+    const summaryByGroup = Array.from(summaryMap.values())
+      .map((item) => {
+        const difference = item.scenarioTotal - item.baseTotal;
+        return {
+          ...item,
+          difference,
+          changePct: item.baseTotal !== 0 ? (difference / item.baseTotal) * 100 : null,
+          baseSharePct: totalBase !== 0 ? (item.baseTotal / totalBase) * 100 : 0,
+          scenarioSharePct: totalScenario !== 0 ? (item.scenarioTotal / totalScenario) * 100 : 0,
+        };
+      })
+      .sort((left, right) => Math.abs(right.difference) - Math.abs(left.difference));
+
+    return {
+      baseRows,
+      scenarioRows,
+      summaryByGroup,
+      totalBase,
+      totalScenario,
+      deltaValue,
+      deltaPercent,
+      groupByColumn,
+      metricColumn,
+      warnings,
+      optionSets,
+    };
   }
 
   getChartData() {
@@ -1811,7 +2220,8 @@ export class ZrnAnalyticsProcessingView {
             Constructor no-code y editor SQL
             <details class="zrn_processing_sql_help">
               <summary class="zrn_processing_sql_help_toggle" aria-label="Guia SQL">
-                <i class="oi oi-info"></i>
+                <span class="zrn_processing_sql_help_icon"><i class="oi oi-info"></i></span>
+                <span class="zrn_processing_sql_help_label">Guia SQL</span>
               </summary>
               <div class="zrn_processing_sql_help_popover">
                 <strong>SQL permitido</strong>
@@ -1825,9 +2235,6 @@ export class ZrnAnalyticsProcessingView {
         <div class="zrn_processing_panel_body">
           <div class="zrn_processing_query_workspace">
             <div class="zrn_processing_query_builder">
-              <div class="zrn_processing_query_hint">
-                Tabla disponible: <code>${escapeHtml(table?.tableName || "dataset")}</code>. Activa columnas y filtros sobre la tabla seleccionada.
-              </div>
               <div class="zrn_processing_builder_section">
                 <div class="zrn_processing_builder_title">Columnas a mostrar</div>
                 <div class="zrn_processing_builder_columns">
@@ -2001,6 +2408,399 @@ export class ZrnAnalyticsProcessingView {
     `;
   }
 
+  renderTotalsPanel() {
+    const scenarioData = this.getScenarioPanelData();
+    const optionSets = scenarioData.optionSets || this.getScenarioOptionSets();
+    const groupOptions = optionSets.groupColumns
+      .map(
+        (column) =>
+          `<option value="${escapeHtml(column)}" ${this.state.scenarioState.groupByColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
+      )
+      .join("");
+    const metricOptions = optionSets.metricColumns
+      .map(
+        (column) =>
+          `<option value="${escapeHtml(column)}" ${this.state.scenarioState.metricColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
+      )
+      .join("");
+    const numericOptions = optionSets.numericColumns
+      .map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`)
+      .join("");
+    const conditionOptions = optionSets.conditionColumns
+      .map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`)
+      .join("");
+    const targetOptions = optionSets.targetColumns
+      .map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`)
+      .join("");
+
+    const formulaRows = this.state.scenarioState.calculatedColumns.length
+      ? this.state.scenarioState.calculatedColumns
+          .map(
+            (formula) => `
+              <div class="zrn_processing_scenario_row">
+                <div class="zrn_processing_scenario_row_head">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      data-action="scenario-formula-field"
+                      data-formula-id="${escapeHtml(formula.id)}"
+                      data-field="enabled"
+                      ${formula.enabled ? "checked" : ""}
+                    />
+                    <label class="form-check-label">Activa</label>
+                  </div>
+                  <button type="button" class="btn btn-link zrn_processing_scenario_remove" data-action="scenario-remove-formula" data-formula-id="${escapeHtml(formula.id)}">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+                <div class="zrn_processing_scenario_grid zrn_processing_scenario_grid_formula">
+                  <div class="zrn_processing_field">
+                    <label>Nombre calculado</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      value="${escapeHtml(formula.name)}"
+                      data-action="scenario-formula-field"
+                      data-formula-id="${escapeHtml(formula.id)}"
+                      data-field="name"
+                    />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Columna A</label>
+                    <select
+                      class="form-select"
+                      data-action="scenario-formula-field"
+                      data-formula-id="${escapeHtml(formula.id)}"
+                      data-field="leftColumn"
+                    >
+                      <option value="">Selecciona</option>
+                      ${optionSets.numericColumns
+                        .map(
+                          (column) =>
+                            `<option value="${escapeHtml(column)}" ${formula.leftColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Operacion</label>
+                    <select
+                      class="form-select"
+                      data-action="scenario-formula-field"
+                      data-formula-id="${escapeHtml(formula.id)}"
+                      data-field="operator"
+                    >
+                      ${["+", "-", "*", "/"]
+                        .map(
+                          (operator) =>
+                            `<option value="${operator}" ${formula.operator === operator ? "selected" : ""}>${escapeHtml(operator)}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Columna B</label>
+                    <select
+                      class="form-select"
+                      data-action="scenario-formula-field"
+                      data-formula-id="${escapeHtml(formula.id)}"
+                      data-field="rightColumn"
+                    >
+                      <option value="">Selecciona</option>
+                      ${optionSets.numericColumns
+                        .map(
+                          (column) =>
+                            `<option value="${escapeHtml(column)}" ${formula.rightColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            `,
+          )
+          .join("")
+      : `<div class="zrn_processing_result_empty">No hay columnas calculadas. Crea una para revenue, porcentajes u otros derivados.</div>`;
+
+    const ruleRows = this.state.scenarioState.rules.length
+      ? this.state.scenarioState.rules
+          .map(
+            (rule) => `
+              <div class="zrn_processing_scenario_row">
+                <div class="zrn_processing_scenario_row_head">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="enabled"
+                      ${rule.enabled ? "checked" : ""}
+                    />
+                    <label class="form-check-label">Activa</label>
+                  </div>
+                  <button type="button" class="btn btn-link zrn_processing_scenario_remove" data-action="scenario-remove-rule" data-rule-id="${escapeHtml(rule.id)}">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+                <div class="zrn_processing_scenario_grid zrn_processing_scenario_grid_rule">
+                  <div class="zrn_processing_field">
+                    <label>Nombre</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      value="${escapeHtml(rule.name)}"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="name"
+                    />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Si columna</label>
+                    <select
+                      class="form-select"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="conditionColumn"
+                    >
+                      <option value="">Selecciona</option>
+                      ${optionSets.conditionColumns
+                        .map(
+                          (column) =>
+                            `<option value="${escapeHtml(column)}" ${rule.conditionColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Operador</label>
+                    <select
+                      class="form-select"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="conditionOperator"
+                    >
+                      ${[
+                        ["eq", "="],
+                        ["neq", "!="],
+                        ["contains", "contiene"],
+                        ["gt", ">"],
+                        ["gte", ">="],
+                        ["lt", "<"],
+                        ["lte", "<="],
+                      ]
+                        .map(
+                          ([value, label]) =>
+                            `<option value="${value}" ${rule.conditionOperator === value ? "selected" : ""}>${escapeHtml(label)}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Valor condicion</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      value="${escapeHtml(rule.conditionValue)}"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="conditionValue"
+                    />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Columna objetivo</label>
+                    <select
+                      class="form-select"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="targetColumn"
+                    >
+                      <option value="">Selecciona</option>
+                      ${optionSets.targetColumns
+                        .map(
+                          (column) =>
+                            `<option value="${escapeHtml(column)}" ${rule.targetColumn === column ? "selected" : ""}>${escapeHtml(column)}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Accion</label>
+                    <select
+                      class="form-select"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="actionType"
+                    >
+                      ${[
+                        ["add", "Sumar valor"],
+                        ["subtract", "Restar valor"],
+                        ["multiply", "Multiplicar factor"],
+                        ["set", "Reemplazar valor"],
+                        ["percent_delta", "% sobre valor actual"],
+                      ]
+                        .map(
+                          ([value, label]) =>
+                            `<option value="${value}" ${rule.actionType === value ? "selected" : ""}>${escapeHtml(label)}</option>`,
+                        )
+                        .join("")}
+                    </select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Valor accion</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      class="form-control"
+                      value="${escapeHtml(rule.actionValue)}"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="actionValue"
+                    />
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Salida</label>
+                    <select
+                      class="form-select"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="outputColumnMode"
+                    >
+                      <option value="replace" ${rule.outputColumnMode === "replace" ? "selected" : ""}>Sobrescribir objetivo</option>
+                      <option value="new_column" ${rule.outputColumnMode === "new_column" ? "selected" : ""}>Nueva columna</option>
+                    </select>
+                  </div>
+                  <div class="zrn_processing_field">
+                    <label>Nombre salida</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      value="${escapeHtml(rule.outputColumnName)}"
+                      data-action="scenario-rule-field"
+                      data-rule-id="${escapeHtml(rule.id)}"
+                      data-field="outputColumnName"
+                      ${rule.outputColumnMode === "new_column" ? "" : "disabled"}
+                    />
+                  </div>
+                </div>
+              </div>
+            `,
+          )
+          .join("")
+      : `<div class="zrn_processing_result_empty">No hay reglas cargadas. Agrega una para simular aumentos, descuentos o reemplazos por fila.</div>`;
+
+    const warningHtml = scenarioData.warnings?.length
+      ? `
+          <div class="zrn_processing_scenario_warnings">
+            ${scenarioData.warnings
+              .map((warning) => `<div class="zrn_processing_scenario_warning">${escapeHtml(warning)}</div>`)
+              .join("")}
+          </div>
+        `
+      : "";
+    const tableRows = scenarioData.error
+      ? ""
+      : scenarioData.summaryByGroup
+          .map(
+            (item) => `
+              <tr>
+                <td>${escapeHtml(item.label)}</td>
+                <td>${this.formatMetric(item.baseTotal)}</td>
+                <td>${this.formatMetric(item.scenarioTotal)}</td>
+                <td>${this.formatMetric(item.difference)}</td>
+                <td>${item.changePct === null ? "-" : `${this.formatMetric(item.changePct, 2)}%`}</td>
+                <td>${this.formatMetric(item.baseSharePct, 2)}%</td>
+                <td>${this.formatMetric(item.scenarioSharePct, 2)}%</td>
+              </tr>
+            `,
+          )
+          .join("");
+    return `
+      <section class="zrn_processing_panel">
+        <div class="zrn_processing_panel_head">
+          <strong>Totales y escenarios</strong>
+          <span>Simulacion temporal por fila sobre el query actual</span>
+        </div>
+        <div class="zrn_processing_panel_body">
+          <div class="zrn_processing_totals_grid">
+            <div class="zrn_processing_field">
+              <label>Agrupar por</label>
+              <select class="form-select" data-action="scenario-group-column" ${optionSets.groupColumns.length ? "" : "disabled"}>
+                ${groupOptions || '<option value="">Sin columnas</option>'}
+              </select>
+            </div>
+            <div class="zrn_processing_field">
+              <label>Columna a resumir</label>
+              <select class="form-select" data-action="scenario-metric-column" ${optionSets.metricColumns.length ? "" : "disabled"}>
+                ${metricOptions || '<option value="">Sin metricas</option>'}
+              </select>
+            </div>
+            <div class="zrn_processing_scenario_hint">
+              <strong>Flujo</strong>
+              <span>1. Calcula columnas. 2. Aplica reglas por fila. 3. Compara base vs escenario.</span>
+            </div>
+          </div>
+          <div class="zrn_processing_scenario_section">
+            <div class="zrn_processing_scenario_section_head">
+              <strong>Columnas calculadas</strong>
+              <button type="button" class="btn btn-secondary" data-action="scenario-add-formula">Crear columna</button>
+            </div>
+            ${formulaRows}
+          </div>
+          <div class="zrn_processing_scenario_section">
+            <div class="zrn_processing_scenario_section_head">
+              <strong>Reglas del escenario</strong>
+              <button type="button" class="btn btn-secondary" data-action="scenario-add-rule">Agregar regla</button>
+            </div>
+            ${ruleRows}
+          </div>
+          ${warningHtml}
+          ${
+            scenarioData.error
+              ? `<div class="zrn_processing_result_empty">${escapeHtml(scenarioData.error)}</div>`
+              : `
+                  <div class="zrn_processing_totals_kpis">
+                    <div class="zrn_processing_total_kpi">
+                      <span>Total base</span>
+                      <strong>${this.formatMetric(scenarioData.totalBase)}</strong>
+                    </div>
+                    <div class="zrn_processing_total_kpi">
+                      <span>Total escenario</span>
+                      <strong>${this.formatMetric(scenarioData.totalScenario)}</strong>
+                    </div>
+                    <div class="zrn_processing_total_kpi">
+                      <span>Delta absoluto</span>
+                      <strong>${this.formatMetric(scenarioData.deltaValue)}</strong>
+                    </div>
+                    <div class="zrn_processing_total_kpi">
+                      <span>Delta porcentual</span>
+                      <strong>${scenarioData.deltaPercent === null ? "-" : `${this.formatMetric(scenarioData.deltaPercent, 2)}%`}</strong>
+                    </div>
+                  </div>
+                  <div class="zrn_processing_result_wrap zrn_processing_totals_table_wrap">
+                    <table class="o_list_table table table-sm zrn_processing_result_table">
+                      <thead>
+                        <tr>
+                          <th>${escapeHtml(scenarioData.groupByColumn || "Grupo")}</th>
+                          <th>Base</th>
+                          <th>Escenario</th>
+                          <th>Diferencia</th>
+                          <th>% cambio</th>
+                          <th>% base</th>
+                          <th>% escenario</th>
+                        </tr>
+                      </thead>
+                      <tbody>${tableRows}</tbody>
+                    </table>
+                  </div>
+                `
+          }
+        </div>
+      </section>
+    `;
+  }
+
   renderHelpPanel() {
     return `
       <section class="zrn_processing_panel">
@@ -2058,6 +2858,7 @@ export class ZrnAnalyticsProcessingView {
               ${this.renderDatasetPanelEnhanced(sheet, table)}
               ${this.renderQueryPanel(table)}
               ${this.renderResultPanel()}
+              ${this.renderTotalsPanel()}
               ${this.renderHelpPanel()}
             `
         }
