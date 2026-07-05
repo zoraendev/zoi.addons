@@ -331,6 +331,7 @@
                                     <button type="button" class="btn btn-primary" t-on-click="saveRrhhPredictor">Guardar predictor</button>
                                 </div>
                             </section>
+                        </section>
                     </t>
 
                     <t t-if="!state.rrhhLoading &amp;&amp; !rrhhPayload.empty_message &amp;&amp; rrhhPayload.current_applicant &amp;&amp; state.rrhhTab === 'patrones'">

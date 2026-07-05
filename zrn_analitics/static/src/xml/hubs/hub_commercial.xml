@@ -1105,10 +1105,10 @@
             </t>
 
             <t t-if="state.channelModalRow">
-                <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeChannelModal"></div>
+                <div t-if="!state.analyticsDetailModal" class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeChannelModal"></div>
                 <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">
-                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
-                        <div class="modal-content zrn_analitics_commercial_modal">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document" t-on-click.stop="() => {}">
+                        <div class="modal-content zrn_analitics_commercial_modal" t-on-click.stop="() => {}">
                             <div class="modal-header">
                                 <div>
                                     <h4 class="modal-title"><t t-esc="state.channelModalRow.channel"/></h4>
@@ -1118,7 +1118,7 @@
                                         · <t t-esc="formatCount(state.channelModalRow.detail.summary.order_count)"/> pedidos
                                     </div>
                                 </div>
-                                <button type="button" class="btn-close" aria-label="Close" t-on-click="closeChannelModal"></button>
+                                <button type="button" class="btn-close" aria-label="Close" t-on-click.stop="closeChannelModal"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="zrn_analitics_commercial_channel_modal_cards">
@@ -2072,8 +2072,8 @@
             <t t-if="state.analyticsDetailModal">
                 <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeAnalyticsDetailModal"></div>
                 <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">
-                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
-                        <div class="modal-content zrn_analitics_commercial_modal">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document" t-on-click.stop="() => {}">
+                        <div class="modal-content zrn_analitics_commercial_modal" t-on-click.stop="() => {}">
                             <div class="modal-header">
                                 <div>
                                     <h4 class="modal-title"><t t-esc="state.analyticsDetailModal.title"/></h4>
@@ -2081,7 +2081,7 @@
                                         <t t-esc="state.analyticsDetailModal.subtitle"/>
                                     </div>
                                 </div>
-                                <button type="button" class="btn-close" aria-label="Close" t-on-click="closeAnalyticsDetailModal"></button>
+                                <button type="button" class="btn-close" aria-label="Close" t-on-click.stop="closeAnalyticsDetailModal"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="zrn_analitics_commercial_channel_modal_cards">

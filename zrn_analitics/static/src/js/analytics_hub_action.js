@@ -353,9 +353,13 @@ class ZrnAnalyticsHubAction extends Component {
     this._chartRenderTimeouts = [];
     this._chartRenderFrame = 0;
     this._resizeObserver = null;
+    this._pendingTextInputFocus = null;
     this._chartResizeHandler = () => {
       this.syncResponsivePanels();
       this.resizeCharts();
+    };
+    this._rootInputHandler = (ev) => {
+      this.capturePendingTextInputFocus(ev.target);
     };
     this.state = useState({
       activeHub: "direction",
@@ -456,6 +460,9 @@ class ZrnAnalyticsHubAction extends Component {
     onMounted(() => {
       window.addEventListener("resize", this._chartResizeHandler);
       this.syncResponsivePanels();
+      if (this.rootElement) {
+        this.rootElement.addEventListener("input", this._rootInputHandler, true);
+      }
       if (window.ResizeObserver && this.rootElement) {
         this._resizeObserver = new window.ResizeObserver(() =>
           this.resizeCharts(),
@@ -465,10 +472,14 @@ class ZrnAnalyticsHubAction extends Component {
       this.queueChartRender();
     });
     onPatched(() => {
+      this.restorePendingTextInputFocus();
       this.queueChartRender();
     });
     onWillUnmount(() => {
       window.removeEventListener("resize", this._chartResizeHandler);
+      if (this.rootElement) {
+        this.rootElement.removeEventListener("input", this._rootInputHandler, true);
+      }
       if (this._resizeObserver) {
         this._resizeObserver.disconnect();
       }
@@ -545,6 +556,120 @@ class ZrnAnalyticsHubAction extends Component {
   get sortedClientsAtRisk() {
     const sort = this.state.sorts.clients_at_risk;
     return this.sortData(this.coveragePayload.clients_at_risk || [], sort.column, sort.order);
+  }
+
+  isRestorableTextInput(element) {
+    if (!(element instanceof HTMLElement)) {
+      return false;
+    }
+    if (element.tagName === "TEXTAREA") {
+      return true;
+    }
+    if (element.tagName !== "INPUT") {
+      return false;
+    }
+    const type = String(element.getAttribute("type") || "text").toLowerCase();
+    return [
+      "text",
+      "search",
+      "email",
+      "number",
+      "url",
+      "tel",
+      "password",
+      "date",
+      "datetime-local",
+      "time",
+      "month",
+      "week",
+    ].includes(type);
+  }
+
+  buildElementPath(element) {
+    if (!this.rootElement || !this.rootElement.contains(element)) {
+      return null;
+    }
+    const path = [];
+    let current = element;
+    while (current && current !== this.rootElement) {
+      const parent = current.parentElement;
+      if (!parent) {
+        return null;
+      }
+      path.unshift(Array.prototype.indexOf.call(parent.children, current));
+      current = parent;
+    }
+    return current === this.rootElement ? path : null;
+  }
+
+  resolveElementPath(path) {
+    if (!this.rootElement || !Array.isArray(path)) {
+      return null;
+    }
+    let current = this.rootElement;
+    for (const index of path) {
+      current = current?.children?.[index] || null;
+      if (!current) {
+        return null;
+      }
+    }
+    return current;
+  }
+
+  capturePendingTextInputFocus(element) {
+    if (!this.isRestorableTextInput(element)) {
+      this._pendingTextInputFocus = null;
+      return;
+    }
+    const path = this.buildElementPath(element);
+    if (!path) {
+      return;
+    }
+    this._pendingTextInputFocus = {
+      path,
+      tagName: element.tagName,
+      type: element.tagName === "INPUT"
+        ? String(element.getAttribute("type") || "text").toLowerCase()
+        : "",
+      selectionStart: typeof element.selectionStart === "number"
+        ? element.selectionStart
+        : null,
+      selectionEnd: typeof element.selectionEnd === "number"
+        ? element.selectionEnd
+        : null,
+    };
+  }
+
+  restorePendingTextInputFocus() {
+    const pending = this._pendingTextInputFocus;
+    if (!pending) {
+      return;
+    }
+    this._pendingTextInputFocus = null;
+    if (this.rootElement?.contains(document.activeElement)) {
+      return;
+    }
+    const element = this.resolveElementPath(pending.path);
+    if (!this.isRestorableTextInput(element)) {
+      return;
+    }
+    if (element.tagName !== pending.tagName) {
+      return;
+    }
+    if (element.tagName === "INPUT") {
+      const type = String(element.getAttribute("type") || "text").toLowerCase();
+      if (type !== pending.type) {
+        return;
+      }
+    }
+    element.focus({ preventScroll: true });
+    if (
+      typeof pending.selectionStart === "number" &&
+      typeof pending.selectionEnd === "number" &&
+      typeof element.setSelectionRange === "function"
+    ) {
+      element.setSelectionRange(pending.selectionStart, pending.selectionEnd);
+    }
   }
 
   get sortedFinancialProducts() {
@@ -1061,23 +1186,31 @@ class ZrnAnalyticsHubAction extends Component {
     };
   }
 
-  syncRrhhFormsFromPayload(payload) {
+  syncRrhhFormsFromPayload(payload, options = {}) {
+    const {
+      resetPredictor = true,
+      resetChecklist = true,
+    } = options;
     const predictor = payload?.current_predictor;
     const checklist = payload?.current_checklist;
-    this.state.rrhhPredictorForm = {
-      ...cloneRrhhPredictorForm(),
-      evaluation_date: predictor?.evaluation_date || "",
-      notes: predictor?.notes || "",
-      ...(predictor?.answers || {}),
-    };
-    this.state.rrhhChecklistForm = {
-      ...cloneRrhhChecklistForm(),
-      interview_date: checklist?.interview_date || "",
-      observations: checklist?.observations || "",
-      ...(checklist?.answers || {}),
-    };
-    this.state.rrhhPredictorDirty = false;
-    this.state.rrhhChecklistDirty = false;
+    if (resetPredictor) {
+      this.state.rrhhPredictorForm = {
+        ...cloneRrhhPredictorForm(),
+        evaluation_date: predictor?.evaluation_date || "",
+        notes: predictor?.notes || "",
+        ...(predictor?.answers || {}),
+      };
+      this.state.rrhhPredictorDirty = false;
+    }
+    if (resetChecklist) {
+      this.state.rrhhChecklistForm = {
+        ...cloneRrhhChecklistForm(),
+        interview_date: checklist?.interview_date || "",
+        observations: checklist?.observations || "",
+        ...(checklist?.answers || {}),
+      };
+      this.state.rrhhChecklistDirty = false;
+    }
   }
 
   syncPortfolioStateFromPayload() {
@@ -1414,7 +1547,7 @@ class ZrnAnalyticsHubAction extends Component {
       return true;
     }
     return window.confirm(
-      "Hay cambios sin guardar en RRHH. Si cambia de solicitud, se descartaran. ¿Desea continuar?",
+      "Hay cambios sin guardar en RRHH. Si cambia de solicitud, se descartaran. Desea continuar?",
     );
   }
 
@@ -1469,7 +1602,10 @@ class ZrnAnalyticsHubAction extends Component {
         [applicantId, this.state.rrhhPredictorForm],
       );
       this.state.rrhhPayload = payload;
-      this.syncRrhhFormsFromPayload(payload);
+      this.syncRrhhFormsFromPayload(payload, {
+        resetPredictor: true,
+        resetChecklist: false,
+      });
     } finally {
       this.state.rrhhLoading = false;
     }
@@ -1488,7 +1624,10 @@ class ZrnAnalyticsHubAction extends Component {
         [applicantId, this.state.rrhhChecklistForm],
       );
       this.state.rrhhPayload = payload;
-      this.syncRrhhFormsFromPayload(payload);
+      this.syncRrhhFormsFromPayload(payload, {
+        resetPredictor: false,
+        resetChecklist: true,
+      });
     } finally {
       this.state.rrhhLoading = false;
     }
@@ -1507,7 +1646,10 @@ class ZrnAnalyticsHubAction extends Component {
         [applicantId],
       );
       this.state.rrhhPayload = payload;
-      this.syncRrhhFormsFromPayload(payload);
+      this.syncRrhhFormsFromPayload(payload, {
+        resetPredictor: false,
+        resetChecklist: false,
+      });
     } finally {
       this.state.rrhhLoading = false;
     }
