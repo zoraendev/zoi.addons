@@ -5414,10 +5414,11 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             return self._get_rrhh_empty_payload(normalized_filters)
 
         selected_applicant_id = normalized_filters['selected_applicant_id']
-        selected_applicant = applicants.filtered(lambda applicant: applicant.id == selected_applicant_id)[:1]
-        if not selected_applicant:
-            selected_applicant = applicants[:1]
-            normalized_filters['selected_applicant_id'] = selected_applicant.id
+        selected_applicant = self.env['hr.applicant']
+        if selected_applicant_id:
+            selected_applicant = applicants.filtered(lambda applicant: applicant.id == selected_applicant_id)[:1]
+        if selected_applicant_id and not selected_applicant:
+            normalized_filters['selected_applicant_id'] = False
 
         predictors = self.env['zrn.rrhh.predictor'].search([('applicant_id', 'in', applicants.ids)])
         checklists = self.env['zrn.rrhh.interview.checklist'].search([('applicant_id', 'in', applicants.ids)])
@@ -5459,9 +5460,9 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             for label, value in sorted(job_counter.items(), key=lambda item: (-item[1], item[0]))[:8]
         ]
 
-        current_predictor = predictor_by_applicant.get(selected_applicant.id)
-        current_checklist = checklist_by_applicant.get(selected_applicant.id)
-        current_pattern = pattern_by_applicant.get(selected_applicant.id)
+        current_predictor = predictor_by_applicant.get(selected_applicant.id) if selected_applicant else False
+        current_checklist = checklist_by_applicant.get(selected_applicant.id) if selected_applicant else False
+        current_pattern = pattern_by_applicant.get(selected_applicant.id) if selected_applicant else False
 
         predictor_count = len(predictors)
         checklist_count = len(checklists)

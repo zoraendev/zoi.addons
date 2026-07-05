@@ -1,5 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <t t-name="zrn_analitics.RelationalSingleSelect">
+        <div class="zrn_analitics_relational_single o_field_widget o_field_many2one">
+            <div class="zrn_analitics_relational_single_value o_input" t-if="props.record">
+                <span class="zrn_analitics_relational_single_text"><t t-esc="props.record.display_name"/></span>
+                <button
+                    t-if="props.canClear"
+                    type="button"
+                    class="btn zrn_analitics_relational_single_clear"
+                    t-on-click="clearSelection"
+                    aria-label="Limpiar seleccion"
+                >
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="zrn_analitics_relational_single_picker">
+                <Many2XAutocomplete
+                    placeholder="props.record ? 'Cambiar solicitud' : props.placeholder"
+                    resModel="props.resModel"
+                    fieldString="props.fieldString"
+                    activeActions="activeActions"
+                    update.bind="updateRecord"
+                    getDomain.bind="getDomain"
+                    isToMany="false"
+                    autoSelect="true"
+                    context="props.context"
+                />
+            </div>
+        </div>
+    </t>
+
     <t t-name="zrn_analitics.HubAction">
         <div class="zrn_analitics_hub_workspace">
             <div class="zrn_analitics_hub_header">

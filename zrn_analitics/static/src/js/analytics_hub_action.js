@@ -267,6 +267,77 @@ ZrnRelationalMultiSelect.defaultProps = {
   context: {},
 };
 
+class ZrnRelationalSingleSelect extends Component {
+  setup() {
+    this.orm = useService("orm");
+  }
+
+  get activeActions() {
+    return {};
+  }
+
+  getDomain() {
+    return [...(this.props.domain || [])];
+  }
+
+  async resolveRecord(record) {
+    const id = Number(record?.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return null;
+    }
+    const label =
+      record.display_name || record.displayName || record.name || "";
+    if (label) {
+      return {
+        id,
+        display_name: label,
+      };
+    }
+    const nameRows = await this.orm.call(
+      this.props.resModel,
+      "name_get",
+      [[id]],
+      { context: this.props.context || {} },
+    );
+    const [, resolvedLabel] = nameRows[0] || [id, String(id)];
+    return {
+      id,
+      display_name: resolvedLabel || String(id),
+    };
+  }
+
+  async updateRecord(records) {
+    const [record] = records || [];
+    const nextRecord = await this.resolveRecord(record);
+    this.props.onChange(nextRecord);
+  }
+
+  clearSelection() {
+    this.props.onChange(null);
+  }
+}
+ZrnRelationalSingleSelect.template = "zrn_analitics.RelationalSingleSelect";
+ZrnRelationalSingleSelect.components = {
+  Many2XAutocomplete,
+};
+ZrnRelationalSingleSelect.props = {
+  record: { type: Object, optional: true },
+  domain: { type: Array, optional: true },
+  resModel: String,
+  fieldString: String,
+  placeholder: { type: String, optional: true },
+  context: { type: Object, optional: true },
+  canClear: { type: Boolean, optional: true },
+  onChange: Function,
+};
+ZrnRelationalSingleSelect.defaultProps = {
+  record: null,
+  domain: [],
+  placeholder: "",
+  context: {},
+  canClear: true,
+};
+
 class ZrnAnalyticsHubAction extends Component {
   setup() {
     this.actionService = useService("action");
@@ -331,6 +402,8 @@ class ZrnAnalyticsHubAction extends Component {
       productChartType: "bar",
       rrhhPredictorForm: cloneRrhhPredictorForm(),
       rrhhChecklistForm: cloneRrhhChecklistForm(),
+      rrhhPredictorDirty: false,
+      rrhhChecklistDirty: false,
       rrhhHistorySearch: "",
       rrhhHistoryRisk: "",
       sorts: {
@@ -744,6 +817,10 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   async setRrhhTab(tabKey) {
+    if (tabKey !== "overview" && !this.hasRrhhApplicant) {
+      this.state.rrhhTab = "overview";
+      return;
+    }
     this.state.rrhhTab = tabKey;
     this.closeCommercialSidebar();
     await this.loadRrhhPayload();
@@ -863,6 +940,9 @@ class ZrnAnalyticsHubAction extends Component {
       );
       this.state.rrhhPayload = payload;
       this.syncRrhhFormsFromPayload(payload);
+      if (!payload?.current_applicant && this.state.rrhhTab !== "overview") {
+        this.state.rrhhTab = "overview";
+      }
     } finally {
       this.state.rrhhLoading = false;
     }
@@ -996,6 +1076,8 @@ class ZrnAnalyticsHubAction extends Component {
       observations: checklist?.observations || "",
       ...(checklist?.answers || {}),
     };
+    this.state.rrhhPredictorDirty = false;
+    this.state.rrhhChecklistDirty = false;
   }
 
   syncPortfolioStateFromPayload() {
@@ -1316,11 +1398,42 @@ class ZrnAnalyticsHubAction extends Component {
     await this.loadPdvPayload(true);
   }
 
-  async selectRrhhApplicant(applicantId) {
-    if (!applicantId) {
-      return;
+  normalizeRrhhApplicantId(value) {
+    const rawValue =
+      value && typeof value === "object"
+        ? value.id
+        : Array.isArray(value)
+          ? value[0]?.id
+          : value;
+    const applicantId = Number(rawValue);
+    return Number.isInteger(applicantId) && applicantId > 0 ? applicantId : false;
+  }
+
+  confirmRrhhApplicantChange() {
+    if (!this.hasPendingRrhhChanges) {
+      return true;
     }
-    await this.loadRrhhPayload(true, { selected_applicant_id: applicantId });
+    return window.confirm(
+      "Hay cambios sin guardar en RRHH. Si cambia de solicitud, se descartaran. ¿Desea continuar?",
+    );
+  }
+
+  async selectRrhhApplicant(applicantValue) {
+    const applicantId = this.normalizeRrhhApplicantId(applicantValue);
+    const currentApplicantId = this.normalizeRrhhApplicantId(
+      this.state.rrhhPayload?.active_filters?.selected_applicant_id,
+    );
+    if (applicantId === currentApplicantId) {
+      return true;
+    }
+    if (!this.confirmRrhhApplicantChange()) {
+      return false;
+    }
+    if (!applicantId) {
+      this.state.rrhhTab = "overview";
+    }
+    await this.loadRrhhPayload(true, { selected_applicant_id: applicantId || false });
+    return true;
   }
 
   onRrhhHistoryRiskSelect(value) {
@@ -1332,6 +1445,7 @@ class ZrnAnalyticsHubAction extends Component {
       ...this.state.rrhhPredictorForm,
       [key]: value,
     };
+    this.state.rrhhPredictorDirty = true;
   }
 
   updateRrhhChecklistValue(key, value) {
@@ -1339,6 +1453,7 @@ class ZrnAnalyticsHubAction extends Component {
       ...this.state.rrhhChecklistForm,
       [key]: value,
     };
+    this.state.rrhhChecklistDirty = true;
   }
 
   async saveRrhhPredictor() {
@@ -1399,7 +1514,10 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   async useRrhhHistoricalApplicant(applicantId) {
-    await this.selectRrhhApplicant(applicantId);
+    const changed = await this.selectRrhhApplicant(applicantId);
+    if (!changed) {
+      return;
+    }
     this.state.rrhhTab = "predictor";
   }
 
@@ -1668,9 +1786,37 @@ class ZrnAnalyticsHubAction extends Component {
 
   get activeRrhhTab() {
     return (
-      this.rrhhTabs.find((tab) => tab.key === this.state.rrhhTab) ||
-      this.rrhhTabs[0]
+      this.visibleRrhhTabs.find((tab) => tab.key === this.state.rrhhTab) ||
+      this.visibleRrhhTabs[0]
     );
+  }
+
+  get hasPendingRrhhChanges() {
+    return this.state.rrhhPredictorDirty || this.state.rrhhChecklistDirty;
+  }
+
+  get hasRrhhApplicant() {
+    return Boolean(this.state.rrhhPayload?.current_applicant);
+  }
+
+  get visibleRrhhTabs() {
+    if (!this.hasRrhhApplicant) {
+      return this.rrhhTabs.filter((tab) => tab.key === "overview");
+    }
+    return this.rrhhTabs;
+  }
+
+  get rrhhCurrentApplicantRecord() {
+    const currentApplicant = this.state.rrhhPayload?.current_applicant;
+    if (!currentApplicant) {
+      return null;
+    }
+    return {
+      id: currentApplicant.id,
+      display_name: currentApplicant.job_name
+        ? `${currentApplicant.name} · ${currentApplicant.job_name}`
+        : currentApplicant.name,
+    };
   }
 
   get activeHubSummary() {
@@ -2307,6 +2453,13 @@ class ZrnAnalyticsHubAction extends Component {
         label: option.job_name ? `${option.name} · ${option.job_name}` : option.name,
       })),
     ];
+  }
+
+  getRrhhApplicantDomain(options) {
+    const ids = (options || [])
+      .map((option) => Number(option.id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+    return ids.length ? [["id", "in", ids]] : [["id", "=", 0]];
   }
 
   getRrhhRiskChoices(options) {
@@ -4330,6 +4483,7 @@ ZrnAnalyticsHubAction.components = {
   SelectMenu,
   TagsList,
   ZrnRelationalMultiSelect,
+  ZrnRelationalSingleSelect,
 };
 
 registry.category("actions").add("zrn_analitics.hubs", ZrnAnalyticsHubAction);
