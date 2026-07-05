@@ -1649,9 +1649,12 @@
   background: var(--zrn-analitics-table-row-alt);
 }
 
-.zrn_analitics_hub_workspace .o_list_table tbody tr[style*="cursor: pointer"],
+.zrn_analitics_hub_workspace .o_list_table tbody tr,
 .zrn_analitics_commercial_channel_row,
 .zrn_analitics_financial_channel_row,
+.zrn_analitics_commercial_table tbody tr,
+.zrn_analitics_financial_table tbody tr,
+.zrn_analitics_pdv_table tbody tr,
 .zrn_analitics_commercial_portfolio_row[style*="cursor: pointer"],
 .zrn_analitics_financial_portfolio_row[style*="cursor: pointer"],
 .zrn_analitics_operations_portfolio_row[style*="cursor: pointer"],
@@ -1664,9 +1667,12 @@
 .zrn_analitics_hub_workspace
   .o_list_table
   tbody
-  tr[style*="cursor: pointer"]:hover,
+  tr:hover,
 .zrn_analitics_commercial_channel_row:hover,
 .zrn_analitics_financial_channel_row:hover,
+.zrn_analitics_commercial_table tbody tr:hover,
+.zrn_analitics_financial_table tbody tr:hover,
+.zrn_analitics_pdv_table tbody tr:hover,
 .zrn_analitics_commercial_portfolio_row[style*="cursor: pointer"]:hover,
 .zrn_analitics_financial_portfolio_row[style*="cursor: pointer"]:hover,
 .zrn_analitics_operations_portfolio_row[style*="cursor: pointer"]:hover {
@@ -1676,10 +1682,13 @@
 .zrn_analitics_hub_workspace
   .o_list_table
   tbody
-  tr[style*="cursor: pointer"]:hover
+  tr:hover
   td,
 .zrn_analitics_commercial_channel_row:hover td,
 .zrn_analitics_financial_channel_row:hover td,
+.zrn_analitics_commercial_table tbody tr:hover td,
+.zrn_analitics_financial_table tbody tr:hover td,
+.zrn_analitics_pdv_table tbody tr:hover td,
 .zrn_analitics_commercial_portfolio_row[style*="cursor: pointer"]:hover td,
 .zrn_analitics_financial_portfolio_row[style*="cursor: pointer"]:hover td,
 .zrn_analitics_operations_portfolio_row[style*="cursor: pointer"]:hover td,
@@ -2765,16 +2774,8 @@
   background: rgba(15, 23, 42, 0.34);
 }
 
-.zrn_analitics_commercial_modal_backdrop_nested {
-  z-index: 1060;
-}
-
 .zrn_analitics_commercial_modal_shell {
   background: rgba(0, 0, 0, 0);
-}
-
-.zrn_analitics_commercial_modal_shell_nested {
-  z-index: 1065;
 }
 
 .zrn_analitics_commercial_modal {
@@ -4436,6 +4437,20 @@
 
 .zrn_analitics_financial_table td strong {
   color: var(--zrn-analitics-text);
+}
+
+.zrn_analitics_financial_table_row td {
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.zrn_analitics_financial_table_row_clickable {
+  cursor: pointer;
+}
+
+.zrn_analitics_financial_table_row_clickable:hover td {
+  background-color: var(--zrn-analitics-table-hover);
 }
 
 .zrn_analitics_financial_table_sub {

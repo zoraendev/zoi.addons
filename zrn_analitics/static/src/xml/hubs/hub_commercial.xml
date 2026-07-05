@@ -2070,7 +2070,7 @@
             </div>
 
             <t t-if="state.analyticsDetailModal">
-                <div t-if="!state.analyticsNestedDetailModal" class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeAnalyticsDetailModal"></div>
+                <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeAnalyticsDetailModal"></div>
                 <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">
                     <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document" t-on-click.stop="() => {}">
                         <div class="modal-content zrn_analitics_commercial_modal" t-on-click.stop="() => {}">
@@ -2152,99 +2152,6 @@
                                                             <td><t t-esc="formatCount(row.units)"/></td>
                                                             <td t-if="!state.analyticsDetailModal.secondary_title || state.analyticsDetailModal.secondary_title === 'Top PDVs'"><t t-esc="formatCount(row.order_count)"/></td>
                                                             <td><t t-esc="state.analyticsDetailModal.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
-                                                        </tr>
-                                                    </t>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </section>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </t>
-
-            <t t-if="state.analyticsNestedDetailModal">
-                <div class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop zrn_analitics_commercial_modal_backdrop_nested" t-on-click="closeNestedAnalyticsDetailModal"></div>
-                <div class="modal fade show d-block zrn_analitics_commercial_modal_shell zrn_analitics_commercial_modal_shell_nested" tabindex="-1" role="dialog">
-                    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document" t-on-click.stop="() => {}">
-                        <div class="modal-content zrn_analitics_commercial_modal" t-on-click.stop="() => {}">
-                            <div class="modal-header">
-                                <div>
-                                    <h4 class="modal-title"><t t-esc="state.analyticsNestedDetailModal.title"/></h4>
-                                    <div class="zrn_analitics_commercial_table_sub">
-                                        <t t-esc="state.analyticsNestedDetailModal.subtitle"/>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn-close" aria-label="Close" t-on-click.stop="closeNestedAnalyticsDetailModal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="zrn_analitics_commercial_channel_modal_cards">
-                                    <t t-foreach="state.analyticsNestedDetailModal.summary_cards || []" t-as="card" t-key="card.label">
-                                        <div class="zrn_analitics_commercial_coverage_card">
-                                            <span><t t-esc="card.label"/></span>
-                                            <strong><t t-esc="formatDetailCard(state.analyticsNestedDetailModal, card)"/></strong>
-                                        </div>
-                                    </t>
-                                </div>
-
-                                <div class="zrn_analitics_commercial_channel_modal_grid">
-                                    <section class="zrn_analitics_hub_panel">
-                                        <div class="zrn_analitics_commercial_panel_head">
-                                            <span>Por canal</span>
-                                            <span>Base analitica</span>
-                                        </div>
-                                        <div class="zrn_analitics_commercial_table_wrap">
-                                            <table class="zrn_analitics_commercial_table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Canal</th>
-                                                        <th>PDVs</th>
-                                                        <th>Pedidos</th>
-                                                        <th>Unidades</th>
-                                                        <th>Venta</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <t t-foreach="state.analyticsNestedDetailModal.channel_rows || []" t-as="row" t-key="row.name">
-                                                        <tr class="zrn_analitics_commercial_table_row">
-                                                            <td><strong><t t-esc="row.name"/></strong></td>
-                                                            <td><t t-esc="formatCount(row.pdv_count)"/></td>
-                                                            <td><t t-esc="formatCount(row.order_count)"/></td>
-                                                            <td><t t-esc="formatCount(row.units)"/></td>
-                                                            <td><t t-esc="state.analyticsNestedDetailModal.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
-                                                        </tr>
-                                                    </t>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </section>
-
-                                    <section class="zrn_analitics_hub_panel">
-                                        <div class="zrn_analitics_commercial_panel_head">
-                                            <span><t t-esc="state.analyticsNestedDetailModal.secondary_title || 'Top PDVs'"/></span>
-                                            <span>Detalle del calculo</span>
-                                        </div>
-                                        <div class="zrn_analitics_commercial_table_wrap">
-                                            <table class="zrn_analitics_commercial_table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Nombre</th>
-                                                        <th t-if="state.analyticsNestedDetailModal.secondary_title === 'Lineas de portafolio'">SKUs</th>
-                                                        <th>Unidades</th>
-                                                        <th t-if="!state.analyticsNestedDetailModal.secondary_title || state.analyticsNestedDetailModal.secondary_title === 'Top PDVs'">Pedidos</th>
-                                                        <th>Venta</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <t t-foreach="(state.analyticsNestedDetailModal.secondary_rows || state.analyticsNestedDetailModal.customer_rows || [])" t-as="row" t-key="row.name">
-                                                        <tr class="zrn_analitics_commercial_table_row">
-                                                            <td><strong><t t-esc="row.name"/></strong></td>
-                                                            <td t-if="state.analyticsNestedDetailModal.secondary_title === 'Lineas de portafolio'"><t t-esc="formatCount(row.sku_count)"/></td>
-                                                            <td><t t-esc="formatCount(row.units)"/></td>
-                                                            <td t-if="!state.analyticsNestedDetailModal.secondary_title || state.analyticsNestedDetailModal.secondary_title === 'Top PDVs'"><t t-esc="formatCount(row.order_count)"/></td>
-                                                            <td><t t-esc="state.analyticsNestedDetailModal.currency_symbol"/> <t t-esc="formatMoney(row.revenue)"/></td>
                                                         </tr>
                                                     </t>
                                                 </tbody>
