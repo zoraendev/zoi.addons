@@ -2037,6 +2037,20 @@
   color: var(--zrn-analitics-text);
 }
 
+.zrn_analitics_commercial_table_row td {
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.zrn_analitics_commercial_table_row_clickable {
+  cursor: pointer;
+}
+
+.zrn_analitics_commercial_table_row_clickable:hover td {
+  background-color: var(--zrn-analitics-table-hover);
+}
+
 .zrn_analitics_commercial_table_sub {
   margin-top: 2px;
   color: var(--zrn-analitics-text-soft);
@@ -2751,8 +2765,16 @@
   background: rgba(15, 23, 42, 0.34);
 }
 
+.zrn_analitics_commercial_modal_backdrop_nested {
+  z-index: 1060;
+}
+
 .zrn_analitics_commercial_modal_shell {
   background: rgba(0, 0, 0, 0);
+}
+
+.zrn_analitics_commercial_modal_shell_nested {
+  z-index: 1065;
 }
 
 .zrn_analitics_commercial_modal {

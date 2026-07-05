@@ -398,6 +398,7 @@ class ZrnAnalyticsHubAction extends Component {
       channelFilters: cloneDefaultFilters(),
       channelModalRow: null,
       analyticsDetailModal: null,
+      analyticsNestedDetailModal: null,
       sellinChain: "walmart",
       rfmFilterSegment: "",
       rfmFilterAbc: "",
@@ -908,6 +909,7 @@ class ZrnAnalyticsHubAction extends Component {
     this.closeCommercialSidebar();
     this.state.channelModalRow = null;
     this.state.analyticsDetailModal = null;
+    this.state.analyticsNestedDetailModal = null;
     if (tabKey === "cobertura") {
       await this.loadCoveragePayload();
     } else if (tabKey === "canal") {
@@ -922,6 +924,7 @@ class ZrnAnalyticsHubAction extends Component {
     this.state.financialTab = tabKey;
     this.closeCommercialSidebar();
     this.state.analyticsDetailModal = null;
+    this.state.analyticsNestedDetailModal = null;
     await this.loadFinancialPayload();
     this.queueChartRender();
   }
@@ -937,6 +940,7 @@ class ZrnAnalyticsHubAction extends Component {
     this.state.pdvTab = tabKey;
     this.closePdvSidebar();
     this.state.analyticsDetailModal = null;
+    this.state.analyticsNestedDetailModal = null;
     await this.loadPdvPayload();
     this.queueChartRender();
   }
@@ -1731,6 +1735,14 @@ class ZrnAnalyticsHubAction extends Component {
       return;
     }
     this.state.analyticsDetailModal = detail;
+    this.state.analyticsNestedDetailModal = null;
+  }
+
+  openNestedAnalyticsDetailModal(detail) {
+    if (!detail) {
+      return;
+    }
+    this.state.analyticsNestedDetailModal = detail;
   }
 
   openPdvRow(row) {
@@ -1750,7 +1762,7 @@ class ZrnAnalyticsHubAction extends Component {
     }
     const client = this.commercialPayload?.all_clients?.find(c => c.id === partnerId);
     if (client && client.detail) {
-      this.openAnalyticsDetailModal(client.detail);
+      this.openNestedAnalyticsDetailModal(client.detail);
     } else {
       this.openRecordModal("res.partner", partnerId);
     }
@@ -1758,6 +1770,11 @@ class ZrnAnalyticsHubAction extends Component {
 
   closeAnalyticsDetailModal() {
     this.state.analyticsDetailModal = null;
+    this.state.analyticsNestedDetailModal = null;
+  }
+
+  closeNestedAnalyticsDetailModal() {
+    this.state.analyticsNestedDetailModal = null;
   }
 
   formatDetailCard(detail, card) {
@@ -1884,6 +1901,8 @@ class ZrnAnalyticsHubAction extends Component {
 
   closeChannelModal() {
     this.state.channelModalRow = null;
+    this.state.analyticsDetailModal = null;
+    this.state.analyticsNestedDetailModal = null;
   }
 
   openHome() {
