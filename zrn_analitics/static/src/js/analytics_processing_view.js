@@ -14,6 +14,7 @@ import {
 } from "./analytics_processing_utils";
 import {
   fetchGoogleSheetSheet,
+  normalizeGoogleSheetUrl,
   parseGoogleSheetSource,
   parseLocalSource,
 } from "./analytics_processing_sources";
@@ -89,6 +90,9 @@ export class ZrnAnalyticsProcessingView {
       },
       sourceInput: {
         googleSheetUrl: "",
+        googleSheetDraft: "",
+        googleSheetError: "",
+        googleSheetModalOpen: false,
         mode: "",
         loading: false,
       },
@@ -276,16 +280,26 @@ export class ZrnAnalyticsProcessingView {
     if (action === "source-mode" && event.type === "click") {
       event.preventDefault();
       this.state.sourceInput.mode = source.dataset.mode || "";
+      if (this.state.sourceInput.mode === "google_sheet") {
+        this.openGoogleSheetModal();
+        return;
+      }
       this.render();
       return;
     }
     if (action === "google-sheet-url" && event.type === "input") {
-      this.state.sourceInput.googleSheetUrl = source.value;
+      this.state.sourceInput.googleSheetDraft = source.value;
+      this.state.sourceInput.googleSheetError = "";
       return;
     }
     if (action === "google-sheet-connect" && event.type === "click") {
       event.preventDefault();
       this.handleGoogleSheetConnect();
+      return;
+    }
+    if (action === "google-sheet-close" && event.type === "click") {
+      event.preventDefault();
+      this.closeGoogleSheetModal();
       return;
     }
     if (action === "back-to-processing" && event.type === "click") {
@@ -557,18 +571,41 @@ export class ZrnAnalyticsProcessingView {
       }
     }
     try {
+      const normalized = normalizeGoogleSheetUrl(this.state.sourceInput.googleSheetDraft);
       this.state.sourceInput.loading = true;
       this.state.globalError = "";
+      this.state.sourceInput.googleSheetError = "";
+      this.state.sourceInput.googleSheetUrl = normalized.cleanUrl;
       this.render();
       await this.loadParsedSource(
-        await parseGoogleSheetSource(this.state.sourceInput.googleSheetUrl),
+        await parseGoogleSheetSource(normalized.cleanUrl),
       );
     } catch (error) {
-      this.setErrorState(error);
+      this.state.sourceInput.googleSheetError =
+        error.message || "No se pudo validar el Google Sheet.";
+      this.render();
     } finally {
       this.state.sourceInput.loading = false;
       this.render();
     }
+  }
+
+  openGoogleSheetModal() {
+    this.state.sourceInput.googleSheetModalOpen = true;
+    this.state.sourceInput.googleSheetDraft =
+      this.state.sourceInput.googleSheetUrl || this.state.sourceMeta.url || "";
+    this.state.sourceInput.googleSheetError = "";
+    this.render();
+  }
+
+  closeGoogleSheetModal() {
+    if (this.state.sourceInput.loading) {
+      return;
+    }
+    this.state.sourceInput.googleSheetModalOpen = false;
+    this.state.sourceInput.googleSheetError = "";
+    this.state.sourceInput.mode = "";
+    this.render();
   }
 
   async loadParsedSource(parsedSource) {
@@ -592,6 +629,9 @@ export class ZrnAnalyticsProcessingView {
       url: parsedSource.sourceMeta.url || "",
     };
     this.state.sourceInput.googleSheetUrl = parsedSource.sourceMeta.url || "";
+    this.state.sourceInput.googleSheetDraft = parsedSource.sourceMeta.url || "";
+    this.state.sourceInput.googleSheetError = "";
+    this.state.sourceInput.googleSheetModalOpen = false;
     this.state.datasetConfig.sheets = sheets;
     this.state.datasetConfig.selectedSheetId = sheets[0].id;
     this.state.datasetConfig.loadingSheetId = sheets[0].loaded ? "" : sheets[0].id;
@@ -1953,8 +1993,6 @@ ${headers
   }
 
   renderLanding() {
-    const isLocal = this.state.sourceInput.mode === "local_file";
-    const isGoogle = this.state.sourceInput.mode === "google_sheet";
     const isLoadingGoogle = Boolean(this.state.sourceInput.loading);
     return `
       <div class="zrn_processing_landing">
@@ -1969,51 +2007,30 @@ ${headers
             <span>Archivo local o Google Sheets publico</span>
           </div>
           <div class="zrn_processing_panel_body">
-            <div class="zrn_processing_entry_bar">
-              <label class="zrn_processing_source_tile ${isLocal ? "is-active" : ""}">
+            <div class="zrn_processing_source_cards">
+              <label class="zrn_processing_source_card zrn_processing_source_card_file">
                 <input type="file" data-action="file" accept=".csv,.json,.xml,.xls,.xlsx,.xlsm" />
-                <span class="zrn_processing_source_tile_icon"><i class="fa fa-upload"></i></span>
-                <strong>Cargar archivo</strong>
-                <small>CSV, JSON, XML y Excel</small>
+                <span class="zrn_processing_source_card_icon"><i class="fa fa-upload"></i></span>
+                <div class="zrn_processing_source_card_copy">
+                  <strong>Archivo</strong>
+                  <small>CSV, JSON, XML y Excel</small>
+                </div>
+                <span class="zrn_processing_source_card_action">Abrir explorador</span>
               </label>
               <button
                 type="button"
-                class="zrn_processing_source_tile ${isGoogle ? "is-active" : ""}"
+                class="zrn_processing_source_card zrn_processing_source_card_sheet"
                 data-action="source-mode"
                 data-mode="google_sheet"
               >
-                <span class="zrn_processing_source_tile_icon"><i class="fa fa-table"></i></span>
-                <strong>Google Sheet</strong>
-                <small>URL publica por sesion</small>
+                <span class="zrn_processing_source_card_icon"><i class="fa fa-table"></i></span>
+                <div class="zrn_processing_source_card_copy">
+                  <strong>Google Sheets</strong>
+                  <small>URL publica validada por sesion</small>
+                </div>
+                <span class="zrn_processing_source_card_action">Agregar enlace</span>
               </button>
             </div>
-            ${
-              isGoogle
-                ? `
-                  <div class="zrn_processing_source_inline">
-                    <div class="zrn_processing_field zrn_processing_source_url_field">
-                      <label>URL publica</label>
-                      <input
-                        type="url"
-                        class="form-control"
-                        data-action="google-sheet-url"
-                        value="${escapeHtml(this.state.sourceInput.googleSheetUrl)}"
-                        placeholder="https://docs.google.com/spreadsheets/d/..."
-                        ${isLoadingGoogle ? "disabled" : ""}
-                      />
-                    </div>
-                    <div class="zrn_processing_actions">
-                      <button
-                        type="button"
-                        class="btn btn-primary"
-                        data-action="google-sheet-connect"
-                        ${isLoadingGoogle ? "disabled" : ""}
-                      >${isLoadingGoogle ? "Conectando..." : "Conectar"}</button>
-                    </div>
-                  </div>
-                `
-                : ""
-            }
             <div class="zrn_processing_hint_strip">
               ${
                 isLoadingGoogle
@@ -2023,6 +2040,57 @@ ${headers
             </div>
           </div>
         </section>
+        ${
+          this.state.sourceInput.googleSheetModalOpen
+            ? `
+              <div class="modal-backdrop fade show zrn_processing_modal_backdrop" data-action="google-sheet-close"></div>
+              <div class="zrn_processing_modal_shell">
+                <section class="zrn_processing_modal">
+                  <div class="zrn_processing_modal_head">
+                    <div>
+                      <strong>Conectar Google Sheets</strong>
+                      <span>Valida el enlace antes de abrir el workspace.</span>
+                    </div>
+                    <button type="button" class="btn zrn_processing_modal_close" data-action="google-sheet-close" ${
+                      isLoadingGoogle ? "disabled" : ""
+                    }>
+                      <i class="fa fa-times"></i>
+                    </button>
+                  </div>
+                  <div class="zrn_processing_modal_body">
+                    <div class="zrn_processing_field">
+                      <label>URL publica</label>
+                      <input
+                        type="url"
+                        class="form-control"
+                        data-action="google-sheet-url"
+                        value="${escapeHtml(this.state.sourceInput.googleSheetDraft)}"
+                        placeholder="https://docs.google.com/spreadsheets/d/..."
+                        ${isLoadingGoogle ? "disabled" : ""}
+                      />
+                    </div>
+                    ${
+                      this.state.sourceInput.googleSheetError
+                        ? `<div class="zrn_processing_global_error">${escapeHtml(this.state.sourceInput.googleSheetError)}</div>`
+                        : ""
+                    }
+                    <div class="zrn_processing_modal_hint">
+                      <span>Se valida que el enlace pertenezca a Google Sheets y que tenga hojas publicas utilizables.</span>
+                    </div>
+                    <div class="zrn_processing_modal_actions">
+                      <button type="button" class="btn btn-secondary" data-action="google-sheet-close" ${
+                        isLoadingGoogle ? "disabled" : ""
+                      }>Cancelar</button>
+                      <button type="button" class="btn btn-primary" data-action="google-sheet-connect" ${
+                        isLoadingGoogle ? "disabled" : ""
+                      }>${isLoadingGoogle ? "Validando..." : "Validar y continuar"}</button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            `
+            : ""
+        }
       </div>
     `;
   }

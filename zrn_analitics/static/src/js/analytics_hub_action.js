@@ -1629,28 +1629,6 @@ class ZrnAnalyticsHubAction extends Component {
     }
   }
 
-  async recomputeRrhhPatterns() {
-    const applicantId = this.state.rrhhPayload?.active_filters?.selected_applicant_id;
-    if (!applicantId) {
-      return;
-    }
-    this.state.rrhhLoading = true;
-    try {
-      const payload = await this.orm.call(
-        "zrn_analitics.home",
-        "recompute_rrhh_patterns",
-        [applicantId],
-      );
-      this.state.rrhhPayload = payload;
-      this.syncRrhhFormsFromPayload(payload, {
-        resetPredictor: false,
-        resetChecklist: false,
-      });
-    } finally {
-      this.state.rrhhLoading = false;
-    }
-  }
-
   async useRrhhHistoricalApplicant(applicantId) {
     const changed = await this.selectRrhhApplicant(applicantId);
     if (!changed) {

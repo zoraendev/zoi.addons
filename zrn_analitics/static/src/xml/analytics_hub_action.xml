@@ -1,31 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="zrn_analitics.RelationalSingleSelect">
-        <div class="zrn_analitics_relational_single o_field_widget o_field_many2one">
-            <div class="zrn_analitics_relational_single_value o_input" t-if="props.record">
-                <span class="zrn_analitics_relational_single_text"><t t-esc="props.record.display_name"/></span>
-                <button
-                    t-if="props.canClear"
-                    type="button"
-                    class="btn zrn_analitics_relational_single_clear"
-                    t-on-click="clearSelection"
-                    aria-label="Limpiar seleccion"
-                >
-                    <i class="fa fa-times"></i>
-                </button>
-            </div>
-            <div class="zrn_analitics_relational_single_picker">
-                <Many2XAutocomplete
-                    placeholder="props.record ? 'Cambiar solicitud' : props.placeholder"
-                    resModel="props.resModel"
-                    fieldString="props.fieldString"
-                    activeActions="activeActions"
-                    update.bind="updateRecord"
-                    getDomain.bind="getDomain"
-                    isToMany="false"
-                    autoSelect="true"
-                    context="props.context"
-                />
+        <div class="zrn_analitics_relational_single o_field_widget o_field_many2one" t-att-class="props.record ? 'is-selected' : 'is-empty'">
+            <div class="zrn_analitics_relational_single_control o_input">
+                <div class="zrn_analitics_relational_single_value" t-if="props.record">
+                    <span class="zrn_analitics_relational_single_text"><t t-esc="props.record.display_name"/></span>
+                    <button
+                        t-if="props.canClear"
+                        type="button"
+                        class="btn zrn_analitics_relational_single_clear"
+                        t-on-click="clearSelection"
+                        aria-label="Limpiar seleccion"
+                    >
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <div class="zrn_analitics_relational_single_picker" t-if="!props.record">
+                    <Many2XAutocomplete
+                        placeholder="props.placeholder"
+                        resModel="props.resModel"
+                        fieldString="props.fieldString"
+                        activeActions="activeActions"
+                        update.bind="updateRecord"
+                        getDomain.bind="getDomain"
+                        isToMany="false"
+                        autoSelect="true"
+                        context="props.context"
+                    />
+                    <span class="zrn_analitics_relational_single_icon" aria-hidden="true">
+                        <i class="fa fa-angle-down"></i>
+                    </span>
+                </div>
             </div>
         </div>
     </t>

@@ -8,107 +8,71 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="inside">
                 <div class="zrn_analitics_shell" invisible="page_key != 'overview'">
-                    <div class="zrn_analitics_header">
-                        <div>
-                            <div class="zrn_analitics_kicker">Zoraen Analytics</div>
-                            <div class="oe_title">
-                                <h1>Centro de analitica</h1>
+                    <div class="zrn_analitics_home_cards">
+                        <section class="zrn_analitics_home_card">
+                            <div class="zrn_analitics_home_card_head">
+                                <span>Hubs</span>
+                                <span>Vista operativa</span>
                             </div>
-                            <div class="zrn_analitics_intro">
-                                Base inicial para hubs, dashboards y procesamiento de datos orientados a reporteria y analisis de negocio.
-                            </div>
-                        </div>
-                        <div class="zrn_analitics_stats">
-                            <div class="zrn_analitics_stat">
-                                <span class="zrn_analitics_stat_label">Capas</span>
-                                <span class="zrn_analitics_stat_value">4</span>
-                            </div>
-                            <div class="zrn_analitics_stat">
-                                <span class="zrn_analitics_stat_label">Estado</span>
-                                <span class="zrn_analitics_stat_value">Base</span>
-                            </div>
-                            <div class="zrn_analitics_stat">
-                                <span class="zrn_analitics_stat_label">Foco</span>
-                                <span class="zrn_analitics_stat_value">KPIs</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="zrn_analitics_block">
-                        <div class="zrn_analitics_section_title">Frentes analiticos</div>
-                        <div class="zrn_analitics_menu">
-                            <button
-                                name="action_open_hubs"
-                                type="object"
-                                icon="fa-th-large"
-                                string="Hubs"
-                                class="btn zrn_analitics_menu_btn zrn_analitics_menu_btn_primary"
-                            />
-                            <button
-                                name="action_open_dashboards"
-                                type="object"
-                                icon="fa-bar-chart"
-                                string="Dashboards"
-                                class="btn zrn_analitics_menu_btn zrn_analitics_menu_btn_secondary"
-                            />
-                            <button
-                                name="action_open_processing"
-                                type="object"
-                                icon="fa-database"
-                                string="Procesamiento"
-                                class="btn zrn_analitics_menu_btn zrn_analitics_menu_btn_tertiary"
-                            />
-                            <button
-                                name="action_open_scenarios"
-                                type="object"
-                                icon="fa-sitemap"
-                                string="Escenarios"
-                                class="btn zrn_analitics_menu_btn zrn_analitics_menu_btn_quaternary"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="zrn_analitics_grid">
-                        <div class="zrn_analitics_panel zrn_analitics_panel_wide">
-                            <div class="zrn_analitics_panel_head">
-                                <span>Hubs priorizados</span>
-                                <span>Vista inicial</span>
-                            </div>
-                            <div class="zrn_analitics_panel_body zrn_analitics_placeholder_list">
-                                <div class="zrn_analitics_placeholder_row"/>
-                                <div class="zrn_analitics_placeholder_row"/>
-                                <div class="zrn_analitics_placeholder_row"/>
-                                <div class="zrn_analitics_placeholder_row"/>
-                            </div>
-                        </div>
-
-                        <div class="zrn_analitics_panel">
-                            <div class="zrn_analitics_panel_head">
-                                <span>Origenes</span>
-                                <span>Fuentes y capas</span>
-                            </div>
-                            <div class="zrn_analitics_panel_body zrn_analitics_placeholder_chart">
-                                <div class="zrn_analitics_placeholder_bars">
-                                    <div/>
-                                    <div/>
-                                    <div/>
-                                    <div/>
-                                    <div/>
+                            <div class="zrn_analitics_home_card_body">
+                                <div class="zrn_analitics_home_card_intro">
+                                    <strong>Explora los hubs activos</strong>
+                                    <span>Comercial, Financiero, Operaciones, PDV / Cobertura y RRHH.</span>
                                 </div>
+                                <div class="zrn_analitics_home_card_list">
+                                    <span>Comercial</span>
+                                    <span>Financiero</span>
+                                    <span>Operaciones</span>
+                                    <span>PDV / Cobertura</span>
+                                    <span>RRHH</span>
+                                </div>
+                                <div class="zrn_analitics_home_card_meta">
+                                    <span class="zrn_analitics_home_chip">Excel</span>
+                                    <span class="zrn_analitics_home_chip">CSV</span>
+                                    <span class="zrn_analitics_home_chip">XML</span>
+                                    <span class="zrn_analitics_home_chip">Sheets</span>
+                                </div>
+                                <button
+                                    name="action_open_hubs"
+                                    type="object"
+                                    icon="fa-th-large"
+                                    string="Abrir hubs"
+                                    class="btn zrn_analitics_menu_btn zrn_analitics_menu_btn_primary"
+                                />
                             </div>
-                        </div>
+                        </section>
 
-                        <div class="zrn_analitics_panel">
-                            <div class="zrn_analitics_panel_head">
-                                <span>Pipeline</span>
-                                <span>Preparacion de datos</span>
+                        <section class="zrn_analitics_home_card">
+                            <div class="zrn_analitics_home_card_head">
+                                <span>Procesamiento de datos</span>
+                                <span>Entrada y preparacion</span>
                             </div>
-                            <div class="zrn_analitics_panel_body zrn_analitics_placeholder_flow">
-                                <span/>
-                                <span/>
-                                <span/>
+                            <div class="zrn_analitics_home_card_body">
+                                <div class="zrn_analitics_home_card_intro">
+                                    <strong>Carga y depura fuentes</strong>
+                                    <span>Preparacion centralizada para archivos y conexiones operativas.</span>
+                                </div>
+                                <div class="zrn_analitics_home_card_list">
+                                    <span>Importacion de archivos</span>
+                                    <span>Validacion y limpieza</span>
+                                    <span>Transformacion de datos</span>
+                                    <span>Lectura estructurada</span>
+                                </div>
+                                <div class="zrn_analitics_home_card_meta">
+                                    <span class="zrn_analitics_home_chip">Excel</span>
+                                    <span class="zrn_analitics_home_chip">CSV</span>
+                                    <span class="zrn_analitics_home_chip">XML</span>
+                                    <span class="zrn_analitics_home_chip">Sheets</span>
+                                </div>
+                                <button
+                                    name="action_open_processing"
+                                    type="object"
+                                    icon="fa-database"
+                                    string="Abrir procesamiento"
+                                    class="btn zrn_analitics_menu_btn zrn_analitics_menu_btn_tertiary"
+                                />
                             </div>
-                        </div>
+                        </section>
                     </div>
                 </div>
             </xpath>

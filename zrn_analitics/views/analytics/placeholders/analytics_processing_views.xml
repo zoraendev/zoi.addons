@@ -13,9 +13,6 @@
                             <div class="oe_title">
                                 <h1>Centro de carga</h1>
                             </div>
-                            <div class="zrn_analitics_intro">
-                                Selecciona un archivo temporal para abrir el workspace de consultas, resultados y graficas.
-                            </div>
                             <div class="zrn_processing_warning">
                                 El archivo y la consulta viven solo en esta sesion del navegador. Si sales, recargas o cierras la pagina, se perderan.
                             </div>

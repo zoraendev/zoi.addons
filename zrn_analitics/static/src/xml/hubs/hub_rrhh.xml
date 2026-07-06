@@ -93,7 +93,7 @@
                                         domain="getRrhhApplicantDomain(rrhhPayload.applicant_options)"
                                         resModel="'hr.applicant'"
                                         fieldString="'Solicitud de trabajo'"
-                                        placeholder="'Buscar solicitud de Odoo'"
+                                        placeholder="'Seleccione una solicitud activa'"
                                         onChange.bind="this.selectRrhhApplicant"
                                     />
                                     <div class="zrn_analitics_rrhh_selector_hint">
@@ -101,12 +101,9 @@
                                             Guarde o descarte los cambios pendientes antes de continuar con otra solicitud.
                                         </t>
                                         <t t-else="">
-                                            Seleccione una solicitud para habilitar predictor, patrones, checklist e historico operativo.
+                                            Use la X para limpiar la solicitud actual y seleccionar otra activa.
                                         </t>
                                     </div>
-                                </div>
-                                <div class="zrn_analitics_rrhh_workspace_actions" t-if="rrhhPayload.current_applicant">
-                                    <button type="button" class="btn btn-secondary" t-on-click="recomputeRrhhPatterns">Recalcular patrones</button>
                                 </div>
                             </div>
 
@@ -137,7 +134,7 @@
 
                             <div class="zrn_analitics_rrhh_empty_state" t-if="!rrhhPayload.current_applicant">
                                 <strong>Seleccione una solicitud para continuar.</strong>
-                                <span>El flujo operativo de RRHH se activa por solicitud y los cambios quedan guardados sobre ese registro.</span>
+                                <span>El flujo operativo de RRHH se activa por solicitud y puede retomarse mientras la solicitud siga activa.</span>
                             </div>
                         </section>
                     </t>
