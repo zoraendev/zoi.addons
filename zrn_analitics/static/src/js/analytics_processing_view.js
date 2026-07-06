@@ -219,6 +219,109 @@ export class ZrnAnalyticsProcessingView {
     return this.selectedTable?.tableName || "dataset";
   }
 
+  captureFocusedField() {
+    if (!this.root || typeof document === "undefined") {
+      return null;
+    }
+    const activeElement = document.activeElement;
+    if (!(activeElement instanceof HTMLElement) || !this.root.contains(activeElement)) {
+      return null;
+    }
+    if (!activeElement.matches("input, textarea, select")) {
+      return null;
+    }
+
+    const action = activeElement.dataset.action || "";
+    const selectorParts = [activeElement.tagName.toLowerCase()];
+    if (action) {
+      selectorParts.push(`[data-action="${this.escapeSelectorValue(action)}"]`);
+    }
+
+    for (const [key, value] of Object.entries(activeElement.dataset)) {
+      if (key === "action" || !value) {
+        continue;
+      }
+      selectorParts.push(
+        `[data-${this.datasetKeyToAttribute(key)}="${this.escapeSelectorValue(value)}"]`,
+      );
+    }
+
+    if (!action) {
+      if (activeElement.id) {
+        selectorParts.push(`#${this.escapeSelectorValue(activeElement.id)}`);
+      } else if (activeElement.getAttribute("name")) {
+        selectorParts.push(
+          `[name="${this.escapeSelectorValue(activeElement.getAttribute("name"))}"]`,
+        );
+      } else {
+        return null;
+      }
+    }
+
+    const focusState = {
+      selector: selectorParts.join(""),
+      scrollLeft: activeElement.scrollLeft || 0,
+      scrollTop: activeElement.scrollTop || 0,
+      value: "value" in activeElement ? activeElement.value : "",
+    };
+
+    if (
+      activeElement instanceof HTMLInputElement ||
+      activeElement instanceof HTMLTextAreaElement
+    ) {
+      focusState.selectionStart = activeElement.selectionStart;
+      focusState.selectionEnd = activeElement.selectionEnd;
+      focusState.selectionDirection = activeElement.selectionDirection;
+    }
+
+    return focusState;
+  }
+
+  restoreFocusedField(focusState) {
+    if (!this.root || !focusState?.selector) {
+      return;
+    }
+    const target = this.root.querySelector(focusState.selector);
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    target.focus({ preventScroll: true });
+    if (
+      "value" in target &&
+      target.value === focusState.value &&
+      (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)
+    ) {
+      const selectionStart =
+        typeof focusState.selectionStart === "number" ? focusState.selectionStart : null;
+      const selectionEnd =
+        typeof focusState.selectionEnd === "number" ? focusState.selectionEnd : null;
+      if (selectionStart !== null && selectionEnd !== null) {
+        target.setSelectionRange(
+          selectionStart,
+          selectionEnd,
+          focusState.selectionDirection || "none",
+        );
+      }
+    }
+    if (typeof focusState.scrollLeft === "number") {
+      target.scrollLeft = focusState.scrollLeft;
+    }
+    if (typeof focusState.scrollTop === "number") {
+      target.scrollTop = focusState.scrollTop;
+    }
+  }
+
+  datasetKeyToAttribute(key) {
+    return key.replace(/[A-Z]/g, (character) => `-${character.toLowerCase()}`);
+  }
+
+  escapeSelectorValue(value) {
+    if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+      return CSS.escape(String(value));
+    }
+    return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+
   async confirmDiscardIfNeeded() {
     if (!this.hasTransientData) {
       return true;
@@ -2773,15 +2876,15 @@ ${headers
       activeView === "table"
         ? `
             <div class="zrn_processing_scenario_exports">
-              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="xlsx" ${hasData ? "" : "disabled"}>
+              <button type="button" class="btn zrn_processing_scenario_export_btn" data-action="scenario-export" data-format="xlsx" ${hasData ? "" : "disabled"}>
                 <i class="fa fa-file-excel-o"></i>
                 Excel
               </button>
-              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="csv" ${hasData ? "" : "disabled"}>
+              <button type="button" class="btn zrn_processing_scenario_export_btn" data-action="scenario-export" data-format="csv" ${hasData ? "" : "disabled"}>
                 <i class="fa fa-file-text-o"></i>
                 CSV
               </button>
-              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="xml" ${hasData ? "" : "disabled"}>
+              <button type="button" class="btn zrn_processing_scenario_export_btn" data-action="scenario-export" data-format="xml" ${hasData ? "" : "disabled"}>
                 <i class="fa fa-code"></i>
                 XML
               </button>
@@ -2795,7 +2898,7 @@ ${headers
                   data-action="scenario-text-delimiter"
                   ${hasData ? "" : "disabled"}
                 />
-                <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="txt" ${hasData ? "" : "disabled"}>
+                <button type="button" class="btn zrn_processing_scenario_export_btn" data-action="scenario-export" data-format="txt" ${hasData ? "" : "disabled"}>
                   <i class="fa fa-file-o"></i>
                   TXT
                 </button>
@@ -2804,11 +2907,11 @@ ${headers
           `
         : `
             <div class="zrn_processing_scenario_exports">
-              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="png" ${hasData ? "" : "disabled"}>
+              <button type="button" class="btn zrn_processing_scenario_export_btn" data-action="scenario-export" data-format="png" ${hasData ? "" : "disabled"}>
                 <i class="fa fa-picture-o"></i>
                 PNG
               </button>
-              <button type="button" class="btn btn-secondary" data-action="scenario-export" data-format="pdf" ${hasData ? "" : "disabled"}>
+              <button type="button" class="btn zrn_processing_scenario_export_btn" data-action="scenario-export" data-format="pdf" ${hasData ? "" : "disabled"}>
                 <i class="fa fa-file-pdf-o"></i>
                 PDF
               </button>
@@ -3214,6 +3317,7 @@ ${headers
                       <strong>${scenarioData.deltaPercent === null ? "-" : `${this.formatMetric(scenarioData.deltaPercent, 2)}%`}</strong>
                     </div>
                   </div>
+                  ${this.renderScenarioToolbar(scenarioData)}
                   ${
                     this.state.scenarioState.activeView === "chart"
                       ? `
@@ -3269,10 +3373,12 @@ ${headers
     if (!this.root) {
       return;
     }
+    const focusState = this.captureFocusedField();
     if (this.screenMode === "landing") {
       this.root.innerHTML = this.renderLanding();
       this.disposeChart();
       this.disposeScenarioChart();
+      this.restoreFocusedField(focusState);
       return;
     }
 
@@ -3301,7 +3407,6 @@ ${headers
               </section>
             `
             : `
-              ${this.renderScenarioToolbar(scenarioData)}
               ${this.renderOverviewPanel(sheet, table)}
               ${this.renderDatasetPanelEnhanced(sheet, table)}
               ${this.renderQueryPanel(table)}
@@ -3315,6 +3420,7 @@ ${headers
 
     this.ensureChartRendered();
     this.ensureScenarioChartRendered();
+    this.restoreFocusedField(focusState);
   }
 }
 
