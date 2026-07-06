@@ -60,7 +60,6 @@
             </div>
 
             <div class="zrn_analitics_hub_body">
-                <t t-if="activeHub.key === 'direction'" t-call="zrn_analitics.HubDirection"/>
                 <t t-if="activeHub.key === 'commercial'" t-call="zrn_analitics.HubCommercial"/>
                 <t t-if="activeHub.key === 'financial'" t-call="zrn_analitics.HubFinancial"/>
                 <t t-if="activeHub.key === 'operations'" t-call="zrn_analitics.HubOperations"/>

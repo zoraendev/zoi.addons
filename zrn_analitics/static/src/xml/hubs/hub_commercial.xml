@@ -1100,10 +1100,6 @@
                 </div>
             </t>
 
-            <t t-if="!state.commercialLoading &amp;&amp; state.commercialTab !== 'overview' &amp;&amp; state.commercialTab !== 'portafolio' &amp;&amp; state.commercialTab !== 'cobertura' &amp;&amp; state.commercialTab !== 'canal' &amp;&amp; state.commercialTab !== 'producto' &amp;&amp; state.commercialTab !== 'cliente' &amp;&amp; state.commercialTab !== 'rfm' &amp;&amp; state.commercialTab !== 'insights' &amp;&amp; state.commercialTab !== 'tendencias' &amp;&amp; state.commercialTab !== 'bcg' &amp;&amp; state.commercialTab !== 'gap'">
-                <t t-call="zrn_analitics.HubCommercialFilters"/>
-            </t>
-
             <t t-if="state.channelModalRow">
                 <div t-if="!state.analyticsDetailModal" class="modal-backdrop fade show zrn_analitics_commercial_modal_backdrop" t-on-click="closeChannelModal"></div>
                 <div class="modal fade show d-block zrn_analitics_commercial_modal_shell" tabindex="-1" role="dialog">

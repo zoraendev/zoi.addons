@@ -27,17 +27,13 @@ const COMMERCIAL_TABS = [
   { key: "overview", label: "Overview", icon: "fa-home" },
   { key: "portafolio", label: "Portafolio", icon: "fa-archive" },
   { key: "cobertura", label: "Cobertura", icon: "fa-crosshairs" },
-  { key: "mapa", label: "Mapa PDV", icon: "fa-map-marker" },
   { key: "canal", label: "Por Canal", icon: "fa-sitemap" },
   { key: "cliente", label: "Por Cliente / PDV", icon: "fa-users" },
   { key: "rfm", label: "Clientes RFM", icon: "fa-line-chart" },
   { key: "insights", label: "Cliente Insights", icon: "fa-lightbulb-o" },
   { key: "producto", label: "Por Producto", icon: "fa-cube" },
-  { key: "unidades", label: "Unidades & Precio", icon: "fa-balance-scale" },
   { key: "tendencias", label: "Tendencias", icon: "fa-area-chart" },
   { key: "gap", label: "Sell-in vs Sell-out", icon: "fa-exchange" },
-  { key: "inteligencia", label: "Inteligencia", icon: "fa-compass" },
-  { key: "alertas", label: "Alertas & Acciones", icon: "fa-bell-o" },
   { key: "bcg", label: "Matriz BCG", icon: "fa-th-large" },
 ];
 
@@ -47,10 +43,6 @@ const FINANCIAL_TABS = [
   { key: "canal", label: "Por Canal", icon: "fa-sitemap" },
   { key: "marca", label: "Por Marca", icon: "fa-tags" },
   { key: "portafolio", label: "Portafolio", icon: "fa-archive" },
-  { key: "precios", label: "Precios vs Costos", icon: "fa-balance-scale" },
-  { key: "cartera", label: "Cartera", icon: "fa-credit-card" },
-  { key: "avanzado", label: "Analisis Avanzado", icon: "fa-search" },
-  { key: "pnl", label: "P&L", icon: "fa-bar-chart" },
   { key: "alertas", label: "Alertas", icon: "fa-bell-o" },
 ];
 
