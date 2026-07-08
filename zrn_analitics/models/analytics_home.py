@@ -14,6 +14,8 @@ from .rrhh_models import (
     PREDICTOR_QUESTIONS,
     RRHH_RISK_THRESHOLDS,
     VALIDATED_PATTERN_LIBRARY,
+    _is_rrhh_checklist_evaluated,
+    _is_rrhh_predictor_evaluated,
 )
 
 
@@ -5429,13 +5431,16 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             applicants_with_sources._zrn_rrhh_recompute_pattern_records()
         patterns = self.env['zrn.rrhh.validated.pattern'].search([('applicant_id', 'in', applicants.ids)])
 
+        evaluated_predictors = predictors.filtered(_is_rrhh_predictor_evaluated)
+        evaluated_checklists = checklists.filtered(_is_rrhh_checklist_evaluated)
+
         predictor_by_applicant = {record.applicant_id.id: record for record in predictors}
         checklist_by_applicant = {record.applicant_id.id: record for record in checklists}
         pattern_by_applicant = {record.applicant_id.id: record for record in patterns}
-        historical_rows = self._build_rrhh_historical_rows(applicants, predictors, checklists, patterns)
+        historical_rows = self._build_rrhh_historical_rows(applicants, evaluated_predictors, evaluated_checklists, patterns)
 
         risk_counter = defaultdict(int)
-        for predictor in predictors:
+        for predictor in evaluated_predictors:
             risk_counter[predictor.risk_level or 'not_evaluated'] += 1
         risk_distribution = [
             {
@@ -5464,8 +5469,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         current_checklist = checklist_by_applicant.get(selected_applicant.id) if selected_applicant else False
         current_pattern = pattern_by_applicant.get(selected_applicant.id) if selected_applicant else False
 
-        predictor_count = len(predictors)
-        checklist_count = len(checklists)
+        predictor_count = len(evaluated_predictors)
+        checklist_count = len(evaluated_checklists)
         pattern_count = len(patterns)
         completed_count = len([
             row for row in historical_rows
@@ -5480,7 +5485,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'checklist_count': checklist_count,
                 'pattern_count': pattern_count,
                 'high_risk_count': len([
-                    predictor for predictor in predictors
+                    predictor for predictor in evaluated_predictors
                     if predictor.risk_level in ('high', 'very_high')
                 ]),
                 'pending_count': max(len(applicants) - completed_count, 0),

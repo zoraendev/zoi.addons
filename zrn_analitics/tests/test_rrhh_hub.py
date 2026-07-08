@@ -126,3 +126,39 @@ class TestRrhhHub(TransactionCase):
         self.assertFalse(self.predictor_model.browse(predictor.id).exists())
         self.assertFalse(self.checklist_model.browse(checklist.id).exists())
         self.assertFalse(self.pattern_model.browse(pattern.id).exists())
+
+    def test_04_rrhh_patterns_ignore_predictor_not_evaluated(self):
+        applicant = self.applicant_model.create({
+            'name': 'Solicitud RRHH D',
+            'partner_name': 'Candidato Cuatro',
+            'job_id': self.job.id,
+        })
+        self.home_model.upsert_rrhh_predictor(applicant.id, {
+            'family_structure': '4',
+            'family_contact': '',
+            'asset_congruence': '',
+            'income_gaps': '',
+            'living_context': '',
+            'tattoo_visibility': '',
+            'job_count': '',
+            'conflict_history': '',
+            'recent_alcohol': '',
+            'sleep_condition': '',
+            'breakfast_condition': '',
+        })
+
+        payload = self.home_model.get_rrhh_hub_payload({
+            'selected_applicant_id': applicant.id,
+        })
+        pattern = self.pattern_model.search([('applicant_id', '=', applicant.id)], limit=1)
+        historical_row = next(
+            row for row in payload['historical_rows']
+            if row['applicant_id'] == applicant.id
+        )
+
+        self.assertTrue(payload['current_predictor'])
+        self.assertEqual(payload['current_predictor']['answered_count'], 1)
+        self.assertEqual(payload['summary']['predictor_count'], 0)
+        self.assertFalse(historical_row['has_predictor'])
+        self.assertEqual(pattern.matched_pattern_count, 0)
+        self.assertEqual(payload['current_patterns']['matched_pattern_count'], 0)

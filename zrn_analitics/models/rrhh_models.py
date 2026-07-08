@@ -466,6 +466,14 @@ def _build_pattern_flags(predictor, checklist):
     return flags
 
 
+def _is_rrhh_predictor_evaluated(predictor):
+    return bool(predictor and predictor.answered_count >= len(PREDICTOR_KEYS))
+
+
+def _is_rrhh_checklist_evaluated(checklist):
+    return bool(checklist and checklist.interview_date)
+
+
 class HrApplicant(models.Model):
     _inherit = 'hr.applicant'
 
@@ -748,6 +756,8 @@ class ZrnRrhhValidatedPattern(models.Model):
         for record in self:
             predictor = record.applicant_id._zrn_rrhh_get_predictor()
             checklist = record.applicant_id._zrn_rrhh_get_checklist()
+            predictor = predictor if _is_rrhh_predictor_evaluated(predictor) else False
+            checklist = checklist if _is_rrhh_checklist_evaluated(checklist) else False
             flags = _build_pattern_flags(predictor, checklist)
             matched_count = sum(1 for value in flags.values() if value)
             severity = 'low'
@@ -767,4 +777,3 @@ class ZrnRrhhValidatedPattern(models.Model):
                 'severity_level': severity,
                 'summary_text': summary,
             })
-
