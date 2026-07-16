@@ -37,6 +37,7 @@ Addon base para la capa analitica:
             'zrn_analitics/static/src/js/analytics_processing_sources.js',
             'zrn_analitics/static/src/js/analytics_processing_tables.js',
             'zrn_analitics/static/src/js/analytics_processing_view.js',
+            'zrn_analitics/static/src/js/dark_mode_bridge.js',
             'zrn_analitics/static/src/js/analytics_form_view.js',
             'zrn_analitics/static/src/js/analytics_hub_action.js',
             'zrn_analitics/static/src/xml/analytics_form_view.xml',

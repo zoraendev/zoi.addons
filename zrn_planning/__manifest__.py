@@ -32,16 +32,14 @@ Addon dedicado a planeacion operativa:
     'assets': {
         'web.assets_backend': [
             'zrn_analitics/static/lib/echarts/echarts.min.js',
+            'zrn_analitics/static/src/js/dark_mode_bridge.js',
             'zrn_planning/static/src/js/planning_form_view.js',
             'zrn_planning/static/src/js/production_report_form_view.js',
             'zrn_planning/static/src/xml/planning_form_view.xml',
             'zrn_planning/static/src/xml/production_report_form_view.xml',
             'zrn_planning/static/zrn/css/colors.css',
-            'zrn_planning/static/zrn/css/lib.css',
-        ],
-        # Dark mode: Odoo solo inyecta estos assets cuando html.dark está activo
-        'web.assets_web_dark': [
             'zrn_planning/static/zrn/css/colors-dark.css',
+            'zrn_planning/static/zrn/css/lib.css',
         ],
     },
     'installable': True,

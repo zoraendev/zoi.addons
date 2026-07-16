@@ -32,6 +32,7 @@ Addon dedicado a la capa comercial operativa:
         'web.assets_backend': [
             # Librería externa de ECharts cargada desde el módulo analítico común
             'zrn_analitics/static/lib/echarts/echarts.min.js',
+            'zrn_analitics/static/src/js/dark_mode_bridge.js',
             # Controlador JS para el rendering y control dinámico del dashboard comercial
             'zrn_commercial/static/src/js/commercial_form_view.js',
             # Assets del Hub comercial
