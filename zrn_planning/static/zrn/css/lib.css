@@ -1651,9 +1651,9 @@
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_bar,
   .o_form_view .zrn_planning_filter_form .zrn_planning_filter_bar {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px 18px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     width: 100%;
     padding: 14px 16px;
     border: 1px solid var(--z-color-border, #d7dce5);
@@ -1667,7 +1667,7 @@
     align-items: center;
     gap: 10px 14px;
     flex: 1 1 auto;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     margin-bottom: 0;
     min-width: 0;
   }
@@ -1741,7 +1741,7 @@
     gap: 10px;
     flex: 0 1 auto;
     flex-wrap: wrap;
-    padding-top: 19px;
+    padding: 4px 0;
   }
 
   .o_form_view.zrn_planning_filter_form .zrn_planning_filter_summary_item,
