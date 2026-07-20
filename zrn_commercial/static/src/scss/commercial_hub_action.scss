@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: #f6f7fb;
+  background: var(--z-color-bg-soft);
 }
 
 .o_action_manager .zrn_hub_header {
@@ -11,15 +11,15 @@
   justify-content: space-between;
   gap: 16px;
   padding: 20px 24px 14px;
-  background: #ffffff;
-  border-bottom: 1px solid #d9dee7;
+  background: var(--z-color-surface-raised);
+  border-bottom: 1px solid var(--z-color-border);
 }
 
 .o_action_manager .zrn_hub_header_main h1 {
   margin: 0;
   font-size: 26px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--z-color-text-strong);
 }
 
 .o_action_manager .zrn_hub_kicker {
@@ -28,7 +28,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #7a8699;
+  color: var(--z-color-text-muted);
 }
 
 .o_action_manager .zrn_hub_header_actions {
@@ -40,26 +40,26 @@
 .o_action_manager .zrn_hub_switch.btn {
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid #d9dee7;
+  border: 1px solid var(--z-color-border);
   border-radius: 6px;
-  background: #ffffff;
-  color: #445066;
+  background: var(--z-color-surface-raised);
+  color: var(--z-color-text);
   font-weight: 600;
 }
 
 .o_action_manager .zrn_hub_switch.btn:hover,
 .o_action_manager .zrn_hub_switch.btn:focus {
-  border-color: #aab4c5;
-  background: #f8fafc;
-  color: #253046;
+  border-color: var(--z-color-border-strong);
+  background: var(--z-color-surface-2);
+  color: var(--z-color-text-strong);
 }
 
 .o_action_manager .zrn_hub_switch_active.btn,
 .o_action_manager .zrn_hub_switch_active.btn:hover,
 .o_action_manager .zrn_hub_switch_active.btn:focus {
-  border-color: #bd1730;
-  background: #bd1730;
-  color: #ffffff;
+  border-color: var(--z-color-brand-700);
+  background: var(--z-color-brand-700);
+  color: var(--z-color-text-inverse);
 }
 
 .o_action_manager .zrn_hub_body {
@@ -68,21 +68,21 @@
 
 .o_action_manager .zrn_hub_panel {
   padding: 24px;
-  border: 1px solid #d9dee7;
+  border: 1px solid var(--z-color-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--z-color-surface-raised);
 }
 
 .o_action_manager .zrn_hub_panel_title {
   margin-bottom: 8px;
   font-size: 22px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--z-color-text-strong);
 }
 
 .o_action_manager .zrn_hub_panel_text {
   font-size: 15px;
-  color: #5b667a;
+  color: var(--z-color-text-muted);
 }
 
 @media (max-width: 991.98px) {
@@ -94,56 +94,4 @@
   .o_action_manager .zrn_hub_header_actions {
     width: 100%;
   }
-}
-
-/* ── Dark mode overrides ── */
-html.dark .o_action_manager .zrn_hub_workspace {
-  background: #111827;
-}
-
-html.dark .o_action_manager .zrn_hub_header {
-  background: #1f2937;
-  border-bottom-color: #374151;
-}
-
-html.dark .o_action_manager .zrn_hub_header_main h1 {
-  color: #f3f4f6;
-}
-
-html.dark .o_action_manager .zrn_hub_kicker {
-  color: #9ca3af;
-}
-
-html.dark .o_action_manager .zrn_hub_switch.btn {
-  border-color: #374151;
-  background: #1f2937;
-  color: #d1d5db;
-}
-
-html.dark .o_action_manager .zrn_hub_switch.btn:hover,
-html.dark .o_action_manager .zrn_hub_switch.btn:focus {
-  border-color: #4b5563;
-  background: #374151;
-  color: #f3f4f6;
-}
-
-html.dark .o_action_manager .zrn_hub_switch_active.btn,
-html.dark .o_action_manager .zrn_hub_switch_active.btn:hover,
-html.dark .o_action_manager .zrn_hub_switch_active.btn:focus {
-  border-color: #bd1730;
-  background: #bd1730;
-  color: #ffffff;
-}
-
-html.dark .o_action_manager .zrn_hub_panel {
-  border-color: #374151;
-  background: #1f2937;
-}
-
-html.dark .o_action_manager .zrn_hub_panel_title {
-  color: #f3f4f6;
-}
-
-html.dark .o_action_manager .zrn_hub_panel_text {
-  color: #9ca3af;
 }
