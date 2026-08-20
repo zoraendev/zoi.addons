@@ -416,6 +416,31 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
     def _get_empty_commercial_hub_payload(self, empty_message='No hay marcas comerciales creadas en Zoraen Commercial.'):
         date_from, date_to = self._get_commercial_hub_period()
         _month_starts, month_labels = self._get_recent_month_labels(date_to)
+        rfm_segments = [
+            {'key': 'champion', 'name': 'Campeon', 'emoji': ''},
+            {'key': 'loyal', 'name': 'Leal', 'emoji': ''},
+            {'key': 'cant_lose', 'name': 'No perderlo', 'emoji': ''},
+            {'key': 'at_risk', 'name': 'En riesgo', 'emoji': ''},
+            {'key': 'promising', 'name': 'Prometedor', 'emoji': ''},
+            {'key': 'need_attention', 'name': 'Atender', 'emoji': ''},
+            {'key': 'new', 'name': 'Nuevo', 'emoji': ''},
+            {'key': 'hibernating', 'name': 'Hibernando', 'emoji': ''},
+            {'key': 'sporadic', 'name': 'Esporadico', 'emoji': ''},
+        ]
+        rfm_segment_data = {
+            segment['key']: {
+                'name': segment['name'],
+                'count': 0,
+                'revenue': 0.0,
+                'revenue_pct': 0.0,
+                'top_clients': [],
+            }
+            for segment in rfm_segments
+        }
+        empty_bcg_sum = {
+            quadrant: {'n': 0, 'r': 0.0, 'g': 0.0, 'am': 0.0}
+            for quadrant in ['S', 'C', 'I', 'D']
+        }
         return {
             'summary': {
                 'sync_label': fields.Date.to_string(date_to),
@@ -443,6 +468,73 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             'top_customers': [],
             'top_channels': [],
             'top_products': [],
+            'portfolio_rows': [],
+            'all_clients': [],
+            'clients_rfm': {
+                'meta': {
+                    'today': fields.Date.to_string(date_to),
+                    'current_month_key': date_to.strftime('%Y-%m'),
+                    'n_clients': 0,
+                    'pipeline': 'analytics_home_rfm v1',
+                },
+                'segments_order': rfm_segments,
+                'segments': rfm_segment_data,
+                'abc': {
+                    'a_count': 0,
+                    'b_count': 0,
+                    'c_count': 0,
+                    'a_rev': 0.0,
+                    'b_rev': 0.0,
+                    'c_rev': 0.0,
+                },
+                'rf_matrix': {},
+                'concentration': {
+                    'top5_pct': 0.0,
+                    'top10_pct': 0.0,
+                    'a_pct': 0.0,
+                },
+                'exec': {
+                    'champions_loyal_count': 0,
+                    'champions_loyal_pct': 0.0,
+                    'at_risk_count': 0,
+                    'at_risk_rev': 0.0,
+                    'at_risk_rev_pct': 0.0,
+                },
+                'pareto': [],
+                'clients': [],
+            },
+            'cohort_retention': {
+                'months': [],
+                'matrix': [],
+            },
+            'market_basket': {
+                'pairs': [],
+            },
+            'cadence': {
+                'clients': [],
+                'segments': {},
+                'fugados_top': [],
+            },
+            'ltv_forecast': {
+                'months_observed': [],
+                'project_months': ['', '', ''],
+                'clients': [],
+            },
+            'all_products': [],
+            'growers': [],
+            'decliners': [],
+            'sellin_vs_sellout': {
+                'walmart': {'summary': {}, 'by_pdv': [], 'by_sku': []},
+                'puma': {'summary': {}, 'by_pdv': [], 'by_sku': []},
+            },
+            'bcg_data': {
+                'skus': [],
+                'mr': 0.0,
+                'mm': 0.0,
+                'tr': 0.0,
+                'cov': 0.0,
+                'sum': empty_bcg_sum,
+            },
         }
 
     @api.model

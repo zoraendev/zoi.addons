@@ -818,7 +818,13 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
             'target': 'new',
         }
 
-    def _create_supply_plan(self, target_state='draft', notes=False, plan_name=False):
+    def _create_supply_plan(
+        self,
+        target_state='draft',
+        notes=False,
+        plan_name=False,
+        purchase_line_payload=None,
+    ):
         """
         Genera el plan de abastecimiento (zrn_planning.mfg.plan) y sus líneas/orígenes correspondientes
         basado en los datos del reporte actual del asistente.
@@ -892,6 +898,12 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
         product_to_line_id = {line.product_id.id: line.id for line in created_lines}
 
         # Agrupar requerimientos de insumos por producto terminado e insumo para crear líneas de supply
+        purchase_qty_by_component = {
+            item['component_id']: max(float(item.get('purchase_qty') or 0.0), 0.0)
+            for item in (purchase_line_payload or [])
+            if item.get('component_id')
+        }
+
         supply_vals = []
         grouped_requirements = {}
         for req in self.report_requirement_line_ids:
@@ -906,13 +918,42 @@ class ZrnPlanningPurchasePlanningWizard(models.TransientModel):
             grouped_requirements[key]['required_qty'] += req.required_qty
             grouped_requirements[key]['suggested_purchase_qty'] += req.suggested_purchase_qty
 
+        requirements_by_component = {}
+        for key, req_data in grouped_requirements.items():
+            requirements_by_component.setdefault(key[1], []).append((key, req_data))
+
+        for component_id, component_requirements in requirements_by_component.items():
+            suggested_total = sum(
+                max(req_data['suggested_purchase_qty'], 0.0)
+                for _key, req_data in component_requirements
+            )
+            adjusted_total = purchase_qty_by_component.get(component_id, suggested_total)
+            weights = [
+                max(req_data['suggested_purchase_qty'], 0.0)
+                for _key, req_data in component_requirements
+            ]
+            if not sum(weights):
+                weights = [
+                    max(req_data['required_qty'], 0.0)
+                    for _key, req_data in component_requirements
+                ]
+            weight_total = sum(weights)
+            remaining_qty = adjusted_total
+            for index, ((_key, req_data), weight) in enumerate(zip(component_requirements, weights)):
+                if index == len(component_requirements) - 1:
+                    allocated_qty = remaining_qty
+                else:
+                    allocated_qty = adjusted_total * weight / weight_total if weight_total else 0.0
+                    remaining_qty -= allocated_qty
+                req_data['purchase_qty'] = allocated_qty
+
         for (finished_product_id, component_id), req_data in grouped_requirements.items():
             line_id = product_to_line_id.get(finished_product_id)
             if not line_id:
                 continue
 
             qty_required = req_data['required_qty']
-            qty_to_buy = req_data['suggested_purchase_qty']
+            qty_to_buy = req_data['purchase_qty']
             qty_free = req_data['stock_free']
 
             # Definir estado de abastecimiento del insumo
@@ -1297,6 +1338,11 @@ class ZrnPlanningPurchasePlanningCreatePlanWizard(models.TransientModel):
         related='purchase_wizard_id.report_row_count',
         readonly=True,
     )
+    planning_line_ids = fields.One2many(
+        'zrn_planning.purchase.planning.create.plan.wizard.line',
+        'wizard_id',
+        string='Cantidades a comprar',
+    )
     report_supply_line_ids = fields.Many2many(
         'zrn_planning.purchase.planning.wizard.report.supply.line',
         string='Insumos del planning',
@@ -1304,18 +1350,82 @@ class ZrnPlanningPurchasePlanningCreatePlanWizard(models.TransientModel):
         readonly=True,
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._sync_planning_line_ids()
+        return records
+
     @api.depends('purchase_wizard_id', 'purchase_wizard_id.report_supply_line_ids')
     def _compute_report_supply_line_ids(self):
         for wizard in self:
             wizard.report_supply_line_ids = [(6, 0, wizard.purchase_wizard_id.report_supply_line_ids.ids)]
+
+    def _sync_planning_line_ids(self):
+        for wizard in self:
+            wizard.planning_line_ids.unlink()
+            if not wizard.purchase_wizard_id:
+                continue
+            values = []
+            for sequence, supply in enumerate(
+                wizard.purchase_wizard_id.report_supply_line_ids.sorted(
+                    key=lambda line: (
+                        line.first_required_date or fields.Date.today(),
+                        line.component_id.display_name or '',
+                        line.id,
+                    )
+                ),
+                start=1,
+            ):
+                values.append({
+                    'wizard_id': wizard.id,
+                    'sequence': sequence * 10,
+                    'component_id': supply.component_id.id,
+                    'default_code': supply.default_code or '',
+                    'total_required_qty': supply.total_required_qty,
+                    'stock_free': supply.stock_free,
+                    'suggested_purchase_qty': supply.suggested_purchase_qty,
+                    'purchase_qty': supply.suggested_purchase_qty,
+                })
+            if values:
+                self.env['zrn_planning.purchase.planning.create.plan.wizard.line'].create(values)
 
     def action_save_plan(self):
         """
         Guarda el plan llamando al método del asistente principal.
         """
         self.ensure_one()
+        if self.planning_line_ids.filtered(lambda line: line.purchase_qty < 0):
+            raise UserError(_('La cantidad a comprar no puede ser negativa.'))
         return self.purchase_wizard_id._create_supply_plan(
             target_state=self.plan_state,
             notes=self.notes or False,
             plan_name=self.plan_name or False,
+            purchase_line_payload=[
+                {
+                    'component_id': line.component_id.id,
+                    'purchase_qty': line.purchase_qty,
+                }
+                for line in self.planning_line_ids.sorted(key=lambda item: (item.sequence, item.id))
+            ],
         )
+
+
+class ZrnPlanningPurchasePlanningCreatePlanWizardLine(models.TransientModel):
+    _name = 'zrn_planning.purchase.planning.create.plan.wizard.line'
+    _description = 'Insumo editable para crear planning de abastecimiento'
+    _order = 'sequence asc, id asc'
+
+    wizard_id = fields.Many2one(
+        'zrn_planning.purchase.planning.create.plan.wizard',
+        string='Wizard',
+        required=True,
+        ondelete='cascade',
+    )
+    sequence = fields.Integer(string='Secuencia', default=10)
+    component_id = fields.Many2one('product.product', string='Insumo', required=True)
+    default_code = fields.Char(string='Referencia')
+    total_required_qty = fields.Float(string='Requerido total')
+    stock_free = fields.Float(string='Stock libre')
+    suggested_purchase_qty = fields.Float(string='Compra sugerida')
+    purchase_qty = fields.Float(string='Cantidad a comprar')

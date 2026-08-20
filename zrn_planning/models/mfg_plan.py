@@ -477,7 +477,11 @@ class ZrnPlanningMfgPlanLine(models.Model):
     delivery_date = fields.Date(string='Fecha de entrega objetivo')
     qty_planned = fields.Float(string='Cantidad planeada', digits='Product Unit of Measure', default=0.0)
     qty_released = fields.Float(string='Cantidad liberada', digits='Product Unit of Measure', default=0.0)
-    qty_executed = fields.Float(string='Cantidad ejecutada', digits='Product Unit of Measure', default=0.0)
+    qty_executed = fields.Float(
+        string='Cantidad ejecutada',
+        digits='Product Unit of Measure',
+        compute='_compute_qty_executed',
+    )
     state = fields.Selection(
         [
             ('draft', 'Borrador'),
@@ -524,6 +528,85 @@ class ZrnPlanningMfgPlanLine(models.Model):
         compute='_compute_supply_count',
         store=False,
     )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines.filtered(lambda line: line.plan_id.planning_basis != 'mixed')._sync_supplies_from_bom()
+        return lines
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {'product_id', 'bom_id', 'qty_planned', 'warehouse_id'} & set(vals):
+            self.filtered(lambda line: line.plan_id.planning_basis != 'mixed')._sync_supplies_from_bom()
+        return result
+
+    @api.depends(
+        'production_ids.qty_produced',
+        'production_ids.product_uom_id',
+        'production_ids.state',
+    )
+    def _compute_qty_executed(self):
+        for line in self:
+            executed_qty = 0.0
+            for production in line.production_ids.filtered(lambda production: production.state != 'cancel'):
+                executed_qty += production.product_uom_id._compute_quantity(
+                    production.qty_produced,
+                    line.product_id.uom_id,
+                    round=False,
+                )
+            line.qty_executed = executed_qty
+
+    def _sync_supplies_from_bom(self):
+        Supply = self.env['zrn_planning.mfg.plan.supply']
+        for line in self:
+            line.supply_ids.unlink()
+            if not line.product_id or not line.bom_id or line.qty_planned <= 0:
+                continue
+
+            planned_qty = line.product_id.uom_id._compute_quantity(
+                line.qty_planned,
+                line.bom_id.product_uom_id,
+                round=False,
+            )
+            factor = planned_qty / line.bom_id.product_qty
+            _boms, bom_lines = line.bom_id.explode(
+                line.product_id,
+                factor,
+                picking_type=line.bom_id.picking_type_id,
+            )
+
+            required_by_product = {}
+            for bom_line, bom_data in bom_lines:
+                component = bom_line.product_id
+                required_qty = bom_line.product_uom_id._compute_quantity(
+                    bom_data['qty'],
+                    component.uom_id,
+                    round=False,
+                )
+                required_by_product[component] = required_by_product.get(component, 0.0) + required_qty
+
+            location = line.warehouse_id.lot_stock_id
+            for component, required_qty in required_by_product.items():
+                stock_product = component.with_context(location=location.id) if location else component
+                qty_on_hand = stock_product.qty_available
+                qty_forecast = stock_product.virtual_available
+                qty_to_buy = max(required_qty - max(qty_forecast, 0.0), 0.0)
+                Supply.create({
+                    'plan_line_id': line.id,
+                    'component_id': component.id,
+                    'qty_per_unit': required_qty / line.qty_planned,
+                    'qty_required': required_qty,
+                    'qty_on_hand': qty_on_hand,
+                    'qty_forecast': qty_forecast,
+                    'qty_to_buy': qty_to_buy,
+                    'qty_to_produce': 0.0,
+                    'supply_status': (
+                        'covered_stock'
+                        if qty_to_buy <= 0
+                        else ('to_buy' if qty_to_buy >= required_qty else 'mixed')
+                    ),
+                })
 
     @api.depends('supply_ids', 'production_ids')
     def _compute_supply_count(self):
@@ -637,6 +720,14 @@ class MrpProduction(models.Model):
         readonly=True,
         copy=False,
     )
+
+    def _get_backorder_mo_vals(self):
+        values = super()._get_backorder_mo_vals()
+        values.update({
+            'zrn_prodigyn_plan_id': self.zrn_prodigyn_plan_id.id,
+            'zrn_prodigyn_plan_line_id': self.zrn_prodigyn_plan_line_id.id,
+        })
+        return values
 
 
 class PurchaseOrder(models.Model):

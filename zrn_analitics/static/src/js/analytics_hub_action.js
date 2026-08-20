@@ -984,8 +984,9 @@ class ZrnAnalyticsHubAction extends Component {
         "get_commercial_hub_payload",
         [this.getCurrentCommercialFilters()],
       );
-      this.state.commercialPayload = payload;
-      this.syncCommercialFiltersFromPayload(payload);
+      const normalizedPayload = this.normalizeCommercialPayload(payload);
+      this.state.commercialPayload = normalizedPayload;
+      this.syncCommercialFiltersFromPayload(normalizedPayload);
       this.syncPortfolioStateFromPayload();
     } finally {
       this.state.commercialLoading = false;
@@ -1972,38 +1973,210 @@ class ZrnAnalyticsHubAction extends Component {
   }
 
   get commercialPayload() {
-    return (
-      this.state.commercialPayload || {
-        summary: {
-          sync_label: "",
-          period_label: "",
-          total_amount: 0,
-          order_count: 0,
-          customer_count: 0,
-          point_count: 0,
-          product_count: 0,
-          brand_count: 0,
-          average_ticket: 0,
-          currency_symbol: "$",
+    return this.normalizeCommercialPayload(this.state.commercialPayload);
+  }
+
+  getDefaultCommercialPayload() {
+    const rfmSegments = [
+      { key: "champion", name: "Campeon", emoji: "" },
+      { key: "loyal", name: "Leal", emoji: "" },
+      { key: "cant_lose", name: "No perderlo", emoji: "" },
+      { key: "at_risk", name: "En riesgo", emoji: "" },
+      { key: "promising", name: "Prometedor", emoji: "" },
+      { key: "need_attention", name: "Atender", emoji: "" },
+      { key: "new", name: "Nuevo", emoji: "" },
+      { key: "hibernating", name: "Hibernando", emoji: "" },
+      { key: "sporadic", name: "Esporadico", emoji: "" },
+    ];
+    const segments = Object.fromEntries(
+      rfmSegments.map((segment) => [
+        segment.key,
+        {
+          name: segment.name,
+          count: 0,
+          revenue: 0,
+          revenue_pct: 0,
+          top_clients: [],
         },
-        active_filters: cloneDefaultFilters(),
-        filter_options: {
-          periods: [],
-          channels: [],
-          brands: [],
-          categories: [],
-        },
-        has_brands: false,
-        empty_message: "",
-        revenue_series: [],
-        brand_mix: [],
-        brand_catalog: [],
-        top_customers: [],
-        top_channels: [],
-        top_products: [],
-        portfolio_rows: [],
-      }
+      ])
     );
+    const emptySellin = { summary: {}, by_pdv: [], by_sku: [] };
+    return {
+      summary: {
+        sync_label: "",
+        period_label: "",
+        total_amount: 0,
+        order_count: 0,
+        customer_count: 0,
+        point_count: 0,
+        product_count: 0,
+        brand_count: 0,
+        average_ticket: 0,
+        currency_symbol: "$",
+      },
+      active_filters: cloneDefaultFilters(),
+      filter_options: {
+        periods: [],
+        channels: [],
+        brands: [],
+        categories: [],
+      },
+      has_brands: false,
+      empty_message: "",
+      revenue_series: [],
+      brand_mix: [],
+      brand_catalog: [],
+      top_customers: [],
+      top_channels: [],
+      top_products: [],
+      portfolio_rows: [],
+      all_clients: [],
+      clients_rfm: {
+        meta: { today: "", current_month_key: "", n_clients: 0, pipeline: "" },
+        segments_order: rfmSegments,
+        segments,
+        abc: { a_count: 0, b_count: 0, c_count: 0, a_rev: 0, b_rev: 0, c_rev: 0 },
+        rf_matrix: {},
+        concentration: { top5_pct: 0, top10_pct: 0, a_pct: 0 },
+        exec: {
+          champions_loyal_count: 0,
+          champions_loyal_pct: 0,
+          at_risk_count: 0,
+          at_risk_rev: 0,
+          at_risk_rev_pct: 0,
+        },
+        pareto: [],
+        clients: [],
+      },
+      cohort_retention: { months: [], matrix: [] },
+      market_basket: { pairs: [] },
+      cadence: { clients: [], segments: {}, fugados_top: [] },
+      ltv_forecast: { months_observed: [], project_months: ["", "", ""], clients: [] },
+      all_products: [],
+      growers: [],
+      decliners: [],
+      sellin_vs_sellout: {
+        walmart: { ...emptySellin },
+        puma: { ...emptySellin },
+      },
+      bcg_data: {
+        skus: [],
+        mr: 0,
+        mm: 0,
+        tr: 0,
+        cov: 0,
+        sum: {
+          S: { n: 0, r: 0, g: 0, am: 0 },
+          C: { n: 0, r: 0, g: 0, am: 0 },
+          I: { n: 0, r: 0, g: 0, am: 0 },
+          D: { n: 0, r: 0, g: 0, am: 0 },
+        },
+      },
+    };
+  }
+
+  normalizeCommercialPayload(payload = {}) {
+    const defaults = this.getDefaultCommercialPayload();
+    const incoming = payload || {};
+    const asArray = (value, fallback = []) => Array.isArray(value) ? value : fallback;
+    const incomingRfm = incoming.clients_rfm || {};
+    const incomingSegments = incomingRfm.segments || {};
+    const normalizedSegments = Object.fromEntries(
+      Object.entries(defaults.clients_rfm.segments).map(([key, segment]) => [
+        key,
+        {
+          ...segment,
+          ...(incomingSegments[key] || {}),
+          top_clients: asArray(incomingSegments[key]?.top_clients),
+        },
+      ])
+    );
+    for (const [key, segment] of Object.entries(incomingSegments)) {
+      if (!normalizedSegments[key]) {
+        normalizedSegments[key] = {
+          name: segment?.name || key,
+          count: segment?.count || 0,
+          revenue: segment?.revenue || 0,
+          revenue_pct: segment?.revenue_pct || 0,
+          top_clients: asArray(segment?.top_clients),
+        };
+      }
+    }
+    const incomingBcgSum = incoming.bcg_data?.sum || {};
+    const normalizedBcgSum = Object.fromEntries(
+      Object.entries(defaults.bcg_data.sum).map(([key, quadrant]) => [
+        key,
+        { ...quadrant, ...(incomingBcgSum[key] || {}) },
+      ])
+    );
+    return {
+      ...defaults,
+      ...incoming,
+      summary: { ...defaults.summary, ...(incoming.summary || {}) },
+      active_filters: { ...defaults.active_filters, ...(incoming.active_filters || {}) },
+      filter_options: { ...defaults.filter_options, ...(incoming.filter_options || {}) },
+      revenue_series: asArray(incoming.revenue_series),
+      brand_mix: asArray(incoming.brand_mix),
+      brand_catalog: asArray(incoming.brand_catalog),
+      top_customers: asArray(incoming.top_customers),
+      top_channels: asArray(incoming.top_channels),
+      top_products: asArray(incoming.top_products),
+      portfolio_rows: asArray(incoming.portfolio_rows),
+      all_clients: asArray(incoming.all_clients),
+      clients_rfm: {
+        ...defaults.clients_rfm,
+        ...incomingRfm,
+        meta: { ...defaults.clients_rfm.meta, ...(incomingRfm.meta || {}) },
+        abc: { ...defaults.clients_rfm.abc, ...(incomingRfm.abc || {}) },
+        concentration: {
+          ...defaults.clients_rfm.concentration,
+          ...(incomingRfm.concentration || {}),
+        },
+        exec: { ...defaults.clients_rfm.exec, ...(incomingRfm.exec || {}) },
+        rf_matrix: { ...defaults.clients_rfm.rf_matrix, ...(incomingRfm.rf_matrix || {}) },
+        segments_order: asArray(incomingRfm.segments_order, defaults.clients_rfm.segments_order),
+        segments: normalizedSegments,
+        pareto: asArray(incomingRfm.pareto),
+        clients: asArray(incomingRfm.clients),
+      },
+      cohort_retention: {
+        ...defaults.cohort_retention,
+        ...(incoming.cohort_retention || {}),
+        months: asArray(incoming.cohort_retention?.months),
+        matrix: asArray(incoming.cohort_retention?.matrix),
+      },
+      market_basket: {
+        ...defaults.market_basket,
+        ...(incoming.market_basket || {}),
+        pairs: asArray(incoming.market_basket?.pairs),
+      },
+      cadence: {
+        ...defaults.cadence,
+        ...(incoming.cadence || {}),
+        clients: asArray(incoming.cadence?.clients),
+        fugados_top: asArray(incoming.cadence?.fugados_top),
+      },
+      ltv_forecast: {
+        ...defaults.ltv_forecast,
+        ...(incoming.ltv_forecast || {}),
+        months_observed: asArray(incoming.ltv_forecast?.months_observed),
+        project_months: asArray(incoming.ltv_forecast?.project_months, defaults.ltv_forecast.project_months),
+        clients: asArray(incoming.ltv_forecast?.clients),
+      },
+      all_products: asArray(incoming.all_products),
+      growers: asArray(incoming.growers),
+      decliners: asArray(incoming.decliners),
+      sellin_vs_sellout: {
+        ...defaults.sellin_vs_sellout,
+        ...(incoming.sellin_vs_sellout || {}),
+      },
+      bcg_data: {
+        ...defaults.bcg_data,
+        ...(incoming.bcg_data || {}),
+        skus: asArray(incoming.bcg_data?.skus),
+        sum: normalizedBcgSum,
+      },
+    };
   }
 
   get rrhhPayload() {

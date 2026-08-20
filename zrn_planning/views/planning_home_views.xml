@@ -43,19 +43,11 @@
                                 />
                             </div>
                             <div class="zrn_planning_home_quickstats zrn_planning_home_quickstats_top">
-                                <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_neutral">
-                                    <span class="zrn_planning_home_stat_label">Frentes</span>
-                                    <span class="zrn_planning_home_stat_value">3</span>
-                                </div>
                                 <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_brand">
                                     <span class="zrn_planning_home_stat_label">Planes</span>
                                     <span class="zrn_planning_home_stat_value">
                                         <field name="active_plan_count" readonly="1" nolabel="1"/>
                                     </span>
-                                </div>
-                                <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_alert">
-                                    <span class="zrn_planning_home_stat_label">Alertas</span>
-                                    <span class="zrn_planning_home_stat_value">2</span>
                                 </div>
                             </div>
                         </div>

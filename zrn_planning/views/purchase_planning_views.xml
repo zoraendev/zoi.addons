@@ -696,6 +696,7 @@
                     <group invisible="1">
                         <field name="purchase_wizard_id"/>
                         <field name="report_supply_line_ids"/>
+                        <field name="planning_line_ids"/>
                         <field name="report_date_range_mode"/>
                         <field name="report_date_from_label"/>
                         <field name="report_date_to_label"/>
@@ -733,12 +734,14 @@
                             </group>
                         </group>
                         <div class="zrn_planning_create_plan_modal_table">
-                            <field name="report_supply_line_ids" readonly="1" nolabel="1">
-                                <tree create="0" edit="0" delete="0">
-                                    <field name="component_id" string="Insumo"/>
-                                    <field name="total_required_qty" sum="Requerido total"/>
-                                    <field name="stock_free" sum="Stock libre"/>
-                                    <field name="suggested_purchase_qty" sum="Compra sugerida"/>
+                            <field name="planning_line_ids" nolabel="1">
+                                <tree create="0" edit="1" delete="0">
+                                    <field name="component_id" string="Insumo" readonly="1"/>
+                                    <field name="default_code" readonly="1"/>
+                                    <field name="total_required_qty" sum="Requerido total" readonly="1"/>
+                                    <field name="stock_free" sum="Stock libre" readonly="1"/>
+                                    <field name="suggested_purchase_qty" sum="Compra sugerida" readonly="1"/>
+                                    <field name="purchase_qty" sum="Cantidad a comprar"/>
                                 </tree>
                             </field>
                         </div>

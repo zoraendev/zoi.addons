@@ -10,6 +10,11 @@ class TestPlanningHome(TransactionCase):
         super(TestPlanningHome, cls).setUpClass()
         cls.home_model = cls.env['zrn_planning.home']
         cls.plan_model = cls.env['zrn_planning.mfg.plan']
+        cls.initial_active_plan_count = cls.plan_model.search_count([
+            ('company_id', '=', cls.env.company.id),
+            ('active', '=', True),
+            ('state', 'in', ['draft', 'pending_confirmation', 'approved', 'released']),
+        ])
 
         # Crear planes de fabricación de prueba (planning_basis = 'sale') - creamos 8 para validar el límite de 7
         for i in range(8):
@@ -43,8 +48,11 @@ class TestPlanningHome(TransactionCase):
         """Valida que los planes recientes se limiten exactamente a 7"""
         self.home_record._compute_home_dashboard()
 
-        # Contador global de planes activos (deben ser 16 activos en total)
-        self.assertEqual(self.home_record.active_plan_count, 16)
+        # Los 16 planes de la prueba se suman a los que ya existan en la base.
+        self.assertEqual(
+            self.home_record.active_plan_count,
+            self.initial_active_plan_count + 16,
+        )
 
         # Planes de fabricación
         self.assertEqual(len(self.home_record.recent_production_plan_ids), 7)
