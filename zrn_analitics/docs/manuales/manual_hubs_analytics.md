@@ -91,6 +91,8 @@ Por eso puede pasar que:
 
 El Hub Comercial centraliza el analisis de ventas de marcas activas, clientes, portafolio, cobertura, comportamiento de compra y posicionamiento de SKUs.
 
+![Pantalla Principal de Zoraen Analytics](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783400915605.png)
+
 Sirve para:
 
 - revisar desempeno comercial;
@@ -112,6 +114,8 @@ Filtros disponibles:
 Los filtros afectan los tabs que dependen del payload comercial o de cobertura.
 
 ### 5.3 Tab: Overview
+
+![Hub Comercial - Vista Principal](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783400945076.png)
 
 #### Seccion: KPIs principales
 
@@ -210,6 +214,8 @@ Uso:
 
 ### 5.4 Tab: Portafolio
 
+![Hub Comercial - Vista de Portafolio](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783400960631.png)
+
 #### Seccion: Filtros del tab
 
 Usa el mismo set de filtros comerciales, aplicados sobre la estructura de portafolio por marca, linea y SKU.
@@ -251,6 +257,8 @@ Uso:
 ### 5.5 Tab: Cobertura
 
 Este tab usa `get_coverage_dashboard_data`.
+
+![Hub Comercial - Cobertura Panel Superior](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783400987654.png)
 
 #### Seccion: Summary cards
 
@@ -300,7 +308,9 @@ Calculo:
 Uso:
 
 - identificar canales con oportunidad de penetracion;
-- diferenciar canal grande con baja captura vs canal pequeno saturado.
+- diferenciar canal grande con baja captura vs canal de cobertura saturado.
+
+![Hub Comercial - Cobertura Panel Inferior](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401007512.png)
 
 #### Seccion: Matriz canal x marca
 
@@ -386,6 +396,8 @@ Uso:
 
 Este tab usa `get_channel_dashboard_data`.
 
+![Hub Comercial - Por Canal](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401420428.png)
+
 #### Seccion: Summary cards
 
 Campos:
@@ -441,6 +453,8 @@ Uso:
 
 ### 5.7 Tab: Por Cliente / PDV
 
+![Hub Comercial - Por Cliente](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401429379.png)
+
 #### Seccion: Dataset completo de clientes
 
 Que muestra:
@@ -465,6 +479,10 @@ Uso:
 - cruzar con RFM o holes.
 
 ### 5.8 Tab: Clientes RFM
+
+Este tab calcula y muestra las métricas de recencia y frecuencia de la cartera de clientes.
+
+![Hub Comercial - Clientes RFM Superior](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401452215.png)
 
 #### Seccion: Segmentacion RFM
 
@@ -507,6 +525,8 @@ Segmentos generados:
 - Hibernando
 - Esporadico
 
+![Hub Comercial - Clientes RFM Inferior](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401460907.png)
+
 #### Seccion: ABC de clientes
 
 Calculo:
@@ -537,6 +557,8 @@ Uso:
 ### 5.9 Tab: Cliente Insights
 
 Este tab agrupa analiticas derivadas del dataset de clientes.
+
+![Hub Comercial - Cliente Insights](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401475558.png)
 
 #### Seccion: Cohort retention
 
@@ -635,6 +657,10 @@ Uso:
 
 ### 5.11 Tab: Tendencias
 
+Este apartado analiza la aceleración o declive de cada SKU.
+
+![Hub Comercial - Tendencias de Venta](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401744992.png)
+
 #### Seccion: Growers y Decliners
 
 Calculo:
@@ -674,6 +700,10 @@ Uso:
 - no debe usarse como verdad contable ni inventario exacto de cliente.
 
 ### 5.13 Tab: Matriz BCG
+
+Este cuadrante clasifica dinámicamente tu portafolio según margen y volumen de venta.
+
+![Hub Comercial - Matriz BCG](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401780169.png)
 
 #### Seccion: Dataset BCG
 
@@ -726,6 +756,10 @@ Calculo base por linea:
 
 ### 6.3 Tab: Resumen
 
+Este apartado consolida los indicadores generales de rentabilidad de las marcas.
+
+![Hub Financiero - Resumen](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401833879.png)
+
 #### Seccion: KPIs
 
 - Revenue
@@ -777,6 +811,10 @@ Sirve como trazabilidad del dato y recordatorio de que el costo es teorico.
 
 ### 6.4 Tab: Por Producto
 
+Este apartado detalla el margen bruto por SKU individual.
+
+![Hub Financiero - Por Producto](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401847292.png)
+
 #### Secciones
 
 - top 10 por margen
@@ -798,6 +836,10 @@ Uso:
 - abrir detalle por canal y PDV.
 
 ### 6.5 Tab: Por Canal
+
+Analiza la dispersión de márgenes brutos por canal de mercado.
+
+![Hub Financiero - Por Canal](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401871581.png)
 
 #### Secciones
 
@@ -823,6 +865,10 @@ Uso:
 
 ### 6.7 Tab: Portafolio
 
+Este tab muestra la jerarquía financiera unificada de marcas y categorías del catálogo.
+
+![Hub Financiero - Portafolio](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401977722.png)
+
 #### Estructura
 
 Unidad -> Marca -> Linea -> SKU
@@ -838,6 +884,10 @@ Uso:
 - apoyar decisiones de racionalizacion o expansion.
 
 ### 6.8 Tab: Alertas
+
+Visualiza inconsistencias de costos, marcas o márgenes atípicos.
+
+![Hub Financiero - Alertas](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783401989697.png)
 
 Reglas actuales:
 
@@ -893,6 +943,10 @@ Rotacion:
 
 ### 7.4 Tab: Resumen
 
+Consolida los principales KPIs y tendencias operativas a nivel físico.
+
+![Hub Operaciones - Resumen Superior](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783402023401.png)
+
 #### Seccion: KPIs
 
 - Unidades vendidas
@@ -926,6 +980,8 @@ Cuenta cuantos SKUs caen en A, B o C.
 
 Cuenta cuantos SKUs caen en Alta, Media, Baja o Muy Baja.
 
+![Hub Operaciones - Resumen Inferior](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783402037183.png)
+
 #### Seccion: Top SKUs
 
 Ordena por unidades vendidas.
@@ -936,6 +992,10 @@ Uso:
 - priorizar abastecimiento.
 
 ### 7.5 Tab: Demanda
+
+Establece las sugerencias de lotes basadas en la demanda inferida por día y mes.
+
+![Hub Operaciones - Plan de Producción Sugerido](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783402053085.png)
 
 #### Seccion: Plan de produccion sugerido
 
@@ -957,6 +1017,10 @@ Uso:
 
 ### 7.6 Tab: Rotacion y ABC
 
+Este apartado cruza de forma matricial la clasificación ABC por volumen de venta con los niveles de rotación operativa.
+
+![Hub Operaciones - Rotación y ABC](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783402163276.png)
+
 #### Secciones
 
 - lectura cruzada de clase ABC;
@@ -969,6 +1033,10 @@ Uso:
 - detectar SKUs pequenos pero con alta recurrencia.
 
 ### 7.7 Tab: Portafolio
+
+Permite analizar el desglose de unidades demandadas y pedidos a través del árbol del catálogo.
+
+![Hub Operaciones - Portafolio](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783402182852.png)
 
 #### Estructura
 
@@ -988,6 +1056,10 @@ Uso:
 
 ### 7.8 Tab: Tendencias
 
+Estudia la aceleración del ritmo diario proyectado frente a meses anteriores de cada SKU.
+
+![Hub Operaciones - Tendencias](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783402214700.png)
+
 #### Secciones
 
 - growers
@@ -1004,6 +1076,10 @@ Uso:
 - anticipar compra o reduccion.
 
 ### 7.9 Tab: Forecast
+
+Establece estimaciones lineales y de promedios para planificar la demanda futura.
+
+![Hub Operaciones - Forecast](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783402234685.png)
 
 #### Seccion: Forecast mensual
 
@@ -1033,6 +1109,10 @@ Uso:
 - anticipar carga operativa y abastecimiento.
 
 ### 7.10 Tab: Inventarios
+
+Conecta el stock disponible (`stock.quant`) con el consumo diario para alertar riesgos de quiebre o sobrestock.
+
+![Hub Operaciones - Inventarios](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783402313725.png)
 
 #### Fuente principal
 
@@ -1078,6 +1158,10 @@ Uso:
 
 ### 7.11 Tab: Compras
 
+Este apartado centraliza el análisis del gasto, lead times e histórico por proveedor de compras confirmadas.
+
+![Hub Operaciones - Compras](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783474753398.png)
+
 #### Fuente principal
 
 - `purchase.order.line`
@@ -1116,6 +1200,10 @@ Uso:
 
 ### 7.12 Tab: Alertas
 
+Visualiza de manera unificada las excepciones operacionales y cuellos de botella detectados.
+
+![Hub Operaciones - Alertas](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783475309284.png)
+
 Reglas actuales:
 
 - concentracion por marca;
@@ -1147,6 +1235,10 @@ Este hub reutiliza:
 - logica de alertas operativas por punto.
 
 ### 8.3 Tab: Overview
+
+Este panel principal del Hub PDV resume la actividad de ventas a nivel punto geográfico u operativo.
+
+![Hub PDV - Overview](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783475641836.png)
 
 #### KPIs
 
@@ -1195,6 +1287,10 @@ Uso:
 
 ### 8.4 Tab: Ranking PDVs
 
+Presenta un listado consolidado y ordenado de los puntos de venta según volumen facturado.
+
+![Hub PDV - Ranking PDVs](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783476063349.png)
+
 Campos:
 
 - rank
@@ -1217,6 +1313,10 @@ Uso:
 - ver puntos fuertes y debiles por canal.
 
 ### 8.5 Tab: Canales PDV
+
+Desglosa comparativas de sell-in y simulaciones de sell-out por canal de distribución.
+
+![Hub PDV - Canales PDV](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783476207170.png)
 
 #### Importante
 
@@ -1242,6 +1342,10 @@ Uso:
 
 ### 8.6 Tab: Otras cadenas
 
+Muestra el análisis y desempeño de las cadenas o canales de distribución secundarios.
+
+![Hub PDV - Otras Cadenas](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783476434963.png)
+
 Que muestra:
 
 - cadenas o canales fuera de los principales comparables;
@@ -1255,6 +1359,10 @@ Uso:
 - detectar cadenas pequenas que pueden escalar.
 
 ### 8.7 Tab: Alertas
+
+Sección centralizada para aislar puntos dormantes, alertas de sell-through bajo y nuevos ingresos.
+
+![Hub PDV - Alertas](/home/dgb/.gemini/antigravity/brain/1f5a542e-3c54-40bf-a62d-c6a9f1261aac/media__1783476451298.png)
 
 KPIs:
 
