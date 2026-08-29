@@ -1,0 +1,134 @@
+.o_form_view.zrn_commercial_home_form .o_form_sheet_bg,
+.o_form_view:has(.zrn_commercial_home) .o_form_sheet_bg {
+  padding: 12px 16px;
+}
+
+.o_form_view.zrn_commercial_home_form .o_form_sheet,
+.o_form_view:has(.zrn_commercial_home) .o_form_sheet {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
+.o_action_manager .zrn_commercial_home {
+  padding: 0 0 16px;
+}
+
+.o_action_manager .zrn_commercial_kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr)) minmax(180px, 1.4fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.o_action_manager .zrn_commercial_kpi,
+.o_action_manager .zrn_commercial_panel {
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.o_action_manager .zrn_commercial_kpi {
+  min-height: 76px;
+  padding: 12px 14px;
+}
+
+.o_action_manager .zrn_commercial_text_link.btn,
+.o_action_manager .zrn_commercial_panel_link.btn {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  color: #314f7c;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  background: transparent;
+}
+
+.o_action_manager .zrn_commercial_text_link.btn:hover,
+.o_action_manager .zrn_commercial_panel_link.btn:hover {
+  color: #6f5d9a;
+  text-decoration: underline;
+  background: transparent;
+}
+
+.o_action_manager .zrn_commercial_kpi strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.o_action_manager .zrn_commercial_dashboard_grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.o_action_manager .zrn_commercial_panel {
+  min-width: 0;
+  padding: 14px;
+}
+
+.o_action_manager .zrn_commercial_panel_main {
+  grid-column: 1 / -1;
+}
+
+.o_action_manager .zrn_commercial_panel_head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.o_action_manager .zrn_commercial_panel_head span {
+  display: block;
+  margin-top: 2px;
+  color: #5f6b7a;
+}
+
+.o_action_manager .zrn_commercial_panel_link.btn {
+  font-size: 15px;
+}
+
+.o_action_manager .zrn_commercial_chart {
+  width: 100%;
+  height: 280px;
+}
+
+.o_action_manager .zrn_commercial_panel_main .zrn_commercial_chart {
+  height: 300px;
+}
+
+.o_action_manager .zrn_commercial_empty {
+  display: flex;
+  align-items: center;
+  min-height: 180px;
+  color: #5f6b7a;
+}
+
+@media (max-width: 1199.98px) {
+  .o_action_manager .zrn_commercial_kpis,
+  .o_action_manager .zrn_commercial_dashboard_grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .o_action_manager .zrn_commercial_kpi_wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .o_action_manager .zrn_commercial_panel_head {
+    flex-direction: column;
+  }
+
+  .o_action_manager .zrn_commercial_kpis,
+  .o_action_manager .zrn_commercial_dashboard_grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+}

@@ -17,7 +17,7 @@ Addon dedicado a la capa comercial operativa:
     'version': '0.1.1',
     'license': 'LGPL-3',
     'application': True,
-    'depends': ['base', 'product', 'contacts'],
+    'depends': ['base', 'product', 'contacts', 'sale_management'],
     'data': [
         'security/ir.model.access.csv',
         'views/commercial_brand_import_views.xml',
@@ -28,6 +28,9 @@ Addon dedicado a la capa comercial operativa:
     ],
     'assets': {
         'web.assets_backend': [
+            'zrn_analitics/static/lib/echarts/echarts.min.js',
+            'zrn_commercial/static/src/js/commercial_home_dashboard.js',
+            'zrn_commercial/static/src/scss/commercial_home_dashboard.scss',
             'zrn_commercial/static/src/js/commercial_hub_action.js',
             'zrn_commercial/static/src/scss/commercial_hub_action.scss',
             'zrn_commercial/static/src/xml/commercial_hub_action.xml',

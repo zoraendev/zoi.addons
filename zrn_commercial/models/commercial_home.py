@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo import fields, models
+from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 
@@ -33,9 +33,162 @@ class ZrnCommercialHome(ZrnCommercialNavigationMixin, models.Model):
         required=True,
         default='overview',
     )
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Moneda',
+        compute='_compute_dashboard_metrics',
+    )
+    brand_count = fields.Integer(
+        string='Marcas',
+        compute='_compute_dashboard_metrics',
+    )
+    category_count = fields.Integer(
+        string='Categorias',
+        compute='_compute_dashboard_metrics',
+    )
+    mapped_product_count = fields.Integer(
+        string='Productos mapeados',
+        compute='_compute_dashboard_metrics',
+    )
+    channel_count = fields.Integer(
+        string='Canales',
+        compute='_compute_dashboard_metrics',
+    )
+    confirmed_order_count = fields.Integer(
+        string='Ordenes confirmadas',
+        compute='_compute_dashboard_metrics',
+    )
+    confirmed_revenue = fields.Monetary(
+        string='Ingresos confirmados',
+        currency_field='currency_id',
+        compute='_compute_dashboard_metrics',
+    )
+
+    @api.depends_context('company')
+    def _compute_dashboard_metrics(self):
+        Brand = self.env['zrn_commercial.commercial.brand'].sudo()
+        Category = self.env['zrn_commercial.commercial.brand.category'].sudo()
+        Channel = self.env['zrn_commercial.commercial.channel'].sudo()
+        SaleOrder = self.env['sale.order'].sudo()
+
+        company = self.env.company
+        categories = Category.search([('company_id', '=', company.id)])
+        sale_domain = self._get_confirmed_sale_order_domain()
+        confirmed_orders = SaleOrder.search(sale_domain)
+
+        for record in self:
+            record.currency_id = company.currency_id
+            record.brand_count = Brand.search_count([('company_id', '=', company.id)])
+            record.category_count = len(categories)
+            record.mapped_product_count = len(categories.mapped('product_ids'))
+            record.channel_count = Channel.search_count([('company_id', '=', company.id)])
+            record.confirmed_order_count = len(confirmed_orders)
+            record.confirmed_revenue = sum(confirmed_orders.mapped('amount_untaxed'))
 
     def action_open_brands(self):
         return self._open_singleton_action('zrn_commercial.action_zrn_commercial_brands')
 
     def action_open_channels(self):
         return self._open_singleton_action('zrn_commercial.action_zrn_commercial_channels')
+
+    def action_open_categories(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Categorias de marca',
+            'res_model': 'zrn_commercial.commercial.brand.category',
+            'view_mode': 'tree,form',
+            'domain': [('company_id', '=', self.env.company.id)],
+            'context': dict(self.env.context),
+            'target': 'current',
+        }
+
+    def action_open_mapped_products(self):
+        self.ensure_one()
+        category_model = self.env['zrn_commercial.commercial.brand.category'].sudo()
+        categories = category_model.search([('company_id', '=', self.env.company.id)])
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Productos mapeados',
+            'res_model': 'product.product',
+            'view_mode': 'tree,form',
+            'domain': [('id', 'in', categories.mapped('product_ids').ids)],
+            'context': dict(self.env.context),
+            'target': 'current',
+        }
+
+    def action_open_sales_orders(self):
+        self.ensure_one()
+        action = self.env['ir.actions.actions']._for_xml_id('sale.action_orders')
+        action['domain'] = self._get_confirmed_sale_order_domain()
+        action['context'] = dict(self.env.context)
+        return action
+
+    def _get_confirmed_sale_order_domain(self):
+        return [
+            ('company_id', '=', self.env.company.id),
+            ('state', 'in', ['sale', 'done']),
+        ]
+
+    def get_dashboard_payload(self):
+        self.ensure_one()
+        company = self.env.company
+        categories = self.env['zrn_commercial.commercial.brand.category'].sudo().search([
+            ('company_id', '=', company.id),
+        ])
+        channels = self.env['zrn_commercial.commercial.channel'].sudo().search([
+            ('company_id', '=', company.id),
+        ], order='name')
+        SaleOrder = self.env['sale.order'].sudo()
+
+        channel_items = []
+        for channel in channels:
+            partner_ids = channel.partner_link_ids.mapped('partner_id').ids
+            domain = self._get_confirmed_sale_order_domain()
+            if partner_ids:
+                domain.append(('partner_id', 'child_of', partner_ids))
+            else:
+                domain.append(('id', '=', 0))
+            orders = SaleOrder.search(domain)
+            channel_items.append({
+                'name': channel.name,
+                'value': sum(orders.mapped('amount_untaxed')),
+                'count': len(orders),
+            })
+
+        category_items = [
+            {
+                'name': '%s / %s' % (category.brand_id.name, category.name),
+                'value': len(category.product_ids),
+            }
+            for category in categories
+        ]
+        brand_items = [
+            {
+                'name': brand.name,
+                'value': brand.product_count,
+            }
+            for brand in self.env['zrn_commercial.commercial.brand'].sudo().search([
+                ('company_id', '=', company.id),
+            ], order='name')
+        ]
+        channel_items = sorted(channel_items, key=lambda item: item['value'], reverse=True)[:8]
+        category_items = sorted(category_items, key=lambda item: item['value'], reverse=True)[:10]
+        brand_items = sorted(brand_items, key=lambda item: item['value'], reverse=True)[:8]
+
+        return {
+            'currency': company.currency_id.symbol or '',
+            'channelRevenue': {
+                'labels': [item['name'] for item in channel_items],
+                'values': [item['value'] for item in channel_items],
+                'counts': [item['count'] for item in channel_items],
+            },
+            'categoryProducts': {
+                'labels': [item['name'] for item in category_items],
+                'values': [item['value'] for item in category_items],
+            },
+            'brandProducts': {
+                'labels': [item['name'] for item in brand_items],
+                'values': [item['value'] for item in brand_items],
+            },
+        }

@@ -11,11 +11,79 @@
         <field name="name">zrn_commercial.home.form</field>
         <field name="model">zrn_commercial.home</field>
         <field name="arch" type="xml">
-            <form string="Zoraen Commercial" create="0" edit="0" delete="0" duplicate="0">
+            <form string="Zoraen Commercial" js_class="zrn_commercial_home_dashboard" create="0" edit="0" delete="0" duplicate="0" class="zrn_commercial_home_form">
                 <sheet>
                     <field name="name" invisible="1"/>
                     <field name="page_key" invisible="1"/>
                     <field name="sequence" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+
+                    <div class="zrn_commercial_home">
+                        <div class="zrn_commercial_kpis">
+                            <div class="zrn_commercial_kpi">
+                                <button name="action_open_brands" type="object" string="Marcas" class="btn btn-link zrn_commercial_text_link"/>
+                                <strong><field name="brand_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_commercial_kpi">
+                                <button name="action_open_categories" type="object" string="Categorias" class="btn btn-link zrn_commercial_text_link"/>
+                                <strong><field name="category_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_commercial_kpi">
+                                <button name="action_open_mapped_products" type="object" string="Productos mapeados" class="btn btn-link zrn_commercial_text_link"/>
+                                <strong><field name="mapped_product_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_commercial_kpi">
+                                <button name="action_open_channels" type="object" string="Canales" class="btn btn-link zrn_commercial_text_link"/>
+                                <strong><field name="channel_count" readonly="1" nolabel="1"/></strong>
+                            </div>
+                            <div class="zrn_commercial_kpi zrn_commercial_kpi_wide">
+                                <button name="action_open_sales_orders" type="object" string="Ingresos confirmados" class="btn btn-link zrn_commercial_text_link"/>
+                                <strong><field name="confirmed_revenue" readonly="1" nolabel="1" widget="monetary"/></strong>
+                            </div>
+                        </div>
+
+                        <div class="zrn_commercial_dashboard_grid">
+                            <section class="zrn_commercial_panel zrn_commercial_panel_main">
+                                <div class="zrn_commercial_panel_head">
+                                    <div>
+                                        <button name="action_open_sales_orders" type="object" string="Ingresos por canal" class="btn btn-link zrn_commercial_panel_link"/>
+                                        <span>Ordenes confirmadas por clientes asignados a canales</span>
+                                    </div>
+                                    <button name="action_open_sales_orders" type="object" string="Ver ordenes" class="btn btn-primary"/>
+                                </div>
+                                <div class="zrn_commercial_chart" data-zrn-commercial-chart="channelRevenue"></div>
+                                <div class="zrn_commercial_empty d-none" data-zrn-commercial-chart-empty="channelRevenue">
+                                    Sin ingresos confirmados por canal.
+                                </div>
+                            </section>
+
+                            <section class="zrn_commercial_panel">
+                                <div class="zrn_commercial_panel_head">
+                                    <div>
+                                        <button name="action_open_categories" type="object" string="Productos por categoria" class="btn btn-link zrn_commercial_panel_link"/>
+                                        <span>Cobertura del mapeo comercial</span>
+                                    </div>
+                                </div>
+                                <div class="zrn_commercial_chart" data-zrn-commercial-chart="categoryProducts"></div>
+                                <div class="zrn_commercial_empty d-none" data-zrn-commercial-chart-empty="categoryProducts">
+                                    Sin productos mapeados.
+                                </div>
+                            </section>
+
+                            <section class="zrn_commercial_panel">
+                                <div class="zrn_commercial_panel_head">
+                                    <div>
+                                        <button name="action_open_brands" type="object" string="Productos por marca" class="btn btn-link zrn_commercial_panel_link"/>
+                                        <span>Totales derivados de las categorias</span>
+                                    </div>
+                                </div>
+                                <div class="zrn_commercial_chart" data-zrn-commercial-chart="brandProducts"></div>
+                                <div class="zrn_commercial_empty d-none" data-zrn-commercial-chart-empty="brandProducts">
+                                    Sin marcas con productos.
+                                </div>
+                            </section>
+                        </div>
+                    </div>
                 </sheet>
             </form>
         </field>
