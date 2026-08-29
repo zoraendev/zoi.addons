@@ -31,7 +31,7 @@ class ZrnCommercialBrandImportWizard(models.TransientModel):
         string='Marcas detectadas',
     )
     detected_count = fields.Integer(
-        string='Marcas detectadas',
+        string='Total detectadas',
         compute='_compute_detected_count',
     )
     selected_count = fields.Integer(
@@ -78,7 +78,6 @@ class ZrnCommercialBrandImportWizard(models.TransientModel):
                 'source_record_id': source_record.id,
                 'source_name': source_values.get('name'),
                 'source_code': source_values.get('code'),
-                'source_owner_name': source_values.get('owner_name'),
                 'existing_brand_id': existing_brand.id,
             }))
 
@@ -135,7 +134,6 @@ class ZrnCommercialBrandImportWizardLine(models.TransientModel):
     source_record_id = fields.Integer(string='ID origen', required=True)
     source_name = fields.Char(string='Marca origen', required=True)
     source_code = fields.Char(string='Codigo origen')
-    source_owner_name = fields.Char(string='Titular origen')
     existing_brand_id = fields.Many2one(
         'zrn_commercial.commercial.brand',
         string='Marca Zoraen existente',

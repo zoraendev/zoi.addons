@@ -1,12 +1,8 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_zrn_commercial_brand,zrn_commercial.commercial.brand,model_zrn_commercial_commercial_brand,base.group_user,1,1,1,1
-access_zrn_commercial_brand_product,zrn_commercial.commercial.brand.product,model_zrn_commercial_commercial_brand_product,base.group_user,1,1,1,1
+access_zrn_commercial_brand_category,zrn_commercial.commercial.brand.category,model_zrn_commercial_commercial_brand_category,base.group_user,1,1,1,1
 access_zrn_commercial_channel,zrn_commercial.commercial.channel,model_zrn_commercial_commercial_channel,base.group_user,1,1,1,1
 access_zrn_commercial_channel_partner,zrn_commercial.commercial.channel.partner,model_zrn_commercial_commercial_channel_partner,base.group_user,1,1,1,1
-access_zrn_commercial_product_channel,zrn_commercial.product.channel,model_zrn_commercial_product_channel,base.group_user,1,1,1,1
-access_zrn_commercial_product_channel_product,zrn_commercial.product.channel.product,model_zrn_commercial_product_channel_product,base.group_user,1,1,1,1
 access_zrn_commercial_home,zrn_commercial.home,model_zrn_commercial_home,base.group_user,1,1,1,1
-access_zrn_commercial_portfolio,zrn_commercial.portfolio,model_zrn_commercial_portfolio,base.group_user,1,1,1,1
-access_zrn_commercial_pricing,zrn_commercial.pricing,model_zrn_commercial_pricing,base.group_user,1,1,1,1
 access_zrn_commercial_brand_import_wizard,zrn_commercial.brand.import.wizard,model_zrn_commercial_brand_import_wizard,base.group_user,1,1,1,1
 access_zrn_commercial_brand_import_wizard_line,zrn_commercial.brand.import.wizard.line,model_zrn_commercial_brand_import_wizard_line,base.group_user,1,1,1,1

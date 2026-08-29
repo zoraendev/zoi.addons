@@ -24,9 +24,6 @@
                 <field name="name"/>
                 <field name="code" optional="show"/>
                 <field name="partner_count" string="Clientes / PDVs"/>
-                <field name="opportunity_count" optional="show"/>
-                <field name="quotation_count" optional="show"/>
-                <field name="account_without_followup_count" optional="show"/>
                 <field name="company_id" groups="base.group_multi_company" optional="show"/>
             </tree>
         </field>
@@ -38,17 +35,6 @@
         <field name="arch" type="xml">
             <form string="Canal comercial">
                 <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_open_customers" type="object" class="oe_stat_button" icon="fa-users">
-                            <field name="partner_count" string="Cuentas" widget="statinfo"/>
-                        </button>
-                        <button name="action_open_opportunities" type="object" class="oe_stat_button" icon="fa-line-chart">
-                            <field name="opportunity_count" string="Oportunidades" widget="statinfo"/>
-                        </button>
-                        <button name="action_open_quotations" type="object" class="oe_stat_button" icon="fa-file-text-o">
-                            <field name="quotation_count" string="Cotizaciones" widget="statinfo"/>
-                        </button>
-                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" placeholder="Nombre del canal"/>
@@ -63,8 +49,6 @@
                         </group>
                         <group>
                             <field name="partner_count" readonly="1"/>
-                            <field name="opportunity_count" readonly="1"/>
-                            <field name="quotation_count" readonly="1"/>
                         </group>
                     </group>
                     <notebook>

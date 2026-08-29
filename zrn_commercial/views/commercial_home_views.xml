@@ -1,357 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Registros por defecto para los modelos singleton de vista unica -->
     <record id="zrn_commercial_home_default" model="zrn_commercial.home">
         <field name="name">Zoraen Commercial</field>
         <field name="sequence">10</field>
         <field name="page_key">overview</field>
     </record>
 
-    <record id="zrn_commercial_portfolio_default" model="zrn_commercial.portfolio">
-        <field name="name">Portafolio Comercial</field>
-    </record>
-
-    <record id="zrn_commercial_pricing_default" model="zrn_commercial.pricing">
-        <field name="name">Pricing Comercial</field>
-    </record>
-
-    <!-- Vista de formulario principal / Dashboard de Zoraen Commercial.
-         Usa js_class="zrn_commercial_home" para cargar el controlador JS de ECharts.
-         Aplica las mismas clases CSS de zrn_planning para heredar el estilo visual. -->
     <record id="view_zrn_commercial_home_form" model="ir.ui.view">
         <field name="name">zrn_commercial.home.form</field>
         <field name="model">zrn_commercial.home</field>
         <field name="arch" type="xml">
-            <form string="Zoraen Commercial" js_class="zrn_commercial_home" create="0" edit="0" delete="0" duplicate="0" class="zrn_planning_submodule_form zrn_planning_production_planning_form zrn_planning_home_form">
+            <form string="Zoraen Commercial" create="0" edit="0" delete="0" duplicate="0">
                 <sheet>
-                    <!-- Campos invisibles necesarios para que estén disponibles en el modelo JS -->
                     <field name="name" invisible="1"/>
                     <field name="page_key" invisible="1"/>
                     <field name="sequence" invisible="1"/>
-                    <field name="brand_count" invisible="1"/>
-                    <field name="channel_count" invisible="1"/>
-                    <field name="product_channel_count" invisible="1"/>
-                    <field name="prospect_count" invisible="1"/>
-                    <field name="opportunity_count" invisible="1"/>
-                    <field name="quotation_count" invisible="1"/>
-                    <field name="overdue_count" invisible="1"/>
-
-                    <!-- Estructura del Contenedor Principal (Shell) -->
-                    <div class="zrn_planning_home_shell">
-                        <!-- Barra de Herramientas y Métricas de Acceso Rápido -->
-                        <div class="zrn_planning_home_toolbar">
-                            <div class="zrn_planning_home_menu zrn_planning_home_menu_top">
-                                <button
-                                    name="action_open_prospects"
-                                    type="object"
-                                    icon="fa-filter"
-                                    string="Prospectos"
-                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
-                                />
-                                <button
-                                    name="action_open_opportunities"
-                                    type="object"
-                                    icon="fa-line-chart"
-                                    string="Oportunidades"
-                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
-                                />
-                                <button
-                                    name="action_open_customers"
-                                    type="object"
-                                    icon="fa-users"
-                                    string="Clientes"
-                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
-                                />
-                                <button
-                                    name="action_open_quotations"
-                                    type="object"
-                                    icon="fa-file-text-o"
-                                    string="Cotizaciones"
-                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
-                                />
-                                <button
-                                    name="action_open_brands"
-                                    type="object"
-                                    icon="fa-tags"
-                                    string="Marcas"
-                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
-                                />
-                                <button
-                                    name="action_open_channels"
-                                    type="object"
-                                    icon="fa-sitemap"
-                                    string="Canales"
-                                    class="btn zrn_planning_menu_btn zrn_planning_menu_btn_secondary"
-                                />
-                            </div>
-                            <div class="zrn_planning_home_quickstats zrn_planning_home_quickstats_top">
-                                <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_neutral">
-                                    <span class="zrn_planning_home_stat_label">Prospectos</span>
-                                    <span class="zrn_planning_home_stat_value">
-                                        <field name="prospect_count" readonly="1" nolabel="1"/>
-                                    </span>
-                                </div>
-                                <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_brand">
-                                    <span class="zrn_planning_home_stat_label">Oportunidades</span>
-                                    <span class="zrn_planning_home_stat_value">
-                                        <field name="opportunity_count" readonly="1" nolabel="1"/>
-                                    </span>
-                                </div>
-                                <div class="zrn_planning_menu_btn zrn_planning_menu_btn_metric zrn_planning_menu_btn_metric_alert">
-                                    <span class="zrn_planning_home_stat_label">Cotizaciones</span>
-                                    <span class="zrn_planning_home_stat_value">
-                                        <field name="quotation_count" readonly="1" nolabel="1"/>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="zrn_planning_home_dashboard">
-                            <div class="zrn_planning_home_previews zrn_planning_home_previews_summary">
-
-                                <!-- Panel: Prospectos -->
-                                <div class="zrn_planning_home_panel">
-                                    <div class="zrn_planning_home_panel_head">
-                                        <span>Prospectos recientes</span>
-                                        <strong><field name="recent_prospect_count" readonly="1" nolabel="1"/></strong>
-                                    </div>
-                                    <div class="zrn_planning_home_panel_body">
-                                        <div class="zrn_planning_home_panel_split">
-                                            <div class="zrn_planning_plans_list_container zrn_planning_home_plans_list_container">
-                                                <field name="recent_prospect_ids" readonly="1" nolabel="1">
-                                                    <tree limit="5" create="0" delete="0" edit="0">
-                                                        <field name="name" string="Prospecto"/>
-                                                        <field name="contact_name" string="Contacto"/>
-                                                        <field name="stage_id" string="Etapa"/>
-                                                        <field name="create_date" string="Creado"/>
-                                                    </tree>
-                                                </field>
-                                            </div>
-                                            <div class="zrn_planning_home_chart_container">
-                                                <div class="zrn_planning_home_chart_head">
-                                                    <span>Por etapa</span>
-                                                    <div class="zrn_planning_home_chart_switch" data-chart-key="prospects">
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type is-active" data-zrn-chart-type="bar">Barras</a>
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type" data-zrn-chart-type="line">Linea</a>
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type" data-zrn-chart-type="pie">Pie</a>
-                                                    </div>
-                                                </div>
-                                                <div class="zrn_planning_home_chart_hint">Distribucion de prospectos activos por etapa del pipeline.</div>
-                                                <div class="zrn_planning_home_chart_canvas" data-zrn-commercial-chart="prospects"></div>
-                                                <div class="zrn_planning_home_chart_empty d-none" data-zrn-commercial-chart-empty="prospects">
-                                                    Sin datos suficientes para graficar.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Panel: Oportunidades -->
-                                <div class="zrn_planning_home_panel">
-                                    <div class="zrn_planning_home_panel_head">
-                                        <span>Oportunidades recientes</span>
-                                        <strong><field name="recent_opportunity_count" readonly="1" nolabel="1"/></strong>
-                                    </div>
-                                    <div class="zrn_planning_home_panel_body">
-                                        <div class="zrn_planning_home_panel_split">
-                                            <div class="zrn_planning_plans_list_container zrn_planning_home_plans_list_container">
-                                                <field name="recent_opportunity_ids" readonly="1" nolabel="1">
-                                                    <tree limit="5" create="0" delete="0" edit="0">
-                                                        <field name="name" string="Oportunidad"/>
-                                                        <field name="expected_revenue" string="Ingreso esperado"/>
-                                                        <field name="stage_id" string="Etapa"/>
-                                                        <field name="user_id" string="Responsable"/>
-                                                    </tree>
-                                                </field>
-                                            </div>
-                                            <div class="zrn_planning_home_chart_container">
-                                                <div class="zrn_planning_home_chart_head">
-                                                    <span>Por etapa</span>
-                                                    <div class="zrn_planning_home_chart_switch" data-chart-key="opportunities">
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type is-active" data-zrn-chart-type="bar">Barras</a>
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type" data-zrn-chart-type="line">Linea</a>
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type" data-zrn-chart-type="pie">Pie</a>
-                                                    </div>
-                                                </div>
-                                                <div class="zrn_planning_home_chart_hint">Distribucion de oportunidades activas por etapa del pipeline.</div>
-                                                <div class="zrn_planning_home_chart_canvas" data-zrn-commercial-chart="opportunities"></div>
-                                                <div class="zrn_planning_home_chart_empty d-none" data-zrn-commercial-chart-empty="opportunities">
-                                                    Sin datos suficientes para graficar.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Panel: Marcas -->
-                                <div class="zrn_planning_home_panel">
-                                    <div class="zrn_planning_home_panel_head">
-                                        <span>Marcas comerciales</span>
-                                        <strong><field name="recent_brand_count" readonly="1" nolabel="1"/></strong>
-                                    </div>
-                                    <div class="zrn_planning_home_panel_body">
-                                        <div class="zrn_planning_home_panel_split">
-                                            <div class="zrn_planning_plans_list_container zrn_planning_home_plans_list_container">
-                                                <field name="recent_brand_ids" readonly="1" nolabel="1">
-                                                    <tree limit="5" create="0" delete="0" edit="0">
-                                                        <field name="name" string="Marca"/>
-                                                        <field name="commercial_status" string="Estado" widget="badge"/>
-                                                        <field name="opportunity_count" string="Oportunidades"/>
-                                                        <field name="quotation_count" string="Cotizaciones"/>
-                                                    </tree>
-                                                </field>
-                                            </div>
-                                            <div class="zrn_planning_home_chart_container">
-                                                <div class="zrn_planning_home_chart_head">
-                                                    <span>Oportunidades y cotizaciones</span>
-                                                    <div class="zrn_planning_home_chart_switch" data-chart-key="brands">
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type is-active" data-zrn-chart-type="bar">Barras</a>
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type" data-zrn-chart-type="line">Linea</a>
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type" data-zrn-chart-type="pie">Pie</a>
-                                                    </div>
-                                                </div>
-                                                <div class="zrn_planning_home_chart_hint">Comparativo de oportunidades y cotizaciones por marca.</div>
-                                                <div class="zrn_planning_home_chart_canvas" data-zrn-commercial-chart="brands"></div>
-                                                <div class="zrn_planning_home_chart_empty d-none" data-zrn-commercial-chart-empty="brands">
-                                                    Sin datos suficientes para graficar.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Panel: Canales -->
-                                <div class="zrn_planning_home_panel">
-                                    <div class="zrn_planning_home_panel_head">
-                                        <span>Canales comerciales</span>
-                                        <strong><field name="recent_channel_count" readonly="1" nolabel="1"/></strong>
-                                    </div>
-                                    <div class="zrn_planning_home_panel_body">
-                                        <div class="zrn_planning_home_panel_split">
-                                            <div class="zrn_planning_plans_list_container zrn_planning_home_plans_list_container">
-                                                <field name="recent_channel_ids" readonly="1" nolabel="1">
-                                                    <tree limit="5" create="0" delete="0" edit="0">
-                                                        <field name="name" string="Canal"/>
-                                                        <field name="partner_count" string="Clientes"/>
-                                                        <field name="opportunity_count" string="Oportunidades"/>
-                                                        <field name="quotation_count" string="Cotizaciones"/>
-                                                    </tree>
-                                                </field>
-                                            </div>
-                                            <div class="zrn_planning_home_chart_container">
-                                                <div class="zrn_planning_home_chart_head">
-                                                    <span>Oportunidades y clientes</span>
-                                                    <div class="zrn_planning_home_chart_switch" data-chart-key="channels">
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type is-active" data-zrn-chart-type="bar">Barras</a>
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type" data-zrn-chart-type="line">Linea</a>
-                                                        <a href="#" role="button" class="btn btn-sm zrn_planning_home_chart_type" data-zrn-chart-type="pie">Pie</a>
-                                                    </div>
-                                                </div>
-                                                <div class="zrn_planning_home_chart_hint">Comparativo de oportunidades y clientes por canal.</div>
-                                                <div class="zrn_planning_home_chart_canvas" data-zrn-commercial-chart="channels"></div>
-                                                <div class="zrn_planning_home_chart_empty d-none" data-zrn-commercial-chart-empty="channels">
-                                                    Sin datos suficientes para graficar.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
                 </sheet>
             </form>
         </field>
     </record>
 
-
-    <!-- Vista de formulario para Portafolio (Marcador de posicion) -->
-    <record id="view_zrn_commercial_portfolio_form" model="ir.ui.view">
-        <field name="name">zrn_commercial.portfolio.form</field>
-        <field name="model">zrn_commercial.portfolio</field>
-        <field name="arch" type="xml">
-            <form string="Portafolio Comercial" create="0" edit="0" delete="0" duplicate="0" class="zrn_planning_submodule_form zrn_planning_delivery_planning_form">
-                <sheet>
-                    <field name="name" invisible="1"/>
-                    <div class="zrn_planning_submodule_nav">
-                        <button
-                            name="action_open_home"
-                            type="object"
-                            icon="fa-arrow-left"
-                            string="Volver a Inicio"
-                            class="btn zrn_planning_back_btn"
-                        />
-                    </div>
-                    <div class="oe_title">
-                        <h1>Portafolio Comercial</h1>
-                    </div>
-                    <div class="zrn_planning_building_state">
-                        <div class="zrn_planning_building_loader" aria-hidden="true">
-                            <span class="zrn_planning_building_loader_ring zrn_planning_building_loader_ring_outer"/>
-                            <span class="zrn_planning_building_loader_ring zrn_planning_building_loader_ring_inner"/>
-                            <span class="zrn_planning_building_loader_core"/>
-                        </div>
-                        <div class="zrn_planning_building_copy">
-                            <div class="zrn_planning_building_kicker">Workspace en progreso</div>
-                            <div class="zrn_planning_building_title">Estamos preparando esta vista</div>
-                            <div class="zrn_planning_building_messages" aria-live="polite">
-                                <span>Construyendo el catalogo de productos...</span>
-                                <span>Coordinando marcas, categorias y canales...</span>
-                                <span>Preparando widgets de analisis de ventas...</span>
-                                <span>Dejando lista la experiencia operativa...</span>
-                            </div>
-                        </div>
-                    </div>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <!-- Vista de formulario para Pricing (Marcador de posicion) -->
-    <record id="view_zrn_commercial_pricing_form" model="ir.ui.view">
-        <field name="name">zrn_commercial.pricing.form</field>
-        <field name="model">zrn_commercial.pricing</field>
-        <field name="arch" type="xml">
-            <form string="Pricing Comercial" create="0" edit="0" delete="0" duplicate="0" class="zrn_planning_submodule_form zrn_planning_delivery_planning_form">
-                <sheet>
-                    <field name="name" invisible="1"/>
-                    <div class="zrn_planning_submodule_nav">
-                        <button
-                            name="action_open_home"
-                            type="object"
-                            icon="fa-arrow-left"
-                            string="Volver a Inicio"
-                            class="btn zrn_planning_back_btn"
-                        />
-                    </div>
-                    <div class="oe_title">
-                        <h1>Pricing Comercial</h1>
-                    </div>
-                    <div class="zrn_planning_building_state">
-                        <div class="zrn_planning_building_loader" aria-hidden="true">
-                            <span class="zrn_planning_building_loader_ring zrn_planning_building_loader_ring_outer"/>
-                            <span class="zrn_planning_building_loader_ring zrn_planning_building_loader_ring_inner"/>
-                            <span class="zrn_planning_building_loader_core"/>
-                        </div>
-                        <div class="zrn_planning_building_copy">
-                            <div class="zrn_planning_building_kicker">Workspace en progreso</div>
-                            <div class="zrn_planning_building_title">Estamos preparando esta vista</div>
-                            <div class="zrn_planning_building_messages" aria-live="polite">
-                                <span>Calculando politicas de precios y descuentos...</span>
-                                <span>Analizando margenes operativos por canal...</span>
-                                <span>Estructurando simuladores dinamicos...</span>
-                                <span>Dejando lista la experiencia operativa...</span>
-                            </div>
-                        </div>
-                    </div>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <!-- Acciones de ventana -->
     <record id="action_zrn_commercial_home" model="ir.actions.act_window">
         <field name="name">Zoraen Commercial</field>
         <field name="res_model">zrn_commercial.home</field>
@@ -361,25 +30,6 @@
         <field name="target">current</field>
     </record>
 
-    <record id="action_zrn_commercial_portfolio" model="ir.actions.act_window">
-        <field name="name">Portafolio Comercial</field>
-        <field name="res_model">zrn_commercial.portfolio</field>
-        <field name="view_mode">form</field>
-        <field name="view_id" ref="view_zrn_commercial_portfolio_form"/>
-        <field name="res_id" ref="zrn_commercial_portfolio_default"/>
-        <field name="target">current</field>
-    </record>
-
-    <record id="action_zrn_commercial_pricing" model="ir.actions.act_window">
-        <field name="name">Pricing Comercial</field>
-        <field name="res_model">zrn_commercial.pricing</field>
-        <field name="view_mode">form</field>
-        <field name="view_id" ref="view_zrn_commercial_pricing_form"/>
-        <field name="res_id" ref="zrn_commercial_pricing_default"/>
-        <field name="target">current</field>
-    </record>
-
-    <!-- Menu Principal y submenus -->
     <menuitem
         id="menu_zrn_commercial_root"
         name="Zoraen Commercial"
@@ -387,7 +37,6 @@
         action="action_zrn_commercial_home"
         web_icon="zrn_commercial,static/description/icon.png"
     />
-
 
     <menuitem
         id="menu_zrn_commercial_home"
@@ -399,7 +48,7 @@
 
     <menuitem
         id="menu_zrn_commercial_brands_sub"
-        name="Marcas comerciales"
+        name="Marcas"
         parent="menu_zrn_commercial_root"
         action="action_zrn_commercial_brands"
         sequence="10"
@@ -413,48 +62,4 @@
         sequence="15"
     />
 
-    <menuitem
-        id="menu_zrn_commercial_product_channels_sub"
-        name="Canales de producto"
-        parent="menu_zrn_commercial_root"
-        action="action_zrn_commercial_product_channels"
-        sequence="18"
-    />
-
-    <menuitem
-        id="menu_zrn_commercial_portfolio"
-        name="Portafolio"
-        parent="menu_zrn_commercial_root"
-        action="action_zrn_commercial_portfolio"
-        sequence="20"
-        groups="base.group_no_one"
-    />
-
-    <menuitem
-        id="menu_zrn_commercial_pricing"
-        name="Pricing"
-        parent="menu_zrn_commercial_root"
-        action="action_zrn_commercial_pricing"
-        sequence="30"
-        groups="base.group_no_one"
-    />
-
-    <!-- Desactivar menus redundantes: acceso via dashboard interno -->
-    <record id="menu_zrn_commercial_brands_sub" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_zrn_commercial_channels_sub" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_zrn_commercial_product_channels_sub" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_zrn_commercial_portfolio" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-    <record id="menu_zrn_commercial_pricing" model="ir.ui.menu">
-        <field name="active" eval="False"/>
-    </record>
-
 </odoo>
-

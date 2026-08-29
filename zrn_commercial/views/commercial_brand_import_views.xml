@@ -27,7 +27,6 @@
                                 <field name="selected"/>
                                 <field name="source_name"/>
                                 <field name="source_code" optional="show"/>
-                                <field name="source_owner_name" optional="show"/>
                                 <field name="existing_brand_id" optional="show"/>
                             </tree>
                         </field>

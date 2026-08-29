@@ -34,21 +34,6 @@ class ZrnCommercialChannel(models.Model):
         compute='_compute_partner_count',
         store=False,
     )
-    opportunity_count = fields.Integer(
-        string='Oportunidades',
-        compute='_compute_related_counts',
-        store=False,
-    )
-    quotation_count = fields.Integer(
-        string='Cotizaciones',
-        compute='_compute_related_counts',
-        store=False,
-    )
-    account_without_followup_count = fields.Integer(
-        string='Cuentas sin seguimiento',
-        compute='_compute_related_counts',
-        store=False,
-    )
 
     _sql_constraints = [
         (
@@ -67,61 +52,6 @@ class ZrnCommercialChannel(models.Model):
     def _compute_partner_count(self):
         for channel in self:
             channel.partner_count = len(channel.partner_link_ids)
-
-    @api.depends('partner_link_ids', 'partner_link_ids.partner_id')
-    def _compute_related_counts(self):
-        lead_model = self.env['crm.lead'].sudo()
-        order_model = self.env['sale.order'].sudo()
-        lead_has_channel_field = 'zrn_channel_id' in lead_model._fields
-        order_has_channel_field = 'zrn_channel_id' in order_model._fields
-        for channel in self:
-            if lead_has_channel_field:
-                channel.opportunity_count = lead_model.search_count([
-                    ('zrn_channel_id', '=', channel.id),
-                    ('type', '=', 'opportunity'),
-                ])
-            else:
-                channel.opportunity_count = 0
-            if order_has_channel_field:
-                channel.quotation_count = order_model.search_count([
-                    ('zrn_channel_id', '=', channel.id),
-                    ('state', 'in', ['draft', 'sent', 'sale']),
-                ])
-            else:
-                channel.quotation_count = 0
-            channel.account_without_followup_count = len(channel.partner_link_ids.filtered(
-                lambda link: not link.partner_id.activity_state or link.partner_id.activity_state == 'overdue'
-            ))
-
-    def action_open_customers(self):
-        self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_customers')
-        partner_model = self.env['res.partner']
-        if 'zrn_primary_channel_id' in partner_model._fields:
-            action['domain'] = [('zrn_primary_channel_id', '=', self.id)]
-        else:
-            action['domain'] = [('id', 'in', self.partner_link_ids.mapped('partner_id').ids)]
-        return action
-
-    def action_open_opportunities(self):
-        self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_opportunities')
-        if 'zrn_channel_id' in self.env['crm.lead']._fields:
-            action['domain'] = [('zrn_channel_id', '=', self.id), ('type', '=', 'opportunity')]
-            action['context'] = dict(self.env.context, default_zrn_channel_id=self.id)
-        else:
-            action['domain'] = [('id', '=', 0)]
-        return action
-
-    def action_open_quotations(self):
-        self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_quotations')
-        if 'zrn_channel_id' in self.env['sale.order']._fields:
-            action['domain'] = [('zrn_channel_id', '=', self.id)]
-            action['context'] = dict(self.env.context, default_zrn_channel_id=self.id)
-        else:
-            action['domain'] = [('id', '=', 0)]
-        return action
 
 
 class ZrnCommercialChannelPartner(models.Model):

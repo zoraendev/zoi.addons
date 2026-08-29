@@ -21,85 +21,33 @@ class ZrnCommercialBrand(models.Model):
         'image/webp',
     }
 
-    name = fields.Char(string='Marca comercial', required=True)
+    name = fields.Char(string='Marca', required=True)
     code = fields.Char(string='Codigo')
-    active = fields.Boolean(string='Activo', default=True)
     company_id = fields.Many2one(
         'res.company',
         string='Compania',
         required=True,
         default=lambda self: self.env.company,
     )
-    owner_name = fields.Char(string='Empresa titular')
     logo = fields.Image(string='Logo', max_width=512, max_height=512, attachment=False)
-    website = fields.Char(string='Sitio web')
-    email = fields.Char(string='Correo')
-    phone = fields.Char(string='Telefono')
-    country_id = fields.Many2one('res.country', string='Pais')
-    launch_date = fields.Date(string='Fecha de lanzamiento')
-    description = fields.Text(string='Descripcion')
-    notes = fields.Text(string='Notas internas')
-    playbook_notes = fields.Text(string='Lineamientos comerciales')
-    commercial_status = fields.Selection(
-        [
-            ('draft', 'Borrador'),
-            ('active', 'Activa'),
-            ('hold', 'En pausa'),
-            ('retired', 'Retirada'),
-        ],
-        string='Estado comercial',
-        default='active',
-    )
-    suggested_channel_ids = fields.Many2many(
-        'zrn_commercial.commercial.channel',
-        'zrn_commercial_brand_channel_rel',
-        'brand_id',
-        'channel_id',
-        string='Canales sugeridos',
-    )
-    responsible_user_ids = fields.Many2many(
-        'res.users',
-        'zrn_commercial_brand_user_rel',
-        'brand_id',
-        'user_id',
-        string='Responsables comerciales',
-    )
-    focus_product_ids = fields.Many2many(
-        'product.product',
-        'zrn_commercial_brand_focus_product_rel',
-        'brand_id',
-        'product_id',
-        string='Productos foco',
-        domain="[('sale_ok', '=', True)]",
-    )
     source_model = fields.Char(string='Modelo origen', readonly=True, copy=False)
     source_model_name = fields.Char(string='Nombre del modelo origen', readonly=True, copy=False)
     source_record_id = fields.Integer(string='ID origen', readonly=True, copy=False)
     source_record_name = fields.Char(string='Registro origen', readonly=True, copy=False)
     source_sync_date = fields.Datetime(string='Ultima sincronizacion', readonly=True, copy=False)
-    opportunity_count = fields.Integer(
-        string='Oportunidades',
-        compute='_compute_related_counts',
-        store=False,
-    )
-    customer_count = fields.Integer(
-        string='Clientes',
-        compute='_compute_related_counts',
-        store=False,
-    )
-    quotation_count = fields.Integer(
-        string='Cotizaciones',
-        compute='_compute_related_counts',
-        store=False,
-    )
-    product_link_ids = fields.One2many(
-        'zrn_commercial.commercial.brand.product',
+    category_ids = fields.One2many(
+        'zrn_commercial.commercial.brand.category',
         'brand_id',
-        string='Productos asignados',
+        string='Categorias',
+    )
+    category_count = fields.Integer(
+        string='Total categorias',
+        compute='_compute_category_stats',
+        store=False,
     )
     product_count = fields.Integer(
-        string='Productos',
-        compute='_compute_product_count',
+        string='Total productos',
+        compute='_compute_category_stats',
         store=False,
     )
 
@@ -111,44 +59,11 @@ class ZrnCommercialBrand(models.Model):
         ),
     ]
 
-    @api.depends('product_link_ids')
-    def _compute_product_count(self):
+    @api.depends('category_ids', 'category_ids.product_ids')
+    def _compute_category_stats(self):
         for brand in self:
-            brand.product_count = len(brand.product_link_ids)
-
-    def _compute_related_counts(self):
-        lead_model = self.env['crm.lead'].sudo()
-        partner_model = self.env['res.partner'].sudo()
-        order_model = self.env['sale.order'].sudo()
-        lead_has_brand_field = 'zrn_brand_id' in lead_model._fields
-        order_has_brand_field = 'zrn_brand_id' in order_model._fields
-        partner_has_brand_profile = (
-            'zrn_primary_brand_id' in partner_model._fields
-            and 'zrn_brand_ids' in partner_model._fields
-        )
-        for brand in self:
-            if lead_has_brand_field:
-                brand.opportunity_count = lead_model.search_count([
-                    ('zrn_brand_id', '=', brand.id),
-                    ('type', '=', 'opportunity'),
-                ])
-            else:
-                brand.opportunity_count = 0
-            if partner_has_brand_profile:
-                brand.customer_count = partner_model.search_count([
-                    '|',
-                    ('zrn_primary_brand_id', '=', brand.id),
-                    ('zrn_brand_ids', 'in', brand.id),
-                ])
-            else:
-                brand.customer_count = 0
-            if order_has_brand_field:
-                brand.quotation_count = order_model.search_count([
-                    ('zrn_brand_id', '=', brand.id),
-                    ('state', 'in', ['draft', 'sent', 'sale']),
-                ])
-            else:
-                brand.quotation_count = 0
+            brand.category_count = len(brand.category_ids)
+            brand.product_count = len(brand.category_ids.mapped('product_ids'))
 
     @api.constrains('logo')
     def _check_logo_file(self):
@@ -221,11 +136,6 @@ class ZrnCommercialBrand(models.Model):
         return {
             'name': _get_scalar(('name', 'display_name')),
             'code': _get_scalar(('code', 'default_code', 'short_name')),
-            'owner_name': _get_scalar(('owner_name', 'manufacturer_name', 'partner_id', 'company_id')),
-            'website': _get_scalar(('website',)),
-            'email': _get_scalar(('email',)),
-            'phone': _get_scalar(('phone',)),
-            'description': _get_scalar(('description', 'comment', 'notes')),
             'logo': image_value,
             'company_id': company_record.id if company_record else self.env.company.id,
             'source_model': source_record._name,
@@ -285,28 +195,15 @@ class ZrnCommercialBrand(models.Model):
                 }
                 if not existing_brand.code and source_values.get('code'):
                     sync_values['code'] = source_values['code']
-                if not existing_brand.owner_name and source_values.get('owner_name'):
-                    sync_values['owner_name'] = source_values['owner_name']
-                if not existing_brand.website and source_values.get('website'):
-                    sync_values['website'] = source_values['website']
-                if not existing_brand.email and source_values.get('email'):
-                    sync_values['email'] = source_values['email']
-                if not existing_brand.phone and source_values.get('phone'):
-                    sync_values['phone'] = source_values['phone']
                 if not existing_brand.logo and source_values.get('logo'):
                     sync_values['logo'] = source_values['logo']
                 existing_brand.write(sync_values)
                 imported_brands |= existing_brand
                 continue
 
-            create_values = {
+            imported_brands |= self.create({
                 'name': source_values['name'],
                 'code': source_values.get('code'),
-                'owner_name': source_values.get('owner_name'),
-                'website': source_values.get('website'),
-                'email': source_values.get('email'),
-                'phone': source_values.get('phone'),
-                'description': source_values.get('description'),
                 'logo': source_values.get('logo'),
                 'company_id': company.id,
                 'source_model': source_values['source_model'],
@@ -314,9 +211,7 @@ class ZrnCommercialBrand(models.Model):
                 'source_record_id': source_values['source_record_id'],
                 'source_record_name': source_values['source_record_name'],
                 'source_sync_date': fields.Datetime.now(),
-                'notes': 'Importada desde catalogo existente de Odoo.',
-            }
-            imported_brands |= self.create(create_values)
+            })
         return imported_brands
 
     def action_open_import_wizard(self):
@@ -341,47 +236,16 @@ class ZrnCommercialBrand(models.Model):
         )
         return True
 
-    def action_open_opportunities(self):
-        self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_opportunities')
-        if 'zrn_brand_id' in self.env['crm.lead']._fields:
-            action['domain'] = [('zrn_brand_id', '=', self.id), ('type', '=', 'opportunity')]
-            action['context'] = dict(self.env.context, default_zrn_brand_id=self.id)
-        else:
-            action['domain'] = [('id', '=', 0)]
-        return action
 
-    def action_open_customers(self):
-        self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_customers')
-        partner_fields = self.env['res.partner']._fields
-        if 'zrn_primary_brand_id' in partner_fields and 'zrn_brand_ids' in partner_fields:
-            action['domain'] = ['|', ('zrn_primary_brand_id', '=', self.id), ('zrn_brand_ids', 'in', self.id)]
-            action['context'] = dict(self.env.context, default_zrn_primary_brand_id=self.id)
-        else:
-            action['domain'] = [('id', '=', 0)]
-        return action
-
-    def action_open_quotations(self):
-        self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id('zrn_commercial.action_zrn_commercial_quotations')
-        if 'zrn_brand_id' in self.env['sale.order']._fields:
-            action['domain'] = [('zrn_brand_id', '=', self.id)]
-            action['context'] = dict(self.env.context, default_zrn_brand_id=self.id)
-        else:
-            action['domain'] = [('id', '=', 0)]
-        return action
-
-
-class ZrnCommercialBrandProduct(models.Model):
-    _name = 'zrn_commercial.commercial.brand.product'
-    _description = 'Producto asignado a marca comercial'
-    _order = 'sequence, id'
+class ZrnCommercialBrandCategory(models.Model):
+    _name = 'zrn_commercial.commercial.brand.category'
+    _description = 'Categoria de marca comercial'
+    _order = 'sequence, name, id'
 
     sequence = fields.Integer(string='Secuencia', default=10)
     brand_id = fields.Many2one(
         'zrn_commercial.commercial.brand',
-        string='Marca comercial',
+        string='Marca',
         required=True,
         ondelete='cascade',
     )
@@ -392,72 +256,67 @@ class ZrnCommercialBrandProduct(models.Model):
         store=True,
         readonly=True,
     )
-    available_product_ids = fields.Many2many(
+    name = fields.Char(string='Categoria', required=True)
+    code = fields.Char(string='Codigo')
+    category_type = fields.Selection(
+        [
+            ('line', 'Linea'),
+            ('family', 'Familia'),
+            ('format', 'Formato'),
+            ('segment', 'Segmento'),
+        ],
+        string='Tipo',
+        default='line',
+        required=True,
+    )
+    positioning = fields.Char(string='Posicionamiento')
+    target_market = fields.Char(string='Mercado objetivo')
+    price_tier = fields.Selection(
+        [
+            ('value', 'Valor'),
+            ('standard', 'Estandar'),
+            ('premium', 'Premium'),
+        ],
+        string='Nivel de precio',
+        default='standard',
+    )
+    description = fields.Text(string='Descripcion')
+    notes = fields.Text(string='Notas')
+    product_ids = fields.Many2many(
         'product.product',
-        string='Productos disponibles',
-        compute='_compute_available_product_ids',
+        'zrn_commercial_brand_category_product_rel',
+        'category_id',
+        'product_id',
+        string='Productos',
+        domain="[('sale_ok', '=', True)]",
+    )
+    product_count = fields.Integer(
+        string='Total productos',
+        compute='_compute_product_count',
         store=False,
     )
-    product_id = fields.Many2one(
-        'product.product',
-        string='Producto',
-        required=True,
-        ondelete='restrict',
-        domain="[('id', 'in', available_product_ids)]",
-    )
-    product_tmpl_id = fields.Many2one(
-        'product.template',
-        string='Plantilla de producto',
-        related='product_id.product_tmpl_id',
-        store=True,
-        readonly=True,
-    )
-    default_code = fields.Char(
-        string='Referencia interna',
-        related='product_id.default_code',
-        store=True,
-        readonly=True,
-    )
-    categ_id = fields.Many2one(
-        'product.category',
-        string='Categoria',
-        related='product_tmpl_id.categ_id',
-        store=True,
-        readonly=True,
-    )
-    uom_id = fields.Many2one(
-        'uom.uom',
-        string='Unidad de medida',
-        related='product_id.uom_id',
-        store=True,
-        readonly=True,
-    )
-    active = fields.Boolean(string='Activo', default=True)
-    notes = fields.Text(string='Notas')
 
     _sql_constraints = [
         (
-            'product_uniq',
-            'unique(product_id)',
-            'El producto ya fue asignado a una marca comercial.',
+            'brand_name_uniq',
+            'unique(brand_id, name)',
+            'La categoria debe ser unica dentro de la marca.',
+        ),
+        (
+            'brand_code_uniq',
+            'unique(brand_id, code)',
+            'El codigo de categoria debe ser unico dentro de la marca.',
         ),
     ]
 
-    @api.depends('brand_id', 'product_id')
-    def _compute_available_product_ids(self):
-        Product = self.env['product.product']
-        assigned_product_ids = self.search([]).mapped('product_id').ids
-        for record in self:
-            current_product_ids = record.product_id.ids
-            blocked_product_ids = list(set(assigned_product_ids) - set(current_product_ids))
-            available_products = Product.search([
-                ('sale_ok', '=', True),
-                ('id', 'not in', blocked_product_ids),
-            ])
-            record.available_product_ids = available_products
+    @api.depends('product_ids')
+    def _compute_product_count(self):
+        for category in self:
+            category.product_count = len(category.product_ids)
 
-    @api.constrains('product_id')
-    def _check_sale_ok_product(self):
-        for record in self:
-            if record.product_id and not record.product_id.sale_ok:
+    @api.constrains('product_ids')
+    def _check_sale_ok_products(self):
+        for category in self:
+            invalid_products = category.product_ids.filtered(lambda product: not product.sale_ok)
+            if invalid_products:
                 raise ValidationError('Solo se pueden asignar productos configurados para venta.')
