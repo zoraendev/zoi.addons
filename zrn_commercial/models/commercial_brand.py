@@ -288,7 +288,13 @@ class ZrnCommercialBrandCategory(models.Model):
         'category_id',
         'product_id',
         string='Productos',
-        domain="[('sale_ok', '=', True)]",
+        domain="[('id', 'in', available_product_ids)]",
+    )
+    available_product_ids = fields.Many2many(
+        'product.product',
+        string='Productos disponibles',
+        compute='_compute_available_product_ids',
+        store=False,
     )
     product_count = fields.Integer(
         string='Total productos',
@@ -314,9 +320,33 @@ class ZrnCommercialBrandCategory(models.Model):
         for category in self:
             category.product_count = len(category.product_ids)
 
+    @api.depends('product_ids')
+    def _compute_available_product_ids(self):
+        Product = self.env['product.product']
+        assigned_product_ids = set(
+            self.env['zrn_commercial.commercial.brand.category']
+            .search([])
+            .mapped('product_ids')
+            .ids
+        )
+        for category in self:
+            blocked_product_ids = list(assigned_product_ids - set(category.product_ids.ids))
+            category.available_product_ids = Product.search([
+                ('sale_ok', '=', True),
+                ('id', 'not in', blocked_product_ids),
+            ])
+
     @api.constrains('product_ids')
     def _check_sale_ok_products(self):
         for category in self:
             invalid_products = category.product_ids.filtered(lambda product: not product.sale_ok)
             if invalid_products:
                 raise ValidationError('Solo se pueden asignar productos configurados para venta.')
+            duplicated_products = self.search([
+                ('id', '!=', category.id),
+                ('product_ids', 'in', category.product_ids.ids),
+            ], limit=1)
+            if duplicated_products:
+                raise ValidationError(
+                    'Un producto solo puede estar relacionado a una categoria de marca.'
+                )

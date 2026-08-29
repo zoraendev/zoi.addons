@@ -42,9 +42,10 @@
                     </group>
                     <notebook>
                         <page string="Productos">
+                            <field name="available_product_ids" invisible="1"/>
                             <field
                                 name="product_ids"
-                                domain="[('sale_ok', '=', True)]"
+                                domain="[('id', 'in', available_product_ids)]"
                                 context="{'default_sale_ok': True}"
                                 options="{'no_create_edit': True}"
                             >
@@ -96,7 +97,7 @@
                     <notebook>
                         <page string="Categorias">
                             <field name="category_ids" context="{'default_brand_id': id}">
-                                <tree editable="bottom" string="Categorias">
+                                <tree string="Categorias">
                                     <field name="sequence" widget="handle"/>
                                     <field name="name"/>
                                     <field name="code" optional="show"/>
@@ -128,9 +129,10 @@
                                         </group>
                                         <notebook>
                                             <page string="Productos">
+                                                <field name="available_product_ids" invisible="1"/>
                                                 <field
                                                     name="product_ids"
-                                                    domain="[('sale_ok', '=', True)]"
+                                                    domain="[('id', 'in', available_product_ids)]"
                                                     context="{'default_sale_ok': True}"
                                                     options="{'no_create_edit': True}"
                                                 >
