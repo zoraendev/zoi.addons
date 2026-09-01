@@ -556,6 +556,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_channel_period_range(self, period_key):
+        """Fallback: calcula rango de fechas a partir de una clave de periodo.
+        Se mantiene por compatibilidad pero los hubs ahora envian date_from/date_to directamente."""
         date_to = fields.Date.to_date(fields.Date.context_today(self))
         normalized_key = period_key or 'ytd'
         if normalized_key == 'current_month':
@@ -570,6 +572,13 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         return normalized_key, date_from, date_to
 
     @api.model
+    def _get_default_date_range(self):
+        """Retorna el rango de fechas por defecto: 1 de enero del anio actual hasta hoy."""
+        date_to = fields.Date.to_date(fields.Date.context_today(self))
+        date_from = date_to.replace(month=1, day=1)
+        return date_from, date_to
+
+    @api.model
     def _get_channel_period_options(self):
         return [
             {'value': 'ytd', 'label': 'YTD'},
@@ -581,7 +590,16 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
     @api.model
     def _normalize_channel_filters(self, filters=None):
         filters = filters or {}
-        period_key, date_from, date_to = self._get_channel_period_range(filters.get('period_key'))
+        # Prioridad: date_from/date_to explicitos desde el frontend.
+        # Fallback: calcular a partir de period_key (compatibilidad).
+        raw_date_from = filters.get('date_from')
+        raw_date_to = filters.get('date_to')
+        if raw_date_from and raw_date_to:
+            period_key = 'custom'
+            date_from = fields.Date.to_date(raw_date_from) if isinstance(raw_date_from, str) else raw_date_from
+            date_to = fields.Date.to_date(raw_date_to) if isinstance(raw_date_to, str) else raw_date_to
+        else:
+            period_key, date_from, date_to = self._get_channel_period_range(filters.get('period_key'))
         return {
             'period_key': period_key,
             'date_from': date_from,
@@ -652,6 +670,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
     def _serialize_active_filters(self, normalized_filters):
         return {
             'period_key': normalized_filters['period_key'],
+            'date_from': fields.Date.to_string(normalized_filters['date_from']) if normalized_filters.get('date_from') else '',
+            'date_to': fields.Date.to_string(normalized_filters['date_to']) if normalized_filters.get('date_to') else '',
             'channel_ids': normalized_filters['channel_ids'],
             'brand_ids': normalized_filters['brand_ids'],
             'category_ids': normalized_filters['category_ids'],

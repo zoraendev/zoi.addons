@@ -74,8 +74,21 @@ const RRHH_TABS = [
   { key: "historico", label: "Historico", icon: "fa-table" },
 ];
 
+function getDefaultDateFrom() {
+  const now = new Date();
+  return `${now.getFullYear()}-01-01`;
+}
+
+function getDefaultDateTo() {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${mm}-${dd}`;
+}
+
 const DEFAULT_FILTERS = Object.freeze({
-  period_key: "ytd",
+  date_from: getDefaultDateFrom(),
+  date_to: getDefaultDateTo(),
   channel_ids: [],
   brand_ids: [],
   category_ids: [],
@@ -85,6 +98,8 @@ const DEFAULT_FILTERS = Object.freeze({
 function cloneDefaultFilters() {
   return {
     ...DEFAULT_FILTERS,
+    date_from: getDefaultDateFrom(),
+    date_to: getDefaultDateTo(),
     channel_ids: [],
     brand_ids: [],
     category_ids: [],
@@ -92,7 +107,8 @@ function cloneDefaultFilters() {
 }
 
 const OPERATIONS_DEFAULT_FILTERS = Object.freeze({
-  period_key: "ytd",
+  date_from: getDefaultDateFrom(),
+  date_to: getDefaultDateTo(),
   channel_ids: [],
   product_channel_ids: [],
   brand_ids: [],
@@ -104,6 +120,8 @@ const OPERATIONS_DEFAULT_FILTERS = Object.freeze({
 function cloneOperationsDefaultFilters() {
   return {
     ...OPERATIONS_DEFAULT_FILTERS,
+    date_from: getDefaultDateFrom(),
+    date_to: getDefaultDateTo(),
     channel_ids: [],
     product_channel_ids: [],
     brand_ids: [],
@@ -1116,7 +1134,8 @@ class ZrnAnalyticsHubAction extends Component {
   syncCommercialFiltersFromPayload(payload) {
     const activeFilters = payload?.active_filters || {};
     const nextFilters = {
-      period_key: activeFilters.period_key || DEFAULT_FILTERS.period_key,
+      date_from: activeFilters.date_from || DEFAULT_FILTERS.date_from,
+      date_to: activeFilters.date_to || DEFAULT_FILTERS.date_to,
       channel_ids: normalizeFilterIds(activeFilters.channel_ids),
       brand_ids: normalizeFilterIds(activeFilters.brand_ids),
       category_ids: normalizeFilterIds(activeFilters.category_ids),
@@ -1129,7 +1148,8 @@ class ZrnAnalyticsHubAction extends Component {
   syncCoverageFiltersFromPayload(payload) {
     const activeFilters = payload?.active_filters || {};
     this.state.coverageFilters = {
-      period_key: activeFilters.period_key || DEFAULT_FILTERS.period_key,
+      date_from: activeFilters.date_from || DEFAULT_FILTERS.date_from,
+      date_to: activeFilters.date_to || DEFAULT_FILTERS.date_to,
       channel_ids: normalizeFilterIds(activeFilters.channel_ids),
       brand_ids: normalizeFilterIds(activeFilters.brand_ids),
       category_ids: normalizeFilterIds(activeFilters.category_ids),
@@ -1140,7 +1160,8 @@ class ZrnAnalyticsHubAction extends Component {
   syncChannelFiltersFromPayload(payload) {
     const activeFilters = payload?.active_filters || {};
     this.state.channelFilters = {
-      period_key: activeFilters.period_key || DEFAULT_FILTERS.period_key,
+      date_from: activeFilters.date_from || DEFAULT_FILTERS.date_from,
+      date_to: activeFilters.date_to || DEFAULT_FILTERS.date_to,
       channel_ids: normalizeFilterIds(activeFilters.channel_ids),
       brand_ids: normalizeFilterIds(activeFilters.brand_ids),
       category_ids: normalizeFilterIds(activeFilters.category_ids),
@@ -1151,7 +1172,8 @@ class ZrnAnalyticsHubAction extends Component {
   syncFinancialFiltersFromPayload(payload) {
     const activeFilters = payload?.active_filters || {};
     this.state.financialFilters = {
-      period_key: activeFilters.period_key || DEFAULT_FILTERS.period_key,
+      date_from: activeFilters.date_from || DEFAULT_FILTERS.date_from,
+      date_to: activeFilters.date_to || DEFAULT_FILTERS.date_to,
       channel_ids: normalizeFilterIds(activeFilters.channel_ids),
       brand_ids: normalizeFilterIds(activeFilters.brand_ids),
       category_ids: normalizeFilterIds(activeFilters.category_ids),
@@ -1162,7 +1184,8 @@ class ZrnAnalyticsHubAction extends Component {
   syncOperationsFiltersFromPayload(payload) {
     const activeFilters = payload?.active_filters || {};
     this.state.operationsFilters = {
-      period_key: activeFilters.period_key || OPERATIONS_DEFAULT_FILTERS.period_key,
+      date_from: activeFilters.date_from || OPERATIONS_DEFAULT_FILTERS.date_from,
+      date_to: activeFilters.date_to || OPERATIONS_DEFAULT_FILTERS.date_to,
       channel_ids: normalizeFilterIds(activeFilters.channel_ids),
       product_channel_ids: normalizeFilterIds(activeFilters.product_channel_ids),
       brand_ids: normalizeFilterIds(activeFilters.brand_ids),
@@ -1175,7 +1198,8 @@ class ZrnAnalyticsHubAction extends Component {
   syncPdvFiltersFromPayload(payload) {
     const activeFilters = payload?.active_filters || {};
     this.state.pdvFilters = {
-      period_key: activeFilters.period_key || DEFAULT_FILTERS.period_key,
+      date_from: activeFilters.date_from || DEFAULT_FILTERS.date_from,
+      date_to: activeFilters.date_to || DEFAULT_FILTERS.date_to,
       channel_ids: normalizeFilterIds(activeFilters.channel_ids),
       brand_ids: normalizeFilterIds(activeFilters.brand_ids),
       category_ids: normalizeFilterIds(activeFilters.category_ids),
@@ -1327,9 +1351,12 @@ class ZrnAnalyticsHubAction extends Component {
     };
   }
 
-  onOverviewPeriodSelect(value) {
-    console.log("[ZRN DEBUG] onOverviewPeriodSelect called with:", value);
-    this.updateOverviewFilter("period_key", value);
+  onOverviewDateFromInput(ev) {
+    this.updateOverviewFilter("date_from", ev.target.value);
+  }
+
+  onOverviewDateToInput(ev) {
+    this.updateOverviewFilter("date_to", ev.target.value);
   }
 
   onOverviewBrandsChange(records) {
@@ -1344,8 +1371,12 @@ class ZrnAnalyticsHubAction extends Component {
     this.updateOverviewFilter("channel_ids", records.map((r) => r.id));
   }
 
-  onPortfolioPeriodSelect(value) {
-    this.updatePortfolioFilter("period_key", value);
+  onPortfolioDateFromInput(ev) {
+    this.updatePortfolioFilter("date_from", ev.target.value);
+  }
+
+  onPortfolioDateToInput(ev) {
+    this.updatePortfolioFilter("date_to", ev.target.value);
   }
 
   onPortfolioBrandsChange(records) {
@@ -1360,8 +1391,12 @@ class ZrnAnalyticsHubAction extends Component {
     this.updatePortfolioFilter("channel_ids", records.map((r) => r.id));
   }
 
-  onCoveragePeriodSelect(value) {
-    this.updateCoverageFilter("period_key", value);
+  onCoverageDateFromInput(ev) {
+    this.updateCoverageFilter("date_from", ev.target.value);
+  }
+
+  onCoverageDateToInput(ev) {
+    this.updateCoverageFilter("date_to", ev.target.value);
   }
 
   onCoverageChannelsChange(records) {
@@ -1376,8 +1411,12 @@ class ZrnAnalyticsHubAction extends Component {
     this.updateCoverageFilter("category_ids", records.map((r) => r.id));
   }
 
-  onChannelPeriodSelect(value) {
-    this.updateChannelFilter("period_key", value);
+  onChannelDateFromInput(ev) {
+    this.updateChannelFilter("date_from", ev.target.value);
+  }
+
+  onChannelDateToInput(ev) {
+    this.updateChannelFilter("date_to", ev.target.value);
   }
 
   onChannelChannelsChange(records) {
@@ -1392,8 +1431,12 @@ class ZrnAnalyticsHubAction extends Component {
     this.updateChannelFilter("category_ids", records.map((r) => r.id));
   }
 
-  onFinancialPeriodSelect(value) {
-    this.updateFinancialFilter("period_key", value);
+  onFinancialDateFromInput(ev) {
+    this.updateFinancialFilter("date_from", ev.target.value);
+  }
+
+  onFinancialDateToInput(ev) {
+    this.updateFinancialFilter("date_to", ev.target.value);
   }
 
   onFinancialChannelsChange(records) {
@@ -1408,8 +1451,12 @@ class ZrnAnalyticsHubAction extends Component {
     this.updateFinancialFilter("category_ids", records.map((r) => r.id));
   }
 
-  onOperationsPeriodSelect(value) {
-    this.updateOperationsFilter("period_key", value);
+  onOperationsDateFromInput(ev) {
+    this.updateOperationsFilter("date_from", ev.target.value);
+  }
+
+  onOperationsDateToInput(ev) {
+    this.updateOperationsFilter("date_to", ev.target.value);
   }
 
   onOperationsChannelsChange(records) {
@@ -1432,8 +1479,12 @@ class ZrnAnalyticsHubAction extends Component {
     this.updateOperationsFilter("rotation_key", value);
   }
 
-  onPdvPeriodSelect(value) {
-    this.updatePdvFilter("period_key", value);
+  onPdvDateFromInput(ev) {
+    this.updatePdvFilter("date_from", ev.target.value);
+  }
+
+  onPdvDateToInput(ev) {
+    this.updatePdvFilter("date_to", ev.target.value);
   }
 
   onPdvChannelsChange(records) {

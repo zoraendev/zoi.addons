@@ -8,8 +8,12 @@
             </div>
             <div class="zrn_analitics_financial_channel_filters">
                 <div class="zrn_analitics_financial_field">
-                    <label>Periodo</label>
-                    <SelectMenu choices="getPeriodChoices(financialPayload.filter_options.periods)" value="state.financialFilters.period_key" onSelect.bind="this.onFinancialPeriodSelect"/>
+                    <label>Desde</label>
+                    <input type="date" class="form-control" t-att-value="state.financialFilters.date_from" t-on-input="(ev) => this.onFinancialDateFromInput(ev)"/>
+                </div>
+                <div class="zrn_analitics_financial_field">
+                    <label>Hasta</label>
+                    <input type="date" class="form-control" t-att-value="state.financialFilters.date_to" t-on-input="(ev) => this.onFinancialDateToInput(ev)"/>
                 </div>
                 <div class="zrn_analitics_financial_field">
                     <label>Marca</label>

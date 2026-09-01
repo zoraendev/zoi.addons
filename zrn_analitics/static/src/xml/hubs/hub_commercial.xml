@@ -29,8 +29,12 @@
             </div>
             <div class="zrn_analitics_commercial_channel_filters">
                 <div class="zrn_analitics_commercial_field">
-                    <label>Periodo</label>
-                    <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.overviewFilters.period_key" onSelect.bind="this.onOverviewPeriodSelect"/>
+                    <label>Desde</label>
+                    <input type="date" class="form-control" t-att-value="state.overviewFilters.date_from" t-on-input="(ev) => this.onOverviewDateFromInput(ev)"/>
+                </div>
+                <div class="zrn_analitics_commercial_field">
+                    <label>Hasta</label>
+                    <input type="date" class="form-control" t-att-value="state.overviewFilters.date_to" t-on-input="(ev) => this.onOverviewDateToInput(ev)"/>
                 </div>
                 <div class="zrn_analitics_commercial_field">
                     <label>Marca</label>
@@ -313,8 +317,12 @@
                         </div>
                         <div class="zrn_analitics_commercial_channel_filters">
                             <div class="zrn_analitics_commercial_field">
-                                <label>Periodo</label>
-                                <SelectMenu choices="getPeriodChoices(commercialPayload.filter_options.periods)" value="state.portfolioFilters.period_key" onSelect.bind="this.onPortfolioPeriodSelect"/>
+                                <label>Desde</label>
+                                <input type="date" class="form-control" t-att-value="state.portfolioFilters.date_from" t-on-input="(ev) => this.onPortfolioDateFromInput(ev)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Hasta</label>
+                                <input type="date" class="form-control" t-att-value="state.portfolioFilters.date_to" t-on-input="(ev) => this.onPortfolioDateToInput(ev)"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Marca</label>
@@ -510,8 +518,12 @@
                         </div>
                         <div class="zrn_analitics_commercial_channel_filters">
                             <div class="zrn_analitics_commercial_field">
-                                <label>Periodo</label>
-                                <SelectMenu choices="getPeriodChoices(coveragePayload.filter_options.periods)" value="state.coverageFilters.period_key" onSelect.bind="this.onCoveragePeriodSelect"/>
+                                <label>Desde</label>
+                                <input type="date" class="form-control" t-att-value="state.coverageFilters.date_from" t-on-input="(ev) => this.onCoverageDateFromInput(ev)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Hasta</label>
+                                <input type="date" class="form-control" t-att-value="state.coverageFilters.date_to" t-on-input="(ev) => this.onCoverageDateToInput(ev)"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Canal</label>
@@ -972,8 +984,12 @@
                         </div>
                         <div class="zrn_analitics_commercial_channel_filters">
                             <div class="zrn_analitics_commercial_field">
-                                <label>Periodo</label>
-                                <SelectMenu choices="getPeriodChoices(channelPayload.filter_options.periods)" value="state.channelFilters.period_key" onSelect.bind="this.onChannelPeriodSelect"/>
+                                <label>Desde</label>
+                                <input type="date" class="form-control" t-att-value="state.channelFilters.date_from" t-on-input="(ev) => this.onChannelDateFromInput(ev)"/>
+                            </div>
+                            <div class="zrn_analitics_commercial_field">
+                                <label>Hasta</label>
+                                <input type="date" class="form-control" t-att-value="state.channelFilters.date_to" t-on-input="(ev) => this.onChannelDateToInput(ev)"/>
                             </div>
                             <div class="zrn_analitics_commercial_field">
                                 <label>Canal</label>
