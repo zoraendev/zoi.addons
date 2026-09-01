@@ -164,6 +164,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_product_channel_records(self, usage_types=None, active_only=True):
+        if 'zrn_commercial.product.channel' not in self.env:
+            return self.env['zrn_commercial.commercial.channel'].browse()
         domain = [('company_id', '=', self.env.company.id)]
         if active_only:
             domain.append(('active', '=', True))
@@ -173,7 +175,11 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_product_channel_map(self, usage_types=None, active_only=True):
+        if 'zrn_commercial.product.channel' not in self.env:
+            return self.env['zrn_commercial.commercial.channel'].browse(), {}, {}
         channels = self._get_product_channel_records(usage_types=usage_types, active_only=active_only)
+        if 'zrn_commercial.product.channel.product' not in self.env:
+            return channels, {}, {}
         links = self.env['zrn_commercial.product.channel.product'].search([
             ('channel_id', 'in', channels.ids),
             ('active', '=', True),
@@ -188,10 +194,10 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             channel_info = {
                 'channel_id': channel.id,
                 'channel_name': channel.name,
-                'usage_type': channel.usage_type,
-                'min_stock_days': float(channel.min_stock_days or 0.0),
-                'target_stock_days': float(channel.target_stock_days or 0.0),
-                'max_stock_days': float(channel.max_stock_days or 0.0),
+                'usage_type': getattr(channel, 'usage_type', 'regular'),
+                'min_stock_days': float(getattr(channel, 'min_stock_days', 0.0) or 0.0),
+                'target_stock_days': float(getattr(channel, 'target_stock_days', 0.0) or 0.0),
+                'max_stock_days': float(getattr(channel, 'max_stock_days', 0.0) or 0.0),
             }
             template_channel_map[link.product_tmpl_id.id] = channel_info
             for product in link.product_tmpl_id.product_variant_ids:
@@ -200,6 +206,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_product_channel_filter_options(self, channels=None):
+        if 'zrn_commercial.product.channel' not in self.env and not channels:
+            return []
         channels = channels or self._get_product_channel_records()
         return [
             {
