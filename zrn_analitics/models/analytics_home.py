@@ -698,10 +698,19 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _build_filter_options(self, order_lines, brands=None, include_channels=True):
+        """Construye las opciones de seleccion para los filtros dinamicos del tablero.
+
+        NOTA DE IMPLEMENTACION (CATEGORIAS):
+        Las categorias en la interfaz (dropdown 'Categoria') no dependen exclusivamente de si existen
+        ordenes de venta registradas en el periodo. Se extraen tanto de la relacion del catalogo comercial
+        (brand -> category_ids -> product_ids -> categ_id) como de las lineas de venta reales (sale.order.line).
+        Esto garantiza que al seleccionar una marca, las categorias asignadas a sus productos siempre aparezcan
+        disponibles en el filtro desplegable de la UI, incluso si no ha habido ventas en las fechas seleccionadas.
+        """
         brands = brands or self._get_commercial_brand_records()
         categories = {}
 
-        # 1. Obtener categorias de producto a traves de las marcas configuradas (brand -> category_ids -> product_ids -> categ_id)
+        # 1. Extraer categorias de producto asignadas a las marcas del catalogo comercial
         for brand in (brands or []):
             for brand_cat in brand.category_ids:
                 for prod in brand_cat.product_ids:
@@ -709,7 +718,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                     if cat and cat.id:
                         categories[cat.id] = cat.display_name or cat.name or 'Sin categoria'
 
-        # 2. Obtener categorias presentes en las lineas de venta del periodo
+        # 2. Consolidar categorias presentes en las lineas de venta ejecutadas en el periodo
         for line in (order_lines or []):
             product = line.product_id
             if product:
