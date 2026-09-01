@@ -215,9 +215,23 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         return 'No hay datos para los filtros seleccionados.'
 
     @api.model
-    def _get_explicit_channel_name(self, partner):
+    def _get_partner_channel_map(self):
+        links = self.env['zrn_commercial.commercial.channel.partner'].search([
+            ('active', '=', True),
+            ('company_id', '=', self.env.company.id),
+        ])
+        partner_channel_map = {}
+        for link in links:
+            if link.partner_id and link.channel_id:
+                partner_channel_map[link.partner_id.id] = link.channel_id.name
+        return partner_channel_map
+
+    @api.model
+    def _get_explicit_channel_name(self, partner, partner_channel_map=None):
         if not partner:
             return False
+        if partner_channel_map is not None:
+            return partner_channel_map.get(partner.id, False)
         channel_link = self.env['zrn_commercial.commercial.channel.partner'].search([
             ('partner_id', '=', partner.id),
             ('active', '=', True),
@@ -367,8 +381,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         return 'Otros'
 
     @api.model
-    def _resolve_partner_channel(self, partner):
-        return self._get_explicit_channel_name(partner)
+    def _resolve_partner_channel(self, partner, partner_channel_map=None):
+        return self._get_explicit_channel_name(partner, partner_channel_map=partner_channel_map)
 
     @api.model
     def _infer_pdv_subchain(self, channel_name, partner_name=''):
@@ -667,7 +681,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         }
 
     @api.model
-    def _line_matches_filters(self, line, product_brand_map, normalized_filters):
+    def _line_matches_filters(self, line, product_brand_map, normalized_filters, partner_channel_map=None):
         order = line.order_id
         partner = order.partner_id if order else False
         commercial_partner = partner.commercial_partner_id if partner else False
@@ -679,7 +693,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         if not brand_info:
             return False
 
-        channel_name = self._resolve_partner_channel(partner)
+        channel_name = self._resolve_partner_channel(partner, partner_channel_map=partner_channel_map)
         category_name = product.categ_id.display_name or 'Sin categoria'
         if not channel_name:
             return False
@@ -1738,13 +1752,14 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             payload['filter_options'] = self._build_filter_options([], brands)
             return payload
 
+        partner_channel_map = self._get_partner_channel_map()
         order_lines = self._get_commercial_sale_order_lines(
             date_from,
             date_to,
             list(product_brand_map.keys()),
         )
         filter_options = self._build_filter_options(order_lines, brands)
-        filtered_lines = order_lines.filtered(lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters))
+        filtered_lines = order_lines.filtered(lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters, partner_channel_map=partner_channel_map))
         if not filtered_lines:
             payload = self._get_empty_commercial_hub_payload()
             payload['summary']['brand_count'] = len(brands)
@@ -3145,8 +3160,9 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 'No hay ventas en el periodo para inferir demanda operativa.',
             )
 
+        partner_channel_map = self._get_partner_channel_map()
         base_lines = order_lines.filtered(
-            lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters)
+            lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters, partner_channel_map=partner_channel_map)
         )
         selected_product_channel_ids = set(normalized_filters.get('product_channel_ids') or [])
         if selected_product_channel_ids:
@@ -4417,13 +4433,14 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             payload['filter_options'] = self._build_filter_options([], brands)
             return payload
 
+        partner_channel_map = self._get_partner_channel_map()
         order_lines = self._get_commercial_sale_order_lines(
             date_from,
             date_to,
             list(product_brand_map.keys()),
         )
         filter_options = self._build_filter_options(order_lines, brands)
-        filtered_lines = order_lines.filtered(lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters))
+        filtered_lines = order_lines.filtered(lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters, partner_channel_map=partner_channel_map))
         if not filtered_lines:
             payload = self._get_empty_coverage_dashboard_data()
             payload['summary'] = {
@@ -4878,8 +4895,9 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 filter_options=filter_options,
             )
 
+        partner_channel_map = self._get_partner_channel_map()
         filtered_lines = order_lines.filtered(
-            lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters)
+            lambda line: self._line_matches_filters(line, product_brand_map, normalized_filters, partner_channel_map=partner_channel_map)
         )
         if not filtered_lines:
             return self._build_empty_pdv_hub_payload(
