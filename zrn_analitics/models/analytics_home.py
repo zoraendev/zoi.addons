@@ -112,7 +112,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
     @api.model
     def _get_commercial_hub_period(self):
         date_to = fields.Date.to_date(fields.Date.context_today(self))
-        date_from = date_to.replace(month=1, day=1)
+        date_from = date_to.replace(day=1)
         return date_from, date_to
 
     @api.model
@@ -591,9 +591,9 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_default_date_range(self):
-        """Retorna el rango de fechas por defecto: 1 de enero del anio actual hasta hoy."""
+        """Retorna el rango de fechas por defecto: 1 del mes actual hasta hoy."""
         date_to = fields.Date.to_date(fields.Date.context_today(self))
-        date_from = date_to.replace(month=1, day=1)
+        date_from = date_to.replace(day=1)
         return date_from, date_to
 
     @api.model
