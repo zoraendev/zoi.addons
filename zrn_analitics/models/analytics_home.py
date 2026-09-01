@@ -117,8 +117,9 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_commercial_brand_records(self):
+        # Nota: el modelo zrn_commercial.commercial.brand no tiene campo 'active',
+        # se filtra unicamente por compania.
         return self.env['zrn_commercial.commercial.brand'].search([
-            ('active', '=', True),
             ('company_id', '=', self.env.company.id),
         ], order='name asc, id asc')
 
@@ -127,12 +128,14 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         brands = self._get_commercial_brand_records()
         product_brand_map = {}
         for brand in brands:
-            active_links = brand.product_link_ids.filtered(lambda link: link.active and link.product_id)
-            for link in active_links:
-                product_brand_map[link.product_id.id] = {
-                    'brand_id': brand.id,
-                    'brand_name': brand.name,
-                }
+            # Los productos se vinculan a traves de categorias de marca:
+            # brand -> category_ids -> product_ids (Many2many a product.product)
+            for category in brand.category_ids:
+                for product in category.product_ids:
+                    product_brand_map[product.id] = {
+                        'brand_id': brand.id,
+                        'brand_name': brand.name,
+                    }
         return brands, product_brand_map
 
     @api.model
@@ -1744,7 +1747,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             payload['brand_catalog'] = [
                 {
                     'name': brand.name,
-                    'product_count': len(brand.product_link_ids.filtered(lambda link: link.active and link.product_id)),
+                    'product_count': brand.product_count,
                 }
                 for brand in brands
             ]
@@ -1769,7 +1772,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             payload['brand_catalog'] = [
                 {
                     'name': brand.name,
-                    'product_count': len(brand.product_link_ids.filtered(lambda link: link.active and link.product_id)),
+                    'product_count': brand.product_count,
                 }
                 for brand in brands
             ]
@@ -3093,7 +3096,7 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 {
                     'id': brand.id,
                     'name': brand.name,
-                    'product_count': len(brand.product_link_ids.filtered(lambda link: link.active and link.product_id)),
+                    'product_count': brand.product_count,
                 }
                 for brand in brands
             ],
