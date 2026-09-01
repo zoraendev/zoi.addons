@@ -1,13 +1,23 @@
+// Ajuste de diseño full-width: Fuerza a los contenedores y hojas de formulario de Odoo
+// a expandirse al 100% del ancho disponible de la pantalla eliminando restricciones max-width.
+.o_form_view.zrn_commercial_home_form .o_form_renderer,
+.o_form_view:has(.zrn_commercial_home) .o_form_renderer {
+  width: 100% !important;
+  max-width: none !important;
+}
+
 .o_form_view.zrn_commercial_home_form .o_form_sheet_bg,
 .o_form_view:has(.zrn_commercial_home) .o_form_sheet_bg {
   padding: 12px 16px;
+  width: 100% !important;
+  max-width: none !important;
 }
 
 .o_form_view.zrn_commercial_home_form .o_form_sheet,
 .o_form_view:has(.zrn_commercial_home) .o_form_sheet {
-  max-width: none;
-  width: 100%;
-  margin: 0;
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
 }
 
 .o_action_manager .zrn_commercial_home {
@@ -88,6 +98,34 @@
   display: block;
   margin-top: 2px;
   color: #5f6b7a;
+}
+
+// Boton 'Ver ordenes' (Panel Principal):
+// Aplica fondo morado institucional y texto blanco puro (#ffffff) para garantizar alto contraste y legibilidad.
+.o_action_manager .zrn_commercial_panel_head .zrn_commercial_btn_orders,
+.o_form_view .zrn_commercial_panel_head .zrn_commercial_btn_orders,
+button.zrn_commercial_btn_orders {
+  background-color: #6f5d9a !important;
+  background-image: none !important;
+  border-color: #5c4b85 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+
+.o_action_manager .zrn_commercial_panel_head .zrn_commercial_btn_orders *,
+.o_form_view .zrn_commercial_panel_head .zrn_commercial_btn_orders *,
+button.zrn_commercial_btn_orders * {
+  color: #ffffff !important;
+}
+
+.o_action_manager .zrn_commercial_panel_head .zrn_commercial_btn_orders:hover,
+.o_form_view .zrn_commercial_panel_head .zrn_commercial_btn_orders:hover,
+button.zrn_commercial_btn_orders:hover {
+  background-color: #5b4a83 !important;
+  border-color: #4b3c70 !important;
+  color: #ffffff !important;
 }
 
 .o_action_manager .zrn_commercial_panel_link.btn {

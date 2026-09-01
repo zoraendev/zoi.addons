@@ -49,7 +49,8 @@
                                         <button name="action_open_sales_orders" type="object" string="Ingresos por canal" class="btn btn-link zrn_commercial_panel_link"/>
                                         <span>Ordenes confirmadas por clientes asignados a canales</span>
                                     </div>
-                                    <button name="action_open_sales_orders" type="object" string="Ver ordenes" class="btn btn-primary"/>
+                                    <!-- Boton 'Ver ordenes' con clase zrn_commercial_btn_orders para garantizar estilos e intensidad de color blanco en texto -->
+                                    <button name="action_open_sales_orders" type="object" string="Ver ordenes" class="btn btn-primary zrn_commercial_btn_orders"/>
                                 </div>
                                 <div class="zrn_commercial_chart" data-zrn-commercial-chart="channelRevenue"></div>
                                 <div class="zrn_commercial_empty d-none" data-zrn-commercial-chart-empty="channelRevenue">
