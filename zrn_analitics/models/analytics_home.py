@@ -700,14 +700,23 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
     def _build_filter_options(self, order_lines, brands=None, include_channels=True):
         brands = brands or self._get_commercial_brand_records()
         categories = {}
-        for line in order_lines:
-            order = line.order_id
-            partner = order.partner_id if order else False
+
+        # 1. Obtener categorias de producto a traves de las marcas configuradas (brand -> category_ids -> product_ids -> categ_id)
+        for brand in (brands or []):
+            for brand_cat in brand.category_ids:
+                for prod in brand_cat.product_ids:
+                    cat = prod.categ_id
+                    if cat and cat.id:
+                        categories[cat.id] = cat.display_name or cat.name or 'Sin categoria'
+
+        # 2. Obtener categorias presentes en las lineas de venta del periodo
+        for line in (order_lines or []):
             product = line.product_id
             if product:
                 category = product.categ_id
                 if category and category.id:
                     categories[category.id] = category.display_name or category.name or 'Sin categoria'
+
         return {
             'periods': self._get_channel_period_options(),
             'channels': self._get_channel_filter_options() if include_channels else [],
