@@ -110,3 +110,23 @@ Se solicitó añadir interactividad a todas las tablas del Hub Comercial de modo
 #### C. Remoción de Marcadores y Ajuste de Filtros (`static/src/xml/hubs/hub_commercial.xml`)
 *   Se eliminó el banner genérico de *"Esta vista queda reservada..."* en las pestañas no desarrolladas. En su lugar, ahora se despliega únicamente la barra unificada de **Filtros Comerciales** (`HubCommercialFilters`) para permitir la interacción global y mantener una estructura limpia y homogénea en toda la interfaz.
 *   Se documentó y comentó el código JS de renderizado de ECharts, y los callbacks XML para asegurar mantenibilidad futura.
+
+---
+
+## Optimización de Rendimiento, Manejo Defensivo de Modelos y Filtro por Rango de Fechas (Agosto 2026)
+
+### 1. Optimización N+1 SQL Query en Resolutores de Canales
+* **Problema:** En tableros con miles de registros de venta, el filtrado por cliente (`_resolve_partner_channel`) ejecutaba una consulta SQL individual por cada línea de orden (`sale.order.line`), generando miles de peticiones HTTP/SQL consecutivas y causando retardos de hasta 5 minutos al abrir el módulo.
+* **Solución:** Se creó el método `_get_partner_channel_map()` en `analytics_home.py`, el cual realiza **una única consulta SQL agrupada** al cargar el hub para almacenar en un mapa en memoria la relación `partner_id -> channel_name`. El bucle de filtrado consume este mapa directamente en tiempo constante $O(1)$.
+
+### 2. Manejo Defensivo ante Modelos Removidos (`zrn_commercial.product.channel`)
+* **Problema:** Tras la refactorización del módulo comercial, el modelo `zrn_commercial.product.channel` fue eliminado, lo que causaba un fallo crítico `KeyError` al ingresar al Hub de Operaciones.
+* **Solución:** Se implementó verificación defensiva previa (`if 'zrn_commercial.product.channel' not in self.env:`) en `_get_product_channel_records`, `_get_product_channel_map` y `_get_product_channel_filter_options`. Si el modelo no existe, el sistema retorna inmediatamente colecciones vacías seguras sin interrumpir la ejecución.
+
+### 3. Reemplazo del Filtro Estático YTD por Rango Dinámico (Desde / Hasta)
+* **Cambio:** Se eliminó el selector desplegable predeterminado "Periodo" (YTD, Mes actual, etc.) en los hubs **Comercial**, **Financiero**, **Operaciones** y **PDV/Cobertura** (respetando la estructura nativa del hub de RRHH).
+* **Frontend (`analytics_hub_action.xml` & `analytics_hub_action.js`):**
+  * Se definieron campos nativos de fecha `<input type="date">` vinculados a los estados `date_from` y `date_to`.
+  * Se establecieron como valores predeterminados el primer día del año en curso (`YYYY-01-01`) y el día actual respectivamente.
+* **Backend (`analytics_home.py`):**
+  * `_normalize_channel_filters` ahora lee las fechas `date_from` y `date_to` enviadas desde la interfaz de forma prioritaria, manteniendo el método `_get_channel_period_range` únicamente como mecanismo de contingencia (*fallback*).

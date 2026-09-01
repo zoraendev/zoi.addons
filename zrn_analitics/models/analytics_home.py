@@ -164,6 +164,9 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_product_channel_records(self, usage_types=None, active_only=True):
+        # OPTIMIZACION Y SEGURIDAD:
+        # El modelo 'zrn_commercial.product.channel' fue removido/refactorizado en la version reciente.
+        # Se verifica si el modelo existe en self.env antes de realizar la consulta SQL para prevenir KeyErrors.
         if 'zrn_commercial.product.channel' not in self.env:
             return self.env['zrn_commercial.commercial.channel'].browse()
         domain = [('company_id', '=', self.env.company.id)]
@@ -175,6 +178,8 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_product_channel_map(self, usage_types=None, active_only=True):
+        # OPTIMIZACION Y SEGURIDAD:
+        # Verifica la existencia defensiva del modelo 'zrn_commercial.product.channel' en la base de datos.
         if 'zrn_commercial.product.channel' not in self.env:
             return self.env['zrn_commercial.commercial.channel'].browse(), {}, {}
         channels = self._get_product_channel_records(usage_types=usage_types, active_only=active_only)
@@ -227,6 +232,11 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
 
     @api.model
     def _get_partner_channel_map(self):
+        """OPTIMIZACION N+1 QUERY:
+        Precarga todos los enlaces cliente->canal comercial en 1 sola consulta SQL.
+        Esto previene la ejecucion de miles de consultas individuales dentro de los bucles
+        de calculo por cada linea de orden de venta en el tablero.
+        """
         links = self.env['zrn_commercial.commercial.channel.partner'].search([
             ('active', '=', True),
             ('company_id', '=', self.env.company.id),
