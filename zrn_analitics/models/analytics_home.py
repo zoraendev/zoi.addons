@@ -697,34 +697,24 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
         }
 
     @api.model
+    def _get_brand_category_product_ids(self, category_ids):
+        if not category_ids:
+            return set()
+        brand_categories = self.env['zrn_commercial.commercial.brand.category'].browse(category_ids)
+        return set(brand_categories.mapped('product_ids').ids)
+
+    @api.model
     def _build_filter_options(self, order_lines, brands=None, include_channels=True):
         """Construye las opciones de seleccion para los filtros dinamicos del tablero.
 
-        NOTA DE IMPLEMENTACION (CATEGORIAS):
-        Las categorias en la interfaz (dropdown 'Categoria') no dependen exclusivamente de si existen
-        ordenes de venta registradas en el periodo. Se extraen tanto de la relacion del catalogo comercial
-        (brand -> category_ids -> product_ids -> categ_id) como de las lineas de venta reales (sale.order.line).
-        Esto garantiza que al seleccionar una marca, las categorias asignadas a sus productos siempre aparezcan
-        disponibles en el filtro desplegable de la UI, incluso si no ha habido ventas en las fechas seleccionadas.
+        NOTA DE IMPLEMENTACION (CATEGORIAS DE MARCA):
+        Las categorias del filtro 'Categoria' corresponden al modelo 'zrn_commercial.commercial.brand.category'
+        de Zoraen Commercial (p. ej. 'Wappers'). Se consultan directamente desde el catalogo de marcas para
+        mostrar exactamente la configuracion hecha por el usuario en el modulo Comercial.
         """
         brands = brands or self._get_commercial_brand_records()
-        categories = {}
-
-        # 1. Extraer categorias de producto asignadas a las marcas del catalogo comercial
-        for brand in (brands or []):
-            for brand_cat in brand.category_ids:
-                for prod in brand_cat.product_ids:
-                    cat = prod.categ_id
-                    if cat and cat.id:
-                        categories[cat.id] = cat.display_name or cat.name or 'Sin categoria'
-
-        # 2. Consolidar categorias presentes en las lineas de venta ejecutadas en el periodo
-        for line in (order_lines or []):
-            product = line.product_id
-            if product:
-                category = product.categ_id
-                if category and category.id:
-                    categories[category.id] = category.display_name or category.name or 'Sin categoria'
+        domain = [('brand_id', 'in', brands.ids)] if brands else []
+        brand_categories = self.env['zrn_commercial.commercial.brand.category'].search(domain, order='name asc, id asc')
 
         return {
             'periods': self._get_channel_period_options(),
@@ -732,10 +722,10 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             'brands': self._get_brand_filter_options(brands),
             'categories': [
                 {
-                    'id': category_id,
-                    'name': name,
+                    'id': cat.id,
+                    'name': cat.name,
                 }
-                for category_id, name in sorted(categories.items(), key=lambda item: item[1])
+                for cat in brand_categories
             ],
         }
 
@@ -761,8 +751,10 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             return False
         if normalized_filters['brand_ids'] and brand_info['brand_id'] not in normalized_filters['brand_ids']:
             return False
-        if normalized_filters['category_ids'] and product.categ_id.id not in normalized_filters['category_ids']:
-            return False
+        if normalized_filters['category_ids']:
+            allowed_cat_product_ids = self._get_brand_category_product_ids(normalized_filters['category_ids'])
+            if product.id not in allowed_cat_product_ids:
+                return False
 
         search_term = normalized_filters['search'].lower()
         if search_term:
@@ -1263,8 +1255,10 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
             brand_name = brand_info.get('brand_name') or 'Sin marca'
             if normalized_filters['brand_ids'] and brand_id not in normalized_filters['brand_ids']:
                 continue
-            if normalized_filters['category_ids'] and product.categ_id.id not in normalized_filters['category_ids']:
-                continue
+            if normalized_filters['category_ids']:
+                allowed_cat_product_ids = self._get_brand_category_product_ids(normalized_filters['category_ids'])
+                if product.id not in allowed_cat_product_ids:
+                    continue
 
             search_term = normalized_filters['search'].lower()
             if search_term:
@@ -4230,8 +4224,10 @@ class ZrnAnalyticsHome(ZrnAnalyticsNavigationMixin, models.Model):
                 continue
             if normalized_filters['brand_ids'] and brand_info['brand_id'] not in normalized_filters['brand_ids']:
                 continue
-            if normalized_filters['category_ids'] and product.categ_id.id not in normalized_filters['category_ids']:
-                continue
+            if normalized_filters['category_ids']:
+                allowed_cat_product_ids = self._get_brand_category_product_ids(normalized_filters['category_ids'])
+                if product.id not in allowed_cat_product_ids:
+                    continue
 
             if search_term:
                 search_haystack = ' '.join([

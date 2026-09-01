@@ -52,7 +52,7 @@
                     <ZrnRelationalMultiSelect
                         records="getSelectedOptionRecords(commercialPayload.filter_options.categories, state.overviewFilters.category_ids)"
                         domain="getOptionDomain(commercialPayload.filter_options.categories)"
-                        resModel="'product.category'"
+                        resModel="'zrn_commercial.commercial.brand.category'"
                         fieldString="'Categoria'"
                         placeholder="'Todas las categorias'"
                         onChange.bind="this.onOverviewCategoriesChange"
@@ -340,7 +340,7 @@
                                 <ZrnRelationalMultiSelect
                                     records="getSelectedOptionRecords(commercialPayload.filter_options.categories, state.portfolioFilters.category_ids)"
                                     domain="getOptionDomain(commercialPayload.filter_options.categories)"
-                                    resModel="'product.category'"
+                                    resModel="'zrn_commercial.commercial.brand.category'"
                                     fieldString="'Categoria'"
                                     placeholder="'Todas las categorias'"
                                     onChange.bind="this.onPortfolioCategoriesChange"
@@ -552,7 +552,7 @@
                                 <ZrnRelationalMultiSelect
                                     records="getSelectedOptionRecords(coveragePayload.filter_options.categories, state.coverageFilters.category_ids)"
                                     domain="getOptionDomain(coveragePayload.filter_options.categories)"
-                                    resModel="'product.category'"
+                                    resModel="'zrn_commercial.commercial.brand.category'"
                                     fieldString="'Categoria'"
                                     placeholder="'Todas las categorias'"
                                     onChange.bind="this.onCoverageCategoriesChange"
@@ -1018,7 +1018,7 @@
                                 <ZrnRelationalMultiSelect
                                     records="getSelectedOptionRecords(channelPayload.filter_options.categories, state.channelFilters.category_ids)"
                                     domain="getOptionDomain(channelPayload.filter_options.categories)"
-                                    resModel="'product.category'"
+                                    resModel="'zrn_commercial.commercial.brand.category'"
                                     fieldString="'Categoria'"
                                     placeholder="'Todas las categorias'"
                                     onChange.bind="this.onChannelCategoriesChange"

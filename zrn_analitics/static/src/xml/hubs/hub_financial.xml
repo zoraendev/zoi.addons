@@ -31,7 +31,7 @@
                     <ZrnRelationalMultiSelect
                         records="getSelectedOptionRecords(financialPayload.filter_options.categories, state.financialFilters.category_ids)"
                         domain="getOptionDomain(financialPayload.filter_options.categories)"
-                        resModel="'product.category'"
+                        resModel="'zrn_commercial.commercial.brand.category'"
                         fieldString="'Categoria'"
                         placeholder="'Todas las categorias'"
                         onChange.bind="this.onFinancialCategoriesChange"
